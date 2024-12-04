@@ -8,6 +8,8 @@ interface ProtectedRouteProps {
   requiredRole?: 'vendor' | 'customer';
 }
 
+const AUTHORIZED_VENDOR_EMAIL = 'mjbutler.35@gmail.com';
+
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const session = useSession();
   const supabase = useSupabaseClient();
@@ -27,6 +29,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       }
 
       try {
+        // Check if user has the required role
         const { data: profile, error } = await supabase
           .from(requiredRole === 'vendor' ? 'vendors' : 'customers')
           .select('id')
@@ -34,6 +37,17 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
           .single();
 
         if (error) throw error;
+
+        // Additional email check for vendor role
+        if (requiredRole === 'vendor' && session.user.email !== AUTHORIZED_VENDOR_EMAIL) {
+          setIsAuthorized(false);
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the vendor dashboard.",
+            variant: "destructive",
+          });
+          return;
+        }
         
         setIsAuthorized(!!profile);
         
