@@ -38,23 +38,24 @@ export function Navigation() {
           </Link>
 
           <div className="flex items-center space-x-4">
+            <Link to="/cart" className="relative">
+              <Button variant="ghost" size="sm">
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Cart
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+            
             {session ? (
               <>
                 <Link to="/orders">
                   <Button variant="ghost" size="sm">
                     <History className="h-4 w-4 mr-2" />
                     Orders
-                  </Button>
-                </Link>
-                <Link to="/cart" className="relative">
-                  <Button variant="ghost" size="sm">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Cart
-                    {cartItemCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {cartItemCount}
-                      </span>
-                    )}
                   </Button>
                 </Link>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
