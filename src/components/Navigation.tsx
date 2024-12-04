@@ -1,13 +1,33 @@
 import { Link } from "react-router-dom";
-import { useSession } from "@supabase/auth-helpers-react";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, History } from "lucide-react";
+import { ShoppingCart, History, LogOut } from "lucide-react";
+import { useToast } from "./ui/use-toast";
 
 export function Navigation() {
   const session = useSession();
+  const supabase = useSupabaseClient();
   const { items } = useCart();
+  const { toast } = useToast();
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <nav className="bg-white shadow-sm">
@@ -37,6 +57,10 @@ export function Navigation() {
                     )}
                   </Button>
                 </Link>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
               </>
             ) : (
               <Link to="/auth">

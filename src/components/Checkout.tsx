@@ -42,30 +42,26 @@ export function Checkout() {
     
     setIsLoadingUserData(true);
     try {
+      // First, try to get existing customer profile
       let { data: customer, error } = await supabase
         .from('customers')
-        .select('full_name, email, phone')
+        .select('*')
         .eq('user_id', session.user.id)
-        .maybeSingle(); // Changed from single() to maybeSingle()
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching customer data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load your information. Please try again.',
-          variant: 'destructive',
-        });
-        return;
+        throw error;
       }
 
-      // If no customer profile exists, create one with basic info from auth
+      // If no customer profile exists, create one
       if (!customer) {
         const { data: newCustomer, error: createError } = await supabase
           .from('customers')
           .insert([
             {
               user_id: session.user.id,
-              full_name: session.user.user_metadata.full_name || '',
+              full_name: session.user.user_metadata?.full_name || '',
               email: session.user.email || '',
               phone: '',
             },
@@ -75,30 +71,29 @@ export function Checkout() {
 
         if (createError) {
           console.error('Error creating customer profile:', createError);
-          toast({
-            title: 'Error',
-            description: 'Failed to create your customer profile. Please try again.',
-            variant: 'destructive',
-          });
-          return;
+          throw createError;
         }
 
         customer = newCustomer;
+        toast({
+          title: "Profile Created",
+          description: "Your customer profile has been created successfully.",
+        });
       }
 
       if (customer) {
         setFormData(prev => ({
           ...prev,
-          fullName: customer.full_name,
-          email: customer.email,
+          fullName: customer.full_name || '',
+          email: customer.email || '',
           phone: customer.phone || '',
         }));
       }
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Error in fetchUserData:', error);
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
+        description: 'Failed to load or create your profile. Please try again.',
         variant: 'destructive',
       });
     } finally {
