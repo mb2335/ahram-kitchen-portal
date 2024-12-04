@@ -9,7 +9,115 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          menu_item_id: string
+          order_id: string | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          menu_item_id: string
+          order_id?: string | null
+          quantity: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string
+          order_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          delivery_date: string
+          id: string
+          notes: string | null
+          payment_proof_url: string
+          rejection_reason: string | null
+          status: string
+          tax_amount: number
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          delivery_date: string
+          id?: string
+          notes?: string | null
+          payment_proof_url: string
+          rejection_reason?: string | null
+          status?: string
+          tax_amount: number
+          total_amount: number
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          delivery_date?: string
+          id?: string
+          notes?: string | null
+          payment_proof_url?: string
+          rejection_reason?: string | null
+          status?: string
+          tax_amount?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

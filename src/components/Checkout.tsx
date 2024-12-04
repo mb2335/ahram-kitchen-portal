@@ -7,6 +7,11 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { useToast } from './ui/use-toast';
+import { Calendar } from './ui/calendar';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { cn } from '@/lib/utils';
+import { CalendarIcon, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export function Checkout() {
@@ -23,7 +28,11 @@ export function Checkout() {
     email: '',
     phone: '',
     notes: '',
+    deliveryDate: new Date(),
   });
+
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -33,17 +42,43 @@ export function Checkout() {
     }
   }, [session, items.length, navigate]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPaymentProof(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!paymentProof) {
+      toast({
+        title: 'Error',
+        description: 'Please upload proof of payment',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
     try {
       // Get customer ID
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('id')
-        .eq('user_id', session.user.id)
+        .eq('user_id', session!.user.id)
         .single();
 
       if (customerError) throw customerError;
+
+      // Upload payment proof
+      const fileExt = paymentProof.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from('payment_proofs')
+        .upload(fileName, paymentProof);
+
+      if (uploadError) throw uploadError;
 
       // Create order
       const { data: orderData, error: orderError } = await supabase
@@ -55,6 +90,8 @@ export function Checkout() {
             tax_amount: taxAmount,
             notes: formData.notes,
             status: 'pending',
+            delivery_date: formData.deliveryDate.toISOString(),
+            payment_proof_url: uploadData.path,
           },
         ])
         .select()
@@ -89,6 +126,8 @@ export function Checkout() {
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -122,7 +161,7 @@ export function Checkout() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-2xl font-bold mb-4">Contact Information</h2>
+          <h2 className="text-2xl font-bold mb-4">Order Details</h2>
           
           <div>
             <Label htmlFor="fullName">Full Name</Label>
@@ -157,6 +196,33 @@ export function Checkout() {
           </div>
 
           <div>
+            <Label>Delivery Date and Time</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.deliveryDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.deliveryDate ? format(formData.deliveryDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.deliveryDate}
+                  onSelect={(date) => date && setFormData({ ...formData, deliveryDate: date })}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
             <Label htmlFor="notes">Special Instructions (Optional)</Label>
             <Textarea
               id="notes"
@@ -166,7 +232,34 @@ export function Checkout() {
             />
           </div>
 
-          <Button type="submit" className="w-full">Place Order</Button>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Payment Instructions</h3>
+            <p className="text-sm mb-4">
+              Please send payment via Zelle to: <strong>mjbutler.35@gmail.com</strong>
+            </p>
+            <div>
+              <Label htmlFor="paymentProof">Upload Payment Proof</Label>
+              <Input
+                id="paymentProof"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                required
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isUploading}>
+            {isUploading ? (
+              <>
+                <Upload className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Place Order'
+            )}
+          </Button>
         </form>
       </div>
     </div>
