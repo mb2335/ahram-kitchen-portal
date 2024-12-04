@@ -1,92 +1,49 @@
-import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { ShoppingCart, Globe, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useState, useEffect } from 'react';
+import { useSession } from "@supabase/auth-helpers-react";
+import { useCart } from "@/contexts/CartContext";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, History } from "lucide-react";
 
 export function Navigation() {
-  const { language, setLanguage, t } = useLanguage();
   const session = useSession();
-  const supabase = useSupabaseClient();
-  const [isVendor, setIsVendor] = useState(false);
-
-  useEffect(() => {
-    async function checkUserRole() {
-      if (session?.user) {
-        const { data: vendor } = await supabase
-          .from('vendors')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        setIsVendor(!!vendor);
-      } else {
-        setIsVendor(false);
-      }
-    }
-    
-    checkUserRole();
-  }, [session, supabase]);
+  const { items } = useCart();
+  const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <nav className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="text-2xl font-bold text-primary">
-              Ahram Kitchen
-            </Link>
-          </div>
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="text-xl font-bold">
+            Food Order
+          </Link>
+
           <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}
-              className="text-gray-600"
-            >
-              <Globe className="h-5 w-5 mr-1" />
-              {language.toUpperCase()}
-            </Button>
-            
             {session ? (
               <>
-                {isVendor && (
-                  <Link to="/vendor/menu">
-                    <Button variant="outline" size="sm">
-                      Vendor Dashboard
-                    </Button>
-                  </Link>
-                )}
-                <Link to="/cart">
-                  <Button variant="outline" size="sm">
-                    <ShoppingCart className="h-5 w-5 mr-1" />
-                    {t('nav.cart')}
+                <Link to="/orders">
+                  <Button variant="ghost" size="sm">
+                    <History className="h-4 w-4 mr-2" />
+                    Orders
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => supabase.auth.signOut()}
-                >
-                  Sign Out
-                </Button>
+                <Link to="/cart" className="relative">
+                  <Button variant="ghost" size="sm">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Cart
+                    {cartItemCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
               </>
             ) : (
-              <>
-                <Link to="/cart">
-                  <Button variant="outline" size="sm">
-                    <ShoppingCart className="h-5 w-5 mr-1" />
-                    {t('nav.cart')}
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button variant="outline" size="sm">
-                    <User className="h-5 w-5 mr-1" />
-                    Sign In
-                  </Button>
-                </Link>
-              </>
+              <Link to="/auth">
+                <Button variant="default" size="sm">
+                  Sign In
+                </Button>
+              </Link>
             )}
           </div>
         </div>
