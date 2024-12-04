@@ -10,12 +10,14 @@ import { Button } from './ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './ui/use-toast';
 
+type UserType = 'customer' | 'vendor';
+
 export function Auth() {
   const session = useSession();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [userType, setUserType] = useState<'customer' | 'vendor'>('customer');
+  const [userType, setUserType] = useState<UserType>('customer');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -42,17 +44,8 @@ export function Auth() {
         throw new Error('Business name is required for vendor accounts');
       }
 
-      const { data: existingUser, error: checkError } = await supabase
-        .from(userType === 'vendor' ? 'vendors' : 'customers')
-        .select('email')
-        .eq('email', formData.email)
-        .single();
-
-      if (existingUser) {
-        throw new Error('An account with this email already exists');
-      }
-
-      const { data, error } = await supabase.auth.signUp({
+      // Sign up the user
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -65,13 +58,19 @@ export function Auth() {
         }
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
+
+      if (!authData.user) {
+        throw new Error('Failed to create user account');
+      }
 
       toast({
         title: "Success",
         description: "Account created successfully! Please check your email for verification.",
       });
+
     } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
         title: "Error",
         description: error.message,
