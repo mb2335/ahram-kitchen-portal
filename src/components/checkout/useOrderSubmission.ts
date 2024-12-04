@@ -86,6 +86,15 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
+      // Validate all item IDs are proper UUIDs
+      const invalidItems = items.filter(item => 
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
+      );
+      
+      if (invalidItems.length > 0) {
+        throw new Error('Invalid menu item IDs detected');
+      }
+
       const customerId = await getOrCreateCustomer();
 
       // Upload payment proof
@@ -116,10 +125,10 @@ export function useOrderSubmission() {
 
       if (orderError) throw orderError;
 
-      // Create order items with proper UUID handling
+      // Create order items
       const orderItems = items.map((item) => ({
         order_id: orderData.id,
-        menu_item_id: item.id, // This should now be a proper UUID from the menu items table
+        menu_item_id: item.id,
         quantity: item.quantity,
         unit_price: item.price,
       }));
@@ -153,10 +162,10 @@ export function useOrderSubmission() {
         replace: true
       });
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Error submitting order:', error);
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Failed to submit order',
         variant: 'destructive',
       });
     } finally {

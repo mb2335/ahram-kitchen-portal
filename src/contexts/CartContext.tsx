@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 export interface MenuItem {
-  id: string;
+  id: string; // This must be a UUID from the menu_items table
   name: string;
   nameKo: string;
   description: string;
@@ -31,6 +31,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (item: MenuItem) => {
+    // Validate that the item.id is a UUID
+    if (!item.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+      console.error('Invalid menu item ID format:', item.id);
+      toast({
+        title: "Error",
+        description: "Invalid menu item format. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setItems((currentItems) => {
       const existingItem = currentItems.find((i) => i.id === item.id);
       if (existingItem) {
@@ -40,6 +51,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...currentItems, { ...item, quantity: 1 }];
     });
+    
     toast({
       title: "Added to cart",
       description: `${item.name} has been added to your cart.`,
