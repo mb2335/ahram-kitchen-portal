@@ -4,12 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+
+interface VendorProfile {
+  id: string;
+  business_name: string;
+  email: string;
+  phone?: string;
+  is_active: boolean;
+}
 
 export function VendorProfile() {
   const session = useSession();
   const { toast } = useToast();
+  const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState({
+  const [formData, setFormData] = useState({
     business_name: '',
     email: '',
     phone: '',
@@ -21,19 +32,20 @@ export function VendorProfile() {
 
   async function loadProfile() {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', session?.user?.id)
         .single();
 
-      if (data) {
-        setProfile({
-          business_name: data.business_name,
-          email: data.email,
-          phone: data.phone || '',
-        });
-      }
+      if (error) throw error;
+
+      setProfile(data);
+      setFormData({
+        business_name: data.business_name,
+        email: data.email,
+        phone: data.phone || '',
+      });
     } catch (error) {
       console.error('Error loading profile:', error);
       toast({
@@ -46,14 +58,15 @@ export function VendorProfile() {
     }
   }
 
-  async function updateProfile() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     try {
       const { error } = await supabase
         .from('vendors')
         .update({
-          business_name: profile.business_name,
-          email: profile.email,
-          phone: profile.phone,
+          business_name: formData.business_name,
+          email: formData.email,
+          phone: formData.phone || null,
         })
         .eq('user_id', session?.user?.id);
 
@@ -63,6 +76,8 @@ export function VendorProfile() {
         title: 'Success',
         description: 'Profile updated successfully',
       });
+
+      loadProfile();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -80,42 +95,39 @@ export function VendorProfile() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold">Vendor Profile</h2>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Business Name
-          </label>
-          <Input
-            value={profile.business_name}
-            onChange={(e) =>
-              setProfile({ ...profile, business_name: e.target.value })
-            }
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <Input
-            type="email"
-            value={profile.email}
-            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Phone
-          </label>
-          <Input
-            type="tel"
-            value={profile.phone}
-            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-          />
-        </div>
-        <Button onClick={updateProfile}>
-          Save Changes
-        </Button>
-      </div>
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="business_name">Business Name</Label>
+            <Input
+              id="business_name"
+              value={formData.business_name}
+              onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+          <Button type="submit">Save Changes</Button>
+        </form>
+      </Card>
     </div>
   );
 }
