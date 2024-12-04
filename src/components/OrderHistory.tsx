@@ -1,66 +1,16 @@
 import { useSession } from '@supabase/auth-helpers-react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
+import { useOrders } from '@/hooks/useOrders';
+import { OrderStatusBadge } from './shared/OrderStatusBadge';
 
 export function OrderHistory() {
   const session = useSession();
   const navigate = useNavigate();
   const { language } = useLanguage();
-
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ['orders', session?.user?.id],
-    queryFn: async () => {
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', session?.user?.id)
-        .single();
-
-      if (customerError) throw customerError;
-
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            id,
-            quantity,
-            unit_price,
-            menu_item:menu_items (
-              name,
-              name_ko
-            )
-          )
-        `)
-        .eq('customer_id', customerData.id)
-        .order('created_at', { ascending: false });
-
-      if (ordersError) throw ordersError;
-      return orders;
-    },
-    enabled: !!session?.user?.id,
-    refetchInterval: 5000, // Refetch every 5 seconds to keep status updated
-  });
-
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-    };
-
-    return (
-      <Badge className={statusColors[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
+  const { data: orders, isLoading } = useOrders();
 
   if (!session) {
     navigate('/auth', { state: { returnTo: '/orders' } });
@@ -89,7 +39,7 @@ export function OrderHistory() {
                   {format(new Date(order.created_at), 'PPP')}
                 </p>
               </div>
-              {getStatusBadge(order.status)}
+              <OrderStatusBadge status={order.status} />
             </div>
             
             <div className="space-y-2">
