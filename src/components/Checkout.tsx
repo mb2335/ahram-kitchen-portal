@@ -30,14 +30,58 @@ export function Checkout() {
 
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(false);
 
   useEffect(() => {
     if (!session) {
       navigate('/auth', { state: { returnTo: '/checkout' } });
     } else if (items.length === 0) {
       navigate('/cart');
+    } else {
+      fetchUserData();
     }
   }, [session, items.length, navigate]);
+
+  const fetchUserData = async () => {
+    if (!session?.user.id) return;
+    
+    setIsLoadingUserData(true);
+    try {
+      const { data: customer, error } = await supabase
+        .from('customers')
+        .select('full_name, email, phone')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching customer data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load your information. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (customer) {
+        setFormData(prev => ({
+          ...prev,
+          fullName: customer.full_name,
+          email: customer.email,
+          phone: customer.phone || '',
+        }));
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingUserData(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -47,6 +91,16 @@ export function Checkout() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user.id) {
+      toast({
+        title: 'Error',
+        description: 'Please sign in to complete your order',
+        variant: 'destructive',
+      });
+      navigate('/auth', { state: { returnTo: '/checkout' } });
+      return;
+    }
+
     if (!paymentProof) {
       toast({
         title: 'Error',
@@ -63,7 +117,7 @@ export function Checkout() {
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('id')
-        .eq('user_id', session!.user.id)
+        .eq('user_id', session.user.id)
         .single();
 
       if (customerError) throw customerError;
@@ -128,6 +182,14 @@ export function Checkout() {
     }
   };
 
+  if (isLoadingUserData) {
+    return (
+      <div className="container mx-auto max-w-2xl p-6 text-center">
+        <p>Loading your information...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto max-w-2xl p-6">
       <div className="space-y-6">
@@ -143,6 +205,7 @@ export function Checkout() {
             onFullNameChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
             onEmailChange={(e) => setFormData({ ...formData, email: e.target.value })}
             onPhoneChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            isReadOnly={!!session}
           />
 
           <DeliveryForm

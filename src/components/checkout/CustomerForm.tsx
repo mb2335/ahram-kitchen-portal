@@ -8,6 +8,7 @@ interface CustomerFormProps {
   onFullNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onEmailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isReadOnly?: boolean;
 }
 
 export function CustomerForm({
@@ -17,6 +18,7 @@ export function CustomerForm({
   onFullNameChange,
   onEmailChange,
   onPhoneChange,
+  isReadOnly = false,
 }: CustomerFormProps) {
   return (
     <div className="space-y-4">
@@ -27,6 +29,8 @@ export function CustomerForm({
           value={fullName}
           onChange={onFullNameChange}
           required
+          readOnly={isReadOnly}
+          className={isReadOnly ? "bg-gray-100" : ""}
         />
       </div>
 
@@ -38,6 +42,8 @@ export function CustomerForm({
           value={email}
           onChange={onEmailChange}
           required
+          readOnly={isReadOnly}
+          className={isReadOnly ? "bg-gray-100" : ""}
         />
       </div>
 
@@ -49,6 +55,8 @@ export function CustomerForm({
           value={phone}
           onChange={onPhoneChange}
           required
+          readOnly={isReadOnly}
+          className={isReadOnly ? "bg-gray-100" : ""}
         />
       </div>
     </div>
