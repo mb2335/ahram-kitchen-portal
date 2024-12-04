@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
@@ -13,6 +13,7 @@ import { useToast } from './ui/use-toast';
 export function Auth() {
   const session = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [userType, setUserType] = useState<'customer' | 'vendor'>('customer');
   const [formData, setFormData] = useState({
@@ -25,9 +26,10 @@ export function Auth() {
 
   useEffect(() => {
     if (session) {
-      navigate('/');
+      const returnTo = location.state?.returnTo || '/';
+      navigate(returnTo);
     }
-  }, [session, navigate]);
+  }, [session, navigate, location]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,30 +83,38 @@ export function Auth() {
   return (
     <div className="container mx-auto max-w-md p-6">
       <Card className="p-6">
-        <div className="mb-6">
-          <div className="flex justify-center space-x-4 mb-6">
-            <button
-              className={`px-4 py-2 rounded ${
-                userType === 'customer'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-gray-100'
-              }`}
-              onClick={() => setUserType('customer')}
-            >
-              Customer
-            </button>
-            <button
-              className={`px-4 py-2 rounded ${
-                userType === 'vendor'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-gray-100'
-              }`}
-              onClick={() => setUserType('vendor')}
-            >
-              Vendor
-            </button>
+        {userType === 'customer' ? (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              {location.state?.returnTo === '/checkout' ? 'Sign in to Complete Your Order' : 'Sign In'}
+            </h2>
           </div>
-        </div>
+        ) : (
+          <div className="mb-6">
+            <div className="flex justify-center space-x-4 mb-6">
+              <button
+                className={`px-4 py-2 rounded ${
+                  userType === 'customer'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-gray-100'
+                }`}
+                onClick={() => setUserType('customer')}
+              >
+                Customer
+              </button>
+              <button
+                className={`px-4 py-2 rounded ${
+                  userType === 'vendor'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-gray-100'
+                }`}
+                onClick={() => setUserType('vendor')}
+              >
+                Vendor
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSignUp} className="space-y-4">
           <div>

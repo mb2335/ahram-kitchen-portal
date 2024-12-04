@@ -3,11 +3,27 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSession } from '@supabase/auth-helpers-react';
+import { useToast } from "./ui/use-toast";
 
 export function Cart() {
   const { items, removeItem, updateQuantity, total } = useCart();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const session = useSession();
+  const { toast } = useToast();
+
+  const handleCheckoutClick = () => {
+    if (!session) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in or create an account to proceed with checkout",
+      });
+      navigate('/auth', { state: { returnTo: '/checkout' } });
+      return;
+    }
+    navigate('/checkout');
+  };
 
   if (items.length === 0) {
     return (
@@ -77,8 +93,8 @@ export function Cart() {
           <span className="text-lg font-semibold">{t('cart.total')}</span>
           <span className="text-lg font-bold">${total.toFixed(2)}</span>
         </div>
-        <Button className="w-full" onClick={() => navigate('/checkout')}>
-          Proceed to Checkout
+        <Button className="w-full" onClick={handleCheckoutClick}>
+          {session ? 'Proceed to Checkout' : 'Sign in to Checkout'}
         </Button>
       </div>
     </div>

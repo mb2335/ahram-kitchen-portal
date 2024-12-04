@@ -21,6 +21,8 @@ export function Navigation() {
           .single();
         
         setIsVendor(!!vendor);
+      } else {
+        setIsVendor(false);
       }
     }
     
@@ -71,12 +73,20 @@ export function Navigation() {
                 </Button>
               </>
             ) : (
-              <Link to="/auth">
-                <Button variant="outline" size="sm">
-                  <User className="h-5 w-5 mr-1" />
-                  Sign In
-                </Button>
-              </Link>
+              <>
+                <Link to="/cart">
+                  <Button variant="outline" size="sm">
+                    <ShoppingCart className="h-5 w-5 mr-1" />
+                    {t('nav.cart')}
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">
+                    <User className="h-5 w-5 mr-1" />
+                    Sign In
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         </div>
