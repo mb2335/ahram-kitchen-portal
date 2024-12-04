@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
 import { OrderCard } from './OrderCard';
 import { OrderStatusActions } from './OrderStatusActions';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -68,20 +69,12 @@ export function OrderManagement() {
         })
       );
 
-      // Show success message
       toast({
         title: 'Success',
         description: status === 'rejected' 
           ? `Order rejected${reason ? ': ' + reason : ''}`
           : `Order ${status} successfully`,
       });
-
-      // If rejected, remove from the list after a short delay
-      if (status === 'rejected') {
-        setTimeout(() => {
-          setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
-        }, 2000);
-      }
 
     } catch (error: any) {
       console.error('Error updating order status:', error);
@@ -93,24 +86,66 @@ export function OrderManagement() {
     }
   };
 
+  const getFilteredOrders = (status: Order['status']) => {
+    return orders.filter(order => order.status === status);
+  };
+
+  const renderOrdersList = (filteredOrders: Order[]) => {
+    if (filteredOrders.length === 0) {
+      return <p className="text-center text-gray-500">No orders found</p>;
+    }
+
+    return filteredOrders.map((order) => (
+      <OrderCard key={order.id} order={order}>
+        <OrderStatusActions
+          status={order.status}
+          onUpdateStatus={(status, reason) => updateOrderStatus(order.id, status, reason)}
+          rejectionReason={rejectionReason}
+          setRejectionReason={setRejectionReason}
+        />
+      </OrderCard>
+    ));
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Orders</h2>
-      <div className="grid gap-4">
-        {orders.map((order) => (
-          <OrderCard key={order.id} order={order}>
-            <OrderStatusActions
-              status={order.status}
-              onUpdateStatus={(status, reason) => updateOrderStatus(order.id, status, reason)}
-              rejectionReason={rejectionReason}
-              setRejectionReason={setRejectionReason}
-            />
-          </OrderCard>
-        ))}
-        {orders.length === 0 && (
-          <p className="text-center text-gray-500">No orders found</p>
-        )}
-      </div>
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="pending">
+            Pending ({getFilteredOrders('pending').length})
+          </TabsTrigger>
+          <TabsTrigger value="confirmed">
+            Confirmed ({getFilteredOrders('confirmed').length})
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Completed ({getFilteredOrders('completed').length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            Rejected ({getFilteredOrders('rejected').length})
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="pending" className="mt-6">
+          <div className="grid gap-4">
+            {renderOrdersList(getFilteredOrders('pending'))}
+          </div>
+        </TabsContent>
+        <TabsContent value="confirmed" className="mt-6">
+          <div className="grid gap-4">
+            {renderOrdersList(getFilteredOrders('confirmed'))}
+          </div>
+        </TabsContent>
+        <TabsContent value="completed" className="mt-6">
+          <div className="grid gap-4">
+            {renderOrdersList(getFilteredOrders('completed'))}
+          </div>
+        </TabsContent>
+        <TabsContent value="rejected" className="mt-6">
+          <div className="grid gap-4">
+            {renderOrdersList(getFilteredOrders('rejected'))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
