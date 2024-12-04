@@ -54,13 +54,35 @@ export function OrderManagement() {
 
       if (error) throw error;
 
+      // Update local state to reflect the change immediately
+      setOrders(prevOrders => 
+        prevOrders.map(order => {
+          if (order.id === orderId) {
+            return {
+              ...order,
+              status,
+              rejection_reason: reason || order.rejection_reason
+            };
+          }
+          return order;
+        })
+      );
+
+      // Show success message
       toast({
         title: 'Success',
-        description: `Order ${status} successfully`,
+        description: status === 'rejected' 
+          ? `Order rejected${reason ? ': ' + reason : ''}`
+          : `Order ${status} successfully`,
       });
 
-      fetchOrders();
-      setRejectionReason('');
+      // If rejected, remove from the list after a short delay
+      if (status === 'rejected') {
+        setTimeout(() => {
+          setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+        }, 2000);
+      }
+
     } catch (error: any) {
       console.error('Error updating order status:', error);
       toast({
@@ -85,6 +107,9 @@ export function OrderManagement() {
             />
           </OrderCard>
         ))}
+        {orders.length === 0 && (
+          <p className="text-center text-gray-500">No orders found</p>
+        )}
       </div>
     </div>
   );
