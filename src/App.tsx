@@ -13,6 +13,7 @@ import { Auth } from "./components/Auth";
 import { VendorDashboard } from "./components/vendor/VendorDashboard";
 import { Checkout } from "./components/Checkout";
 import { OrderHistory } from "./components/OrderHistory";
+import { OrderThankYou } from "./components/checkout/OrderThankYou";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
 import { StrictMode } from "react";
@@ -33,6 +34,7 @@ const App = () => (
                     <Route path="/" element={<Menu />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/thank-you" element={<OrderThankYou />} />
                     <Route path="/orders" element={<OrderHistory />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route

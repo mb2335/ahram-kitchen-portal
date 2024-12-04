@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CheckoutFormProps {
   formData: {
@@ -29,6 +30,7 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const session = useSession();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -102,10 +104,8 @@ export function CheckoutForm({
     setIsUploading(true);
 
     try {
-      // Get or create customer profile
       const customerId = await getOrCreateCustomer();
 
-      // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const { error: uploadError, data: uploadData } = await supabase.storage
@@ -114,7 +114,6 @@ export function CheckoutForm({
 
       if (uploadError) throw uploadError;
 
-      // Create order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([
@@ -133,7 +132,6 @@ export function CheckoutForm({
 
       if (orderError) throw orderError;
 
-      // Create order items
       const orderItems = items.map((item) => ({
         order_id: orderData.id,
         menu_item_id: item.id,
@@ -148,6 +146,25 @@ export function CheckoutForm({
       if (orderItemsError) throw orderItemsError;
 
       onOrderSuccess(orderData.id);
+      
+      // Navigate to thank you page with order details
+      navigate('/thank-you', {
+        state: {
+          orderDetails: {
+            id: orderData.id,
+            items: items.map(item => ({
+              name: item.name,
+              nameKo: item.nameKo,
+              quantity: item.quantity,
+              price: item.price
+            })),
+            total: total + taxAmount,
+            taxAmount: taxAmount,
+            createdAt: orderData.created_at
+          }
+        },
+        replace: true
+      });
     } catch (error: any) {
       console.error('Error:', error);
       toast({
