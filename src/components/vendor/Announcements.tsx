@@ -19,6 +19,8 @@ export function Announcements() {
     content: '',
     content_ko: '',
     is_active: true,
+    start_date: null,
+    end_date: null,
   });
 
   const { data: announcements, isLoading } = useQuery({
@@ -71,6 +73,8 @@ export function Announcements() {
         content: '',
         content_ko: '',
         is_active: true,
+        start_date: null,
+        end_date: null,
       });
       toast({
         title: 'Success',

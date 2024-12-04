@@ -42,11 +42,11 @@ export function Checkout() {
     
     setIsLoadingUserData(true);
     try {
-      const { data: customer, error } = await supabase
+      let { data: customer, error } = await supabase
         .from('customers')
         .select('full_name, email, phone')
         .eq('user_id', session.user.id)
-        .single();
+        .maybeSingle(); // Changed from single() to maybeSingle()
 
       if (error) {
         console.error('Error fetching customer data:', error);
@@ -56,6 +56,34 @@ export function Checkout() {
           variant: 'destructive',
         });
         return;
+      }
+
+      // If no customer profile exists, create one with basic info from auth
+      if (!customer) {
+        const { data: newCustomer, error: createError } = await supabase
+          .from('customers')
+          .insert([
+            {
+              user_id: session.user.id,
+              full_name: session.user.user_metadata.full_name || '',
+              email: session.user.email || '',
+              phone: '',
+            },
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating customer profile:', createError);
+          toast({
+            title: 'Error',
+            description: 'Failed to create your customer profile. Please try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        customer = newCustomer;
       }
 
       if (customer) {
