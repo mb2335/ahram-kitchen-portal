@@ -27,14 +27,7 @@ export function OrderManagement() {
 
   const fetchOrders = async () => {
     try {
-      const { data: vendorData, error: vendorError } = await supabase
-        .from('vendors')
-        .select('id')
-        .eq('user_id', session?.user?.id)
-        .single();
-
-      if (vendorError) throw vendorError;
-
+      // Fetch all orders with customer details and order items
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -45,8 +38,10 @@ export function OrderManagement() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched orders:', data);
       setOrders(data as Order[]);
     } catch (error: any) {
+      console.error('Error fetching orders:', error);
       toast({
         title: 'Error fetching orders',
         description: error.message,
@@ -57,6 +52,7 @@ export function OrderManagement() {
 
   const updateOrderStatus = async (orderId: string, status: Order['status'], reason?: string) => {
     try {
+      console.log(`Updating order ${orderId} to status: ${status}`);
       const updateData: any = { status };
       if (reason) {
         updateData.rejection_reason = reason;
@@ -74,10 +70,12 @@ export function OrderManagement() {
         description: `Order ${status} successfully`,
       });
 
+      // Refresh orders list after update
       fetchOrders();
       setSelectedOrderId(null);
       setRejectionReason('');
     } catch (error: any) {
+      console.error('Error updating order status:', error);
       toast({
         title: 'Error updating order status',
         description: error.message,
@@ -182,6 +180,14 @@ export function OrderManagement() {
                 </Dialog>
               )}
             </div>
+
+            {order.rejection_reason && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm text-red-600">
+                  <span className="font-medium">Rejection Reason:</span> {order.rejection_reason}
+                </p>
+              </div>
+            )}
           </div>
         ))}
       </div>
