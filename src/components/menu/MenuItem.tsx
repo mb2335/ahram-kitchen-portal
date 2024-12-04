@@ -10,22 +10,24 @@ interface MenuItemProps {
 
 export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const { language, t } = useLanguage();
+  const displayName = language === 'en' ? item.name : item.nameKo;
+  const displayDescription = language === 'en' ? item.description : item.descriptionKo;
 
   return (
     <Card className="overflow-hidden animate-fade-in">
       {item.image && (
         <img
           src={item.image}
-          alt={language === 'en' ? item.name : item.nameKo}
+          alt={displayName}
           className="w-full h-48 object-cover"
         />
       )}
       <div className="p-4">
         <h3 className="text-lg font-semibold">
-          {language === 'en' ? item.name : item.nameKo}
+          {displayName}
         </h3>
         <p className="text-gray-600 mt-2">
-          {language === 'en' ? item.description : item.descriptionKo}
+          {displayDescription}
         </p>
         <div className="flex justify-between items-center mt-4">
           <span className="text-lg font-bold">${item.price}</span>

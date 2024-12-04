@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCart } from "@/contexts/CartContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Menu, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
+import { Menu, History, LogOut, Store, ShoppingCart, User, Languages } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 
@@ -11,6 +12,7 @@ export function Navigation() {
   const supabase = useSupabaseClient();
   const { items } = useCart();
   const { toast } = useToast();
+  const { language, setLanguage } = useLanguage();
   const [isVendor, setIsVendor] = useState(false);
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -47,6 +49,10 @@ export function Navigation() {
     }
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ko' : 'en');
+  };
+
   return (
     <nav className="bg-white shadow-sm">
       <div className="container mx-auto px-4">
@@ -55,10 +61,22 @@ export function Navigation() {
             <Link to="/" className="text-xl font-bold">
               Ahram Kitchen
             </Link>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleLanguage}
+              className="flex items-center gap-2"
+            >
+              <Languages className="h-4 w-4" />
+              {language === 'en' ? 'KO' : 'EN'}
+            </Button>
+          </div>
+
+          <div className="flex items-center space-x-4">
             <Link to="/">
               <Button variant="ghost" size="sm">
                 <Menu className="h-4 w-4 mr-2" />
-                Menu
+                {language === 'en' ? 'Menu' : '메뉴'}
               </Button>
             </Link>
             {session && (
@@ -66,13 +84,13 @@ export function Navigation() {
                 <Link to="/orders">
                   <Button variant="ghost" size="sm">
                     <History className="h-4 w-4 mr-2" />
-                    Order History
+                    {language === 'en' ? 'Order History' : '주문 내역'}
                   </Button>
                 </Link>
                 <Link to="/profile">
                   <Button variant="ghost" size="sm">
                     <User className="h-4 w-4 mr-2" />
-                    Profile
+                    {language === 'en' ? 'Profile' : '프로필'}
                   </Button>
                 </Link>
               </>
@@ -81,29 +99,26 @@ export function Navigation() {
               <Link to="/vendor/summary">
                 <Button variant="ghost" size="sm">
                   <Store className="h-4 w-4 mr-2" />
-                  Vendor Dashboard
+                  {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
                 </Button>
               </Link>
             )}
-          </div>
-
-          <div className="flex items-center space-x-4">
             {session ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                {language === 'en' ? 'Sign Out' : '로그아웃'}
               </Button>
             ) : (
               <Link to="/auth">
                 <Button variant="ghost" size="sm">
-                  Sign In
+                  {language === 'en' ? 'Sign In' : '로그인'}
                 </Button>
               </Link>
             )}
             <Link to="/cart">
               <Button variant="default" size="sm" className="bg-primary">
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Cart
+                {language === 'en' ? 'Cart' : '장바구니'}
                 {cartItemCount > 0 && (
                   <span className="ml-2 bg-white text-primary rounded-full h-5 w-5 flex items-center justify-center text-xs">
                     {cartItemCount}
