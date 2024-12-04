@@ -38,6 +38,47 @@ export function CheckoutForm({
     }
   };
 
+  const getOrCreateCustomer = async () => {
+    if (!session?.user) {
+      throw new Error('No session found');
+    }
+
+    // First, try to get existing customer
+    const { data: existingCustomer, error: fetchError } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Error fetching customer:', fetchError);
+      throw fetchError;
+    }
+
+    if (existingCustomer) {
+      return existingCustomer.id;
+    }
+
+    // If no customer exists, create one
+    const { data: newCustomer, error: insertError } = await supabase
+      .from('customers')
+      .insert({
+        user_id: session.user.id,
+        email: session.user.email,
+        full_name: session.user.user_metadata?.full_name || 'Unknown',
+        phone: session.user.user_metadata?.phone || null
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      console.error('Error creating customer:', insertError);
+      throw insertError;
+    }
+
+    return newCustomer.id;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user.id) {
@@ -61,14 +102,8 @@ export function CheckoutForm({
     setIsUploading(true);
 
     try {
-      // Get customer ID
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (customerError) throw customerError;
+      // Get or create customer profile
+      const customerId = await getOrCreateCustomer();
 
       // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
@@ -84,7 +119,7 @@ export function CheckoutForm({
         .from('orders')
         .insert([
           {
-            customer_id: customerData.id,
+            customer_id: customerId,
             total_amount: total + taxAmount,
             tax_amount: taxAmount,
             notes: formData.notes,
