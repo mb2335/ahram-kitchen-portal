@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Order } from './types';
+import { Order, OrderStatus } from './types';
 import { OrderCard } from './OrderCard';
 import { OrderStatusActions } from './OrderStatusActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,7 +40,7 @@ export function OrderManagement() {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: Order['status'], reason?: string) => {
+  const updateOrderStatus = async (orderId: string, status: OrderStatus, reason?: string) => {
     try {
       console.log(`Updating order ${orderId} to status: ${status}`);
       const updateData: any = { status };
@@ -86,7 +86,7 @@ export function OrderManagement() {
     }
   };
 
-  const getFilteredOrders = (status: Order['status']) => {
+  const getFilteredOrders = (status: OrderStatus) => {
     return orders.filter(order => order.status === status);
   };
 

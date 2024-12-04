@@ -11,12 +11,14 @@ export interface Announcement {
   created_at: string | null;
 }
 
+export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
+
 export interface Order {
   id: string;
   customer_id: string;
   total_amount: number;
   tax_amount: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'rejected';
+  status: OrderStatus;
   notes: string | null;
   delivery_date: string;
   payment_proof_url: string;

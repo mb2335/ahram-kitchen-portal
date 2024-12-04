@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { RejectionDialog } from "./RejectionDialog";
+import { OrderStatus } from "./types";
 
 interface OrderStatusActionsProps {
-  status: string;
-  onUpdateStatus: (status: string, reason?: string) => void;
+  status: OrderStatus;
+  onUpdateStatus: (status: OrderStatus, reason?: string) => void;
   rejectionReason: string;
   setRejectionReason: (reason: string) => void;
 }
