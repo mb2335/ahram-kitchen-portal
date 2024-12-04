@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -25,15 +25,13 @@ export function Checkout() {
     notes: '',
   });
 
-  if (!session) {
-    navigate('/auth');
-    return null;
-  }
-
-  if (items.length === 0) {
-    navigate('/cart');
-    return null;
-  }
+  useEffect(() => {
+    if (!session) {
+      navigate('/auth', { state: { returnTo: '/checkout' } });
+    } else if (items.length === 0) {
+      navigate('/cart');
+    }
+  }, [session, items.length, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

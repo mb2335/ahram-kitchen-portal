@@ -15,10 +15,6 @@ export function Cart() {
 
   const handleCheckoutClick = () => {
     if (!session) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in or create an account to proceed with checkout",
-      });
       navigate('/auth', { state: { returnTo: '/checkout' } });
       return;
     }
