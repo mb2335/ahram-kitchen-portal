@@ -16,7 +16,7 @@ export interface Order {
   customer_id: string;
   total_amount: number;
   tax_amount: number;
-  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  status: 'pending' | 'confirmed' | 'completed' | 'rejected';
   notes: string | null;
   delivery_date: string;
   payment_proof_url: string;
