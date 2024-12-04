@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { Menu, History, LogOut, Store, ShoppingCart } from "lucide-react";
+import { Menu, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 
@@ -62,12 +62,20 @@ export function Navigation() {
               </Button>
             </Link>
             {session && (
-              <Link to="/orders">
-                <Button variant="ghost" size="sm">
-                  <History className="h-4 w-4 mr-2" />
-                  Order History
-                </Button>
-              </Link>
+              <>
+                <Link to="/orders">
+                  <Button variant="ghost" size="sm">
+                    <History className="h-4 w-4 mr-2" />
+                    Order History
+                  </Button>
+                </Link>
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
+              </>
             )}
             {isVendor && (
               <Link to="/vendor/summary">

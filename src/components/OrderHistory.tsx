@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
 
@@ -45,6 +46,21 @@ export function OrderHistory() {
     enabled: !!session?.user?.id,
   });
 
+  const getStatusBadge = (status: string) => {
+    const statusColors: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-blue-100 text-blue-800',
+      completed: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+    };
+
+    return (
+      <Badge className={statusColors[status]}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
   if (!session) {
     navigate('/auth', { state: { returnTo: '/orders' } });
     return null;
@@ -72,14 +88,7 @@ export function OrderHistory() {
                   {format(new Date(order.created_at), 'PPP')}
                 </p>
               </div>
-              <span className={`px-2 py-1 rounded text-sm ${
-                order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                order.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </span>
+              {getStatusBadge(order.status)}
             </div>
             
             <div className="space-y-2">
@@ -112,6 +121,14 @@ export function OrderHistory() {
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Notes:</span> {order.notes}
+                </p>
+              </div>
+            )}
+
+            {order.rejection_reason && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm text-red-600">
+                  <span className="font-medium">Rejection Reason:</span> {order.rejection_reason}
                 </p>
               </div>
             )}

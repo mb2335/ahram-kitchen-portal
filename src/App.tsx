@@ -11,6 +11,7 @@ import { Menu } from "./components/Menu";
 import { Cart } from "./components/Cart";
 import { Auth } from "./components/Auth";
 import { VendorDashboard } from "./components/vendor/VendorDashboard";
+import { CustomerProfile } from "./components/customer/CustomerProfile";
 import { Checkout } from "./components/Checkout";
 import { OrderHistory } from "./components/OrderHistory";
 import { OrderThankYou } from "./components/checkout/OrderThankYou";
@@ -36,6 +37,7 @@ const App = () => (
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/thank-you" element={<OrderThankYou />} />
                     <Route path="/orders" element={<OrderHistory />} />
+                    <Route path="/profile" element={<CustomerProfile />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route
                       path="/vendor/*"
