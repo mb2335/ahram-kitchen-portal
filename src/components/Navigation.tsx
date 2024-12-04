@@ -3,7 +3,7 @@ import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Menu, History, LogOut, Store, ShoppingCart, User, Languages } from "lucide-react";
+import { Menu, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 
@@ -57,15 +57,18 @@ export function Navigation() {
     <nav className="bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={toggleLanguage}
-            className="flex items-center gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            {language === 'en' ? '한국어로 보기' : 'View in English'}
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Link to="/" className="text-xl font-bold">
+              Ahram Kitchen
+            </Link>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleLanguage}
+            >
+              {language === 'en' ? '한국어로 보기' : 'View in English'}
+            </Button>
+          </div>
 
           <div className="flex items-center space-x-4">
             <Link to="/">
