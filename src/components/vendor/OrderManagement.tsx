@@ -130,12 +130,46 @@ export function OrderManagement() {
 
             <div className="flex gap-2">
               {order.status === 'pending' && (
-                <Button 
-                  variant="outline"
-                  onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                >
-                  Mark as Confirmed
-                </Button>
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={() => updateOrderStatus(order.id, 'confirmed')}
+                  >
+                    Confirm Order
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setSelectedOrderId(order.id)}
+                      >
+                        Reject Order
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Reject Order</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Textarea
+                          placeholder="Enter reason for rejection..."
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                        />
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            if (selectedOrderId) {
+                              updateOrderStatus(selectedOrderId, 'rejected', rejectionReason);
+                            }
+                          }}
+                        >
+                          Confirm Rejection
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </>
               )}
               {order.status === 'confirmed' && (
                 <Button 
@@ -144,40 +178,6 @@ export function OrderManagement() {
                 >
                   Mark as Completed
                 </Button>
-              )}
-              {(order.status === 'pending' || order.status === 'confirmed') && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setSelectedOrderId(order.id)}
-                    >
-                      Reject Order
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Reject Order</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Textarea
-                        placeholder="Enter reason for rejection..."
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                      />
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          if (selectedOrderId) {
-                            updateOrderStatus(selectedOrderId, 'rejected', rejectionReason);
-                          }
-                        }}
-                      >
-                        Confirm Rejection
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               )}
             </div>
 
