@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { CartProvider } from "./contexts/CartContext";
-import { createClient } from '@supabase/supabase-js';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { Navigation } from "./components/Navigation";
 import { Menu } from "./components/Menu";
@@ -14,40 +13,43 @@ import { Auth } from "./components/Auth";
 import { VendorDashboard } from "./components/vendor/VendorDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
+import { StrictMode } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <SessionContextProvider supabaseClient={supabase}>
-      <TooltipProvider>
-        <LanguageProvider>
-          <CartProvider>
-            <BrowserRouter>
-              <div className="min-h-screen bg-gray-50">
-                <Navigation />
-                <Routes>
-                  <Route path="/" element={<Menu />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route
-                    path="/vendor/*"
-                    element={
-                      <ProtectedRoute requiredRole="vendor">
-                        <VendorDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
-              </div>
-            </BrowserRouter>
-            <Toaster />
-            <Sonner />
-          </CartProvider>
-        </LanguageProvider>
-      </TooltipProvider>
-    </SessionContextProvider>
-  </QueryClientProvider>
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <SessionContextProvider supabaseClient={supabase}>
+        <TooltipProvider>
+          <LanguageProvider>
+            <CartProvider>
+              <BrowserRouter>
+                <div className="min-h-screen bg-gray-50">
+                  <Navigation />
+                  <Routes>
+                    <Route path="/" element={<Menu />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route
+                      path="/vendor/*"
+                      element={
+                        <ProtectedRoute requiredRole="vendor">
+                          <VendorDashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Routes>
+                </div>
+              </BrowserRouter>
+              <Toaster />
+              <Sonner />
+            </CartProvider>
+          </LanguageProvider>
+        </TooltipProvider>
+      </SessionContextProvider>
+    </QueryClientProvider>
+  </StrictMode>
 );
 
 export default App;
