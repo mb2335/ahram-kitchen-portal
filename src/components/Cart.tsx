@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function Cart() {
   const { items, removeItem, updateQuantity, total } = useCart();
   const { language, t } = useLanguage();
+  const navigate = useNavigate();
 
   if (items.length === 0) {
     return (
@@ -76,7 +77,9 @@ export function Cart() {
           <span className="text-lg font-semibold">{t('cart.total')}</span>
           <span className="text-lg font-bold">${total.toFixed(2)}</span>
         </div>
-        <Button className="w-full">{t('cart.checkout')}</Button>
+        <Button className="w-full" onClick={() => navigate('/checkout')}>
+          Proceed to Checkout
+        </Button>
       </div>
     </div>
   );
