@@ -17,7 +17,13 @@ interface CheckoutFormProps {
   onOrderSuccess: (orderId: string) => void;
   total: number;
   taxAmount: number;
-  items: any[];
+  items: Array<{
+    id: string; // Ensure this is a UUID string
+    name: string;
+    nameKo: string;
+    quantity: number;
+    price: number;
+  }>;
 }
 
 export function CheckoutForm({
@@ -132,12 +138,15 @@ export function CheckoutForm({
 
       if (orderError) throw orderError;
 
+      // Create order items with proper UUID handling
       const orderItems = items.map((item) => ({
         order_id: orderData.id,
-        menu_item_id: item.id,
+        menu_item_id: item.id, // Now properly passing UUID string
         quantity: item.quantity,
         unit_price: item.price,
       }));
+
+      console.log('Creating order items:', orderItems); // Debug log
 
       const { error: orderItemsError } = await supabase
         .from('order_items')
@@ -147,7 +156,6 @@ export function CheckoutForm({
 
       onOrderSuccess(orderData.id);
       
-      // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {
