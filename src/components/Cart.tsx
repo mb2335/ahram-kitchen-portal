@@ -14,6 +14,14 @@ export function Cart() {
   const { toast } = useToast();
 
   const handleCheckoutClick = () => {
+    if (!session) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in or create an account to complete your order.",
+      });
+      navigate('/auth', { state: { returnTo: '/checkout' } });
+      return;
+    }
     navigate('/checkout');
   };
 
@@ -86,7 +94,7 @@ export function Cart() {
           <span className="text-lg font-bold">${total.toFixed(2)}</span>
         </div>
         <Button className="w-full" onClick={handleCheckoutClick}>
-          Proceed to Checkout
+          {session ? 'Proceed to Checkout' : 'Sign in to Checkout'}
         </Button>
       </div>
     </div>

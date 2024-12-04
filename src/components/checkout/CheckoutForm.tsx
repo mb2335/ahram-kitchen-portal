@@ -1,19 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { CustomerForm } from './CustomerForm';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
+import { Upload } from 'lucide-react';
 
 interface CheckoutFormProps {
   formData: {
-    fullName: string;
-    email: string;
-    phone: string;
     notes: string;
     deliveryDate: Date;
   };
@@ -33,7 +28,6 @@ export function CheckoutForm({
   items
 }: CheckoutFormProps) {
   const session = useSession();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -52,7 +46,6 @@ export function CheckoutForm({
         description: 'Please sign in to complete your order',
         variant: 'destructive',
       });
-      navigate('/auth', { state: { returnTo: '/checkout' } });
       return;
     }
 
@@ -119,9 +112,9 @@ export function CheckoutForm({
 
       if (orderItemsError) throw orderItemsError;
 
-      // Trigger email notification (handled by database trigger)
       onOrderSuccess(orderData.id);
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: 'Error',
         description: error.message,
@@ -133,19 +126,7 @@ export function CheckoutForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
-      <h2 className="text-2xl font-bold mb-4">Order Details</h2>
-      
-      <CustomerForm
-        fullName={formData.fullName}
-        email={formData.email}
-        phone={formData.phone}
-        onFullNameChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-        onEmailChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        onPhoneChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-        isReadOnly={!!session}
-      />
-
+    <form onSubmit={handleSubmit} className="space-y-6">
       <DeliveryForm
         deliveryDate={formData.deliveryDate}
         notes={formData.notes}
