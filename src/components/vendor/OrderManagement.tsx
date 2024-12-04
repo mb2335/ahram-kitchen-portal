@@ -9,7 +9,7 @@ import { useVendorOrders } from '@/hooks/useOrders';
 export function OrderManagement() {
   const [rejectionReason, setRejectionReason] = useState('');
   const { toast } = useToast();
-  const { orders, updateOrderStatus } = useVendorOrders();
+  const { orders, updateOrderStatus, deleteOrder, refetch } = useVendorOrders();
 
   const handleStatusUpdate = async (orderId: string, status: string, reason?: string) => {
     console.log('Handling status update:', { orderId, status, reason });
@@ -23,9 +23,27 @@ export function OrderManagement() {
           ? `Order rejected${reason ? ': ' + reason : ''}`
           : `Order ${status} successfully`,
       });
+      await refetch();
     } else {
       toast({
         title: 'Error updating order status',
+        description: result.error,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDelete = async (orderId: string) => {
+    const result = await deleteOrder(orderId);
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: 'Order deleted successfully',
+      });
+      await refetch();
+    } else {
+      toast({
+        title: 'Error deleting order',
         description: result.error,
         variant: 'destructive',
       });
@@ -43,7 +61,11 @@ export function OrderManagement() {
     }
 
     return filteredOrders.map((order) => (
-      <OrderCard key={order.id} order={order}>
+      <OrderCard 
+        key={order.id} 
+        order={order}
+        onDelete={handleDelete}
+      >
         <OrderStatusActions
           status={order.status}
           onUpdateStatus={(status, reason) => handleStatusUpdate(order.id, status, reason)}

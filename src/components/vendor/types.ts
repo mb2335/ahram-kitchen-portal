@@ -34,5 +34,9 @@ export interface Order {
     menu_item_id: string;
     quantity: number;
     unit_price: number;
+    menu_item?: {
+      name: string;
+      name_ko: string;
+    };
   }[];
 }

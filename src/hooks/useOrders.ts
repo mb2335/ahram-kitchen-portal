@@ -74,7 +74,16 @@ export const useVendorOrders = () => {
           .select(`
             *,
             customer:customers(full_name, email, phone),
-            order_items(id, menu_item_id, quantity, unit_price)
+            order_items(
+              id, 
+              menu_item_id, 
+              quantity, 
+              unit_price,
+              menu_item:menu_items(
+                name,
+                name_ko
+              )
+            )
           `)
           .order('created_at', { ascending: false });
 
@@ -124,9 +133,39 @@ export const useVendorOrders = () => {
     }
   };
 
+  const deleteOrder = async (orderId: string) => {
+    try {
+      // First delete order items
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (itemsError) throw itemsError;
+
+      // Then delete the order
+      const { error: orderError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      // Invalidate queries
+      await queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error deleting order:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   return {
     orders,
     updateOrderStatus,
+    deleteOrder,
     refetch,
   };
 };
