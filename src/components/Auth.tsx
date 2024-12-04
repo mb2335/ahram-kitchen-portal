@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useNavigate } from 'react-router-dom';
@@ -23,14 +23,33 @@ export function Auth() {
     businessName: '',
   });
 
-  if (session) {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    if (session) {
+      navigate('/');
+    }
+  }, [session, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (!formData.email || !formData.password || !formData.fullName || !formData.phone) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      if (userType === 'vendor' && !formData.businessName) {
+        throw new Error('Business name is required for vendor accounts');
+      }
+
+      const { data: existingUser, error: checkError } = await supabase
+        .from(userType === 'vendor' ? 'vendors' : 'customers')
+        .select('email')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingUser) {
+        throw new Error('An account with this email already exists');
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,

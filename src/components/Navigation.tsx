@@ -1,10 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ShoppingCart, Globe } from "lucide-react";
+import { ShoppingCart, Globe, User } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useState, useEffect } from 'react';
 
 export function Navigation() {
   const { language, setLanguage, t } = useLanguage();
+  const session = useSession();
+  const supabase = useSupabaseClient();
+  const [isVendor, setIsVendor] = useState(false);
+
+  useEffect(() => {
+    async function checkUserRole() {
+      if (session?.user) {
+        const { data: vendor } = await supabase
+          .from('vendors')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        setIsVendor(!!vendor);
+      }
+    }
+    
+    checkUserRole();
+  }, [session, supabase]);
 
   return (
     <nav className="bg-white shadow-sm">
@@ -25,12 +46,38 @@ export function Navigation() {
               <Globe className="h-5 w-5 mr-1" />
               {language.toUpperCase()}
             </Button>
-            <Link to="/cart">
-              <Button variant="outline" size="sm">
-                <ShoppingCart className="h-5 w-5 mr-1" />
-                {t('nav.cart')}
-              </Button>
-            </Link>
+            
+            {session ? (
+              <>
+                {isVendor && (
+                  <Link to="/vendor/menu">
+                    <Button variant="outline" size="sm">
+                      Vendor Dashboard
+                    </Button>
+                  </Link>
+                )}
+                <Link to="/cart">
+                  <Button variant="outline" size="sm">
+                    <ShoppingCart className="h-5 w-5 mr-1" />
+                    {t('nav.cart')}
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => supabase.auth.signOut()}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm">
+                  <User className="h-5 w-5 mr-1" />
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
