@@ -2,6 +2,8 @@ import { useLocation, Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface OrderDetails {
   id: string;
@@ -65,6 +67,15 @@ export function OrderThankYou() {
               <span>${orderDetails.total.toFixed(2)}</span>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-center space-x-4">
+          <Link to="/">
+            <Button variant="outline">Return to Menu</Button>
+          </Link>
+          <Link to="/orders">
+            <Button>View Order History</Button>
+          </Link>
         </div>
       </Card>
     </div>

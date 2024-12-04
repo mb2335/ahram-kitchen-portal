@@ -88,6 +88,7 @@ export function useOrderSubmission() {
     try {
       const customerId = await getOrCreateCustomer();
 
+      // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const { error: uploadError, data: uploadData } = await supabase.storage
@@ -96,6 +97,7 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
+      // Create order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([
@@ -114,9 +116,10 @@ export function useOrderSubmission() {
 
       if (orderError) throw orderError;
 
+      // Create order items with proper UUID handling
       const orderItems = items.map((item) => ({
         order_id: orderData.id,
-        menu_item_id: item.id,
+        menu_item_id: item.id, // This should now be a proper UUID from the menu items table
         quantity: item.quantity,
         unit_price: item.price,
       }));
@@ -131,6 +134,7 @@ export function useOrderSubmission() {
 
       onOrderSuccess(orderData.id);
       
+      // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {
