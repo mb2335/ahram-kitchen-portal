@@ -5,11 +5,13 @@ import { Order, OrderStatus } from './types';
 import { OrderCard } from './OrderCard';
 import { OrderStatusActions } from './OrderStatusActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQueryClient } from '@tanstack/react-query';
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [rejectionReason, setRejectionReason] = useState('');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetchOrders();
@@ -55,7 +57,7 @@ export function OrderManagement() {
 
       if (error) throw error;
 
-      // Update local state to reflect the change immediately
+      // Update local state
       setOrders(prevOrders => 
         prevOrders.map(order => {
           if (order.id === orderId) {
@@ -68,6 +70,9 @@ export function OrderManagement() {
           return order;
         })
       );
+
+      // Invalidate relevant queries to ensure all views are updated
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
 
       toast({
         title: 'Success',

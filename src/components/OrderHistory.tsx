@@ -44,6 +44,7 @@ export function OrderHistory() {
       return orders;
     },
     enabled: !!session?.user?.id,
+    refetchInterval: 5000, // Refetch every 5 seconds to keep status updated
   });
 
   const getStatusBadge = (status: string) => {
