@@ -12,6 +12,8 @@ export function OrderManagement() {
   const { orders, updateOrderStatus } = useVendorOrders();
 
   const handleStatusUpdate = async (orderId: string, status: string, reason?: string) => {
+    console.log('Handling status update:', { orderId, status, reason });
+    
     const result = await updateOrderStatus(orderId, status, reason);
     
     if (result.success) {
@@ -31,6 +33,7 @@ export function OrderManagement() {
   };
 
   const getFilteredOrders = (status: string) => {
+    console.log('Filtering orders for status:', status, 'Total orders:', orders?.length);
     return orders?.filter(order => order.status === status) || [];
   };
 
