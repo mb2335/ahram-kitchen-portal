@@ -36,6 +36,56 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_items: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          description_ko: string | null
+          id: string
+          image: string | null
+          is_available: boolean | null
+          name: string
+          name_ko: string
+          price: number
+          vendor_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          description_ko?: string | null
+          id?: string
+          image?: string | null
+          is_available?: boolean | null
+          name: string
+          name_ko: string
+          price: number
+          vendor_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          description_ko?: string | null
+          id?: string
+          image?: string | null
+          is_available?: boolean | null
+          name?: string
+          name_ko?: string
+          price?: number
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -117,6 +167,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendors: {
+        Row: {
+          business_name: string
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

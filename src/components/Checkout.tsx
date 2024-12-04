@@ -3,23 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
 import { useToast } from './ui/use-toast';
-import { Calendar } from './ui/calendar';
-import { format } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { cn } from '@/lib/utils';
-import { CalendarIcon, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { OrderSummary } from './checkout/OrderSummary';
+import { PaymentInstructions } from './checkout/PaymentInstructions';
+import { DeliveryForm } from './checkout/DeliveryForm';
+import { CustomerForm } from './checkout/CustomerForm';
 
 export function Checkout() {
   const { items, total, clearCart } = useCart();
   const session = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const TAX_RATE = 0.1; // 10% tax rate
+  const TAX_RATE = 0.1;
   const taxAmount = total * TAX_RATE;
   const finalTotal = total + taxAmount;
 
@@ -134,121 +131,31 @@ export function Checkout() {
   return (
     <div className="container mx-auto max-w-2xl p-6">
       <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">Order Summary</h2>
-          <div className="space-y-4">
-            {items.map((item) => (
-              <div key={item.id} className="flex justify-between">
-                <span>{item.quantity}x {item.name}</span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
-            <div className="border-t pt-4">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>${total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax (10%)</span>
-                <span>${taxAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-bold mt-2">
-                <span>Total</span>
-                <span>${finalTotal.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <OrderSummary />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-2xl font-bold mb-4">Order Details</h2>
           
-          <div>
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              required
-            />
-          </div>
+          <CustomerForm
+            fullName={formData.fullName}
+            email={formData.email}
+            phone={formData.phone}
+            onFullNameChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            onEmailChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onPhoneChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
 
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
+          <DeliveryForm
+            deliveryDate={formData.deliveryDate}
+            notes={formData.notes}
+            onDateChange={(date) => date && setFormData({ ...formData, deliveryDate: date })}
+            onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          />
 
-          <div>
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <Label>Delivery Date and Time</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.deliveryDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.deliveryDate ? format(formData.deliveryDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.deliveryDate}
-                  onSelect={(date) => date && setFormData({ ...formData, deliveryDate: date })}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Special Instructions (Optional)</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Any special requests or dietary requirements?"
-            />
-          </div>
-
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Payment Instructions</h3>
-            <p className="text-sm mb-4">
-              Please send payment via Zelle to: <strong>mjbutler.35@gmail.com</strong>
-            </p>
-            <div>
-              <Label htmlFor="paymentProof">Upload Payment Proof</Label>
-              <Input
-                id="paymentProof"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                required
-                className="mt-1"
-              />
-            </div>
-          </div>
+          <PaymentInstructions
+            paymentProof={paymentProof}
+            onFileChange={handleFileChange}
+          />
 
           <Button type="submit" className="w-full" disabled={isUploading}>
             {isUploading ? (
