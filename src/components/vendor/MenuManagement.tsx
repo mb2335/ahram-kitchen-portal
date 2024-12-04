@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { ImagePlus } from 'lucide-react';
 
 interface MenuItem {
   id: string;
@@ -20,7 +21,7 @@ interface MenuItem {
   price: number;
   category: string;
   is_available: boolean;
-  image_url?: string;
+  image?: string;
 }
 
 export function MenuManagement() {
@@ -30,6 +31,7 @@ export function MenuManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     name_ko: '',
@@ -72,6 +74,29 @@ export function MenuManagement() {
     }
   }
 
+  async function handleImageUpload(file: File) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('menu_items')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('menu_items')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -83,6 +108,11 @@ export function MenuManagement() {
 
       if (!vendorData) throw new Error('Vendor not found');
 
+      let imageUrl = editingItem?.image;
+      if (selectedImage) {
+        imageUrl = await handleImageUpload(selectedImage);
+      }
+
       const menuItemData = {
         vendor_id: vendorData.id,
         name: formData.name,
@@ -92,6 +122,7 @@ export function MenuManagement() {
         price: parseFloat(formData.price),
         category: formData.category,
         is_available: formData.is_available,
+        image: imageUrl,
       };
 
       let error;
@@ -115,6 +146,7 @@ export function MenuManagement() {
 
       setIsDialogOpen(false);
       setEditingItem(null);
+      setSelectedImage(null);
       resetForm();
       loadMenuItems();
     } catch (error) {
@@ -191,6 +223,7 @@ export function MenuManagement() {
             <Button onClick={() => {
               setEditingItem(null);
               resetForm();
+              setSelectedImage(null);
             }}>
               Add Item
             </Button>
@@ -202,6 +235,35 @@ export function MenuManagement() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="image">Image</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <Label
+                    htmlFor="image"
+                    className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary"
+                  >
+                    {selectedImage || editingItem?.image ? (
+                      <img
+                        src={selectedImage ? URL.createObjectURL(selectedImage) : editingItem?.image}
+                        alt="Preview"
+                        className="h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <ImagePlus className="w-8 h-8 text-gray-400" />
+                        <span className="mt-2 text-sm text-gray-500">Upload Image</span>
+                      </div>
+                    )}
+                  </Label>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name (English)</Label>
                 <Input
@@ -274,17 +336,26 @@ export function MenuManagement() {
         {menuItems.map((item) => (
           <Card key={item.id} className="p-4">
             <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                {item.name_ko && <p className="text-sm text-gray-600">{item.name_ko}</p>}
-                {item.description && <p className="text-sm mt-1">{item.description}</p>}
-                {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
-                <p className="mt-2">${item.price}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant="secondary">{item.category}</Badge>
-                  <Badge variant={item.is_available ? 'default' : 'secondary'}>
-                    {item.is_available ? 'Available' : 'Unavailable'}
-                  </Badge>
+              <div className="flex gap-4">
+                {item.image && (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-24 h-24 object-cover rounded-lg"
+                  />
+                )}
+                <div>
+                  <h3 className="font-semibold">{item.name}</h3>
+                  {item.name_ko && <p className="text-sm text-gray-600">{item.name_ko}</p>}
+                  {item.description && <p className="text-sm mt-1">{item.description}</p>}
+                  {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
+                  <p className="mt-2">${item.price}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant="secondary">{item.category}</Badge>
+                    <Badge variant={item.is_available ? 'default' : 'secondary'}>
+                      {item.is_available ? 'Available' : 'Unavailable'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
               <div className="space-x-2">

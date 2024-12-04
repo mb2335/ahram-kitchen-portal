@@ -13,11 +13,13 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
 
   return (
     <Card className="overflow-hidden animate-fade-in">
-      <img
-        src={item.image}
-        alt={language === 'en' ? item.name : item.nameKo}
-        className="w-full h-48 object-cover"
-      />
+      {item.image && (
+        <img
+          src={item.image}
+          alt={language === 'en' ? item.name : item.nameKo}
+          className="w-full h-48 object-cover"
+        />
+      )}
       <div className="p-4">
         <h3 className="text-lg font-semibold">
           {language === 'en' ? item.name : item.nameKo}
