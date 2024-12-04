@@ -1,1 +1,4 @@
 project_id = "lvlsisdftrouwzlaprtq"
+
+[functions.send-order-notification]
+verify_jwt = true
