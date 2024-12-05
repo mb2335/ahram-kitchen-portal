@@ -8,6 +8,7 @@ import { CustomerForm } from './CustomerForm';
 import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { Link } from 'react-router-dom';
+import { Separator } from '@/components/ui/separator';
 
 interface CheckoutFormProps {
   formData: {
@@ -84,10 +85,21 @@ export function CheckoutForm({
               Sign in to save your order history or continue as a guest
             </p>
             <Link to="/auth" state={{ returnTo: '/checkout' }}>
-              <Button type="button" variant="outline" className="w-full mb-2">
+              <Button type="button" variant="outline" className="w-full mb-4">
                 Sign in to your account
               </Button>
             </Link>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">
+                  or continue as guest
+                </span>
+              </div>
+            </div>
           </div>
           <CustomerForm
             fullName={customerData.fullName}
