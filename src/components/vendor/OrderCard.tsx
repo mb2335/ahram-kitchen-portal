@@ -13,6 +13,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface OrderCardProps {
@@ -40,55 +48,100 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
-          <p className="text-sm text-gray-600">{order.customer?.full_name}</p>
-          <p className="text-sm text-gray-600">{order.customer?.email}</p>
-          {order.customer?.phone && (
-            <p className="text-sm text-gray-600">{order.customer.phone}</p>
-          )}
-          <p className="text-sm text-gray-600 mt-2">
-            Placed on: {format(new Date(order.created_at || ''), 'PPP')}
+    <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
+      {/* Order Header */}
+      <div className="flex justify-between items-start">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold">Order #{order.id.slice(0, 8)}</h3>
+          <p className="text-sm text-gray-600">
+            Placed: {format(new Date(order.created_at || ''), 'PPP')}
           </p>
           <p className="text-sm text-gray-600">
-            Delivery on: {format(new Date(order.delivery_date), 'PPP')}
+            Delivery: {format(new Date(order.delivery_date), 'PPP')}
           </p>
         </div>
-        <div className="text-right">
-          <p className="font-medium">${order.total_amount.toFixed(2)}</p>
+        <div className="text-right space-y-2">
+          <p className="font-medium text-lg">${order.total_amount.toFixed(2)}</p>
           {getStatusBadge(order.status)}
         </div>
       </div>
 
-      <div className="space-y-2 mb-4">
-        <p className="font-medium text-sm">Order Items:</p>
-        {order.order_items?.map((item) => (
-          <div key={item.id} className="flex justify-between text-sm">
-            <span>{item.quantity}x {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}</span>
-            <span>${(item.quantity * item.unit_price).toFixed(2)}</span>
-          </div>
-        ))}
+      {/* Customer Information */}
+      <div className="bg-gray-50 p-4 rounded-md">
+        <h4 className="font-medium mb-2">Customer Details</h4>
+        <div className="space-y-1">
+          <p className="text-sm">Name: {order.customer?.full_name}</p>
+          <p className="text-sm">Email: {order.customer?.email}</p>
+          {order.customer?.phone && (
+            <p className="text-sm">Phone: {order.customer.phone}</p>
+          )}
+        </div>
       </div>
 
+      {/* Order Items Table */}
+      <div>
+        <h4 className="font-medium mb-2">Order Items</h4>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Item</TableHead>
+              <TableHead className="text-right">Quantity</TableHead>
+              <TableHead className="text-right">Unit Price</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {order.order_items?.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>
+                  {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
+                </TableCell>
+                <TableCell className="text-right">{item.quantity}</TableCell>
+                <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>
+                <TableCell className="text-right">
+                  ${(item.quantity * item.unit_price).toFixed(2)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Order Summary */}
+      <div className="border-t pt-4">
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Subtotal</span>
+            <span>${(order.total_amount - order.tax_amount).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Tax</span>
+            <span>${order.tax_amount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-medium">
+            <span>Total</span>
+            <span>${order.total_amount.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes and Additional Information */}
       {order.notes && (
-        <div className="mb-4">
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Notes:</span> {order.notes}
-          </p>
+        <div className="border-t pt-4">
+          <h4 className="font-medium mb-2">Order Notes</h4>
+          <p className="text-sm text-gray-600">{order.notes}</p>
         </div>
       )}
 
       {order.rejection_reason && (
-        <div className="mb-4">
-          <p className="text-sm text-red-600">
-            <span className="font-medium">Rejection Reason:</span> {order.rejection_reason}
-          </p>
+        <div className="border-t pt-4">
+          <h4 className="font-medium mb-2 text-red-600">Rejection Reason</h4>
+          <p className="text-sm text-red-600">{order.rejection_reason}</p>
         </div>
       )}
 
-      <div className="flex justify-between items-center">
+      {/* Actions */}
+      <div className="flex justify-between items-center border-t pt-4">
         <div className="space-x-2">
           {children}
         </div>
