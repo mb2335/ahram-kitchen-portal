@@ -71,7 +71,6 @@ export function Checkout() {
           total={total}
           taxAmount={taxAmount}
           items={items}
-          isLoggedIn={!!session}
         />
       </div>
     </div>
