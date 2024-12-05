@@ -8,6 +8,8 @@ interface ProtectedRouteProps {
   requiredRole?: 'vendor' | 'customer';
 }
 
+const AUTHORIZED_VENDOR_EMAIL = 'mjbutler.35@gmail.com';
+
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const session = useSession();
   const supabase = useSupabaseClient();
@@ -27,8 +29,6 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       }
 
       try {
-        console.log('Checking role:', requiredRole, 'for user:', session.user.id);
-        
         // Check if user has the required role
         const { data: profile, error } = await supabase
           .from(requiredRole === 'vendor' ? 'vendors' : 'customers')
@@ -36,13 +36,19 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
           .eq('user_id', session.user.id)
           .single();
 
-        console.log('Profile check result:', { profile, error });
+        if (error) throw error;
 
-        if (error) {
-          console.error('Error checking role:', error);
-          throw error;
+        // Additional email check for vendor role
+        if (requiredRole === 'vendor' && session.user.email !== AUTHORIZED_VENDOR_EMAIL) {
+          setIsAuthorized(false);
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the vendor dashboard.",
+            variant: "destructive",
+          });
+          return;
         }
-
+        
         setIsAuthorized(!!profile);
         
         if (!profile) {
@@ -55,11 +61,6 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       } catch (error) {
         console.error('Error checking user role:', error);
         setIsAuthorized(false);
-        toast({
-          title: "Error",
-          description: "Failed to verify permissions. Please try again.",
-          variant: "destructive",
-        });
       }
     }
 
@@ -71,7 +72,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (!session || !isAuthorized) {
-    return <Navigate to="/auth" replace state={{ returnTo: window.location.pathname }} />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;

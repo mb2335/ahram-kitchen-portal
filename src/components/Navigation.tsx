@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,7 +15,6 @@ export function Navigation() {
   const { toast } = useToast();
   const { language, setLanguage } = useLanguage();
   const [isVendor, setIsVendor] = useState(false);
-  const navigate = useNavigate();
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
@@ -37,7 +36,6 @@ export function Navigation() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/');
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",

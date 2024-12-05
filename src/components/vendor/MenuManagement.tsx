@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { ImagePlus } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface MenuItem {
   id: string;
@@ -28,7 +27,8 @@ interface MenuItem {
 export function MenuManagement() {
   const session = useSession();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -42,73 +42,37 @@ export function MenuManagement() {
     is_available: true,
   });
 
-  // Fetch menu items using React Query with proper error handling
-  const { data: menuItems = [], isLoading, error } = useQuery({
-    queryKey: ['vendor-menu-items'],
-    queryFn: async () => {
-      if (!session?.user?.id) {
-        console.log('No session user ID available');
-        return [];
-      }
+  useEffect(() => {
+    loadMenuItems();
+  }, []);
 
-      try {
-        // First get the vendor ID for the current user
-        const { data: vendorData, error: vendorError } = await supabase
-          .from('vendors')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
+  async function loadMenuItems() {
+    try {
+      const { data: vendorData } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', session?.user?.id)
+        .single();
 
-        if (vendorError) {
-          console.error('Error fetching vendor:', vendorError);
-          throw vendorError;
-        }
-
-        if (!vendorData) {
-          console.error('No vendor found for user:', session.user.id);
-          throw new Error('Vendor not found');
-        }
-
-        console.log('Found vendor:', vendorData);
-
-        // Then get all menu items for this vendor
-        const { data, error } = await supabase
+      if (vendorData) {
+        const { data } = await supabase
           .from('menu_items')
           .select('*')
           .eq('vendor_id', vendorData.id)
           .order('category', { ascending: true });
-
-        if (error) {
-          console.error('Error fetching menu items:', error);
-          throw error;
-        }
-        
-        console.log('Fetched vendor menu items:', data);
-        return data || [];
-      } catch (error: any) {
-        console.error('Error in menu items query:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load menu items. Please try again.',
-          variant: 'destructive',
-        });
-        return [];
+        setMenuItems(data || []);
       }
-    },
-    enabled: !!session?.user?.id,
-  });
-
-  // Show error state if query failed
-  useEffect(() => {
-    if (error) {
-      console.error('Query error:', error);
+    } catch (error) {
+      console.error('Error loading menu items:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load menu items. Please refresh the page.',
+        description: 'Failed to load menu items',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
-  }, [error, toast]);
+  }
 
   async function handleImageUpload(file: File) {
     try {
@@ -136,16 +100,13 @@ export function MenuManagement() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const { data: vendorData, error: vendorError } = await supabase
+      const { data: vendorData } = await supabase
         .from('vendors')
         .select('id')
         .eq('user_id', session?.user?.id)
         .single();
 
-      if (vendorError || !vendorData) {
-        console.error('Error fetching vendor:', vendorError);
-        throw new Error('Vendor not found');
-      }
+      if (!vendorData) throw new Error('Vendor not found');
 
       let imageUrl = editingItem?.image;
       if (selectedImage) {
@@ -176,23 +137,18 @@ export function MenuManagement() {
           .insert([menuItemData]));
       }
 
-      if (error) {
-        console.error('Error saving menu item:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: 'Success',
         description: `Menu item ${editingItem ? 'updated' : 'added'} successfully`,
       });
 
-      // Invalidate and refetch menu items
-      await queryClient.invalidateQueries({ queryKey: ['vendor-menu-items'] });
-
       setIsDialogOpen(false);
       setEditingItem(null);
       setSelectedImage(null);
       resetForm();
+      loadMenuItems();
     } catch (error) {
       console.error('Error saving menu item:', error);
       toast({
@@ -217,8 +173,7 @@ export function MenuManagement() {
         description: 'Menu item deleted successfully',
       });
 
-      // Invalidate and refetch menu items
-      await queryClient.invalidateQueries({ queryKey: ['vendor-menu-items'] });
+      loadMenuItems();
     } catch (error) {
       console.error('Error deleting menu item:', error);
       toast({
@@ -255,7 +210,7 @@ export function MenuManagement() {
     });
   }
 
-  if (isLoading) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
