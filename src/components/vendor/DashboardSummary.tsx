@@ -17,7 +17,7 @@ import {
 export function DashboardSummary() {
   const session = useSession();
   const { toast } = useToast();
-  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month'>('today');
+  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'custom'>('today');
   const [dateRange, setDateRange] = useState({
     from: startOfDay(new Date()),
     to: endOfDay(new Date())
@@ -66,8 +66,12 @@ export function DashboardSummary() {
     enabled: !!session?.user?.id,
   });
 
-  const handleQuickDateSelect = (filter: 'today' | 'week' | 'month') => {
+  const handleQuickDateSelect = (filter: 'today' | 'week' | 'month' | 'custom') => {
     setTimeFilter(filter);
+    if (filter === 'custom') {
+      // Don't update the date range for custom selection
+      return;
+    }
     const today = new Date();
     switch (filter) {
       case 'today':
@@ -98,7 +102,7 @@ export function DashboardSummary() {
         <div className="flex items-center gap-4">
           <Select
             value={timeFilter}
-            onValueChange={(value: 'today' | 'week' | 'month') => handleQuickDateSelect(value)}
+            onValueChange={(value: 'today' | 'week' | 'month' | 'custom') => handleQuickDateSelect(value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select time period" />
@@ -107,6 +111,7 @@ export function DashboardSummary() {
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="week">Last 7 days</SelectItem>
               <SelectItem value="month">Last 30 days</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
           <DatePickerWithRange
@@ -115,6 +120,13 @@ export function DashboardSummary() {
               if (range?.from && range?.to) {
                 if (timeFilter === 'today') {
                   // If 'today' is selected, force both dates to be the same
+                  const selectedDate = range.from;
+                  setDateRange({
+                    from: startOfDay(selectedDate),
+                    to: endOfDay(selectedDate)
+                  });
+                } else if (timeFilter === 'custom') {
+                  // For custom selection, allow selecting a single day
                   const selectedDate = range.from;
                   setDateRange({
                     from: startOfDay(selectedDate),
@@ -129,7 +141,7 @@ export function DashboardSummary() {
               }
             }}
             disabled={timeFilter === 'today'}
-            mode={timeFilter === 'today' ? 'single' : 'range'}
+            mode={(timeFilter === 'today' || timeFilter === 'custom') ? 'single' : 'range'}
           />
         </div>
       </div>
