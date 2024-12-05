@@ -39,18 +39,29 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      setIsVendor(false); // Immediately reset vendor status
-      navigate('/'); // Redirect to home page
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        // If we get a session_not_found error, we can still proceed with local cleanup
+        if (error.message.includes('session_not_found')) {
+          console.log('Session already expired, proceeding with local cleanup');
+        } else {
+          throw error;
+        }
+      }
+
+      // Always perform these cleanup actions
+      setIsVendor(false);
+      navigate('/');
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing out:', error);
       toast({
         title: "Error",
-        description: "Failed to sign out. Please try again.",
+        description: "Failed to sign out properly. Please try refreshing the page.",
         variant: "destructive",
       });
     }
