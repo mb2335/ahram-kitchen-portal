@@ -56,14 +56,29 @@ export function DatePickerWithRange({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            initialFocus
-            mode={mode}
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={onSelect}
-            numberOfMonths={mode === 'range' ? 2 : 1}
-          />
+          {mode === 'single' ? (
+            <Calendar
+              initialFocus
+              mode="single"
+              defaultMonth={date?.from}
+              selected={date?.from}
+              onSelect={(selectedDate) => {
+                if (selectedDate) {
+                  onSelect({ from: selectedDate, to: selectedDate });
+                }
+              }}
+              numberOfMonths={1}
+            />
+          ) : (
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={date?.from}
+              selected={date}
+              onSelect={onSelect}
+              numberOfMonths={2}
+            />
+          )}
         </PopoverContent>
       </Popover>
     </div>
