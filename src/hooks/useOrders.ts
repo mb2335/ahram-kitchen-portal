@@ -52,8 +52,10 @@ export const useOrders = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        console.log('Customer orders fetched:', orders);
         return orders;
       } catch (error: any) {
+        console.error('Error fetching orders:', error);
         toast({
           title: 'Error fetching orders',
           description: error.message,
