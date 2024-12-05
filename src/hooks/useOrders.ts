@@ -76,27 +76,44 @@ export const useVendorOrders = () => {
     queryKey: orderKeys.vendor,
     queryFn: async () => {
       try {
+        console.log('Fetching vendor orders...');
         const { data, error } = await supabase
           .from('orders')
           .select(`
             *,
-            customer:customers(full_name, email, phone),
+            customer:customers(
+              id,
+              full_name,
+              email,
+              phone
+            ),
             order_items(
-              id, 
-              menu_item_id, 
-              quantity, 
+              id,
+              menu_item_id,
+              quantity,
               unit_price,
               menu_item:menu_items(
+                id,
                 name,
-                name_ko
+                name_ko,
+                price,
+                description,
+                description_ko,
+                category
               )
             )
           `)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching vendor orders:', error);
+          throw error;
+        }
+
+        console.log('Vendor orders fetched successfully:', data);
         return data as Order[];
       } catch (error: any) {
+        console.error('Error in useVendorOrders:', error);
         toast({
           title: 'Error fetching vendor orders',
           description: error.message,
@@ -106,7 +123,7 @@ export const useVendorOrders = () => {
       }
     },
     refetchInterval: 5000,
-    staleTime: 0, // Consider all data stale immediately
+    staleTime: 0,
   });
 
   const updateOrderStatus = async (orderId: string, status: string, reason?: string) => {
@@ -125,11 +142,8 @@ export const useVendorOrders = () => {
 
       if (error) throw error;
 
-      // Invalidate both customer and vendor queries
       await queryClient.invalidateQueries({ queryKey: orderKeys.all });
       await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });
-      
-      // Force an immediate refetch
       await refetch();
       
       console.log('Order status updated successfully');
@@ -142,7 +156,6 @@ export const useVendorOrders = () => {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      // First delete order items
       const { error: itemsError } = await supabase
         .from('order_items')
         .delete()
@@ -150,7 +163,6 @@ export const useVendorOrders = () => {
 
       if (itemsError) throw itemsError;
 
-      // Then delete the order
       const { error: orderError } = await supabase
         .from('orders')
         .delete()
@@ -158,7 +170,6 @@ export const useVendorOrders = () => {
 
       if (orderError) throw orderError;
 
-      // Invalidate queries
       await queryClient.invalidateQueries({ queryKey: orderKeys.all });
       await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });
 
