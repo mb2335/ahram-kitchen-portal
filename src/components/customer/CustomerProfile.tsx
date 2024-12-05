@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useNavigate } from 'react-router-dom';
 
 interface CustomerProfile {
   id: string;
@@ -16,6 +17,7 @@ interface CustomerProfile {
 
 export function CustomerProfile() {
   const session = useSession();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,8 +28,12 @@ export function CustomerProfile() {
   });
 
   useEffect(() => {
+    if (!session) {
+      navigate('/auth', { state: { returnTo: '/profile' } });
+      return;
+    }
     loadProfile();
-  }, []);
+  }, [session, navigate]);
 
   async function loadProfile() {
     try {
@@ -59,6 +65,11 @@ export function CustomerProfile() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!session) {
+      navigate('/auth');
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('customers')
@@ -87,12 +98,16 @@ export function CustomerProfile() {
     }
   }
 
+  if (!session) {
+    return null;
+  }
+
   if (loading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h2 className="text-2xl font-bold">Customer Profile</h2>
       <Card className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -42,7 +42,6 @@ export function Navigation() {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        // If we get a session_not_found error, we can still proceed with local cleanup
         if (error.message.includes('session_not_found')) {
           console.log('Session already expired, proceeding with local cleanup');
         } else {
@@ -53,6 +52,10 @@ export function Navigation() {
       // Always perform these cleanup actions
       setIsVendor(false);
       navigate('/');
+      
+      // Clear any local storage or state that might contain user data
+      localStorage.removeItem('supabase.auth.token');
+      
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",

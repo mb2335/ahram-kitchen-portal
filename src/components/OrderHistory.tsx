@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
 import { useOrders } from '@/hooks/useOrders';
 import { OrderStatusBadge } from './shared/OrderStatusBadge';
+import { useEffect } from 'react';
 
 export function OrderHistory() {
   const session = useSession();
@@ -12,8 +13,13 @@ export function OrderHistory() {
   const { language } = useLanguage();
   const { data: orders, isLoading } = useOrders();
 
+  useEffect(() => {
+    if (!session) {
+      navigate('/auth', { state: { returnTo: '/orders' } });
+    }
+  }, [session, navigate]);
+
   if (!session) {
-    navigate('/auth', { state: { returnTo: '/orders' } });
     return null;
   }
 
