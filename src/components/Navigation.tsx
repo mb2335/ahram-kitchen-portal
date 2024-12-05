@@ -7,6 +7,7 @@ import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lu
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "react-router-dom";
 
 export function Navigation() {
   const session = useSession();
@@ -16,6 +17,7 @@ export function Navigation() {
   const { language, setLanguage } = useLanguage();
   const [isVendor, setIsVendor] = useState(false);
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkVendorStatus = async () => {
@@ -27,6 +29,8 @@ export function Navigation() {
           .single();
         
         setIsVendor(!!vendor);
+      } else {
+        setIsVendor(false);
       }
     };
 
@@ -36,6 +40,8 @@ export function Navigation() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
+      setIsVendor(false); // Immediately reset vendor status
+      navigate('/'); // Redirect to home page
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
@@ -95,7 +101,7 @@ export function Navigation() {
                 </Link>
               </>
             )}
-            {isVendor && (
+            {isVendor && session && (
               <Link to="/vendor/summary">
                 <Button variant="ghost" size="sm">
                   <Store className="h-4 w-4 md:mr-2" />
