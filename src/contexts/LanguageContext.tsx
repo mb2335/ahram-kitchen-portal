@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 type Language = 'en' | 'ko';
 
@@ -20,7 +20,7 @@ const translations = {
     'menu.title': 'Our Menu',
     'cart.empty': 'Your cart is empty',
     'cart.total': 'Total',
-    'cart.checkout': 'Proceed to Checkout',
+    'cart.checkout': 'Checkout',
     'item.add': 'Add to Cart',
     'orders.title': 'Order History',
     'orders.empty': 'No orders found',
@@ -66,9 +66,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
 
-  const t = useCallback((key: string) => {
+  const t = (key: string) => {
     return translations[language][key as keyof typeof translations['en']] || key;
-  }, [language]);
+  };
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>

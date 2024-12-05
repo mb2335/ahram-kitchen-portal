@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
 import { Plus } from "lucide-react";
-import { useCallback } from "react";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -12,14 +11,8 @@ interface MenuItemProps {
 
 export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const { language, t } = useLanguage();
-  
-  const displayName = useCallback(() => {
-    return language === 'en' ? item.name : item.nameKo;
-  }, [language, item.name, item.nameKo]);
-
-  const displayDescription = useCallback(() => {
-    return language === 'en' ? item.description : item.descriptionKo;
-  }, [language, item.description, item.descriptionKo]);
+  const displayName = language === 'en' ? item.name : item.nameKo;
+  const displayDescription = language === 'en' ? item.description : item.descriptionKo;
 
   return (
     <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
@@ -27,7 +20,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
         {item.image && (
           <img
             src={item.image}
-            alt={displayName()}
+            alt={displayName}
             className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
@@ -40,10 +33,10 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           </span>
         </div>
         <h3 className="text-lg font-medium mb-1">
-          {displayName()}
+          {displayName}
         </h3>
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-          {displayDescription()}
+          {displayDescription}
         </p>
         <div className="flex justify-between items-center">
           <span className="text-lg font-bold text-primary">${item.price}</span>
