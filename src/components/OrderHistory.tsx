@@ -41,18 +41,40 @@ export function OrderHistory() {
               </div>
               <OrderStatusBadge status={order.status} />
             </div>
+
+            {/* Customer Details */}
+            {order.customer && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                <h3 className="font-medium mb-2">Customer Details</h3>
+                <p className="text-sm">Name: {order.customer.full_name}</p>
+                <p className="text-sm">Email: {order.customer.email}</p>
+                {order.customer.phone && (
+                  <p className="text-sm">Phone: {order.customer.phone}</p>
+                )}
+              </div>
+            )}
             
+            {/* Order Items */}
             <div className="space-y-2">
-              {order.order_items.map((item: any) => (
-                <div key={item.id} className="flex justify-between">
-                  <span>
-                    {item.quantity}x {language === 'en' ? item.menu_item.name : item.menu_item.name_ko}
+              <h3 className="font-medium mb-2">Order Items</h3>
+              {order.order_items?.map((item) => (
+                <div key={item.id} className="flex justify-between items-center py-2 border-b">
+                  <div>
+                    <span className="font-medium">
+                      {item.quantity}x {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
+                    </span>
+                    <p className="text-sm text-gray-600">
+                      ${item.unit_price.toFixed(2)} each
+                    </p>
+                  </div>
+                  <span className="font-medium">
+                    ${(item.quantity * item.unit_price).toFixed(2)}
                   </span>
-                  <span>${(item.quantity * item.unit_price).toFixed(2)}</span>
                 </div>
               ))}
             </div>
             
+            {/* Order Summary */}
             <div className="mt-4 pt-4 border-t">
               <div className="flex justify-between">
                 <span>Subtotal</span>
@@ -68,6 +90,7 @@ export function OrderHistory() {
               </div>
             </div>
 
+            {/* Additional Order Information */}
             {order.notes && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm text-gray-600">

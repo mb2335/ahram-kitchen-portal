@@ -4,7 +4,6 @@ import { Order } from '@/components/vendor/types';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useToast } from '@/components/ui/use-toast';
 
-// Shared query keys for better cache management
 export const orderKeys = {
   all: ['orders'] as const,
   customer: (customerId: string) => [...orderKeys.all, 'customer', customerId] as const,
@@ -31,13 +30,21 @@ export const useOrders = () => {
           .from('orders')
           .select(`
             *,
+            customer:customers (
+              id,
+              full_name,
+              email,
+              phone
+            ),
             order_items (
               id,
               quantity,
               unit_price,
               menu_item:menu_items (
+                id,
                 name,
-                name_ko
+                name_ko,
+                price
               )
             )
           `)
@@ -57,7 +64,7 @@ export const useOrders = () => {
     },
     enabled: !!session?.user?.id,
     refetchInterval: 5000,
-    staleTime: 0, // Consider all data stale immediately
+    staleTime: 0,
   });
 };
 
