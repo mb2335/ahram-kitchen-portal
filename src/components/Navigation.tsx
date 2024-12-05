@@ -3,9 +3,10 @@ import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Menu, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
+import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
+import { Switch } from "@/components/ui/switch";
 
 export function Navigation() {
   const session = useSession();
@@ -61,19 +62,20 @@ export function Navigation() {
             <Link to="/" className="text-xl font-bold">
               Ahram Kitchen
             </Link>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleLanguage}
-            >
-              {language === 'en' ? '한국어로 보기' : 'View in English'}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">ENG</span>
+              <Switch
+                checked={language === 'ko'}
+                onCheckedChange={() => toggleLanguage()}
+              />
+              <span className="text-sm text-gray-600">KOR</span>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
             <Link to="/">
               <Button variant="ghost" size="sm">
-                <Menu className="h-4 w-4 mr-2" />
+                <MenuIcon className="h-5 w-5 mr-2" />
                 {language === 'en' ? 'Menu' : '메뉴'}
               </Button>
             </Link>

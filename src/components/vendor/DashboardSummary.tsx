@@ -4,6 +4,8 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import { addDays, startOfDay, endOfDay } from 'date-fns';
 import {
   Select,
   SelectContent,
@@ -16,9 +18,13 @@ export function DashboardSummary() {
   const session = useSession();
   const { toast } = useToast();
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month'>('today');
+  const [dateRange, setDateRange] = useState({
+    from: startOfDay(new Date()),
+    to: endOfDay(new Date())
+  });
 
   const { data: orderStats } = useQuery({
-    queryKey: ['order-stats', timeFilter],
+    queryKey: ['order-stats', timeFilter, dateRange],
     queryFn: async () => {
       try {
         const { data: vendorData } = await supabase
@@ -29,10 +35,13 @@ export function DashboardSummary() {
 
         if (!vendorData) throw new Error('Vendor not found');
 
-        const { data: orders, error } = await supabase
+        let timeQuery = supabase
           .from('orders')
           .select('status, total_amount')
-          .gte('created_at', getTimeFilterDate(timeFilter));
+          .gte('created_at', dateRange.from.toISOString())
+          .lte('created_at', dateRange.to.toISOString());
+
+        const { data: orders, error } = await timeQuery;
 
         if (error) throw error;
 
@@ -57,39 +66,61 @@ export function DashboardSummary() {
     enabled: !!session?.user?.id,
   });
 
-  function getTimeFilterDate(filter: string) {
-    const now = new Date();
+  const handleQuickDateSelect = (filter: 'today' | 'week' | 'month') => {
+    setTimeFilter(filter);
+    const today = new Date();
     switch (filter) {
       case 'today':
-        return new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        setDateRange({
+          from: startOfDay(today),
+          to: endOfDay(today)
+        });
+        break;
       case 'week':
-        const lastWeek = new Date(now.setDate(now.getDate() - 7));
-        return lastWeek.toISOString();
+        setDateRange({
+          from: startOfDay(addDays(today, -7)),
+          to: endOfDay(today)
+        });
+        break;
       case 'month':
-        const lastMonth = new Date(now.setMonth(now.getMonth() - 1));
-        return lastMonth.toISOString();
-      default:
-        return new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        setDateRange({
+          from: startOfDay(addDays(today, -30)),
+          to: endOfDay(today)
+        });
+        break;
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Dashboard Overview</h2>
-        <Select
-          value={timeFilter}
-          onValueChange={(value: 'today' | 'week' | 'month') => setTimeFilter(value)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select time period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">Last 7 days</SelectItem>
-            <SelectItem value="month">Last 30 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-4">
+          <Select
+            value={timeFilter}
+            onValueChange={(value: 'today' | 'week' | 'month') => handleQuickDateSelect(value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select time period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">Last 7 days</SelectItem>
+              <SelectItem value="month">Last 30 days</SelectItem>
+            </SelectContent>
+          </Select>
+          <DatePickerWithRange
+            date={dateRange}
+            onSelect={(range) => {
+              if (range?.from && range?.to) {
+                setDateRange({
+                  from: startOfDay(range.from),
+                  to: endOfDay(range.to)
+                });
+              }
+            }}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
