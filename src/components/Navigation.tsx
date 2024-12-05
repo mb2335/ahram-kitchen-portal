@@ -39,22 +39,25 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
+      // First, clear all local storage
+      localStorage.clear();
+      
+      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         if (error.message.includes('session_not_found')) {
-          console.log('Session already expired, proceeding with local cleanup');
+          console.log('Session already expired, proceeding with cleanup');
         } else {
           throw error;
         }
       }
 
-      // Always perform these cleanup actions
+      // Clear session and state
       setIsVendor(false);
-      navigate('/');
       
-      // Clear any local storage or state that might contain user data
-      localStorage.removeItem('supabase.auth.token');
+      // Force reload the page to clear all state
+      window.location.href = '/';
       
       toast({
         title: "Signed out successfully",
