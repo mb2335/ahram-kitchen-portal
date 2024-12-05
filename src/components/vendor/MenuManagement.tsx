@@ -43,18 +43,33 @@ export function MenuManagement() {
   });
 
   // Fetch menu items using React Query
-  const { data: menuItems = [], isLoading } = useQuery({
+  const { data: menuItems = [], isLoading, error } = useQuery({
     queryKey: ['vendor-menu-items', session?.user?.id],
     queryFn: async () => {
+      if (!session?.user?.id) {
+        console.log('No session user ID available');
+        return [];
+      }
+
       try {
         // First get the vendor ID for the current user
         const { data: vendorData, error: vendorError } = await supabase
           .from('vendors')
           .select('id')
-          .eq('user_id', session?.user?.id)
+          .eq('user_id', session.user.id)
           .single();
 
-        if (vendorError) throw vendorError;
+        if (vendorError) {
+          console.error('Error fetching vendor:', vendorError);
+          throw vendorError;
+        }
+
+        if (!vendorData) {
+          console.error('No vendor found for user:', session.user.id);
+          throw new Error('Vendor not found');
+        }
+
+        console.log('Found vendor:', vendorData);
 
         // Then get all menu items for this vendor
         const { data, error } = await supabase
@@ -63,15 +78,18 @@ export function MenuManagement() {
           .eq('vendor_id', vendorData.id)
           .order('category', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching menu items:', error);
+          throw error;
+        }
         
         console.log('Fetched vendor menu items:', data);
         return data || [];
       } catch (error: any) {
-        console.error('Error fetching menu items:', error);
+        console.error('Error in menu items query:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load menu items',
+          description: 'Failed to load menu items. Please try again.',
           variant: 'destructive',
         });
         return [];
@@ -79,6 +97,18 @@ export function MenuManagement() {
     },
     enabled: !!session?.user?.id,
   });
+
+  // Show error state if query failed
+  useEffect(() => {
+    if (error) {
+      console.error('Query error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load menu items. Please refresh the page.',
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
 
   async function handleImageUpload(file: File) {
     try {
@@ -106,13 +136,16 @@ export function MenuManagement() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const { data: vendorData } = await supabase
+      const { data: vendorData, error: vendorError } = await supabase
         .from('vendors')
         .select('id')
         .eq('user_id', session?.user?.id)
         .single();
 
-      if (!vendorData) throw new Error('Vendor not found');
+      if (vendorError || !vendorData) {
+        console.error('Error fetching vendor:', vendorError);
+        throw new Error('Vendor not found');
+      }
 
       let imageUrl = editingItem?.image;
       if (selectedImage) {
@@ -143,7 +176,10 @@ export function MenuManagement() {
           .insert([menuItemData]));
       }
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving menu item:', error);
+        throw error;
+      }
 
       toast({
         title: 'Success',
