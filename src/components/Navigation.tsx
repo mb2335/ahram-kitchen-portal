@@ -28,6 +28,8 @@ export function Navigation() {
           .single();
         
         setIsVendor(!!vendor);
+      } else {
+        setIsVendor(false);
       }
     };
 
@@ -36,17 +38,24 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Clear any local state if needed
+      setIsVendor(false);
+      
+      // Navigate after successful sign out
       navigate('/');
+      
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing out:', error);
       toast({
         title: "Error",
-        description: "Failed to sign out. Please try again.",
+        description: error.message || "Failed to sign out. Please try again.",
         variant: "destructive",
       });
     }
