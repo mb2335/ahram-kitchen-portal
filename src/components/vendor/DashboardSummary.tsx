@@ -113,12 +113,23 @@ export function DashboardSummary() {
             date={dateRange}
             onSelect={(range) => {
               if (range?.from && range?.to) {
-                setDateRange({
-                  from: startOfDay(range.from),
-                  to: endOfDay(range.to)
-                });
+                if (timeFilter === 'today') {
+                  // If 'today' is selected, force both dates to be the same
+                  const selectedDate = range.from;
+                  setDateRange({
+                    from: startOfDay(selectedDate),
+                    to: endOfDay(selectedDate)
+                  });
+                } else {
+                  setDateRange({
+                    from: startOfDay(range.from),
+                    to: endOfDay(range.to)
+                  });
+                }
               }
             }}
+            disabled={timeFilter === 'today'}
+            mode={timeFilter === 'today' ? 'single' : 'range'}
           />
         </div>
       </div>
