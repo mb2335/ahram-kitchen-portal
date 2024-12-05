@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
   requiredRole?: 'vendor' | 'customer';
 }
 
-const AUTHORIZED_VENDOR_EMAIL = 'mjbutler.35@gmail.com';
+const AUTHORIZED_VENDOR_EMAILS = ['mjbutler.35@gmail.com', 'apnosh@gmail.com'];
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const session = useSession();
@@ -39,7 +39,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         if (error) throw error;
 
         // Additional email check for vendor role
-        if (requiredRole === 'vendor' && session.user.email !== AUTHORIZED_VENDOR_EMAIL) {
+        if (requiredRole === 'vendor' && !AUTHORIZED_VENDOR_EMAILS.includes(session.user.email || '')) {
           setIsAuthorized(false);
           toast({
             title: "Access Denied",
