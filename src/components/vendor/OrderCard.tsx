@@ -67,16 +67,18 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
       </div>
 
       {/* Customer Information */}
-      <div className="bg-gray-50 p-4 rounded-md">
-        <h4 className="font-medium mb-2">Customer Details</h4>
-        <div className="space-y-1">
-          <p className="text-sm">Name: {order.customer?.full_name}</p>
-          <p className="text-sm">Email: {order.customer?.email}</p>
-          {order.customer?.phone && (
-            <p className="text-sm">Phone: {order.customer.phone}</p>
-          )}
+      {order.customer && (
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h4 className="font-medium mb-2">Customer Details</h4>
+          <div className="space-y-1">
+            <p className="text-sm">Name: {order.customer.full_name}</p>
+            <p className="text-sm">Email: {order.customer.email}</p>
+            {order.customer.phone && (
+              <p className="text-sm">Phone: {order.customer.phone}</p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Order Items Table */}
       <div>
