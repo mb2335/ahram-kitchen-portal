@@ -42,9 +42,9 @@ export function MenuManagement() {
     is_available: true,
   });
 
-  // Fetch menu items using React Query
+  // Fetch menu items using React Query with proper error handling
   const { data: menuItems = [], isLoading, error } = useQuery({
-    queryKey: ['vendor-menu-items', session?.user?.id],
+    queryKey: ['vendor-menu-items'],
     queryFn: async () => {
       if (!session?.user?.id) {
         console.log('No session user ID available');
