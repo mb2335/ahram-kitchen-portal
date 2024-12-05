@@ -26,7 +26,7 @@ export function Navigation() {
           .from('vendors')
           .select('id')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
         
         setIsVendor(!!vendor);
       } else {
