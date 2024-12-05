@@ -23,19 +23,32 @@ export function Checkout() {
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
 
   useEffect(() => {
-    if (!session) {
-      navigate('/auth', { state: { returnTo: '/checkout' } });
-    } else if (items.length === 0) {
+    if (items.length === 0) {
       navigate('/cart');
     }
-  }, [session, items.length, navigate]);
+  }, [items.length, navigate]);
 
   const handleOrderSuccess = async (orderId: string) => {
     clearCart();
-    navigate('/orders');
+    navigate('/thank-you', {
+      state: {
+        orderDetails: {
+          id: orderId,
+          items: items.map(item => ({
+            name: item.name,
+            nameKo: item.nameKo,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          total: total + taxAmount,
+          taxAmount: taxAmount,
+          createdAt: new Date().toISOString()
+        }
+      }
+    });
     toast({
       title: "Order Placed Successfully",
-      description: "Your order has been confirmed. You can track its status in your order history.",
+      description: "Your order has been confirmed. Thank you for your purchase!",
     });
   };
 
@@ -58,6 +71,7 @@ export function Checkout() {
           total={total}
           taxAmount={taxAmount}
           items={items}
+          isLoggedIn={!!session}
         />
       </div>
     </div>

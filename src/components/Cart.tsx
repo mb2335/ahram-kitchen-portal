@@ -4,24 +4,15 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSession } from '@supabase/auth-helpers-react';
-import { useToast } from "./ui/use-toast";
 
 export function Cart() {
   const { items, removeItem, updateQuantity, total } = useCart();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const session = useSession();
-  const { toast } = useToast();
 
   const handleCheckoutClick = () => {
-    if (!session) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in or create an account to complete your order.",
-      });
-      navigate('/auth', { state: { returnTo: '/checkout' } });
-      return;
-    }
+    // Allow direct navigation to checkout for all users
     navigate('/checkout');
   };
 
@@ -103,8 +94,13 @@ export function Cart() {
           className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
           onClick={handleCheckoutClick}
         >
-          {session ? 'Proceed to Checkout' : 'Sign in to Checkout'}
+          {t('cart.checkout')}
         </Button>
+        {!session && (
+          <p className="mt-4 text-sm text-gray-600 text-center">
+            You can sign in to save your order history, but it's not required to checkout.
+          </p>
+        )}
       </div>
     </div>
   );
