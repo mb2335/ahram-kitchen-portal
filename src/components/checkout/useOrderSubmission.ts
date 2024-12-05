@@ -35,17 +35,24 @@ export function useOrderSubmission() {
   const [isUploading, setIsUploading] = useState(false);
 
   const createGuestCustomer = async (customerData: CustomerData) => {
+    console.log('Creating guest customer:', customerData);
     const { data: customer, error: customerError } = await supabase
       .from('customers')
       .insert({
         full_name: customerData.fullName,
         email: customerData.email,
-        phone: customerData.phone || null
+        phone: customerData.phone || null,
+        user_id: null // Explicitly set as null for guest users
       })
       .select('id')
       .single();
 
-    if (customerError) throw customerError;
+    if (customerError) {
+      console.error('Error creating guest customer:', customerError);
+      throw customerError;
+    }
+    
+    console.log('Guest customer created:', customer);
     return customer.id;
   };
 
@@ -55,6 +62,7 @@ export function useOrderSubmission() {
     }
 
     if (session?.user) {
+      console.log('Fetching existing customer for user:', session.user.id);
       const { data: existingCustomer, error: fetchError } = await supabase
         .from('customers')
         .select('id')
@@ -64,9 +72,11 @@ export function useOrderSubmission() {
       if (fetchError) throw fetchError;
 
       if (existingCustomer) {
+        console.log('Found existing customer:', existingCustomer);
         return existingCustomer.id;
       }
 
+      console.log('Creating new customer for authenticated user');
       const { data: newCustomer, error: insertError } = await supabase
         .from('customers')
         .insert({
@@ -96,6 +106,7 @@ export function useOrderSubmission() {
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
+    console.log('Starting order submission process');
 
     try {
       // Validate all item IDs are proper UUIDs
@@ -108,17 +119,22 @@ export function useOrderSubmission() {
       }
 
       const customerId = await getOrCreateCustomer(customerData);
+      console.log('Customer ID obtained:', customerId);
 
       // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      console.log('Uploading payment proof:', fileName);
+      
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('payment_proofs')
         .upload(fileName, paymentProof);
 
       if (uploadError) throw uploadError;
+      console.log('Payment proof uploaded successfully');
 
       // Create order
+      console.log('Creating order...');
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([
@@ -136,6 +152,7 @@ export function useOrderSubmission() {
         .single();
 
       if (orderError) throw orderError;
+      console.log('Order created successfully:', orderData);
 
       // Create order items
       const orderItems = items.map((item) => ({
@@ -145,11 +162,13 @@ export function useOrderSubmission() {
         unit_price: item.price,
       }));
 
+      console.log('Creating order items...');
       const { error: orderItemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
       if (orderItemsError) throw orderItemsError;
+      console.log('Order items created successfully');
 
       onOrderSuccess(orderData.id);
 
