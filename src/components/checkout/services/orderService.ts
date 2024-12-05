@@ -21,7 +21,7 @@ interface OrderData {
 export async function createOrder(orderData: OrderData) {
   console.log('Creating order with data:', orderData);
   try {
-    const { data: orderData: createdOrder, error: orderError } = await supabase
+    const { data: createdOrder, error: orderError } = await supabase
       .from('orders')
       .insert([
         {
