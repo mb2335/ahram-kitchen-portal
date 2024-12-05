@@ -55,26 +55,26 @@ export function Navigation() {
   };
 
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <Link to="/" className="text-xl font-bold">
+            <Link to="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors">
               Ahram Kitchen
             </Link>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">ENG</span>
               <Switch
                 checked={language === 'ko'}
-                onCheckedChange={() => toggleLanguage()}
+                onCheckedChange={toggleLanguage}
               />
               <span className="text-sm text-gray-600">KOR</span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <Link to="/">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="hidden md:flex">
                 <MenuIcon className="h-5 w-5 mr-2" />
                 {language === 'en' ? 'Menu' : '메뉴'}
               </Button>
@@ -82,13 +82,13 @@ export function Navigation() {
             {session && (
               <>
                 <Link to="/orders">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hidden md:flex">
                     <History className="h-4 w-4 mr-2" />
                     {language === 'en' ? 'Order History' : '주문 내역'}
                   </Button>
                 </Link>
                 <Link to="/profile">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hidden md:flex">
                     <User className="h-4 w-4 mr-2" />
                     {language === 'en' ? 'Profile' : '프로필'}
                   </Button>
@@ -98,15 +98,19 @@ export function Navigation() {
             {isVendor && (
               <Link to="/vendor/summary">
                 <Button variant="ghost" size="sm">
-                  <Store className="h-4 w-4 mr-2" />
-                  {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
+                  <Store className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">
+                    {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
+                  </span>
                 </Button>
               </Link>
             )}
             {session ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                {language === 'en' ? 'Sign Out' : '로그아웃'}
+                <LogOut className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">
+                  {language === 'en' ? 'Sign Out' : '로그아웃'}
+                </span>
               </Button>
             ) : (
               <Link to="/auth">
@@ -116,11 +120,13 @@ export function Navigation() {
               </Link>
             )}
             <Link to="/cart">
-              <Button variant="default" size="sm" className="bg-primary">
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                {language === 'en' ? 'Cart' : '장바구니'}
+              <Button variant="default" size="sm" className="bg-primary relative">
+                <ShoppingCart className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">
+                  {language === 'en' ? 'Cart' : '장바구니'}
+                </span>
                 {cartItemCount > 0 && (
-                  <span className="ml-2 bg-white text-primary rounded-full h-5 w-5 flex items-center justify-center text-xs">
+                  <span className="absolute -top-2 -right-2 bg-accent text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
                     {cartItemCount}
                   </span>
                 )}

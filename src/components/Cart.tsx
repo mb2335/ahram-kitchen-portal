@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSession } from '@supabase/auth-helpers-react';
 import { useToast } from "./ui/use-toast";
@@ -31,7 +31,10 @@ export function Cart() {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">{t('cart.empty')}</h2>
           <Link to="/">
-            <Button>{t('nav.menu')}</Button>
+            <Button className="bg-primary hover:bg-primary/90">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {t('nav.menu')}
+            </Button>
           </Link>
         </div>
       </div>
@@ -44,43 +47,46 @@ export function Cart() {
         {items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center justify-between p-4 bg-white rounded-lg shadow animate-fade-in"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in"
           >
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
               <img
                 src={item.image}
                 alt={language === 'en' ? item.name : item.nameKo}
-                className="w-16 h-16 object-cover rounded"
+                className="w-20 h-20 object-cover rounded-lg"
               />
               <div>
-                <h3 className="font-semibold">
+                <h3 className="font-medium text-lg">
                   {language === 'en' ? item.name : item.nameKo}
                 </h3>
-                <p className="text-gray-600">${item.price}</p>
+                <p className="text-primary font-bold">${item.price}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  className="h-8 w-8"
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
-                <span className="w-8 text-center">{item.quantity}</span>
+                <span className="w-8 text-center font-medium">{item.quantity}</span>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  className="h-8 w-8"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="icon"
                 onClick={() => removeItem(item.id)}
+                className="text-red-500 hover:text-red-600 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -88,12 +94,15 @@ export function Cart() {
           </div>
         ))}
       </div>
-      <div className="mt-8 p-4 bg-white rounded-lg shadow">
+      <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-lg font-semibold">{t('cart.total')}</span>
-          <span className="text-lg font-bold">${total.toFixed(2)}</span>
+          <span className="text-lg font-medium">{t('cart.total')}</span>
+          <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
         </div>
-        <Button className="w-full" onClick={handleCheckoutClick}>
+        <Button 
+          className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
+          onClick={handleCheckoutClick}
+        >
           {session ? 'Proceed to Checkout' : 'Sign in to Checkout'}
         </Button>
       </div>

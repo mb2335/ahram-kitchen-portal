@@ -25,15 +25,15 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#8AA6A3",
+          DEFAULT: "#9E4244", // Deep red color inspired by Korean pottery
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#F5E6D3",
+          DEFAULT: "#F5E6D3", // Warm beige inspired by traditional Korean paper
           foreground: "#2D2D2D",
         },
         accent: {
-          DEFAULT: "#9E4244",
+          DEFAULT: "#8AA6A3", // Muted teal inspired by celadon ceramics
           foreground: "#FFFFFF",
         },
         muted: {
@@ -67,11 +67,16 @@ export default {
           "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "slide-in": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
+        "slide-in": "slide-in 0.3s ease-out",
       },
     },
   },

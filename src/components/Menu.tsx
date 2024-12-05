@@ -67,19 +67,17 @@ export function Menu() {
     );
   }
 
-  if (!menuItems || menuItems.length === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">{t('menu.title')}</h1>
-        <div className="text-center">No menu items available.</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">{t('menu.title')}</h1>
-      <MenuGrid items={menuItems} onAddToCart={addItem} />
+    <div className="min-h-screen bg-gradient-to-b from-secondary/20 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('menu.title')}</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Discover our selection of authentic Korean dishes, carefully prepared and beautifully presented
+          </p>
+        </div>
+        <MenuGrid items={menuItems} onAddToCart={addItem} />
+      </div>
     </div>
   );
 }
