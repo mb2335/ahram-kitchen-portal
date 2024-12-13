@@ -94,6 +94,7 @@ export type Database = {
           is_available: boolean | null
           name: string
           name_ko: string
+          order_index: number
           price: number
           vendor_id: string | null
         }
@@ -107,6 +108,7 @@ export type Database = {
           is_available?: boolean | null
           name: string
           name_ko: string
+          order_index: number
           price: number
           vendor_id?: string | null
         }
@@ -120,6 +122,7 @@ export type Database = {
           is_available?: boolean | null
           name?: string
           name_ko?: string
+          order_index?: number
           price?: number
           vendor_id?: string | null
         }

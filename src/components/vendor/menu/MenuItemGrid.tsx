@@ -1,6 +1,18 @@
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableMenuItem } from "./SortableMenuItem";
 
 interface MenuItem {
   id: string;
@@ -12,61 +24,66 @@ interface MenuItem {
   category: string;
   is_available: boolean;
   image?: string;
+  order_index: number;
 }
 
 interface MenuItemGridProps {
   items: MenuItem[];
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
+  onReorder: (items: MenuItem[]) => void;
 }
 
-export function MenuItemGrid({ items, onEdit, onDelete }: MenuItemGridProps) {
+export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGridProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+
+      const newItems = [...items];
+      const [movedItem] = newItems.splice(oldIndex, 1);
+      newItems.splice(newIndex, 0, movedItem);
+
+      // Update order_index values
+      const reorderedItems = newItems.map((item, index) => ({
+        ...item,
+        order_index: index + 1,
+      }));
+
+      onReorder(reorderedItems);
+    }
+  }
+
   return (
-    <div className="grid gap-4 pb-6">
-      {items.map((item) => (
-        <Card key={item.id} className="p-4">
-          <div className="flex justify-between items-start">
-            <div className="flex gap-4">
-              {item.image && (
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-24 h-24 object-cover rounded-lg"
-                />
-              )}
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                {item.name_ko && <p className="text-sm text-gray-600">{item.name_ko}</p>}
-                {item.description && <p className="text-sm mt-1">{item.description}</p>}
-                {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
-                <p className="mt-2">${item.price}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant="secondary">{item.category}</Badge>
-                  <Badge variant={item.is_available ? 'default' : 'secondary'}>
-                    {item.is_available ? 'Available' : 'Unavailable'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <div className="space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(item)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(item.id)}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={items}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="grid gap-4 pb-6">
+          {items.map((item) => (
+            <SortableMenuItem
+              key={item.id}
+              item={item}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }

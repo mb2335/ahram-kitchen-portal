@@ -17,6 +17,7 @@ interface MenuItem {
   category: string;
   is_available: boolean;
   image?: string;
+  order_index: number;
 }
 
 export function MenuManagement() {
@@ -54,7 +55,7 @@ export function MenuManagement() {
           .from('menu_items')
           .select('*')
           .eq('vendor_id', vendorData.id)
-          .order('category', { ascending: true });
+          .order('order_index', { ascending: true });
         setMenuItems(data || []);
       }
     } catch (error) {
@@ -127,9 +128,13 @@ export function MenuManagement() {
           .update(menuItemData)
           .eq('id', editingItem.id));
       } else {
+        // Get the highest order_index
+        const maxOrderIndex = menuItems.reduce((max, item) => 
+          Math.max(max, item.order_index || 0), 0);
+        
         ({ error } = await supabase
           .from('menu_items')
-          .insert([menuItemData]));
+          .insert([{ ...menuItemData, order_index: maxOrderIndex + 1 }]));
       }
 
       if (error) throw error;
@@ -176,6 +181,33 @@ export function MenuManagement() {
         description: 'Failed to delete menu item',
         variant: 'destructive',
       });
+    }
+  }
+
+  async function handleReorder(reorderedItems: MenuItem[]) {
+    try {
+      // Update all items with their new order_index values
+      const updates = reorderedItems.map((item) => ({
+        id: item.id,
+        order_index: item.order_index,
+      }));
+
+      const { error } = await supabase
+        .from('menu_items')
+        .upsert(updates);
+
+      if (error) throw error;
+
+      setMenuItems(reorderedItems);
+    } catch (error) {
+      console.error('Error updating menu item order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update menu item order',
+        variant: 'destructive',
+      });
+      // Reload the original order
+      loadMenuItems();
     }
   }
 
@@ -244,6 +276,7 @@ export function MenuManagement() {
         items={menuItems}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onReorder={handleReorder}
       />
     </div>
   );
