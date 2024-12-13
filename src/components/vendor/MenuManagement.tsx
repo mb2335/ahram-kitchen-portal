@@ -2,15 +2,10 @@ import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { ImagePlus } from 'lucide-react';
+import { MenuItemForm } from './menu/MenuItemForm';
+import { MenuItemGrid } from './menu/MenuItemGrid';
 
 interface MenuItem {
   id: string;
@@ -215,8 +210,8 @@ export function MenuManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 h-[calc(100vh-8rem)] overflow-y-auto">
+      <div className="flex justify-between items-center sticky top-0 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 z-10 py-4 px-2">
         <h2 className="text-2xl font-bold">Menu Management</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -228,156 +223,28 @@ export function MenuManagement() {
               Add Item
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-hidden">
             <DialogHeader>
               <DialogTitle>
                 {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="image">Image</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                  <Label
-                    htmlFor="image"
-                    className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary"
-                  >
-                    {selectedImage || editingItem?.image ? (
-                      <img
-                        src={selectedImage ? URL.createObjectURL(selectedImage) : editingItem?.image}
-                        alt="Preview"
-                        className="h-full object-cover rounded-lg"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <ImagePlus className="w-8 h-8 text-gray-400" />
-                        <span className="mt-2 text-sm text-gray-500">Upload Image</span>
-                      </div>
-                    )}
-                  </Label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Name (English)</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name_ko">Name (Korean)</Label>
-                <Input
-                  id="name_ko"
-                  value={formData.name_ko}
-                  onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (English)</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description_ko">Description (Korean)</Label>
-                <Textarea
-                  id="description_ko"
-                  value={formData.description_ko}
-                  onChange={(e) => setFormData({ ...formData, description_ko: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Price ($)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_available"
-                  checked={formData.is_available}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
-                />
-                <Label htmlFor="is_available">Available</Label>
-              </div>
-              <Button type="submit" className="w-full">
-                {editingItem ? 'Update' : 'Add'} Item
-              </Button>
-            </form>
+            <MenuItemForm
+              editingItem={editingItem}
+              formData={formData}
+              setFormData={setFormData}
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              onSubmit={handleSubmit}
+            />
           </DialogContent>
         </Dialog>
       </div>
-      <div className="grid gap-4">
-        {menuItems.map((item) => (
-          <Card key={item.id} className="p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-4">
-                {item.image && (
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
-                )}
-                <div>
-                  <h3 className="font-semibold">{item.name}</h3>
-                  {item.name_ko && <p className="text-sm text-gray-600">{item.name_ko}</p>}
-                  {item.description && <p className="text-sm mt-1">{item.description}</p>}
-                  {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
-                  <p className="mt-2">${item.price}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge variant="secondary">{item.category}</Badge>
-                    <Badge variant={item.is_available ? 'default' : 'secondary'}>
-                      {item.is_available ? 'Available' : 'Unavailable'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(item)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <MenuItemGrid
+        items={menuItems}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
