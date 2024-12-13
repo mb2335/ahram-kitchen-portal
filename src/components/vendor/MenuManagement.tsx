@@ -1,24 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
-
-interface MenuItem {
-  id: string;
-  name: string;
-  name_ko?: string;
-  description?: string;
-  description_ko?: string;
-  price: number;
-  category: string;
-  is_available: boolean;
-  image?: string;
-  order_index: number;
-}
+import { MenuItem, MenuFormData } from './menu/types';
+import { loadVendorMenuItems, saveMenuItem, deleteMenuItem, updateMenuItemOrder } from './menu/menuItemOperations';
 
 export function MenuManagement() {
   const session = useSession();
@@ -28,7 +16,7 @@ export function MenuManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<MenuFormData>({
     name: '',
     name_ko: '',
     description: '',
@@ -39,25 +27,15 @@ export function MenuManagement() {
   });
 
   useEffect(() => {
-    loadMenuItems();
-  }, []);
+    if (session?.user?.id) {
+      loadMenuItems();
+    }
+  }, [session?.user?.id]);
 
   async function loadMenuItems() {
     try {
-      const { data: vendorData } = await supabase
-        .from('vendors')
-        .select('id')
-        .eq('user_id', session?.user?.id)
-        .single();
-
-      if (vendorData) {
-        const { data } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('vendor_id', vendorData.id)
-          .order('order_index', { ascending: true });
-        setMenuItems(data || []);
-      }
+      const data = await loadVendorMenuItems(session?.user?.id!);
+      setMenuItems(data || []);
     } catch (error) {
       console.error('Error loading menu items:', error);
       toast({
@@ -70,74 +48,27 @@ export function MenuManagement() {
     }
   }
 
-  async function handleImageUpload(file: File) {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('menu_items')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('menu_items')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const { data: vendorData } = await supabase
-        .from('vendors')
-        .select('id')
-        .eq('user_id', session?.user?.id)
-        .single();
-
-      if (!vendorData) throw new Error('Vendor not found');
-
       let imageUrl = editingItem?.image;
       if (selectedImage) {
         imageUrl = await handleImageUpload(selectedImage);
       }
 
       const menuItemData = {
-        vendor_id: vendorData.id,
         name: formData.name,
-        name_ko: formData.name_ko || null,
+        name_ko: formData.name_ko,
         description: formData.description || null,
         description_ko: formData.description_ko || null,
         price: parseFloat(formData.price),
         category: formData.category,
         is_available: formData.is_available,
         image: imageUrl,
+        order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
       };
 
-      let error;
-      if (editingItem) {
-        ({ error } = await supabase
-          .from('menu_items')
-          .update(menuItemData)
-          .eq('id', editingItem.id));
-      } else {
-        // Get the highest order_index
-        const maxOrderIndex = menuItems.reduce((max, item) => 
-          Math.max(max, item.order_index || 0), 0);
-        
-        ({ error } = await supabase
-          .from('menu_items')
-          .insert([{ ...menuItemData, order_index: maxOrderIndex + 1 }]));
-      }
-
-      if (error) throw error;
+      await saveMenuItem(session?.user?.id!, menuItemData, editingItem?.id);
 
       toast({
         title: 'Success',
@@ -161,18 +92,11 @@ export function MenuManagement() {
 
   async function handleDelete(itemId: string) {
     try {
-      const { error } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('id', itemId);
-
-      if (error) throw error;
-
+      await deleteMenuItem(itemId);
       toast({
         title: 'Success',
         description: 'Menu item deleted successfully',
       });
-
       loadMenuItems();
     } catch (error) {
       console.error('Error deleting menu item:', error);
@@ -186,18 +110,12 @@ export function MenuManagement() {
 
   async function handleReorder(reorderedItems: MenuItem[]) {
     try {
-      // Update all items with their new order_index values
-      const updates = reorderedItems.map((item) => ({
+      const updates = reorderedItems.map((item, index) => ({
         id: item.id,
-        order_index: item.order_index,
+        order_index: index + 1,
       }));
 
-      const { error } = await supabase
-        .from('menu_items')
-        .upsert(updates);
-
-      if (error) throw error;
-
+      await updateMenuItemOrder(updates);
       setMenuItems(reorderedItems);
     } catch (error) {
       console.error('Error updating menu item order:', error);
@@ -206,7 +124,6 @@ export function MenuManagement() {
         description: 'Failed to update menu item order',
         variant: 'destructive',
       });
-      // Reload the original order
       loadMenuItems();
     }
   }
