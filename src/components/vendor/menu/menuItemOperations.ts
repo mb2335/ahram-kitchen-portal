@@ -2,14 +2,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { MenuItem } from "./types";
 
 export async function updateMenuItemOrder(items: { id: string; order_index: number }[]) {
-  const { error } = await supabase
-    .from('menu_items')
-    .update(items.map(item => ({
-      order_index: item.order_index
-    })))
-    .in('id', items.map(item => item.id));
+  for (const item of items) {
+    const { error } = await supabase
+      .from('menu_items')
+      .update({ order_index: item.order_index })
+      .eq('id', item.id);
 
-  if (error) throw error;
+    if (error) throw error;
+  }
 }
 
 export async function loadVendorMenuItems(userId: string) {
@@ -64,4 +64,21 @@ export async function deleteMenuItem(itemId: string) {
     .delete()
     .eq('id', itemId);
   if (error) throw error;
+}
+
+export async function handleImageUpload(file: File) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+  const { error: uploadError, data } = await supabase.storage
+    .from('menu_items')
+    .upload(fileName, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('menu_items')
+    .getPublicUrl(fileName);
+
+  return publicUrl;
 }

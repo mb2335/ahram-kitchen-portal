@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
 import { MenuItem, MenuFormData } from './menu/types';
-import { loadVendorMenuItems, saveMenuItem, deleteMenuItem, updateMenuItemOrder } from './menu/menuItemOperations';
+import { loadVendorMenuItems, saveMenuItem, deleteMenuItem, updateMenuItemOrder, handleImageUpload } from './menu/menuItemOperations';
 
 export function MenuManagement() {
   const session = useSession();
@@ -117,6 +117,11 @@ export function MenuManagement() {
 
       await updateMenuItemOrder(updates);
       setMenuItems(reorderedItems);
+      
+      toast({
+        title: 'Success',
+        description: 'Menu order updated successfully',
+      });
     } catch (error) {
       console.error('Error updating menu item order:', error);
       toast({
@@ -124,7 +129,7 @@ export function MenuManagement() {
         description: 'Failed to update menu item order',
         variant: 'destructive',
       });
-      loadMenuItems();
+      loadMenuItems(); // Reload items if update fails
     }
   }
 
