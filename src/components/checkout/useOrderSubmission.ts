@@ -12,12 +12,19 @@ interface OrderItem {
   price: number;
 }
 
+interface CustomerData {
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
 interface OrderSubmissionProps {
   items: OrderItem[];
   total: number;
   taxAmount: number;
   notes: string;
   deliveryDate: Date;
+  customerData: CustomerData;
   onOrderSuccess: (orderId: string) => void;
 }
 
@@ -27,43 +34,21 @@ export function useOrderSubmission() {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
 
-  const getOrCreateCustomer = async () => {
-    if (!session?.user) {
-      throw new Error('No session found');
-    }
-
-    const { data: existingCustomer, error: fetchError } = await supabase
+  const createGuestCustomer = async (customerData: CustomerData) => {
+    const { data: customer, error } = await supabase
       .from('customers')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Error fetching customer:', fetchError);
-      throw fetchError;
-    }
-
-    if (existingCustomer) {
-      return existingCustomer.id;
-    }
-
-    const { data: newCustomer, error: insertError } = await supabase
-      .from('customers')
-      .insert({
-        user_id: session.user.id,
-        email: session.user.email,
-        full_name: session.user.user_metadata?.full_name || 'Unknown',
-        phone: session.user.user_metadata?.phone || null
-      })
-      .select('id')
+      .insert([
+        {
+          full_name: customerData.fullName,
+          email: customerData.email,
+          phone: customerData.phone
+        }
+      ])
+      .select()
       .single();
 
-    if (insertError) {
-      console.error('Error creating customer:', insertError);
-      throw insertError;
-    }
-
-    return newCustomer.id;
+    if (error) throw error;
+    return customer;
   };
 
   const submitOrder = async ({
@@ -72,17 +57,9 @@ export function useOrderSubmission() {
     taxAmount,
     notes,
     deliveryDate,
+    customerData,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
-    if (!session?.user.id) {
-      toast({
-        title: 'Error',
-        description: 'Please sign in to complete your order',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsUploading(true);
 
     try {
@@ -95,7 +72,19 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      const customerId = await getOrCreateCustomer();
+      let customerId;
+      if (session?.user?.id) {
+        const { data: existingCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .single();
+        customerId = existingCustomer?.id;
+      } else {
+        // Create a guest customer
+        const guestCustomer = await createGuestCustomer(customerData);
+        customerId = guestCustomer.id;
+      }
 
       // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
@@ -132,8 +121,6 @@ export function useOrderSubmission() {
         quantity: item.quantity,
         unit_price: item.price,
       }));
-
-      console.log('Creating order items:', orderItems);
 
       const { error: orderItemsError } = await supabase
         .from('order_items')
