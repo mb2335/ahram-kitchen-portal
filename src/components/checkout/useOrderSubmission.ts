@@ -37,25 +37,30 @@ export function useOrderSubmission() {
   const getOrCreateCustomer = async (customerData: CustomerData) => {
     try {
       // First, check if a customer with this email already exists
-      const { data: existingCustomer, error: fetchError } = await supabase
+      const { data: existingCustomers, error: fetchError } = await supabase
         .from('customers')
         .select('id, user_id')
-        .eq('email', customerData.email)
-        .maybeSingle();
+        .eq('email', customerData.email);
 
       if (fetchError) throw fetchError;
 
-      // If customer exists and is associated with a user, but current session is guest
-      if (existingCustomer?.user_id && !session?.user) {
-        throw new Error('This email is associated with an account. Please sign in.');
+      // If customer exists
+      if (existingCustomers && existingCustomers.length > 0) {
+        const existingCustomer = existingCustomers[0];
+        
+        // If customer exists and is associated with a user, but current session is guest
+        if (existingCustomer.user_id && !session?.user) {
+          throw new Error('This email is associated with an account. Please sign in.');
+        }
+
+        // If customer exists and is not associated with any user (guest customer)
+        // or if it's associated with the current user, return their ID
+        if (!existingCustomer.user_id || existingCustomer.user_id === session?.user?.id) {
+          return existingCustomer.id;
+        }
       }
 
-      // If customer exists, return their ID
-      if (existingCustomer) {
-        return existingCustomer.id;
-      }
-
-      // If no existing customer, create a new one
+      // If no existing customer found, create a new one
       const { data: newCustomer, error: createError } = await supabase
         .from('customers')
         .insert({
