@@ -6,6 +6,7 @@ import { useToast } from './ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
+import { CustomerForm } from './checkout/CustomerForm';
 
 export function Checkout() {
   const { items, total, clearCart } = useCart();
@@ -20,15 +21,46 @@ export function Checkout() {
     deliveryDate: new Date(),
   });
 
+  const [customerData, setCustomerData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+  });
+
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
 
   useEffect(() => {
-    if (!session) {
-      navigate('/auth', { state: { returnTo: '/checkout' } });
-    } else if (items.length === 0) {
+    if (items.length === 0) {
       navigate('/cart');
     }
+    
+    if (session?.user) {
+      loadUserData();
+    }
   }, [session, items.length, navigate]);
+
+  const loadUserData = async () => {
+    setIsLoadingUserData(true);
+    try {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .single();
+
+      if (customer) {
+        setCustomerData({
+          fullName: customer.full_name,
+          email: customer.email,
+          phone: customer.phone || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setIsLoadingUserData(false);
+    }
+  };
 
   const handleOrderSuccess = async (orderId: string) => {
     clearCart();
@@ -51,9 +83,20 @@ export function Checkout() {
     <div className="container mx-auto max-w-2xl p-6">
       <div className="space-y-6">
         <OrderSummary />
+        {!session && (
+          <CustomerForm
+            fullName={customerData.fullName}
+            email={customerData.email}
+            phone={customerData.phone}
+            onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
+            onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
+            onPhoneChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
+          />
+        )}
         <CheckoutForm
           formData={formData}
           setFormData={setFormData}
+          customerData={customerData}
           onOrderSuccess={handleOrderSuccess}
           total={total}
           taxAmount={taxAmount}

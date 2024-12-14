@@ -14,14 +14,6 @@ export function Cart() {
   const { toast } = useToast();
 
   const handleCheckoutClick = () => {
-    if (!session) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in or create an account to complete your order.",
-      });
-      navigate('/auth', { state: { returnTo: '/checkout' } });
-      return;
-    }
     navigate('/checkout');
   };
 
@@ -103,7 +95,7 @@ export function Cart() {
           className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
           onClick={handleCheckoutClick}
         >
-          {session ? 'Proceed to Checkout' : 'Sign in to Checkout'}
+          {session ? 'Proceed to Checkout' : 'Continue as Guest'}
         </Button>
       </div>
     </div>

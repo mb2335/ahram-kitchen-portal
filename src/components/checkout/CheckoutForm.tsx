@@ -13,6 +13,11 @@ interface CheckoutFormProps {
     deliveryDate: Date;
   };
   setFormData: (data: any) => void;
+  customerData: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
   onOrderSuccess: (orderId: string) => void;
   total: number;
   taxAmount: number;
@@ -28,6 +33,7 @@ interface CheckoutFormProps {
 export function CheckoutForm({
   formData,
   setFormData,
+  customerData,
   onOrderSuccess,
   total,
   taxAmount,
@@ -62,6 +68,7 @@ export function CheckoutForm({
       taxAmount,
       notes: formData.notes,
       deliveryDate: formData.deliveryDate,
+      customerData,
       onOrderSuccess
     }, paymentProof);
   };
