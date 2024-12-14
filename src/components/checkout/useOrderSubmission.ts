@@ -34,21 +34,45 @@ export function useOrderSubmission() {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
 
-  const createGuestCustomer = async (customerData: CustomerData) => {
-    const { data: customer, error } = await supabase
-      .from('customers')
-      .insert([
-        {
+  const getOrCreateCustomer = async (customerData: CustomerData) => {
+    try {
+      // First, check if a customer with this email already exists
+      const { data: existingCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('id, user_id')
+        .eq('email', customerData.email)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      // If customer exists and is associated with a user, but current session is guest
+      if (existingCustomer?.user_id && !session?.user) {
+        throw new Error('This email is associated with an account. Please sign in.');
+      }
+
+      // If customer exists, return their ID
+      if (existingCustomer) {
+        return existingCustomer.id;
+      }
+
+      // If no existing customer, create a new one
+      const { data: newCustomer, error: createError } = await supabase
+        .from('customers')
+        .insert({
           full_name: customerData.fullName,
           email: customerData.email,
-          phone: customerData.phone
-        }
-      ])
-      .select()
-      .single();
+          phone: customerData.phone,
+          user_id: session?.user?.id || null
+        })
+        .select()
+        .single();
 
-    if (error) throw error;
-    return customer;
+      if (createError) throw createError;
+      return newCustomer.id;
+    } catch (error: any) {
+      console.error('Error in getOrCreateCustomer:', error);
+      throw error;
+    }
   };
 
   const submitOrder = async ({
@@ -72,26 +96,19 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      let customerId;
-      if (session?.user?.id) {
-        const { data: existingCustomer } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-        customerId = existingCustomer?.id;
-      } else {
-        // Create a guest customer
-        const guestCustomer = await createGuestCustomer(customerData);
-        customerId = guestCustomer.id;
-      }
+      // Get or create customer
+      const customerId = await getOrCreateCustomer(customerData);
 
-      // Upload payment proof
+      // Upload payment proof with unique filename
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('payment_proofs')
-        .upload(fileName, paymentProof);
+        .upload(fileName, paymentProof, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
