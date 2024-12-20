@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface OrderItem {
@@ -37,7 +37,7 @@ export function useOrderSubmission() {
   const getOrCreateCustomer = async (customerData: CustomerData) => {
     try {
       // First, try to find an existing customer with this email
-      const { data: existingCustomers, error: fetchError } = await supabase
+      const { data: existingCustomer, error: fetchError } = await supabase
         .from('customers')
         .select('*')
         .eq('email', customerData.email)
@@ -46,25 +46,27 @@ export function useOrderSubmission() {
       if (fetchError) throw fetchError;
 
       // If we found an existing customer
-      if (existingCustomers) {
+      if (existingCustomer) {
         // If the customer is associated with a user and we're not that user
-        if (existingCustomers.user_id && session?.user?.id !== existingCustomers.user_id) {
+        if (existingCustomer.user_id && session?.user?.id !== existingCustomer.user_id) {
           throw new Error('This email is associated with an existing account. Please sign in.');
         }
         
         // Update the existing customer's information
-        const { error: updateError } = await supabase
+        const { data: updatedCustomer, error: updateError } = await supabase
           .from('customers')
           .update({
             full_name: customerData.fullName,
             phone: customerData.phone,
             // Only update user_id if we have a session and the customer doesn't already have one
-            ...(session?.user?.id && !existingCustomers.user_id ? { user_id: session.user.id } : {})
+            ...(session?.user?.id && !existingCustomer.user_id ? { user_id: session.user.id } : {})
           })
-          .eq('id', existingCustomers.id);
+          .eq('id', existingCustomer.id)
+          .select()
+          .single();
 
         if (updateError) throw updateError;
-        return existingCustomers.id;
+        return updatedCustomer.id;
       }
 
       // If no existing customer found, create a new one
