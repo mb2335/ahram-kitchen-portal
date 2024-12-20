@@ -13,7 +13,19 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableMenuItem } from "./SortableMenuItem";
-import { MenuItem } from "./types";
+
+interface MenuItem {
+  id: string;
+  name: string;
+  name_ko?: string;
+  description?: string;
+  description_ko?: string;
+  price: number;
+  category: string;
+  is_available: boolean;
+  image?: string;
+  order_index: number;
+}
 
 interface MenuItemGridProps {
   items: MenuItem[];

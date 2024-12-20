@@ -4,7 +4,19 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical } from "lucide-react";
-import { MenuItem } from "./types";
+
+interface MenuItem {
+  id: string;
+  name: string;
+  name_ko?: string;
+  description?: string;
+  description_ko?: string;
+  price: number;
+  category: string;
+  is_available: boolean;
+  image?: string;
+  order_index: number;
+}
 
 interface SortableMenuItemProps {
   item: MenuItem;
@@ -55,11 +67,9 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
                 {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
                 <p className="mt-2">${item.price}</p>
                 <div className="mt-1 flex items-center gap-2">
+                  <Badge variant="secondary">{item.category}</Badge>
                   <Badge variant={item.is_available ? 'default' : 'secondary'}>
                     {item.is_available ? 'Available' : 'Unavailable'}
-                  </Badge>
-                  <Badge variant="secondary">
-                    Quantity Limit: {item.quantity_limit || 'No Limit'}
                   </Badge>
                 </div>
               </div>

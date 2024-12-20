@@ -38,13 +38,13 @@ export const useOrders = () => {
             ),
             order_items (
               id,
-              menu_item_id,
               quantity,
               unit_price,
               menu_item:menu_items (
                 id,
                 name,
-                name_ko
+                name_ko,
+                price
               )
             )
           `)
@@ -53,7 +53,7 @@ export const useOrders = () => {
 
         if (error) throw error;
         console.log('Customer orders fetched:', orders);
-        return orders as unknown as Order[];
+        return orders;
       } catch (error: any) {
         console.error('Error fetching orders:', error);
         toast({
@@ -97,7 +97,11 @@ export const useVendorOrders = () => {
               menu_item:menu_items(
                 id,
                 name,
-                name_ko
+                name_ko,
+                price,
+                description,
+                description_ko,
+                category
               )
             )
           `)
@@ -109,7 +113,7 @@ export const useVendorOrders = () => {
         }
 
         console.log('Vendor orders fetched successfully:', data);
-        return data as unknown as Order[];
+        return data as Order[];
       } catch (error: any) {
         console.error('Error in useVendorOrders:', error);
         toast({

@@ -1,15 +1,15 @@
-import { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from 'react';
+import { toast } from '@/components/ui/use-toast';
 
 export interface MenuItem {
-  id: string;
-  vendor_id: string | null;
+  id: string; // This must be a UUID from the menu_items table
   name: string;
   nameKo: string;
   description: string;
   descriptionKo: string;
   price: number;
   image: string;
-  quantity_limit?: number;
+  category: string;
 }
 
 interface CartItem extends MenuItem {
@@ -19,73 +19,80 @@ interface CartItem extends MenuItem {
 interface CartContextType {
   items: CartItem[];
   addItem: (item: MenuItem) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
+  removeItem: (itemId: string) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
   total: number;
+  clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (item: MenuItem) => {
-    setItems((prevItems) => {
-      const existingItem = prevItems.find((i) => i.id === item.id);
+    // Validate that the item.id is a UUID
+    if (!item.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+      console.error('Invalid menu item ID format:', item.id);
+      toast({
+        title: "Error",
+        description: "Invalid menu item format. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setItems((currentItems) => {
+      const existingItem = currentItems.find((i) => i.id === item.id);
       if (existingItem) {
-        // Check quantity limit if it exists
-        if (item.quantity_limit && existingItem.quantity >= item.quantity_limit) {
-          return prevItems; // Don't add more if limit reached
-        }
-        return prevItems.map((i) =>
-          i.id === item.id
-            ? { ...i, quantity: item.quantity_limit 
-                ? Math.min(i.quantity + 1, item.quantity_limit)
-                : i.quantity + 1 }
-            : i
+        return currentItems.map((i) =>
+          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      return [...prevItems, { ...item, quantity: 1 }];
+      return [...currentItems, { ...item, quantity: 1 }];
+    });
+    
+    toast({
+      title: "Added to cart",
+      description: `${item.name} has been added to your cart.`,
     });
   };
 
-  const removeItem = (id: string) => {
-    setItems((prevItems) => prevItems.filter(item => item.id !== id));
+  const removeItem = (itemId: string) => {
+    setItems((currentItems) => currentItems.filter((i) => i.id !== itemId));
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
-    setItems((prevItems) =>
-      prevItems.map((item) => {
-        if (item.id === id) {
-          const maxQuantity = item.quantity_limit || Infinity;
-          const newQuantity = Math.max(0, Math.min(quantity, maxQuantity));
-          return newQuantity === 0
-            ? item // Will be filtered out below
-            : { ...item, quantity: newQuantity };
-        }
-        return item;
-      }).filter((item) => item.quantity > 0)
+  const updateQuantity = (itemId: string, quantity: number) => {
+    if (quantity < 1) {
+      removeItem(itemId);
+      return;
+    }
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item
+      )
     );
   };
+
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const clearCart = () => {
     setItems([]);
   };
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total }}>
+    <CartContext.Provider
+      value={{ items, addItem, removeItem, updateQuantity, total, clearCart }}
+    >
       {children}
     </CartContext.Provider>
   );
-};
+}
 
-export const useCart = () => {
+export function useCart() {
   const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
-};
+}

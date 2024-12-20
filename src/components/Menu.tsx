@@ -32,14 +32,13 @@ export function Menu() {
 
       return data.map(item => ({
         id: item.id,
-        vendor_id: item.vendor_id,
         name: item.name,
         nameKo: item.name_ko,
         description: item.description || '',
         descriptionKo: item.description_ko || '',
         price: Number(item.price),
         image: item.image || '/placeholder.svg',
-        quantity_limit: item.quantity_limit
+        category: item.category
       }));
     }
   });

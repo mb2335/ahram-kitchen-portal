@@ -85,6 +85,7 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          category: string
           created_at: string | null
           description: string | null
           description_ko: string | null
@@ -95,10 +96,10 @@ export type Database = {
           name_ko: string
           order_index: number
           price: number
-          quantity_limit: number | null
           vendor_id: string | null
         }
         Insert: {
+          category: string
           created_at?: string | null
           description?: string | null
           description_ko?: string | null
@@ -109,10 +110,10 @@ export type Database = {
           name_ko: string
           order_index: number
           price: number
-          quantity_limit?: number | null
           vendor_id?: string | null
         }
         Update: {
+          category?: string
           created_at?: string | null
           description?: string | null
           description_ko?: string | null
@@ -123,7 +124,6 @@ export type Database = {
           name_ko?: string
           order_index?: number
           price?: number
-          quantity_limit?: number | null
           vendor_id?: string | null
         }
         Relationships: [
