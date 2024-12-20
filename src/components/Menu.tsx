@@ -41,8 +41,7 @@ export function Menu() {
 
     return {
       ...item,
-      remaining_quantity: remainingQuantity,
-      quantity_limit: remainingQuantity
+      remaining_quantity: remainingQuantity
     };
   });
 

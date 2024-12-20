@@ -13,7 +13,6 @@ export interface MenuItem {
   created_at: string | null;
   order_index: number;
   quantity_limit: number | null;
-  quantity: number | null;
   remaining_quantity: number | null;
 }
 
