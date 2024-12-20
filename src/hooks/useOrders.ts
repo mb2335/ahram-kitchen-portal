@@ -53,7 +53,7 @@ export const useOrders = () => {
 
         if (error) throw error;
         console.log('Customer orders fetched:', orders);
-        return orders;
+        return orders as Order[];
       } catch (error: any) {
         console.error('Error fetching orders:', error);
         toast({

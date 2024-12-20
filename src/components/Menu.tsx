@@ -38,7 +38,7 @@ export function Menu() {
         descriptionKo: item.description_ko || '',
         price: Number(item.price),
         image: item.image || '/placeholder.svg',
-        category: item.category
+        quantity_limit: item.quantity_limit
       }));
     }
   });
