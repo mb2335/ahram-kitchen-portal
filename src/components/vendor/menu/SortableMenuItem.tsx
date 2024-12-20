@@ -30,9 +30,8 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
 
   const getRemainingLabel = () => {
     if (item.quantity === null) return "No Limit";
-    const remaining = item.quantity - (item.remainingQuantity || 0);
-    if (remaining <= 0) return "0 remaining";
-    return `${remaining} remaining`;
+    if (item.quantity <= 0) return "0 remaining";
+    return `${item.quantity} remaining`;
   };
 
   return (
