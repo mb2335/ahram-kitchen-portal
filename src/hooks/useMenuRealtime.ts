@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
 
 type MenuItemChange = RealtimePostgresChangesPayload<{
   [key: string]: any;
@@ -28,14 +27,18 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
       )
-      .on('error', (error) => {
-        console.error('Menu channel error:', error);
-        toast({
-          title: "Connection Error",
-          description: "Having trouble receiving menu updates. Please refresh the page.",
-          variant: "destructive",
-        });
-      })
+      .on(
+        'error',
+        { event: 'error' },
+        (error) => {
+          console.error('Menu channel error:', error);
+          toast({
+            title: "Connection Error",
+            description: "Having trouble receiving menu updates. Please refresh the page.",
+            variant: "destructive",
+          });
+        }
+      )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to menu updates');
@@ -71,14 +74,18 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
           refetchOrderQuantities();
         }
       )
-      .on('error', (error) => {
-        console.error('Order channel error:', error);
-        toast({
-          title: "Connection Error",
-          description: "Having trouble receiving order updates. Please refresh the page.",
-          variant: "destructive",
-        });
-      })
+      .on(
+        'error',
+        { event: 'error' },
+        (error) => {
+          console.error('Order channel error:', error);
+          toast({
+            title: "Connection Error",
+            description: "Having trouble receiving order updates. Please refresh the page.",
+            variant: "destructive",
+          });
+        }
+      )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to order updates');
