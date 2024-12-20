@@ -28,7 +28,7 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
         }
       )
       .on(
-        'error',
+        'system',
         { event: 'error' },
         (error) => {
           console.error('Menu channel error:', error);
@@ -75,7 +75,7 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
         }
       )
       .on(
-        'error',
+        'system',
         { event: 'error' },
         (error) => {
           console.error('Order channel error:', error);
