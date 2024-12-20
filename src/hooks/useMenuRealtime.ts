@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
   const queryClient = useQueryClient();
@@ -60,7 +60,6 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
         title: "Connection Error",
         description: "Having trouble receiving updates. Please refresh the page.",
         variant: "destructive",
-        duration: 5000
       });
     };
 
