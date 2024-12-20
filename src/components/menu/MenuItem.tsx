@@ -51,7 +51,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
             disabled={isOutOfStock}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {isOutOfStock ? t('item.soldOut') : t('item.add')}
+            {t('item.add')}
           </Button>
         </div>
       </div>

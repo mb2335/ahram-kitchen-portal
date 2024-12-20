@@ -11,6 +11,7 @@ export interface MenuItem {
   created_at?: string;
   order_index: number;
   quantity?: number | null;
+  remainingQuantity?: number | null;
 }
 
 export interface MenuFormData {
