@@ -84,16 +84,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((currentItems) => currentItems.filter((i) => i.id !== itemId));
   };
 
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity < 1) {
+  const updateQuantity = (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) {
       removeItem(itemId);
       return;
     }
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
-      )
-    );
+
+    setItems((currentItems) => {
+      const item = currentItems.find((i) => i.id === itemId);
+      if (!item) return currentItems;
+
+      // Check if the new quantity would exceed the remaining quantity
+      if (item.remainingQuantity !== null && newQuantity > item.remainingQuantity) {
+        toast({
+          title: "Error",
+          description: "Cannot add more of this item - quantity limit reached.",
+          variant: "destructive",
+        });
+        return currentItems;
+      }
+
+      return currentItems.map((i) =>
+        i.id === itemId ? { ...i, quantity: newQuantity } : i
+      );
+    });
   };
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);

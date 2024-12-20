@@ -34,11 +34,13 @@ export function Menu() {
       }
 
       return data.map(item => {
-        // Calculate remaining quantity
-        const orderedQuantity = item.order_items?.reduce((sum, orderItem) => 
+        // Calculate total ordered quantity from all orders
+        const totalOrdered = item.order_items?.reduce((sum, orderItem) => 
           sum + orderItem.quantity, 0) || 0;
+        
+        // If quantity is set, calculate remaining by subtracting orders
         const remainingQuantity = item.quantity !== null 
-          ? item.quantity - orderedQuantity 
+          ? Math.max(0, item.quantity - totalOrdered)
           : null;
 
         return {
