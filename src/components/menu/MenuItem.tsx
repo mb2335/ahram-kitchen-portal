@@ -27,11 +27,6 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
       <div className="p-4">
-        <div className="mb-2">
-          <span className="inline-block px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground rounded">
-            {item.category}
-          </span>
-        </div>
         <h3 className="text-lg font-medium mb-1">
           {displayName}
         </h3>

@@ -22,7 +22,7 @@ export function MenuManagement() {
     description: '',
     description_ko: '',
     price: '',
-    category: '',
+    quantity_limit: '999',
     is_available: true,
   });
 
@@ -62,7 +62,7 @@ export function MenuManagement() {
         description: formData.description || null,
         description_ko: formData.description_ko || null,
         price: parseFloat(formData.price),
-        category: formData.category,
+        quantity_limit: parseInt(formData.quantity_limit),
         is_available: formData.is_available,
         image: imageUrl,
         order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
@@ -90,63 +90,6 @@ export function MenuManagement() {
     }
   }
 
-  async function handleDelete(itemId: string) {
-    try {
-      await deleteMenuItem(itemId);
-      toast({
-        title: 'Success',
-        description: 'Menu item deleted successfully',
-      });
-      loadMenuItems();
-    } catch (error) {
-      console.error('Error deleting menu item:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete menu item',
-        variant: 'destructive',
-      });
-    }
-  }
-
-  async function handleReorder(reorderedItems: MenuItem[]) {
-    try {
-      const updates = reorderedItems.map((item, index) => ({
-        id: item.id,
-        order_index: index + 1,
-      }));
-
-      await updateMenuItemOrder(updates);
-      setMenuItems(reorderedItems);
-      
-      toast({
-        title: 'Success',
-        description: 'Menu order updated successfully',
-      });
-    } catch (error) {
-      console.error('Error updating menu item order:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update menu item order',
-        variant: 'destructive',
-      });
-      loadMenuItems(); // Reload items if update fails
-    }
-  }
-
-  function handleEdit(item: MenuItem) {
-    setEditingItem(item);
-    setFormData({
-      name: item.name,
-      name_ko: item.name_ko || '',
-      description: item.description || '',
-      description_ko: item.description_ko || '',
-      price: item.price.toString(),
-      category: item.category,
-      is_available: item.is_available,
-    });
-    setIsDialogOpen(true);
-  }
-
   function resetForm() {
     setFormData({
       name: '',
@@ -154,7 +97,7 @@ export function MenuManagement() {
       description: '',
       description_ko: '',
       price: '',
-      category: '',
+      quantity_limit: '999',
       is_available: true,
     });
   }
@@ -196,9 +139,21 @@ export function MenuManagement() {
       </div>
       <MenuItemGrid
         items={menuItems}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onReorder={handleReorder}
+        onEdit={(item) => {
+          setEditingItem(item);
+          setFormData({
+            name: item.name,
+            name_ko: item.name_ko || '',
+            description: item.description || '',
+            description_ko: item.description_ko || '',
+            price: item.price.toString(),
+            quantity_limit: item.quantity_limit.toString(),
+            is_available: item.is_available,
+          });
+          setIsDialogOpen(true);
+        }}
+        onDelete={deleteMenuItem}
+        onReorder={updateMenuItemOrder}
       />
     </div>
   );

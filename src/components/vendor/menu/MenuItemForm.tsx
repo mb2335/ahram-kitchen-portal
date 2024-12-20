@@ -5,31 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ImagePlus } from 'lucide-react';
-
-interface MenuItem {
-  id: string;
-  name: string;
-  name_ko?: string;
-  description?: string;
-  description_ko?: string;
-  price: number;
-  category: string;
-  is_available: boolean;
-  image?: string;
-}
+import { MenuItem, MenuFormData } from './types';
 
 interface MenuItemFormProps {
   editingItem: MenuItem | null;
-  formData: {
-    name: string;
-    name_ko: string;
-    description: string;
-    description_ko: string;
-    price: string;
-    category: string;
-    is_available: boolean;
-  };
-  setFormData: (data: any) => void;
+  formData: MenuFormData;
+  setFormData: (data: MenuFormData) => void;
   selectedImage: File | null;
   setSelectedImage: (file: File | null) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -89,6 +70,7 @@ export function MenuItemForm({
           id="name_ko"
           value={formData.name_ko}
           onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
+          required
         />
       </div>
       <div className="space-y-2">
@@ -119,13 +101,16 @@ export function MenuItemForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="quantity_limit">Quantity Limit</Label>
         <Input
-          id="category"
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          id="quantity_limit"
+          type="number"
+          min="1"
+          value={formData.quantity_limit}
+          onChange={(e) => setFormData({ ...formData, quantity_limit: e.target.value })}
           required
         />
+        <p className="text-sm text-gray-500">Maximum number of items that can be ordered</p>
       </div>
       <div className="flex items-center space-x-2">
         <Switch
