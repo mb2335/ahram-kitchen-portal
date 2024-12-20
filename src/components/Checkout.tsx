@@ -82,7 +82,7 @@ export function Checkout() {
   const checkoutItems = items.map(item => ({
     id: item.id,
     name: item.name,
-    name_ko: item.name_ko,
+    nameKo: item.name_ko, // Map name_ko to nameKo for compatibility
     quantity: item.quantity,
     price: item.price
   }));
