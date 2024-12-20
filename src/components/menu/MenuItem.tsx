@@ -17,7 +17,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const displayName = language === 'en' ? item.name : item.nameKo;
   const displayDescription = language === 'en' ? item.description : item.descriptionKo;
 
-  // Query to get the total quantity ordered for this item
+  // Query to get the total quantity ordered for this item from pending and confirmed orders
   const { data: orderedQuantity = 0 } = useQuery({
     queryKey: ['ordered-quantity', item.id],
     queryFn: async () => {
@@ -25,18 +25,25 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
 
       const { data, error } = await supabase
         .from('order_items')
-        .select('quantity')
+        .select(`
+          quantity,
+          orders!inner (
+            status
+          )
+        `)
         .eq('menu_item_id', item.id)
-        .in('order.status', ['pending', 'confirmed']);
+        .in('orders.status', ['pending', 'confirmed']);
 
       if (error) {
         console.error('Error fetching ordered quantity:', error);
         return 0;
       }
 
+      // Calculate total quantity from pending and confirmed orders
       return data.reduce((sum, orderItem) => sum + orderItem.quantity, 0);
     },
-    enabled: !!item.quantity_limit,
+    // Refresh every 30 seconds to keep quantities up to date
+    refetchInterval: 30000,
   });
 
   const remainingQuantity = item.quantity_limit ? item.quantity_limit - orderedQuantity : null;
