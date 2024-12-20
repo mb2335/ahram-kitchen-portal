@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -18,7 +19,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const displayDescription = language === 'en' ? item.description : item.descriptionKo;
 
   // Query to get the total quantity ordered for this item from pending and confirmed orders
-  const { data: orderedQuantity = 0 } = useQuery({
+  const { data: orderedQuantity = 0, refetch: refetchOrderedQuantity } = useQuery({
     queryKey: ['ordered-quantity', item.id],
     queryFn: async () => {
       if (!item.quantity_limit) return 0;
@@ -45,6 +46,29 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
     // Refresh every 30 seconds to keep quantities up to date
     refetchInterval: 30000,
   });
+
+  // Subscribe to real-time updates for order_items
+  useEffect(() => {
+    const channel = supabase
+      .channel('order-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events
+          schema: 'public',
+          table: 'order_items',
+          filter: `menu_item_id=eq.${item.id}`
+        },
+        () => {
+          refetchOrderedQuantity(); // Refresh ordered quantity when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [item.id, refetchOrderedQuantity]);
 
   const remainingQuantity = item.quantity_limit ? item.quantity_limit - orderedQuantity : null;
 

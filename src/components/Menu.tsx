@@ -4,12 +4,13 @@ import { MenuGrid } from "./menu/MenuGrid";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 export function Menu() {
   const { t } = useLanguage();
   const { addItem } = useCart();
 
-  const { data: menuItems = [], isLoading, error } = useQuery({
+  const { data: menuItems = [], isLoading, error, refetch } = useQuery({
     queryKey: ['menu-items'],
     queryFn: async () => {
       console.log('Fetching menu items...');
@@ -43,6 +44,29 @@ export function Menu() {
       }));
     }
   });
+
+  // Subscribe to real-time updates for menu_items table
+  useEffect(() => {
+    const channel = supabase
+      .channel('menu-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'menu_items'
+        },
+        (payload) => {
+          console.log('Menu item change detected:', payload);
+          refetch(); // Refresh menu items when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (error) {
     console.error('Error in menu component:', error);
