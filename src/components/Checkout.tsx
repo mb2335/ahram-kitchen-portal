@@ -79,6 +79,14 @@ export function Checkout() {
     );
   }
 
+  const checkoutItems = items.map(item => ({
+    id: item.id,
+    name: item.name,
+    name_ko: item.name_ko,
+    quantity: item.quantity,
+    price: item.price
+  }));
+
   return (
     <div className="container mx-auto max-w-2xl p-6">
       <div className="space-y-6">
@@ -100,7 +108,7 @@ export function Checkout() {
           onOrderSuccess={handleOrderSuccess}
           total={total}
           taxAmount={taxAmount}
-          items={items}
+          items={checkoutItems}
         />
       </div>
     </div>

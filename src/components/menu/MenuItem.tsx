@@ -4,9 +4,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -15,68 +12,8 @@ interface MenuItemProps {
 
 export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const { language, t } = useLanguage();
-  const displayName = language === 'en' ? item.name : item.nameKo;
-  const displayDescription = language === 'en' ? item.description : item.descriptionKo;
-
-  // Query to get the total quantity ordered for this item from pending and confirmed orders
-  const { data: orderedQuantity = 0, refetch: refetchOrderedQuantity } = useQuery({
-    queryKey: ['ordered-quantity', item.id],
-    queryFn: async () => {
-      if (!item.quantity_limit) return 0;
-
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(`
-          quantity,
-          orders!inner (
-            status
-          )
-        `)
-        .eq('menu_item_id', item.id)
-        .in('orders.status', ['pending', 'confirmed']);
-
-      if (error) {
-        console.error('Error fetching ordered quantity:', error);
-        return 0;
-      }
-
-      // Calculate total quantity from pending and confirmed orders
-      return data.reduce((sum, orderItem) => sum + orderItem.quantity, 0);
-    },
-    // Refresh every 30 seconds to keep quantities up to date
-    refetchInterval: 30000,
-  });
-
-  // Subscribe to real-time updates for order_items
-  useEffect(() => {
-    const channel = supabase
-      .channel('order-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events
-          schema: 'public',
-          table: 'order_items',
-          filter: `menu_item_id=eq.${item.id}`
-        },
-        () => {
-          refetchOrderedQuantity(); // Refresh ordered quantity when changes occur
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [item.id, refetchOrderedQuantity]);
-
-  const remainingQuantity = item.quantity_limit ? item.quantity_limit - orderedQuantity : null;
-
-  const getQuantityDisplay = () => {
-    if (!item.quantity_limit) return t('No Limit');
-    if (remainingQuantity === 0) return t('item.soldOut');
-    return `${t('Remaining: ')} ${remainingQuantity} `;
-  };
+  const displayName = language === 'en' ? item.name : item.name_ko;
+  const displayDescription = language === 'en' ? item.description : item.description_ko;
 
   return (
     <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
@@ -101,16 +38,16 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-primary">${item.price}</span>
             <Badge 
-              variant={remainingQuantity === 0 ? "destructive" : "secondary"} 
+              variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
               className="text-xs"
             >
-              {getQuantityDisplay()}
+              {item.remaining_quantity === 0 ? t('item.soldOut') : `${t('Remaining: ')} ${item.remaining_quantity}`}
             </Badge>
           </div>
           <Button 
             onClick={() => onAddToCart(item)}
             className="w-full bg-primary hover:bg-primary/90 text-white"
-            disabled={remainingQuantity === 0}
+            disabled={item.remaining_quantity === 0}
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('item.add')}

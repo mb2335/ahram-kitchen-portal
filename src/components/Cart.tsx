@@ -44,12 +44,12 @@ export function Cart() {
             <div className="flex items-center space-x-4 mb-4 sm:mb-0">
               <img
                 src={item.image}
-                alt={language === 'en' ? item.name : item.nameKo}
+                alt={language === 'en' ? item.name : item.name_ko}
                 className="w-20 h-20 object-cover rounded-lg"
               />
               <div>
                 <h3 className="font-medium text-lg">
-                  {language === 'en' ? item.name : item.nameKo}
+                  {language === 'en' ? item.name : item.name_ko}
                 </h3>
                 <p className="text-primary font-bold">${item.price}</p>
               </div>
