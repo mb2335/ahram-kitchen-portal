@@ -8,6 +8,7 @@ export const useOrderQuantities = () => {
     queryFn: async () => {
       console.log('Fetching order quantities...');
       try {
+        // Modified query to include all orders regardless of customer type
         const { data, error } = await supabase
           .from('order_items')
           .select(`
