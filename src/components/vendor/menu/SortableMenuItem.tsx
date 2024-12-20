@@ -28,6 +28,13 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const getRemainingLabel = () => {
+    if (item.quantity === null) return "No Limit";
+    const remaining = item.quantity - (item.remainingQuantity || 0);
+    if (remaining <= 0) return "0 remaining";
+    return `${remaining} remaining`;
+  };
+
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="p-4">
@@ -57,6 +64,9 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
                 <div className="mt-1 flex items-center gap-2">
                   <Badge variant={item.is_available ? 'default' : 'secondary'}>
                     {item.is_available ? 'Available' : 'Unavailable'}
+                  </Badge>
+                  <Badge variant="secondary">
+                    {getRemainingLabel()}
                   </Badge>
                 </div>
               </div>

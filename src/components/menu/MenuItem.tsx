@@ -17,6 +17,12 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
 
   const isOutOfStock = item.remainingQuantity !== null && item.remainingQuantity <= 0;
 
+  const getRemainingLabel = () => {
+    if (item.remainingQuantity === null) return "No Limit";
+    if (item.remainingQuantity <= 0) return "0 remaining";
+    return `${item.remainingQuantity} remaining`;
+  };
+
   return (
     <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="aspect-w-16 aspect-h-9 relative overflow-hidden">
@@ -35,9 +41,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
             {displayName}
           </h3>
           <Badge variant={isOutOfStock ? "destructive" : "secondary"}>
-            {item.remainingQuantity === null 
-              ? "No Limit" 
-              : `${item.remainingQuantity} remaining`}
+            {getRemainingLabel()}
           </Badge>
         </div>
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">
