@@ -101,16 +101,16 @@ export function MenuItemForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="quantity_limit">Quantity Limit</Label>
+        <Label htmlFor="quantity_limit">Quantity Limit (Optional)</Label>
         <Input
           id="quantity_limit"
           type="number"
           min="1"
           value={formData.quantity_limit}
           onChange={(e) => setFormData({ ...formData, quantity_limit: e.target.value })}
-          required
+          placeholder="Leave blank for no limit"
         />
-        <p className="text-sm text-gray-500">Maximum number of items that can be ordered</p>
+        <p className="text-sm text-gray-500">Maximum number of items that can be ordered (optional)</p>
       </div>
       <div className="flex items-center space-x-2">
         <Switch

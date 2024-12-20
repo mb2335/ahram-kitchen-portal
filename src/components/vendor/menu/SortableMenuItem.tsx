@@ -59,7 +59,7 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
                     {item.is_available ? 'Available' : 'Unavailable'}
                   </Badge>
                   <Badge variant="secondary">
-                    Limit: {item.quantity_limit}
+                    Quantity Limit: {item.quantity_limit || 'No Limit'}
                   </Badge>
                 </div>
               </div>

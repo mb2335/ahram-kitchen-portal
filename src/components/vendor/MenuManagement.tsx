@@ -22,7 +22,7 @@ export function MenuManagement() {
     description: '',
     description_ko: '',
     price: '',
-    quantity_limit: '999',
+    quantity_limit: '',
     is_available: true,
   });
 
@@ -62,7 +62,7 @@ export function MenuManagement() {
         description: formData.description || null,
         description_ko: formData.description_ko || null,
         price: parseFloat(formData.price),
-        quantity_limit: parseInt(formData.quantity_limit),
+        quantity_limit: formData.quantity_limit ? parseInt(formData.quantity_limit) : null,
         is_available: formData.is_available,
         image: imageUrl,
         order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
@@ -97,7 +97,7 @@ export function MenuManagement() {
       description: '',
       description_ko: '',
       price: '',
-      quantity_limit: '999',
+      quantity_limit: '',
       is_available: true,
     });
   }
@@ -147,7 +147,7 @@ export function MenuManagement() {
             description: item.description || '',
             description_ko: item.description_ko || '',
             price: item.price.toString(),
-            quantity_limit: item.quantity_limit.toString(),
+            quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
             is_available: item.is_available,
           });
           setIsDialogOpen(true);

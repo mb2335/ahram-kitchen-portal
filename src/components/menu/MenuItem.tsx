@@ -36,11 +36,9 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
         </p>
         <div className="flex justify-between items-center">
           <span className="text-lg font-bold text-primary">${item.price}</span>
-          {item.quantity_limit && (
-            <Badge variant="secondary" className="mr-2">
-              {t(`item.limitedQuantity_${item.quantity_limit}`)}
-            </Badge>
-          )}
+          <Badge variant="secondary" className="mr-2">
+            {item.quantity_limit ? `${t('item.limitedQuantity')}: ${item.quantity_limit}` : t('item.noLimit')}
+          </Badge>
           <Button 
             onClick={() => onAddToCart(item)}
             className="bg-primary hover:bg-primary/90 text-white"
