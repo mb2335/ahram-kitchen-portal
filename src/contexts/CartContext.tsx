@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from "react";
 
 export interface MenuItem {
   id: string;
+  vendor_id: string | null;
   name: string;
   nameKo: string;
   description: string;
