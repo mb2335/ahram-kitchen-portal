@@ -12,7 +12,7 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
-        () => {
+        (payload) => {
           console.log('Menu item change detected');
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
@@ -24,7 +24,7 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
-        () => {
+        (payload) => {
           console.log('Order item change detected');
           queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
           refetchOrderQuantities();
@@ -33,7 +33,7 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        () => {
+        (payload) => {
           console.log('Order status change detected');
           queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
           refetchOrderQuantities();
