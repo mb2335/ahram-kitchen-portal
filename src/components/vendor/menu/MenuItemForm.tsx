@@ -1,35 +1,15 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ImagePlus } from 'lucide-react';
-
-interface MenuItem {
-  id: string;
-  name: string;
-  name_ko?: string;
-  description?: string;
-  description_ko?: string;
-  price: number;
-  category: string;
-  is_available: boolean;
-  image?: string;
-}
+import { MenuItem, MenuFormData } from './types';
 
 interface MenuItemFormProps {
   editingItem: MenuItem | null;
-  formData: {
-    name: string;
-    name_ko: string;
-    description: string;
-    description_ko: string;
-    price: string;
-    category: string;
-    is_available: boolean;
-  };
-  setFormData: (data: any) => void;
+  formData: MenuFormData;
+  setFormData: (data: MenuFormData) => void;
   selectedImage: File | null;
   setSelectedImage: (file: File | null) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -119,12 +99,13 @@ export function MenuItemForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="quantity">Quantity (Optional)</Label>
         <Input
-          id="category"
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          required
+          id="quantity"
+          type="number"
+          value={formData.quantity}
+          onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+          placeholder="Leave empty for unlimited"
         />
       </div>
       <div className="flex items-center space-x-2">

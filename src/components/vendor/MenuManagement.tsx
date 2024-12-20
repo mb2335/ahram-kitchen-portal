@@ -22,8 +22,8 @@ export function MenuManagement() {
     description: '',
     description_ko: '',
     price: '',
-    category: '',
     is_available: true,
+    quantity: '',
   });
 
   useEffect(() => {
@@ -62,9 +62,9 @@ export function MenuManagement() {
         description: formData.description || null,
         description_ko: formData.description_ko || null,
         price: parseFloat(formData.price),
-        category: formData.category,
         is_available: formData.is_available,
         image: imageUrl,
+        quantity: formData.quantity ? parseInt(formData.quantity) : null,
         order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
       };
 
@@ -141,8 +141,8 @@ export function MenuManagement() {
       description: item.description || '',
       description_ko: item.description_ko || '',
       price: item.price.toString(),
-      category: item.category,
       is_available: item.is_available,
+      quantity: item.quantity?.toString() || '',
     });
     setIsDialogOpen(true);
   }
@@ -154,8 +154,8 @@ export function MenuManagement() {
       description: '',
       description_ko: '',
       price: '',
-      category: '',
       is_available: true,
+      quantity: '',
     });
   }
 
