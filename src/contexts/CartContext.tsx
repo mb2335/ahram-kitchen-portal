@@ -1,98 +1,51 @@
-import React, { createContext, useContext, useState } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { createContext, useContext, useState } from "react";
 
 export interface MenuItem {
-  id: string; // This must be a UUID from the menu_items table
+  id: string;
   name: string;
   nameKo: string;
   description: string;
   descriptionKo: string;
   price: number;
   image: string;
-  category: string;
-}
-
-interface CartItem extends MenuItem {
-  quantity: number;
+  quantity_limit: number;
 }
 
 interface CartContextType {
-  items: CartItem[];
+  items: MenuItem[];
   addItem: (item: MenuItem) => void;
-  removeItem: (itemId: string) => void;
-  updateQuantity: (itemId: string, quantity: number) => void;
-  total: number;
+  removeItem: (id: string) => void;
   clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [items, setItems] = useState<MenuItem[]>([]);
 
   const addItem = (item: MenuItem) => {
-    // Validate that the item.id is a UUID
-    if (!item.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
-      console.error('Invalid menu item ID format:', item.id);
-      toast({
-        title: "Error",
-        description: "Invalid menu item format. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setItems((currentItems) => {
-      const existingItem = currentItems.find((i) => i.id === item.id);
-      if (existingItem) {
-        return currentItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-        );
-      }
-      return [...currentItems, { ...item, quantity: 1 }];
-    });
-    
-    toast({
-      title: "Added to cart",
-      description: `${item.name} has been added to your cart.`,
-    });
+    setItems((prevItems) => [...prevItems, item]);
   };
 
-  const removeItem = (itemId: string) => {
-    setItems((currentItems) => currentItems.filter((i) => i.id !== itemId));
+  const removeItem = (id: string) => {
+    setItems((prevItems) => prevItems.filter(item => item.id !== id));
   };
-
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity < 1) {
-      removeItem(itemId);
-      return;
-    }
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const clearCart = () => {
     setItems([]);
   };
 
   return (
-    <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, total, clearCart }}
-    >
+    <CartContext.Provider value={{ items, addItem, removeItem, clearCart }}>
       {children}
     </CartContext.Provider>
   );
-}
+};
 
-export function useCart() {
+export const useCart = () => {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-}
+};

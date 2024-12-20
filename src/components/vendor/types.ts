@@ -35,6 +35,7 @@ export interface Order {
     quantity: number;
     unit_price: number;
     menu_item?: {
+      id: string;
       name: string;
       name_ko: string;
     };
