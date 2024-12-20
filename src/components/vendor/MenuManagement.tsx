@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
 import { MenuItem, MenuFormData } from './menu/types';
@@ -136,21 +136,25 @@ export function MenuManagement() {
         isDialogOpen={isDialogOpen}
         setIsDialogOpen={setIsDialogOpen}
       />
-      <DialogContent className="max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>
-            {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
-          </DialogTitle>
-        </DialogHeader>
-        <MenuItemForm
-          editingItem={editingItem}
-          formData={formData}
-          setFormData={setFormData}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          onSubmit={handleSubmit}
-        />
-      </DialogContent>
+      
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
+            </DialogTitle>
+          </DialogHeader>
+          <MenuItemForm
+            editingItem={editingItem}
+            formData={formData}
+            setFormData={setFormData}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+            onSubmit={handleSubmit}
+          />
+        </DialogContent>
+      </Dialog>
+
       <MenuItemGrid
         items={menuItems}
         onEdit={(item) => {
