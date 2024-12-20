@@ -38,7 +38,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <span className="text-lg font-bold text-primary">${item.price}</span>
           {item.quantity_limit && (
             <Badge variant="secondary" className="mr-2">
-              {t('item.limitedQuantity', { limit: item.quantity_limit })}
+              {t(`item.limitedQuantity_${item.quantity_limit}`)}
             </Badge>
           )}
           <Button 
