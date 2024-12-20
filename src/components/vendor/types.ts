@@ -1,20 +1,28 @@
-import type { Database } from '@/integrations/supabase/types';
-
-export type Announcement = Database['public']['Tables']['announcements']['Row'];
-
-export interface MenuItem {
+export interface Announcement {
   id: string;
   vendor_id: string | null;
-  name: string;
-  name_ko: string;
-  description?: string;
-  description_ko?: string;
-  price: number;
-  image?: string;
-  is_available: boolean;
-  created_at?: string;
-  order_index: number;
-  quantity?: number | null;
+  title: string;
+  title_ko: string | null;
+  content: string;
+  content_ko: string | null;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string | null;
+}
+
+export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
+
+export interface OrderItem {
+  id: string;
+  menu_item_id: string;
+  quantity: number;
+  unit_price: number;
+  menu_item?: {
+    id: string;
+    name: string;
+    name_ko: string;
+  };
 }
 
 export interface Order {
@@ -33,20 +41,5 @@ export interface Order {
     email: string;
     phone: string | null;
   };
-  order_items?: {
-    id: string;
-    menu_item_id: string;
-    quantity: number;
-    unit_price: number;
-    menu_item?: {
-      id: string;
-      name: string;
-      name_ko: string;
-      price: number;
-      description?: string;
-      description_ko?: string;
-    };
-  }[];
+  order_items?: OrderItem[];
 }
-
-export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';

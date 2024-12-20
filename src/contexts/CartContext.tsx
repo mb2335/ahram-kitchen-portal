@@ -1,15 +1,15 @@
-import React, { createContext, useContext, useState } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { createContext, useContext, useState } from "react";
 
 export interface MenuItem {
   id: string;
+  vendor_id: string | null;
   name: string;
   nameKo: string;
   description: string;
   descriptionKo: string;
   price: number;
   image: string;
-  remainingQuantity?: number | null;
+  quantity_limit?: number;
 }
 
 interface CartItem extends MenuItem {
@@ -19,107 +19,73 @@ interface CartItem extends MenuItem {
 interface CartContextType {
   items: CartItem[];
   addItem: (item: MenuItem) => void;
-  removeItem: (itemId: string) => void;
-  updateQuantity: (itemId: string, quantity: number) => void;
-  total: number;
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  total: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (item: MenuItem) => {
-    if (item.remainingQuantity !== null && item.remainingQuantity <= 0) {
-      toast({
-        title: "Error",
-        description: "This item is sold out.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setItems((currentItems) => {
-      const existingItem = currentItems.find((i) => i.id === item.id);
-      
+    setItems((prevItems) => {
+      const existingItem = prevItems.find((i) => i.id === item.id);
       if (existingItem) {
-        // Check if adding one more would exceed the remaining quantity
-        if (item.remainingQuantity !== null) {
-          const newQuantity = existingItem.quantity + 1;
-          if (newQuantity > item.remainingQuantity) {
-            toast({
-              title: "Error",
-              description: `Only ${item.remainingQuantity} items remaining.`,
-              variant: "destructive",
-            });
-            return currentItems;
-          }
+        // Check quantity limit if it exists
+        if (item.quantity_limit && existingItem.quantity >= item.quantity_limit) {
+          return prevItems; // Don't add more if limit reached
         }
-        
-        return currentItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+        return prevItems.map((i) =>
+          i.id === item.id
+            ? { ...i, quantity: item.quantity_limit 
+                ? Math.min(i.quantity + 1, item.quantity_limit)
+                : i.quantity + 1 }
+            : i
         );
       }
-      
-      return [...currentItems, { ...item, quantity: 1 }];
-    });
-    
-    toast({
-      title: "Added to cart",
-      description: `${item.name} has been added to your cart.`,
+      return [...prevItems, { ...item, quantity: 1 }];
     });
   };
 
-  const removeItem = (itemId: string) => {
-    setItems((currentItems) => currentItems.filter((i) => i.id !== itemId));
+  const removeItem = (id: string) => {
+    setItems((prevItems) => prevItems.filter(item => item.id !== id));
   };
 
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      removeItem(itemId);
-      return;
-    }
-
-    setItems((currentItems) => {
-      const item = currentItems.find((i) => i.id === itemId);
-      if (!item) return currentItems;
-
-      // Check if the new quantity would exceed the remaining quantity
-      if (item.remainingQuantity !== null && newQuantity > item.remainingQuantity) {
-        toast({
-          title: "Error",
-          description: `Cannot add more than ${item.remainingQuantity} items.`,
-          variant: "destructive",
-        });
-        return currentItems;
-      }
-
-      return currentItems.map((i) =>
-        i.id === itemId ? { ...i, quantity: newQuantity } : i
-      );
-    });
+  const updateQuantity = (id: string, quantity: number) => {
+    setItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.id === id) {
+          const maxQuantity = item.quantity_limit || Infinity;
+          const newQuantity = Math.max(0, Math.min(quantity, maxQuantity));
+          return newQuantity === 0
+            ? item // Will be filtered out below
+            : { ...item, quantity: newQuantity };
+        }
+        return item;
+      }).filter((item) => item.quantity > 0)
+    );
   };
-
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const clearCart = () => {
     setItems([]);
   };
 
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
   return (
-    <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, total, clearCart }}
-    >
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total }}>
       {children}
     </CartContext.Provider>
   );
-}
+};
 
-export function useCart() {
+export const useCart = () => {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-}
+};

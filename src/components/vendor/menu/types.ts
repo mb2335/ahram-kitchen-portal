@@ -6,12 +6,11 @@ export interface MenuItem {
   description?: string;
   description_ko?: string;
   price: number;
-  image?: string;
   is_available: boolean;
-  created_at?: string;
+  image?: string;
   order_index: number;
-  quantity?: number | null;
-  remainingQuantity?: number | null;
+  quantity_limit: number;
+  created_at?: string;
 }
 
 export interface MenuFormData {
@@ -20,6 +19,6 @@ export interface MenuFormData {
   description: string;
   description_ko: string;
   price: string;
+  quantity_limit: string;
   is_available: boolean;
-  quantity: string;
 }

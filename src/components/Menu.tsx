@@ -13,15 +13,9 @@ export function Menu() {
     queryKey: ['menu-items'],
     queryFn: async () => {
       console.log('Fetching menu items...');
-      const { data: items, error } = await supabase
+      const { data, error } = await supabase
         .from('menu_items')
-        .select(`
-          *,
-          order_items:order_items(
-            quantity,
-            order:orders(status)
-          )
-        `)
+        .select('*')
         .eq('is_available', true);
 
       if (error) {
@@ -29,39 +23,24 @@ export function Menu() {
         throw error;
       }
 
-      console.log('Fetched menu items:', items);
+      console.log('Fetched menu items:', data);
 
-      if (!items || items.length === 0) {
+      if (!data || data.length === 0) {
         console.log('No menu items found');
         return [];
       }
 
-      return items.map(item => {
-        // Only count quantities from completed or pending orders
-        const totalOrdered = item.order_items?.reduce((sum, orderItem) => {
-          const orderStatus = orderItem.order?.status;
-          if (orderStatus === 'completed' || orderStatus === 'pending') {
-            return sum + orderItem.quantity;
-          }
-          return sum;
-        }, 0) || 0;
-
-        // Calculate remaining quantity if there's a limit
-        const remainingQuantity = item.quantity !== null 
-          ? Math.max(0, item.quantity - totalOrdered)
-          : null;
-
-        return {
-          id: item.id,
-          name: item.name,
-          nameKo: item.name_ko,
-          description: item.description || '',
-          descriptionKo: item.description_ko || '',
-          price: Number(item.price),
-          image: item.image || '/placeholder.svg',
-          remainingQuantity
-        };
-      });
+      return data.map(item => ({
+        id: item.id,
+        vendor_id: item.vendor_id,
+        name: item.name,
+        nameKo: item.name_ko,
+        description: item.description || '',
+        descriptionKo: item.description_ko || '',
+        price: Number(item.price),
+        image: item.image || '/placeholder.svg',
+        quantity_limit: item.quantity_limit
+      }));
     }
   });
 

@@ -95,7 +95,6 @@ export type Database = {
           name_ko: string
           order_index: number
           price: number
-          quantity: number | null
           quantity_limit: number | null
           vendor_id: string | null
         }
@@ -110,7 +109,6 @@ export type Database = {
           name_ko: string
           order_index: number
           price: number
-          quantity?: number | null
           quantity_limit?: number | null
           vendor_id?: string | null
         }
@@ -125,7 +123,6 @@ export type Database = {
           name_ko?: string
           order_index?: number
           price?: number
-          quantity?: number | null
           quantity_limit?: number | null
           vendor_id?: string | null
         }

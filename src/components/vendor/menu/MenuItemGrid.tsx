@@ -41,6 +41,7 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
       const [movedItem] = newItems.splice(oldIndex, 1);
       newItems.splice(newIndex, 0, movedItem);
 
+      // Update order_index values
       const reorderedItems = newItems.map((item, index) => ({
         ...item,
         order_index: index + 1,

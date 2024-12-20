@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Card } from '@/components/ui/card';
-import type { Announcement } from './types';
+import type { Announcement } from '../vendor/types';
 
 export function Announcements() {
   const session = useSession();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [newAnnouncement, setNewAnnouncement] = useState<Omit<Announcement, 'id' | 'created_at'>>({
+  const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     title_ko: '',
     content: '',
@@ -21,7 +21,6 @@ export function Announcements() {
     is_active: true,
     start_date: null,
     end_date: null,
-    vendor_id: null,
   });
 
   const { data: vendorData } = useQuery({
@@ -58,7 +57,7 @@ export function Announcements() {
     mutationFn: async (newAnnouncement: Omit<Announcement, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('announcements')
-        .insert({ ...newAnnouncement, vendor_id: vendorData?.id })
+        .insert([{ ...newAnnouncement, vendor_id: vendorData?.id }])
         .select()
         .single();
 
@@ -75,7 +74,6 @@ export function Announcements() {
         is_active: true,
         start_date: null,
         end_date: null,
-        vendor_id: null,
       });
       toast({
         title: 'Success',
@@ -93,7 +91,7 @@ export function Announcements() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createAnnouncement.mutate(newAnnouncement);
+    createAnnouncement.mutate(newAnnouncement as Omit<Announcement, 'id' | 'created_at'>);
   };
 
   if (!announcements) {

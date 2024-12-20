@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -69,6 +70,7 @@ export function MenuItemForm({
           id="name_ko"
           value={formData.name_ko}
           onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
+          required
         />
       </div>
       <div className="space-y-2">
@@ -99,14 +101,16 @@ export function MenuItemForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="quantity">Quantity (Optional)</Label>
+        <Label htmlFor="quantity_limit">Quantity Limit (Optional)</Label>
         <Input
-          id="quantity"
+          id="quantity_limit"
           type="number"
-          value={formData.quantity}
-          onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-          placeholder="Leave empty for unlimited"
+          min="1"
+          value={formData.quantity_limit}
+          onChange={(e) => setFormData({ ...formData, quantity_limit: e.target.value })}
+          placeholder="Leave blank for no limit"
         />
+        <p className="text-sm text-gray-500">Maximum number of items that can be ordered (optional)</p>
       </div>
       <div className="flex items-center space-x-2">
         <Switch
