@@ -61,7 +61,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === id) {
-          const maxQuantity = item.quantity_limit || Infinity;
+          const maxQuantity = item.quantity || Infinity;
           const newQuantity = Math.max(0, Math.min(quantity, maxQuantity));
           return newQuantity === 0
             ? item // Will be filtered out below
