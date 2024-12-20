@@ -28,6 +28,14 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
       )
+      .on('error', (error) => {
+        console.error('Menu channel error:', error);
+        toast({
+          title: "Connection Error",
+          description: "Having trouble receiving menu updates. Please refresh the page.",
+          variant: "destructive",
+        });
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to menu updates');
@@ -63,23 +71,19 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
           refetchOrderQuantities();
         }
       )
+      .on('error', (error) => {
+        console.error('Order channel error:', error);
+        toast({
+          title: "Connection Error",
+          description: "Having trouble receiving order updates. Please refresh the page.",
+          variant: "destructive",
+        });
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to order updates');
         }
       });
-
-    const handleError = (error: Error) => {
-      console.error('Realtime subscription error:', error);
-      toast({
-        title: "Connection Error",
-        description: "Having trouble receiving updates. Please refresh the page.",
-        variant: "destructive",
-      });
-    };
-
-    menuChannel.onError(handleError);
-    orderChannel.onError(handleError);
 
     // Cleanup subscriptions
     return () => {
