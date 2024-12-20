@@ -34,14 +34,16 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">
           {displayDescription}
         </p>
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-bold text-primary">${item.price}</span>
-          <Badge variant="secondary" className="mr-2">
-            {item.quantity_limit ? `${t('item.limitedQuantity')}: ${item.quantity_limit}` : t('item.noLimit')}
-          </Badge>
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold text-primary">${item.price}</span>
+            <Badge variant="secondary" className="text-xs">
+              {item.quantity_limit ? `${t('item.limitedQuantity')}: ${item.quantity_limit}` : t('item.noLimit')}
+            </Badge>
+          </div>
           <Button 
             onClick={() => onAddToCart(item)}
-            className="bg-primary hover:bg-primary/90 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('item.add')}
