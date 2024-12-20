@@ -4,7 +4,7 @@ import { MenuGrid } from "./menu/MenuGrid";
 import { useMenuItems } from "@/hooks/useMenuItems";
 import { useOrderQuantities } from "@/hooks/useOrderQuantities";
 import { useMenuRealtime } from "@/hooks/useMenuRealtime";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export function Menu() {
   const { t } = useLanguage();
@@ -49,7 +49,8 @@ export function Menu() {
 
     return {
       ...item,
-      remaining_quantity: remainingQuantity
+      remaining_quantity: remainingQuantity,
+      quantity_limit: remainingQuantity // Sync quantity_limit with remaining_quantity
     };
   });
 
