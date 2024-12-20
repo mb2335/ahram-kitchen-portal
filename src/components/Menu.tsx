@@ -3,7 +3,7 @@ import { useCart, MenuItem } from "@/contexts/CartContext";
 import { MenuGrid } from "./menu/MenuGrid";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 
 export function Menu() {
@@ -133,7 +133,7 @@ export function Menu() {
       toast({
         title: "Connection Error",
         description: "Having trouble receiving updates. Please refresh the page.",
-        variant: "destructive",
+        variant: "destructive"
       });
     });
 
@@ -141,7 +141,7 @@ export function Menu() {
       toast({
         title: "Connection Error",
         description: "Having trouble receiving updates. Please refresh the page.",
-        variant: "destructive",
+        variant: "destructive"
       });
     });
 
@@ -156,7 +156,7 @@ export function Menu() {
     toast({
       title: "Error",
       description: "Failed to load menu items. Please try again later.",
-      variant: "destructive",
+      variant: "destructive"
     });
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
