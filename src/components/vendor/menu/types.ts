@@ -6,10 +6,10 @@ export interface MenuItem {
   description?: string;
   description_ko?: string;
   price: number;
-  is_available: boolean;
   image?: string;
-  order_index: number;
+  is_available: boolean;
   created_at?: string;
+  order_index: number;
   quantity?: number | null;
 }
 
@@ -20,5 +20,5 @@ export interface MenuFormData {
   description_ko: string;
   price: string;
   is_available: boolean;
-  quantity?: string;
+  quantity: string;
 }

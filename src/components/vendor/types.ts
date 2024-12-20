@@ -1,18 +1,3 @@
-export interface Announcement {
-  id: string;
-  vendor_id: string | null;
-  title: string;
-  title_ko: string | null;
-  content: string;
-  content_ko: string | null;
-  is_active: boolean;
-  start_date: string | null;
-  end_date: string | null;
-  created_at: string | null;
-}
-
-export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
-
 export interface Order {
   id: string;
   customer_id: string;
@@ -44,3 +29,5 @@ export interface Order {
     };
   }[];
 }
+
+export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
