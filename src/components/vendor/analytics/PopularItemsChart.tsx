@@ -52,9 +52,14 @@ export function PopularItemsChart() {
           menu_item:menu_items(
             name,
             name_ko
+          ),
+          order:orders(
+            status
           )
-        `)
-        .order('quantity', { ascending: false });
+        `);
+
+      // Only include completed orders
+      query = query.eq('order.status', 'completed');
 
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
@@ -64,14 +69,17 @@ export function PopularItemsChart() {
 
       if (error) throw error;
 
-      // Aggregate quantities by menu item
+      // Aggregate quantities by menu item, including items where menu_item might be null (deleted items)
       const aggregatedData = data.reduce((acc: any[], item) => {
-        const existingItem = acc.find(i => i.name === item.menu_item?.name);
+        // Use menu item name if available, otherwise use "Deleted Item"
+        const itemName = item.menu_item?.name || 'Deleted Item';
+        const existingItem = acc.find(i => i.name === itemName);
+        
         if (existingItem) {
           existingItem.quantity += item.quantity;
-        } else if (item.menu_item) {
+        } else {
           acc.push({
-            name: item.menu_item.name,
+            name: itemName,
             quantity: item.quantity,
           });
         }
