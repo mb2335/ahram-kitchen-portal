@@ -44,7 +44,7 @@ export function Menu() {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
     staleTime: 10000, // Consider data stale after 10 seconds
-    cacheTime: 15000 // Keep in cache for 15 seconds
+    gcTime: 15000 // Keep in garbage collection for 15 seconds
   });
 
   const { data: menuItems = [], isLoading, error, refetch } = useQuery({
@@ -85,7 +85,7 @@ export function Menu() {
       }));
     },
     staleTime: 10000, // Consider data stale after 10 seconds
-    cacheTime: 15000 // Keep in cache for 15 seconds
+    gcTime: 15000 // Keep in garbage collection for 15 seconds
   });
 
   // Subscribe to real-time updates for menu_items and order_items
@@ -129,8 +129,7 @@ export function Menu() {
       .subscribe();
 
     // Handle potential connection issues
-    menuChannel.on('error', (error) => {
-      console.error('Error in menu channel:', error);
+    menuChannel.on('error', () => {
       toast({
         title: "Connection Error",
         description: "Having trouble receiving updates. Please refresh the page.",
@@ -138,8 +137,7 @@ export function Menu() {
       });
     });
 
-    orderChannel.on('error', (error) => {
-      console.error('Error in order channel:', error);
+    orderChannel.on('error', () => {
       toast({
         title: "Connection Error",
         description: "Having trouble receiving updates. Please refresh the page.",
