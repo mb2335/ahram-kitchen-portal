@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { MenuManagement } from './MenuManagement';
 import { OrderManagement } from './OrderManagement';
 import { VendorProfile } from './VendorProfile';
 import { DashboardSummary } from './DashboardSummary';
+import { PopularItemsChart } from './analytics/PopularItemsChart';
 import { cn } from "@/lib/utils";
 
 export function VendorDashboard() {
@@ -29,6 +29,17 @@ export function VendorDashboard() {
               )}
             >
               Overview
+            </Link>
+            <Link
+              to="/vendor/analytics"
+              className={cn(
+                "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                isActiveRoute('/analytics') 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-muted"
+              )}
+            >
+              Analytics
             </Link>
             <Link
               to="/vendor/menu"
@@ -68,6 +79,7 @@ export function VendorDashboard() {
         <main className="flex-1 min-h-[calc(100vh-8rem)]">
           <Routes>
             <Route path="summary" element={<DashboardSummary />} />
+            <Route path="analytics" element={<PopularItemsChart />} />
             <Route path="menu" element={<MenuManagement />} />
             <Route path="orders" element={<OrderManagement />} />
             <Route path="profile" element={<VendorProfile />} />
