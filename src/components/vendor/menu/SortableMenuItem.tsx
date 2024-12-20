@@ -28,6 +28,13 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const getQuantityLimitDisplay = () => {
+    if (item.quantity_limit === null) {
+      return 'No Limit';
+    }
+    return `${item.quantity_limit}`;
+  };
+
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="p-4">
@@ -59,7 +66,7 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
                     {item.is_available ? 'Available' : 'Unavailable'}
                   </Badge>
                   <Badge variant="secondary">
-                    Quantity Limit: {item.quantity_limit || 'No Limit'}
+                    Quantity Limit: {getQuantityLimitDisplay()}
                   </Badge>
                 </div>
               </div>
