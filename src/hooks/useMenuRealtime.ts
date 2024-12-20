@@ -59,7 +59,7 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
       toast({
         title: "Connection Error",
         description: "Having trouble receiving updates. Please refresh the page.",
-        variant: "destructive"
+        variant: "destructive",
       });
     };
 

@@ -4,9 +4,9 @@ export interface MenuItem {
   id: string;
   vendor_id: string | null;
   name: string;
-  nameKo: string;
+  name_ko: string;
   description: string | null;
-  descriptionKo: string | null;
+  description_ko: string | null;
   price: number;
   image: string | null;
   is_available: boolean | null;
