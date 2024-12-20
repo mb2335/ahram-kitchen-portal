@@ -40,37 +40,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Validate that the item.id is a UUID
-    if (!item.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
-      console.error('Invalid menu item ID format:', item.id);
-      toast({
-        title: "Error",
-        description: "Invalid menu item format. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setItems((currentItems) => {
       const existingItem = currentItems.find((i) => i.id === item.id);
       
-      // Check if adding one more would exceed the remaining quantity
-      if (existingItem && item.remainingQuantity !== null) {
-        if (existingItem.quantity + 1 > item.remainingQuantity) {
-          toast({
-            title: "Error",
-            description: "Cannot add more of this item - quantity limit reached.",
-            variant: "destructive",
-          });
-          return currentItems;
-        }
-      }
-      
       if (existingItem) {
+        // Check if adding one more would exceed the remaining quantity
+        if (item.remainingQuantity !== null) {
+          const newQuantity = existingItem.quantity + 1;
+          if (newQuantity > item.remainingQuantity) {
+            toast({
+              title: "Error",
+              description: `Only ${item.remainingQuantity} items remaining.`,
+              variant: "destructive",
+            });
+            return currentItems;
+          }
+        }
+        
         return currentItems.map((i) =>
           i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
+      
       return [...currentItems, { ...item, quantity: 1 }];
     });
     
@@ -98,7 +89,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (item.remainingQuantity !== null && newQuantity > item.remainingQuantity) {
         toast({
           title: "Error",
-          description: "Cannot add more of this item - quantity limit reached.",
+          description: `Cannot add more than ${item.remainingQuantity} items.`,
           variant: "destructive",
         });
         return currentItems;

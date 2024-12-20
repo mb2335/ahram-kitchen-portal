@@ -13,11 +13,14 @@ export function Menu() {
     queryKey: ['menu-items'],
     queryFn: async () => {
       console.log('Fetching menu items...');
-      const { data, error } = await supabase
+      const { data: items, error } = await supabase
         .from('menu_items')
         .select(`
           *,
-          order_items:order_items(quantity)
+          order_items:order_items(
+            quantity,
+            order:orders(status)
+          )
         `)
         .eq('is_available', true);
 
@@ -26,19 +29,24 @@ export function Menu() {
         throw error;
       }
 
-      console.log('Fetched menu items:', data);
+      console.log('Fetched menu items:', items);
 
-      if (!data || data.length === 0) {
+      if (!items || items.length === 0) {
         console.log('No menu items found');
         return [];
       }
 
-      return data.map(item => {
-        // Calculate total ordered quantity from all orders
-        const totalOrdered = item.order_items?.reduce((sum, orderItem) => 
-          sum + orderItem.quantity, 0) || 0;
-        
-        // If quantity is set, calculate remaining by subtracting orders
+      return items.map(item => {
+        // Only count quantities from completed or pending orders
+        const totalOrdered = item.order_items?.reduce((sum, orderItem) => {
+          const orderStatus = orderItem.order?.status;
+          if (orderStatus === 'completed' || orderStatus === 'pending') {
+            return sum + orderItem.quantity;
+          }
+          return sum;
+        }, 0) || 0;
+
+        // Calculate remaining quantity if there's a limit
         const remainingQuantity = item.quantity !== null 
           ? Math.max(0, item.quantity - totalOrdered)
           : null;
