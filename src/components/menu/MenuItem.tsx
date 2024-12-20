@@ -40,7 +40,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <h3 className="text-lg font-medium">
             {displayName}
           </h3>
-          <Badge variant={isOutOfStock ? "destructive" : "secondary"}>
+          <Badge variant="secondary">
             {getRemainingLabel()}
           </Badge>
         </div>
