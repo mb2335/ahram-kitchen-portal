@@ -4,6 +4,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -15,15 +17,42 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const displayName = language === 'en' ? item.name : item.nameKo;
   const displayDescription = language === 'en' ? item.description : item.descriptionKo;
 
-  const getRemainingLabel = () => {
-    if (item.quantity === null) return "No Limit";
-    const remaining = item.quantity - (item.remainingQuantity || 0);
-    if (remaining <= 0) return "0 remaining";
-    return `${remaining} remaining`;
-  };
+  // Query to get the total quantity ordered for this item from pending and confirmed orders
+  const { data: orderedQuantity = 0 } = useQuery({
+    queryKey: ['ordered-quantity', item.id],
+    queryFn: async () => {
+      if (!item.quantity_limit) return 0;
 
-  const isOutOfStock = item.quantity !== null && 
-    (item.quantity - (item.remainingQuantity || 0)) <= 0;
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          quantity,
+          orders!inner (
+            status
+          )
+        `)
+        .eq('menu_item_id', item.id)
+        .in('orders.status', ['pending', 'confirmed']);
+
+      if (error) {
+        console.error('Error fetching ordered quantity:', error);
+        return 0;
+      }
+
+      // Calculate total quantity from pending and confirmed orders
+      return data.reduce((sum, orderItem) => sum + orderItem.quantity, 0);
+    },
+    // Refresh every 30 seconds to keep quantities up to date
+    refetchInterval: 30000,
+  });
+
+  const remainingQuantity = item.quantity_limit ? item.quantity_limit - orderedQuantity : null;
+
+  const getQuantityDisplay = () => {
+    if (!item.quantity_limit) return t('No Limit');
+    if (remainingQuantity === 0) return t('item.soldOut');
+    return `${t('Remaining: ')} ${remainingQuantity} `;
+  };
 
   return (
     <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
@@ -48,16 +77,16 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-primary">${item.price}</span>
             <Badge 
-              variant={isOutOfStock ? "destructive" : "secondary"} 
+              variant={remainingQuantity === 0 ? "destructive" : "secondary"} 
               className="text-xs"
             >
-              {getRemainingLabel()}
+              {getQuantityDisplay()}
             </Badge>
           </div>
           <Button 
             onClick={() => onAddToCart(item)}
             className="w-full bg-primary hover:bg-primary/90 text-white"
-            disabled={isOutOfStock}
+            disabled={remainingQuantity === 0}
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('item.add')}

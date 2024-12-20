@@ -9,8 +9,7 @@ export interface MenuItem {
   descriptionKo: string;
   price: number;
   image: string;
-  quantity: number | null;
-  remainingQuantity: number | null;
+  quantity_limit?: number;
 }
 
 interface CartItem extends MenuItem {
@@ -36,16 +35,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const existingItem = prevItems.find((i) => i.id === item.id);
       if (existingItem) {
         // Check quantity limit if it exists
-        if (item.quantity !== null) {
-          const currentTotal = existingItem.quantity;
-          const remaining = item.quantity - (item.remainingQuantity || 0);
-          if (currentTotal >= remaining) {
-            return prevItems; // Don't add more if limit reached
-          }
+        if (item.quantity_limit && existingItem.quantity >= item.quantity_limit) {
+          return prevItems; // Don't add more if limit reached
         }
         return prevItems.map((i) =>
           i.id === item.id
-            ? { ...i, quantity: i.quantity + 1 }
+            ? { ...i, quantity: item.quantity_limit 
+                ? Math.min(i.quantity + 1, item.quantity_limit)
+                : i.quantity + 1 }
             : i
         );
       }
@@ -61,7 +58,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === id) {
-          const maxQuantity = item.quantity || Infinity;
+          const maxQuantity = item.quantity_limit || Infinity;
           const newQuantity = Math.max(0, Math.min(quantity, maxQuantity));
           return newQuantity === 0
             ? item // Will be filtered out below

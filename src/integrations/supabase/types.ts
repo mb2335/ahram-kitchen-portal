@@ -97,7 +97,6 @@ export type Database = {
           price: number
           quantity: number | null
           quantity_limit: number | null
-          remaining_quantity: number | null
           vendor_id: string | null
         }
         Insert: {
@@ -113,7 +112,6 @@ export type Database = {
           price: number
           quantity?: number | null
           quantity_limit?: number | null
-          remaining_quantity?: number | null
           vendor_id?: string | null
         }
         Update: {
@@ -129,7 +127,6 @@ export type Database = {
           price?: number
           quantity?: number | null
           quantity_limit?: number | null
-          remaining_quantity?: number | null
           vendor_id?: string | null
         }
         Relationships: [
