@@ -4,11 +4,45 @@ import { MenuGrid } from "./menu/MenuGrid";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function Menu() {
   const { t } = useLanguage();
   const { addItem } = useCart();
+  const [orderedQuantities, setOrderedQuantities] = useState<Record<string, number>>({});
+
+  // Fetch ordered quantities for menu items
+  const { data: orderQuantities = {}, refetch: refetchOrderQuantities } = useQuery({
+    queryKey: ['order-quantities'],
+    queryFn: async () => {
+      console.log('Fetching order quantities...');
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          quantity,
+          menu_item_id,
+          orders!inner (
+            status
+          )
+        `)
+        .in('orders.status', ['pending', 'confirmed']);
+
+      if (error) {
+        console.error('Error fetching order quantities:', error);
+        throw error;
+      }
+
+      // Calculate total ordered quantity per menu item
+      const quantities: Record<string, number> = {};
+      data?.forEach(item => {
+        quantities[item.menu_item_id] = (quantities[item.menu_item_id] || 0) + item.quantity;
+      });
+
+      console.log('Order quantities fetched:', quantities);
+      return quantities;
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
 
   const { data: menuItems = [], isLoading, error, refetch } = useQuery({
     queryKey: ['menu-items'],
@@ -40,33 +74,55 @@ export function Menu() {
         descriptionKo: item.description_ko || '',
         price: Number(item.price),
         image: item.image || '/placeholder.svg',
-        quantity_limit: item.quantity_limit
+        quantity_limit: item.quantity_limit,
+        remaining_quantity: item.quantity_limit 
+          ? item.quantity_limit - (orderQuantities[item.id] || 0)
+          : null
       }));
     }
   });
 
-  // Subscribe to real-time updates for menu_items table
+  // Subscribe to real-time updates for menu_items and order_items
   useEffect(() => {
-    const channel = supabase
+    // Channel for menu item updates
+    const menuChannel = supabase
       .channel('menu-updates')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'menu_items'
         },
         (payload) => {
           console.log('Menu item change detected:', payload);
-          refetch(); // Refresh menu items when changes occur
+          refetch();
+        }
+      )
+      .subscribe();
+
+    // Channel for order item updates
+    const orderChannel = supabase
+      .channel('order-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_items'
+        },
+        (payload) => {
+          console.log('Order item change detected:', payload);
+          refetchOrderQuantities();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(orderChannel);
     };
-  }, [refetch]);
+  }, [refetch, refetchOrderQuantities]);
 
   if (error) {
     console.error('Error in menu component:', error);
