@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -18,8 +18,14 @@ export const useMenuItems = () => {
         throw error;
       }
 
-      console.log('Fetched menu items:', data);
-      return data || [];
+      // Map quantity_limit to remaining_quantity
+      const mappedData = data?.map(item => ({
+        ...item,
+        remaining_quantity: item.quantity_limit,
+      }));
+
+      console.log('Fetched menu items:', mappedData);
+      return mappedData || [];
     },
     staleTime: 10000,
     gcTime: 15000
