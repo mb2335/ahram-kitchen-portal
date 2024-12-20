@@ -16,13 +16,13 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const displayDescription = language === 'en' ? item.description : item.description_ko;
 
   const getQuantityDisplay = () => {
-    if (item.remaining_quantity === 0) {
+    if (item.quantity_limit === 0) {
       return t('item.soldOut');
     }
-    if (item.remaining_quantity === null) {
+    if (item.quantity_limit === null) {
       return t('item.inStock');
     }
-    return `${t('Remaining')}: ${item.remaining_quantity}`;
+    return `${t('Remaining')}: ${item.quantity_limit}`;
   };
 
   return (
@@ -48,7 +48,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-primary">${item.price}</span>
             <Badge 
-              variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
+              variant={item.quantity_limit === 0 ? "destructive" : "secondary"} 
               className="text-xs"
             >
               {getQuantityDisplay()}
@@ -57,7 +57,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <Button 
             onClick={() => onAddToCart(item)}
             className="w-full bg-primary hover:bg-primary/90 text-white"
-            disabled={item.remaining_quantity === 0}
+            disabled={item.quantity_limit === 0}
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('item.add')}

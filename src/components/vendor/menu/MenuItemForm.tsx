@@ -105,12 +105,12 @@ export function MenuItemForm({
         <Input
           id="quantity_limit"
           type="number"
-          min="1"
+          min="0"
           value={formData.quantity_limit}
           onChange={(e) => setFormData({ ...formData, quantity_limit: e.target.value })}
           placeholder="Leave blank for unlimited quantity"
         />
-        <p className="text-sm text-gray-500">Maximum number of items that can be ordered (leave blank for unlimited)</p>
+        <p className="text-sm text-gray-500">Set to 0 for sold out, leave blank for unlimited</p>
       </div>
       <div className="flex items-center space-x-2">
         <Switch

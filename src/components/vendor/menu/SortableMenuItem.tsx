@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical } from "lucide-react";
 import { MenuItem } from "./types";
-import { useOrderQuantities } from "@/hooks/useOrderQuantities";
 
 interface SortableMenuItemProps {
   item: MenuItem;
@@ -23,12 +22,6 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
     isDragging,
   } = useSortable({ id: item.id });
 
-  const { data: orderQuantities = {} } = useOrderQuantities();
-  const orderedQuantity = orderQuantities[item.id] || 0;
-  const remainingQuantity = item.quantity_limit 
-    ? Math.max(0, item.quantity_limit - orderedQuantity)
-    : null;
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -36,10 +29,13 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
   };
 
   const getRemainingDisplay = () => {
-    if (remainingQuantity === null) {
+    if (item.quantity_limit === 0) {
+      return 'Sold Out';
+    }
+    if (item.quantity_limit === null) {
       return 'Unlimited';
     }
-    return `${remainingQuantity} remaining`;
+    return `${item.quantity_limit} remaining`;
   };
 
   return (
