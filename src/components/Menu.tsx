@@ -39,9 +39,11 @@ export function Menu() {
         descriptionKo: item.description_ko || '',
         price: Number(item.price),
         image: item.image || '/placeholder.svg',
-        quantity_limit: item.quantity_limit
+        quantity: item.quantity,
+        remainingQuantity: item.remaining_quantity
       }));
-    }
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds to keep quantities up to date
   });
 
   if (error) {
