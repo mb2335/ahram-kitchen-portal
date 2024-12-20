@@ -15,6 +15,16 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   const displayName = language === 'en' ? item.name : item.name_ko;
   const displayDescription = language === 'en' ? item.description : item.description_ko;
 
+  const getQuantityDisplay = () => {
+    if (item.remaining_quantity === 0) {
+      return t('item.soldOut');
+    }
+    if (item.remaining_quantity === null) {
+      return t('item.inStock');
+    }
+    return `${t('Remaining')}: ${item.remaining_quantity}`;
+  };
+
   return (
     <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="aspect-w-16 aspect-h-9 relative overflow-hidden">
@@ -41,7 +51,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
               variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
               className="text-xs"
             >
-              {item.remaining_quantity === 0 ? t('item.soldOut') : `${t('Remaining: ')} ${item.remaining_quantity}`}
+              {getQuantityDisplay()}
             </Badge>
           </div>
           <Button 

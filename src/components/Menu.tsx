@@ -41,12 +41,17 @@ export function Menu() {
   }
 
   // Process menu items with remaining quantities
-  const processedMenuItems = menuItems.map(item => ({
-    ...item,
-    remaining_quantity: item.quantity_limit 
-      ? item.quantity_limit - (orderQuantities[item.id] || 0)
-      : null
-  }));
+  const processedMenuItems = menuItems.map(item => {
+    const orderedQuantity = orderQuantities[item.id] || 0;
+    const remainingQuantity = item.quantity_limit 
+      ? Math.max(0, item.quantity_limit - orderedQuantity)
+      : null;
+
+    return {
+      ...item,
+      remaining_quantity: remainingQuantity
+    };
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/20 to-white">
