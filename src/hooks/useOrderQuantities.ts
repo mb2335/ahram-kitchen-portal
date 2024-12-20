@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export const useOrderQuantities = () => {
   return useQuery({
@@ -15,10 +16,15 @@ export const useOrderQuantities = () => {
             status
           )
         `)
-        .neq('orders.status', 'rejected');
+        .in('orders.status', ['pending', 'confirmed']); // Only count pending and confirmed orders
 
       if (error) {
         console.error('Error fetching order quantities:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch order quantities",
+          variant: "destructive",
+        });
         throw error;
       }
 

@@ -5,11 +5,16 @@ export interface MenuItem {
   vendor_id: string | null;
   name: string;
   nameKo: string;
-  description: string;
-  descriptionKo: string;
+  description: string | null;
+  descriptionKo: string | null;
   price: number;
-  image: string;
-  quantity_limit?: number;
+  image: string | null;
+  is_available: boolean | null;
+  created_at: string | null;
+  order_index: number;
+  quantity_limit: number | null;
+  quantity: number | null;
+  remaining_quantity: number | null;
 }
 
 interface CartItem extends MenuItem {
