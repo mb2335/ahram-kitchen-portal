@@ -32,6 +32,7 @@ export function Menu() {
 
       return data.map(item => ({
         id: item.id,
+        vendor_id: item.vendor_id,
         name: item.name,
         nameKo: item.name_ko,
         description: item.description || '',
