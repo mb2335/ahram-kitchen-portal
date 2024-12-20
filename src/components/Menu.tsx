@@ -102,7 +102,6 @@ export function Menu() {
         },
         (payload) => {
           console.log('Menu item change detected:', payload);
-          // Invalidate and refetch both queries
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
           refetch();
         }
@@ -121,7 +120,6 @@ export function Menu() {
         },
         (payload) => {
           console.log('Order item change detected:', payload);
-          // Invalidate and refetch both queries
           queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
           refetchOrderQuantities();
         }
@@ -181,7 +179,7 @@ export function Menu() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('menu.title')}</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover our selection of authentic Korean dishes, carefully prepared and beautifully presented
+            {t('menu.description')}
           </p>
         </div>
         <MenuGrid items={menuItems} onAddToCart={addItem} />
