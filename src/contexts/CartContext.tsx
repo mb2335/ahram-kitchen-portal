@@ -2,14 +2,14 @@ import React, { createContext, useContext, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 export interface MenuItem {
-  id: string; // This must be a UUID from the menu_items table
+  id: string;
   name: string;
   nameKo: string;
   description: string;
   descriptionKo: string;
   price: number;
   image: string;
-  category: string;
+  remainingQuantity?: number | null;
 }
 
 interface CartItem extends MenuItem {
@@ -31,6 +31,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (item: MenuItem) => {
+    if (item.remainingQuantity !== null && item.remainingQuantity <= 0) {
+      toast({
+        title: "Error",
+        description: "This item is sold out.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate that the item.id is a UUID
     if (!item.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
       console.error('Invalid menu item ID format:', item.id);
@@ -44,6 +53,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     setItems((currentItems) => {
       const existingItem = currentItems.find((i) => i.id === item.id);
+      
+      // Check if adding one more would exceed the remaining quantity
+      if (existingItem && item.remainingQuantity !== null) {
+        if (existingItem.quantity + 1 > item.remainingQuantity) {
+          toast({
+            title: "Error",
+            description: "Cannot add more of this item - quantity limit reached.",
+            variant: "destructive",
+          });
+          return currentItems;
+        }
+      }
+      
       if (existingItem) {
         return currentItems.map((i) =>
           i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i

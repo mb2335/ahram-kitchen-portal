@@ -15,7 +15,10 @@ export function Menu() {
       console.log('Fetching menu items...');
       const { data, error } = await supabase
         .from('menu_items')
-        .select('*')
+        .select(`
+          *,
+          order_items:order_items(quantity)
+        `)
         .eq('is_available', true);
 
       if (error) {
@@ -30,16 +33,25 @@ export function Menu() {
         return [];
       }
 
-      return data.map(item => ({
-        id: item.id,
-        name: item.name,
-        nameKo: item.name_ko,
-        description: item.description || '',
-        descriptionKo: item.description_ko || '',
-        price: Number(item.price),
-        image: item.image || '/placeholder.svg',
-        category: item.category
-      }));
+      return data.map(item => {
+        // Calculate remaining quantity
+        const orderedQuantity = item.order_items?.reduce((sum, orderItem) => 
+          sum + orderItem.quantity, 0) || 0;
+        const remainingQuantity = item.quantity !== null 
+          ? item.quantity - orderedQuantity 
+          : null;
+
+        return {
+          id: item.id,
+          name: item.name,
+          nameKo: item.name_ko,
+          description: item.description || '',
+          descriptionKo: item.description_ko || '',
+          price: Number(item.price),
+          image: item.image || '/placeholder.svg',
+          remainingQuantity
+        };
+      });
     }
   });
 
