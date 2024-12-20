@@ -1,7 +1,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart, MenuItem } from "@/contexts/CartContext";
 import { MenuGrid } from "./menu/MenuGrid";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 export function Menu() {
   const { t } = useLanguage();
   const { addItem } = useCart();
+  const queryClient = useQueryClient();
   const [orderedQuantities, setOrderedQuantities] = useState<Record<string, number>>({});
 
   // Fetch ordered quantities for menu items
@@ -41,7 +42,9 @@ export function Menu() {
       console.log('Order quantities fetched:', quantities);
       return quantities;
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
+    cacheTime: 15000 // Keep in cache for 15 seconds
   });
 
   const { data: menuItems = [], isLoading, error, refetch } = useQuery({
@@ -51,7 +54,8 @@ export function Menu() {
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('is_available', true);
+        .eq('is_available', true)
+        .order('order_index', { ascending: true });
 
       if (error) {
         console.error('Error fetching menu items:', error);
@@ -79,7 +83,9 @@ export function Menu() {
           ? item.quantity_limit - (orderQuantities[item.id] || 0)
           : null
       }));
-    }
+    },
+    staleTime: 10000, // Consider data stale after 10 seconds
+    cacheTime: 15000 // Keep in cache for 15 seconds
   });
 
   // Subscribe to real-time updates for menu_items and order_items
@@ -96,6 +102,8 @@ export function Menu() {
         },
         (payload) => {
           console.log('Menu item change detected:', payload);
+          // Invalidate and refetch both queries
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
           refetch();
         }
       )
@@ -113,16 +121,37 @@ export function Menu() {
         },
         (payload) => {
           console.log('Order item change detected:', payload);
+          // Invalidate and refetch both queries
+          queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
           refetchOrderQuantities();
         }
       )
       .subscribe();
 
+    // Handle potential connection issues
+    menuChannel.on('error', (error) => {
+      console.error('Error in menu channel:', error);
+      toast({
+        title: "Connection Error",
+        description: "Having trouble receiving updates. Please refresh the page.",
+        variant: "destructive",
+      });
+    });
+
+    orderChannel.on('error', (error) => {
+      console.error('Error in order channel:', error);
+      toast({
+        title: "Connection Error",
+        description: "Having trouble receiving updates. Please refresh the page.",
+        variant: "destructive",
+      });
+    });
+
     return () => {
       supabase.removeChannel(menuChannel);
       supabase.removeChannel(orderChannel);
     };
-  }, [refetch, refetchOrderQuantities]);
+  }, [refetch, refetchOrderQuantities, queryClient]);
 
   if (error) {
     console.error('Error in menu component:', error);
