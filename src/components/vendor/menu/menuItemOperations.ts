@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MenuItem } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export async function updateMenuItemOrder(items: { id: string; order_index: number }[]) {
   for (const item of items) {
@@ -59,11 +60,32 @@ export async function saveMenuItem(
 }
 
 export async function deleteMenuItem(itemId: string) {
-  const { error } = await supabase
-    .from('menu_items')
-    .delete()
-    .eq('id', itemId);
-  if (error) throw error;
+  try {
+    const { error } = await supabase
+      .from('menu_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (error) {
+      console.error('Error deleting menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete menu item",
+        variant: "destructive",
+      });
+      throw error;
+    }
+
+    toast({
+      title: "Success",
+      description: "Menu item deleted successfully",
+      variant: "default",
+    });
+
+  } catch (error) {
+    console.error('Error in deleteMenuItem:', error);
+    throw error;
+  }
 }
 
 export async function handleImageUpload(file: File) {

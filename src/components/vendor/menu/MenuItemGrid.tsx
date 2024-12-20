@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableMenuItem } from "./SortableMenuItem";
 import { MenuItem } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 interface MenuItemGridProps {
   items: MenuItem[];
@@ -29,6 +30,19 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const handleDelete = async (id: string) => {
+    try {
+      await onDelete(id);
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete menu item",
+        variant: "destructive",
+      });
+    }
+  };
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -67,7 +81,7 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
               key={item.id}
               item={item}
               onEdit={onEdit}
-              onDelete={onDelete}
+              onDelete={handleDelete}
             />
           ))}
         </div>

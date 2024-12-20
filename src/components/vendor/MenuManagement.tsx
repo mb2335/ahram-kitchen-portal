@@ -102,6 +102,24 @@ export function MenuManagement() {
     });
   }
 
+  async function handleDeleteMenuItem(itemId: string) {
+    try {
+      await deleteMenuItem(itemId);
+      toast({
+        title: "Success",
+        description: "Menu item deleted successfully",
+      });
+      loadMenuItems(); // Refresh the list after deletion
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete menu item",
+        variant: "destructive",
+      });
+    }
+  }
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -152,7 +170,7 @@ export function MenuManagement() {
           });
           setIsDialogOpen(true);
         }}
-        onDelete={deleteMenuItem}
+        onDelete={handleDeleteMenuItem}
         onReorder={updateMenuItemOrder}
       />
     </div>
