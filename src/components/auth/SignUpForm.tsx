@@ -18,14 +18,47 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
     fullName: '',
     phone: '',
   });
+  const [passwordError, setPasswordError] = useState('');
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+
+  const validatePassword = (password: string) => {
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters long');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Validate password before submission
+      if (!validatePassword(formData.password)) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if customer with email already exists
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingCustomer) {
+        toast({
+          title: "Error",
+          description: "An account with this email already exists. Please sign in instead.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -85,9 +118,15 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
           id="password"
           type="password"
           value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, password: e.target.value });
+            validatePassword(e.target.value);
+          }}
           required
         />
+        {passwordError && (
+          <p className="text-sm text-red-500 mt-1">{passwordError}</p>
+        )}
       </div>
 
       <div>
@@ -101,7 +140,7 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full" disabled={isLoading || !!passwordError}>
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
