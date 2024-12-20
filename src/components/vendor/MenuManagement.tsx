@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { Button } from '@/components/ui/button';
+import { DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
 import { MenuItem, MenuFormData } from './menu/types';
 import { loadVendorMenuItems, saveMenuItem, deleteMenuItem, updateMenuItemOrder, handleImageUpload } from './menu/menuItemOperations';
+import { LoadingState } from '../shared/LoadingState';
+import { MenuManagementHeader } from './menu/MenuManagementHeader';
 
 export function MenuManagement() {
   const session = useSession();
@@ -109,7 +110,7 @@ export function MenuManagement() {
         title: "Success",
         description: "Menu item deleted successfully",
       });
-      loadMenuItems(); // Refresh the list after deletion
+      loadMenuItems();
     } catch (error) {
       console.error('Error deleting menu item:', error);
       toast({
@@ -121,40 +122,35 @@ export function MenuManagement() {
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] overflow-y-auto">
-      <div className="flex justify-between items-center sticky top-0 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 z-10 py-4 px-2">
-        <h2 className="text-2xl font-bold">Menu Management</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingItem(null);
-              resetForm();
-              setSelectedImage(null);
-            }}>
-              Add Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
-              </DialogTitle>
-            </DialogHeader>
-            <MenuItemForm
-              editingItem={editingItem}
-              formData={formData}
-              setFormData={setFormData}
-              selectedImage={selectedImage}
-              setSelectedImage={setSelectedImage}
-              onSubmit={handleSubmit}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+      <MenuManagementHeader
+        onAddClick={() => {
+          setEditingItem(null);
+          resetForm();
+          setSelectedImage(null);
+        }}
+        isDialogOpen={isDialogOpen}
+        setIsDialogOpen={setIsDialogOpen}
+      />
+      <DialogContent className="max-h-[90vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>
+            {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
+          </DialogTitle>
+        </DialogHeader>
+        <MenuItemForm
+          editingItem={editingItem}
+          formData={formData}
+          setFormData={setFormData}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          onSubmit={handleSubmit}
+        />
+      </DialogContent>
       <MenuItemGrid
         items={menuItems}
         onEdit={(item) => {

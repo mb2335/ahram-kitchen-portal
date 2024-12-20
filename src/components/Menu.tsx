@@ -5,9 +5,11 @@ import { useMenuItems } from "@/hooks/useMenuItems";
 import { useOrderQuantities } from "@/hooks/useOrderQuantities";
 import { useMenuRealtime } from "@/hooks/useMenuRealtime";
 import { toast } from "@/hooks/use-toast";
+import { LoadingState } from "./shared/LoadingState";
+import { ErrorState } from "./shared/ErrorState";
+import { MenuHeader } from "./menu/MenuHeader";
 
 export function Menu() {
-  const { t } = useLanguage();
   const { addItem } = useCart();
   
   const { data: menuItems = [], isLoading, error } = useMenuItems();
@@ -23,21 +25,11 @@ export function Menu() {
       description: "Failed to load menu items. Please try again later.",
       variant: "destructive"
     });
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-red-600">
-          Failed to load menu items. Please try again later.
-        </div>
-      </div>
-    );
+    return <ErrorState message="Failed to load menu items. Please try again later." />;
   }
 
   if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading menu items...</div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   // Process menu items with remaining quantities
@@ -50,19 +42,14 @@ export function Menu() {
     return {
       ...item,
       remaining_quantity: remainingQuantity,
-      quantity_limit: remainingQuantity // Sync quantity_limit with remaining_quantity
+      quantity_limit: remainingQuantity
     };
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/20 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('menu.title')}</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {t('menu.description')}
-          </p>
-        </div>
+        <MenuHeader />
         <MenuGrid items={processedMenuItems} onAddToCart={addItem} />
       </div>
     </div>
