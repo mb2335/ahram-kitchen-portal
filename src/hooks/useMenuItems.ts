@@ -1,8 +1,33 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 export const useMenuItems = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('menu-updates')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        () => {
+          console.log('Menu items changed, invalidating query...');
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['menu-items'],
     queryFn: async () => {
@@ -27,7 +52,7 @@ export const useMenuItems = () => {
       console.log('Fetched menu items:', mappedData);
       return mappedData || [];
     },
-    staleTime: 10000,
-    gcTime: 15000
+    staleTime: 1000,
+    gcTime: 2000
   });
 };

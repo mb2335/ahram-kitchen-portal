@@ -36,19 +36,40 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addItem = (item: MenuItem) => {
     setItems((prevItems) => {
       const existingItem = prevItems.find((i) => i.id === item.id);
+      
+      // Check if item is out of stock
+      if (item.remaining_quantity === 0) {
+        toast({
+          title: "Item Out of Stock",
+          description: "This item is currently unavailable",
+          variant: "destructive",
+        });
+        return prevItems;
+      }
+
       if (existingItem) {
-        // Check remaining quantity if it exists
+        // Check if adding one more would exceed the remaining quantity
         if (item.remaining_quantity && existingItem.quantity >= item.remaining_quantity) {
-          return prevItems; // Don't add more if limit reached
+          toast({
+            title: "Quantity Limit Reached",
+            description: `Only ${item.remaining_quantity} items available`,
+            variant: "destructive",
+          });
+          return prevItems;
         }
+
         return prevItems.map((i) =>
           i.id === item.id
-            ? { ...i, quantity: item.remaining_quantity 
-                ? Math.min(i.quantity + 1, item.remaining_quantity)
-                : i.quantity + 1 }
+            ? { 
+                ...i, 
+                quantity: item.remaining_quantity 
+                  ? Math.min(i.quantity + 1, item.remaining_quantity)
+                  : i.quantity + 1 
+              }
             : i
         );
       }
+
       return [...prevItems, { ...item, quantity: 1 }];
     });
   };
@@ -63,6 +84,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (item.id === id) {
           const maxQuantity = item.remaining_quantity || Infinity;
           const newQuantity = Math.max(0, Math.min(quantity, maxQuantity));
+          
+          if (quantity > maxQuantity) {
+            toast({
+              title: "Quantity Limit Reached",
+              description: `Only ${maxQuantity} items available`,
+              variant: "destructive",
+            });
+          }
+          
           return newQuantity === 0
             ? item // Will be filtered out below
             : { ...item, quantity: newQuantity };
