@@ -38,6 +38,7 @@ export const useOrders = () => {
             ),
             order_items (
               id,
+              menu_item_id,
               quantity,
               unit_price,
               menu_item:menu_items (

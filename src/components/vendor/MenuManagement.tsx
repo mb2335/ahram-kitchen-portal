@@ -7,6 +7,7 @@ import { useMenuItems } from './menu/useMenuItems';
 import { useMenuForm } from './menu/useMenuForm';
 import { deleteMenuItem, updateMenuItemOrder } from './menu/menuItemOperations';
 import { useToast } from '@/components/ui/use-toast';
+import { MenuItem } from './menu/types';
 
 export function MenuManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -46,7 +47,7 @@ export function MenuManagement() {
     }
   }
 
-  async function handleReorder(reorderedItems: typeof menuItems) {
+  async function handleReorder(reorderedItems: MenuItem[]) {
     try {
       const updates = reorderedItems.map((item, index) => ({
         id: item.id,
