@@ -42,6 +42,13 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to menu updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to subscribe to menu updates');
+          toast({
+            title: "Connection Error",
+            description: "Failed to connect to menu updates. Please refresh the page.",
+            variant: "destructive",
+          });
         }
       });
 
@@ -89,6 +96,13 @@ export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to order updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to subscribe to order updates');
+          toast({
+            title: "Connection Error",
+            description: "Failed to connect to order updates. Please refresh the page.",
+            variant: "destructive",
+          });
         }
       });
 
