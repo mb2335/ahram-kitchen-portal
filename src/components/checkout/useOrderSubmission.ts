@@ -36,28 +36,35 @@ export function useOrderSubmission() {
 
   const getOrCreateCustomer = async (customerData: CustomerData) => {
     try {
-      // First, check if a customer with this email already exists
+      // First, try to find an existing customer with this email
       const { data: existingCustomers, error: fetchError } = await supabase
         .from('customers')
-        .select('id, user_id')
-        .eq('email', customerData.email);
+        .select('*')
+        .eq('email', customerData.email)
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
 
-      // If customer exists
-      if (existingCustomers && existingCustomers.length > 0) {
-        const existingCustomer = existingCustomers[0];
+      // If we found an existing customer
+      if (existingCustomers) {
+        // If the customer is associated with a user and we're not that user
+        if (existingCustomers.user_id && session?.user?.id !== existingCustomers.user_id) {
+          throw new Error('This email is associated with an existing account. Please sign in.');
+        }
         
-        // If customer exists and is associated with a user, but current session is guest
-        if (existingCustomer.user_id && !session?.user) {
-          throw new Error('This email is associated with an account. Please sign in.');
-        }
+        // Update the existing customer's information
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update({
+            full_name: customerData.fullName,
+            phone: customerData.phone,
+            // Only update user_id if we have a session and the customer doesn't already have one
+            ...(session?.user?.id && !existingCustomers.user_id ? { user_id: session.user.id } : {})
+          })
+          .eq('id', existingCustomers.id);
 
-        // If customer exists and is not associated with any user (guest customer)
-        // or if it's associated with the current user, return their ID
-        if (!existingCustomer.user_id || existingCustomer.user_id === session?.user?.id) {
-          return existingCustomer.id;
-        }
+        if (updateError) throw updateError;
+        return existingCustomers.id;
       }
 
       // If no existing customer found, create a new one
