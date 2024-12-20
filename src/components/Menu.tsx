@@ -12,7 +12,7 @@ export function Menu() {
   const queryClient = useQueryClient();
   const [orderedQuantities, setOrderedQuantities] = useState<Record<string, number>>({});
 
-  // Fetch ordered quantities for menu items
+  // Fetch ordered quantities for menu items - now using the same logic for all users
   const { data: orderQuantities = {}, refetch: refetchOrderQuantities } = useQuery({
     queryKey: ['order-quantities'],
     queryFn: async () => {
@@ -26,7 +26,7 @@ export function Menu() {
             status
           )
         `)
-        .in('orders.status', ['pending', 'confirmed']);
+        .neq('orders.status', 'rejected');
 
       if (error) {
         console.error('Error fetching order quantities:', error);
@@ -88,7 +88,7 @@ export function Menu() {
     gcTime: 15000 // Keep in garbage collection for 15 seconds
   });
 
-  // Subscribe to real-time updates for menu_items and order_items
+  // Subscribe to real-time updates for both menu_items and orders
   useEffect(() => {
     // Channel for menu item updates
     const menuChannel = supabase
@@ -108,7 +108,7 @@ export function Menu() {
       )
       .subscribe();
 
-    // Channel for order item updates
+    // Channel for order updates (both items and status changes)
     const orderChannel = supabase
       .channel('order-updates')
       .on(
@@ -120,6 +120,19 @@ export function Menu() {
         },
         (payload) => {
           console.log('Order item change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
+          refetchOrderQuantities();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('Order status change detected:', payload);
           queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
           refetchOrderQuantities();
         }
