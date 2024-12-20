@@ -44,7 +44,9 @@ export const useOrders = () => {
                 id,
                 name,
                 name_ko,
-                price
+                price,
+                description,
+                description_ko
               )
             )
           `)
@@ -53,7 +55,7 @@ export const useOrders = () => {
 
         if (error) throw error;
         console.log('Customer orders fetched:', orders);
-        return orders;
+        return orders as Order[];
       } catch (error: any) {
         console.error('Error fetching orders:', error);
         toast({
@@ -100,8 +102,7 @@ export const useVendorOrders = () => {
                 name_ko,
                 price,
                 description,
-                description_ko,
-                category
+                description_ko
               )
             )
           `)

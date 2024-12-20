@@ -1,3 +1,22 @@
+import type { Database } from '@/integrations/supabase/types';
+
+export type Announcement = Database['public']['Tables']['announcements']['Row'];
+
+export interface MenuItem {
+  id: string;
+  vendor_id: string | null;
+  name: string;
+  name_ko: string;
+  description?: string;
+  description_ko?: string;
+  price: number;
+  image?: string;
+  is_available: boolean;
+  created_at?: string;
+  order_index: number;
+  quantity?: number | null;
+}
+
 export interface Order {
   id: string;
   customer_id: string;
