@@ -48,7 +48,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-primary">${item.price}</span>
             <Badge 
-              variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
+              variant="secondary" 
               className="text-xs"
             >
               {getQuantityDisplay()}
