@@ -50,8 +50,7 @@ export function MenuManagement() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(data: MenuFormData & { image?: File }) {
     try {
       let imageUrl = editingItem?.image;
       if (selectedImage) {
@@ -59,15 +58,15 @@ export function MenuManagement() {
       }
 
       const menuItemData = {
-        name: formData.name,
-        name_ko: formData.name_ko,
-        description: formData.description || null,
-        description_ko: formData.description_ko || null,
-        price: parseFloat(formData.price),
-        quantity_limit: formData.quantity_limit ? parseInt(formData.quantity_limit) : null,
-        is_available: formData.is_available,
+        name: data.name,
+        name_ko: data.name_ko,
+        description: data.description || null,
+        description_ko: data.description_ko || null,
+        price: parseFloat(data.price),
+        quantity_limit: data.quantity_limit ? parseInt(data.quantity_limit) : null,
+        is_available: data.is_available,
         image: imageUrl,
-        category_id: formData.category_id || null,
+        category_id: data.category_id || null,
         order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
       };
 
