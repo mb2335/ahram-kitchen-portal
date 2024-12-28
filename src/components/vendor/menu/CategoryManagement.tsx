@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { CategoryFormData } from './types/category';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DeleteCategoryDialog } from './dialogs/DeleteCategoryDialog';
+import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export function CategoryManagement() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string, hasItems: boolean } | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string, itemCount: number } | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     name_ko: '',
@@ -59,12 +61,10 @@ export function CategoryManagement() {
     }
 
     try {
-      const { data: vendorData, error: vendorError } = await supabase
+      const { data: vendorData } = await supabase
         .from('vendors')
         .select('id')
         .single();
-
-      if (vendorError) throw vendorError;
 
       const categoryData = {
         name: formData.name,
@@ -97,7 +97,7 @@ export function CategoryManagement() {
 
       setIsDialogOpen(false);
       resetForm();
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
     } catch (error) {
       console.error('Error saving category:', error);
       toast({
@@ -108,74 +108,51 @@ export function CategoryManagement() {
     }
   };
 
-  const handleEdit = (category: any) => {
-    setEditingCategory(category);
-    setFormData({
-      name: category.name,
-      name_ko: category.name_ko,
-      deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
-      deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
-    });
-    setIsDialogOpen(true);
-  };
-
   const handleDelete = async (categoryId: string) => {
     try {
-      // First check if category has items
-      const { data: items, error: itemsError } = await supabase
-        .from('menu_items')
-        .select('id')
-        .eq('category_id', categoryId);
-
-      if (itemsError) throw itemsError;
-
-      if (items && items.length > 0) {
-        setCategoryToDelete({ id: categoryId, hasItems: true });
-        return;
+      const itemCount = await checkCategoryItems(categoryId);
+      if (itemCount > 0) {
+        setCategoryToDelete({ id: categoryId, itemCount });
+      } else {
+        await deleteCategory(categoryId);
+        toast({
+          title: "Success",
+          description: "Category deleted successfully",
+        });
+        queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
       }
-
-      // If no items, proceed with deletion
-      await deleteCategory(categoryId);
-      
     } catch (error) {
-      console.error('Error checking category items:', error);
+      console.error('Error in delete process:', error);
       toast({
         title: "Error",
-        description: "Failed to check category items",
+        description: "Failed to process deletion",
         variant: "destructive",
       });
     }
   };
 
-  const deleteCategory = async (categoryId: string, removeItems: boolean = false) => {
+  const handleDeleteConfirm = async (action: 'delete' | 'uncategorize') => {
+    if (!categoryToDelete) return;
+
     try {
-      if (removeItems) {
-        // Update items to remove category
-        const { error: updateError } = await supabase
-          .from('menu_items')
-          .update({ category_id: null })
-          .eq('category_id', categoryId);
-
-        if (updateError) throw updateError;
+      if (action === 'delete') {
+        await deleteMenuItems(categoryToDelete.id);
+      } else {
+        await removeItemsCategory(categoryToDelete.id);
       }
-
-      // Delete the category
-      const { error } = await supabase
-        .from('menu_categories')
-        .delete()
-        .eq('id', categoryId);
-
-      if (error) throw error;
-
+      
+      await deleteCategory(categoryToDelete.id);
+      
       toast({
         title: "Success",
         description: "Category deleted successfully",
       });
       
       setCategoryToDelete(null);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
     } catch (error) {
-      console.error('Error deleting category:', error);
+      console.error('Error in delete confirmation:', error);
       toast({
         title: "Error",
         description: "Failed to delete category",
@@ -208,7 +185,16 @@ export function CategoryManagement() {
 
       <CategoryList 
         categories={categories} 
-        onEdit={handleEdit}
+        onEdit={(category) => {
+          setEditingCategory(category);
+          setFormData({
+            name: category.name,
+            name_ko: category.name_ko,
+            deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
+            deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
+          });
+          setIsDialogOpen(true);
+        }}
         onDelete={handleDelete}
       />
 
@@ -225,25 +211,12 @@ export function CategoryManagement() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Category</AlertDialogTitle>
-            <AlertDialogDescription>
-              This category contains menu items. Would you like to remove the category from these items or cancel the deletion?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => categoryToDelete && deleteCategory(categoryToDelete.id, true)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Remove Category
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteCategoryDialog
+        isOpen={!!categoryToDelete}
+        onClose={() => setCategoryToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        itemCount={categoryToDelete?.itemCount || 0}
+      />
     </div>
   );
 }
