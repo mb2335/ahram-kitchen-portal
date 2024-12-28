@@ -1,3 +1,5 @@
+import { CustomerData } from './customer';
+
 export interface OrderItem {
   id: string;
   name: string;

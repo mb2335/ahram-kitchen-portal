@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 interface Category {
   id: string;
@@ -20,19 +20,30 @@ interface CategoryFormData {
 
 export function CategoryManagement() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     name_ko: '',
   });
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading, refetch } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
+      // First get the vendor id
+      const { data: vendorData, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .single();
+
+      if (vendorError) {
+        console.error('Error fetching vendor:', vendorError);
+        throw vendorError;
+      }
+
       const { data, error } = await supabase
         .from('menu_categories')
         .select('*')
+        .eq('vendor_id', vendorData.id)
         .order('order_index');
       
       if (error) throw error;
@@ -43,12 +54,21 @@ export function CategoryManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // First get the vendor id
+      const { data: vendorData, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .single();
+
+      if (vendorError) throw vendorError;
+
       const { error } = await supabase
         .from('menu_categories')
         .insert([
           {
             name: formData.name,
             name_ko: formData.name_ko,
+            vendor_id: vendorData.id,
             order_index: (categories?.length || 0) + 1,
           },
         ]);
@@ -62,7 +82,7 @@ export function CategoryManagement() {
 
       setIsDialogOpen(false);
       setFormData({ name: '', name_ko: '' });
-      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+      refetch();
     } catch (error) {
       console.error('Error adding category:', error);
       toast({
