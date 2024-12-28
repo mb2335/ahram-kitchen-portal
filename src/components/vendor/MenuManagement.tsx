@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -143,7 +142,7 @@ export function MenuManagement() {
       <CategoryManagement />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
@@ -152,16 +151,14 @@ export function MenuManagement() {
               Fill in the details below to {editingItem ? 'update' : 'add'} a menu item.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] overflow-y-auto px-1">
-            <MenuItemForm
-              editingItem={editingItem}
-              formData={formData}
-              setFormData={setFormData}
-              selectedImage={selectedImage}
-              setSelectedImage={setSelectedImage}
-              onSubmit={handleSubmit}
-            />
-          </ScrollArea>
+          <MenuItemForm
+            editingItem={editingItem}
+            formData={formData}
+            setFormData={setFormData}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+            onSubmit={handleSubmit}
+          />
         </DialogContent>
       </Dialog>
 
