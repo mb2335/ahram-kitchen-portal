@@ -58,14 +58,28 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               mode="single"
               selected={formData.deliveryAvailableFrom}
               onSelect={(date) => {
-                setFormData({ 
-                  ...formData, 
-                  deliveryAvailableFrom: date || undefined,
-                  // Reset end date if it's before the new start date
-                  deliveryAvailableUntil: formData.deliveryAvailableUntil && date && 
-                    formData.deliveryAvailableUntil < date ? undefined : formData.deliveryAvailableUntil
-                });
+                if (date) {
+                  // If the selected end date is before the new start date, reset it
+                  const newEndDate = formData.deliveryAvailableUntil && 
+                    formData.deliveryAvailableUntil < date ? 
+                    undefined : 
+                    formData.deliveryAvailableUntil;
+                  
+                  setFormData({
+                    ...formData,
+                    deliveryAvailableFrom: date,
+                    deliveryAvailableUntil: newEndDate
+                  });
+                } else {
+                  // If start date is cleared, also clear end date
+                  setFormData({
+                    ...formData,
+                    deliveryAvailableFrom: undefined,
+                    deliveryAvailableUntil: undefined
+                  });
+                }
               }}
+              disabled={(date) => date < new Date()}
               initialFocus
             />
           </PopoverContent>
@@ -96,7 +110,13 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             <Calendar
               mode="single"
               selected={formData.deliveryAvailableUntil}
-              onSelect={(date) => setFormData({ ...formData, deliveryAvailableUntil: date || undefined })}
+              onSelect={(date) => {
+                if (date && formData.deliveryAvailableFrom && date >= formData.deliveryAvailableFrom) {
+                  setFormData({ ...formData, deliveryAvailableUntil: date });
+                } else if (!date) {
+                  setFormData({ ...formData, deliveryAvailableUntil: undefined });
+                }
+              }}
               disabled={(date) => 
                 !date || 
                 !formData.deliveryAvailableFrom || 
