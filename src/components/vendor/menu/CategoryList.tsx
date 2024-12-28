@@ -21,16 +21,9 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
           <div>
             <p className="font-medium">{category.name}</p>
             <p className="text-sm text-gray-600">{category.name_ko}</p>
-            {(category.delivery_available_from || category.delivery_available_until) && (
+            {category.delivery_available_from && category.delivery_available_until && (
               <p className="text-xs text-gray-500">
-                Delivery available: {' '}
-                {category.delivery_available_from 
-                  ? format(new Date(category.delivery_available_from), "PPP")
-                  : 'No start date'} 
-                {' - '}
-                {category.delivery_available_until
-                  ? format(new Date(category.delivery_available_until), "PPP")
-                  : 'No end date'}
+                Delivery available: {format(new Date(category.delivery_available_from), "PPP")} - {format(new Date(category.delivery_available_until), "PPP")}
               </p>
             )}
           </div>

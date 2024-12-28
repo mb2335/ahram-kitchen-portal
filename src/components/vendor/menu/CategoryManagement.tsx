@@ -50,6 +50,16 @@ export function CategoryManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (formData.deliveryAvailableUntil && formData.deliveryAvailableFrom && 
+        formData.deliveryAvailableUntil < formData.deliveryAvailableFrom) {
+      toast({
+        title: "Error",
+        description: "End date cannot be before start date",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: vendorData } = await supabase
         .from('vendors')
@@ -61,8 +71,8 @@ export function CategoryManagement() {
         name_ko: formData.name_ko,
         vendor_id: vendorData.id,
         order_index: editingCategory ? editingCategory.order_index : (categories?.length || 0) + 1,
-        delivery_available_from: formData.deliveryAvailableFrom?.toISOString() || null,
-        delivery_available_until: formData.deliveryAvailableUntil?.toISOString() || null,
+        delivery_available_from: formData.deliveryAvailableFrom?.toISOString(),
+        delivery_available_until: formData.deliveryAvailableUntil?.toISOString(),
       };
 
       if (editingCategory) {

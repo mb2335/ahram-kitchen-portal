@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { CategoryFormData } from "./types/category";
+import { DateRange } from "react-day-picker";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -11,6 +12,19 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormProps) {
+  const dateRange: DateRange = {
+    from: formData.deliveryAvailableFrom,
+    to: formData.deliveryAvailableUntil
+  };
+
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setFormData({
+      ...formData,
+      deliveryAvailableFrom: range?.from,
+      deliveryAvailableUntil: range?.to
+    });
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
@@ -33,17 +47,9 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
       <div className="space-y-2">
         <Label>Delivery Available Period</Label>
         <DatePickerWithRange
-          date={{
-            from: formData.deliveryAvailableFrom,
-            to: formData.deliveryAvailableUntil
-          }}
-          onSelect={(range) => {
-            setFormData({
-              ...formData,
-              deliveryAvailableFrom: range?.from,
-              deliveryAvailableUntil: range?.to
-            });
-          }}
+          date={dateRange}
+          onSelect={handleDateRangeSelect}
+          mode="range"
         />
       </div>
 
