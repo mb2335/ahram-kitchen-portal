@@ -3,123 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-interface OrderItem {
-  id: string;
-  name: string;
-  nameKo: string;
-  quantity: number;
-  price: number;
-}
-
-interface CustomerData {
-  fullName: string;
-  email: string;
-  phone: string;
-}
-
-interface OrderSubmissionProps {
-  items: OrderItem[];
-  total: number;
-  taxAmount: number;
-  notes: string;
-  deliveryDate: Date;
-  customerData: CustomerData;
-  onOrderSuccess: (orderId: string) => void;
-}
+import { OrderSubmissionProps } from '@/types/order';
+import { getOrCreateCustomer } from '@/utils/customerManagement';
+import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
 
 export function useOrderSubmission() {
   const session = useSession();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
-
-  const getOrCreateCustomer = async (customerData: CustomerData) => {
-    try {
-      // First, try to find an existing customer with this email
-      const { data: existingCustomer, error: fetchError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('email', customerData.email)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      // If we found an existing customer
-      if (existingCustomer) {
-        // If the customer is associated with a user and we're not that user
-        if (existingCustomer.user_id && session?.user?.id !== existingCustomer.user_id) {
-          throw new Error('This email is associated with an existing account. Please sign in.');
-        }
-        
-        // Update the existing customer's information
-        const { data: updatedCustomer, error: updateError } = await supabase
-          .from('customers')
-          .update({
-            full_name: customerData.fullName,
-            phone: customerData.phone,
-            // Only update user_id if we have a session and the customer doesn't already have one
-            ...(session?.user?.id && !existingCustomer.user_id ? { user_id: session.user.id } : {})
-          })
-          .eq('id', existingCustomer.id)
-          .select()
-          .single();
-
-        if (updateError) throw updateError;
-        return updatedCustomer.id;
-      }
-
-      // If no existing customer found, create a new one
-      const { data: newCustomer, error: createError } = await supabase
-        .from('customers')
-        .insert({
-          full_name: customerData.fullName,
-          email: customerData.email,
-          phone: customerData.phone,
-          user_id: session?.user?.id || null
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return newCustomer.id;
-    } catch (error: any) {
-      console.error('Error in getOrCreateCustomer:', error);
-      throw error;
-    }
-  };
-
-  const updateMenuItemQuantities = async (items: OrderItem[]) => {
-    console.log('Updating menu item quantities:', items);
-    
-    for (const item of items) {
-      const { data: menuItem, error: fetchError } = await supabase
-        .from('menu_items')
-        .select('quantity_limit')
-        .eq('id', item.id)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching menu item:', fetchError);
-        continue;
-      }
-
-      if (menuItem.quantity_limit !== null) {
-        const newQuantity = Math.max(0, menuItem.quantity_limit - item.quantity);
-        const { error: updateError } = await supabase
-          .from('menu_items')
-          .update({ quantity_limit: newQuantity })
-          .eq('id', item.id);
-
-        if (updateError) {
-          console.error('Error updating menu item quantity:', updateError);
-          continue;
-        }
-        
-        console.log(`Updated quantity for item ${item.id} to ${newQuantity}`);
-      }
-    }
-  };
 
   const submitOrder = async ({
     items,
@@ -143,7 +35,7 @@ export function useOrderSubmission() {
       }
 
       // Get or create customer
-      const customerId = await getOrCreateCustomer(customerData);
+      const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
       // Upload payment proof with unique filename
       const fileExt = paymentProof.name.split('.').pop();
