@@ -67,6 +67,7 @@ export function MenuManagement() {
         quantity_limit: formData.quantity_limit ? parseInt(formData.quantity_limit) : null,
         is_available: formData.is_available,
         image: imageUrl,
+        category_id: formData.category_id || null,
         order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
       };
 
@@ -101,6 +102,7 @@ export function MenuManagement() {
       price: '',
       quantity_limit: '',
       is_available: true,
+      category_id: undefined,
     });
   }
 
