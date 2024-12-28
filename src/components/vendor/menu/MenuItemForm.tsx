@@ -10,24 +10,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { MenuFormData } from "./types";
 import { validateMenuItemAvailability } from "./utils/menuItemValidation";
 import { toast } from "@/hooks/use-toast";
+import { MenuItem } from "./types";
+import { Dispatch, SetStateAction } from "react";
 
-interface MenuItemFormProps {
+export interface MenuItemFormProps {
   onSubmit: (data: MenuFormData & { image?: File }) => Promise<void>;
-  initialData?: MenuFormData & { image?: string };
+  editingItem: MenuItem | null;
+  formData: MenuFormData;
+  setFormData: Dispatch<SetStateAction<MenuFormData>>;
+  selectedImage: File | null;
+  setSelectedImage: Dispatch<SetStateAction<File | null>>;
 }
 
-export function MenuItemForm({ onSubmit, initialData }: MenuItemFormProps) {
+export function MenuItemForm({ 
+  onSubmit, 
+  editingItem, 
+  formData, 
+  setFormData, 
+  selectedImage, 
+  setSelectedImage 
+}: MenuItemFormProps) {
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<MenuFormData>({
-    defaultValues: {
-      name: initialData?.name || '',
-      name_ko: initialData?.name_ko || '',
-      description: initialData?.description || '',
-      description_ko: initialData?.description_ko || '',
-      price: initialData?.price || '',
-      quantity_limit: initialData?.quantity_limit || '',
-      is_available: initialData?.is_available || false,
-      category_id: initialData?.category_id || undefined,
-    }
+    defaultValues: formData
   });
 
   const { data: categories = [] } = useQuery({
@@ -57,7 +61,7 @@ export function MenuItemForm({ onSubmit, initialData }: MenuItemFormProps) {
     });
   }
 
-  const onFormSubmit = async (data: MenuFormData) => {
+  const handleFormSubmit = async (data: MenuFormData) => {
     const availabilityError = validateMenuItemAvailability(data.category_id, data.is_available);
     if (availabilityError) {
       toast({
@@ -67,11 +71,11 @@ export function MenuItemForm({ onSubmit, initialData }: MenuItemFormProps) {
       });
       return;
     }
-    await onSubmit(data);
+    await onSubmit({ ...data, image: selectedImage || undefined });
   };
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name">Name (English)</Label>
         <Input id="name" {...register('name', { required: true })} />
