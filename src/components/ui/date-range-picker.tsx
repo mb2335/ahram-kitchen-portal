@@ -68,7 +68,6 @@ export function DatePickerWithRange({
                 }
               }}
               numberOfMonths={1}
-              disabled={disabled}
             />
           ) : (
             <Calendar
@@ -78,7 +77,6 @@ export function DatePickerWithRange({
               selected={date}
               onSelect={onSelect}
               numberOfMonths={2}
-              disabled={disabled}
             />
           )}
         </PopoverContent>
