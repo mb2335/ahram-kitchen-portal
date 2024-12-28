@@ -86,6 +86,8 @@ export type Database = {
       menu_categories: {
         Row: {
           created_at: string | null
+          delivery_available_from: string | null
+          delivery_available_until: string | null
           id: string
           name: string
           name_ko: string
@@ -94,6 +96,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          delivery_available_from?: string | null
+          delivery_available_until?: string | null
           id?: string
           name: string
           name_ko: string
@@ -102,6 +106,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          delivery_available_from?: string | null
+          delivery_available_until?: string | null
           id?: string
           name?: string
           name_ko?: string
