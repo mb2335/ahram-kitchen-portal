@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -53,8 +53,8 @@ export function MenuManagement() {
   async function handleSubmit(data: MenuFormData & { image?: File }) {
     try {
       let imageUrl = editingItem?.image;
-      if (data.image) {
-        imageUrl = await handleImageUpload(data.image);
+      if (selectedImage) {
+        imageUrl = await handleImageUpload(selectedImage);
       }
 
       const menuItemData = {
@@ -142,14 +142,11 @@ export function MenuManagement() {
       <CategoryManagement />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
             </DialogTitle>
-            <DialogDescription>
-              Fill in the details below to {editingItem ? 'update' : 'add'} a menu item.
-            </DialogDescription>
           </DialogHeader>
           <MenuItemForm
             editingItem={editingItem}
