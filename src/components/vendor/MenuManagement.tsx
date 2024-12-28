@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -50,23 +50,24 @@ export function MenuManagement() {
     }
   }
 
-  async function handleSubmit(data: MenuFormData & { image?: File }) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     try {
       let imageUrl = editingItem?.image;
-      if (data.image) {
-        imageUrl = await handleImageUpload(data.image);
+      if (selectedImage) {
+        imageUrl = await handleImageUpload(selectedImage);
       }
 
       const menuItemData = {
-        name: data.name,
-        name_ko: data.name_ko,
-        description: data.description || null,
-        description_ko: data.description_ko || null,
-        price: parseFloat(data.price),
-        quantity_limit: data.quantity_limit ? parseInt(data.quantity_limit) : null,
-        is_available: data.is_available,
+        name: formData.name,
+        name_ko: formData.name_ko,
+        description: formData.description || null,
+        description_ko: formData.description_ko || null,
+        price: parseFloat(formData.price),
+        quantity_limit: formData.quantity_limit ? parseInt(formData.quantity_limit) : null,
+        is_available: formData.is_available,
         image: imageUrl,
-        category_id: data.category_id || null,
+        category_id: formData.category_id || null,
         order_index: editingItem ? editingItem.order_index : menuItems.length + 1,
       };
 
@@ -142,14 +143,11 @@ export function MenuManagement() {
       <CategoryManagement />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
             </DialogTitle>
-            <DialogDescription>
-              Fill in the details below to {editingItem ? 'update' : 'add'} a menu item.
-            </DialogDescription>
           </DialogHeader>
           <MenuItemForm
             editingItem={editingItem}
