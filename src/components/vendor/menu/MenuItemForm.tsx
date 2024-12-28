@@ -1,36 +1,35 @@
-import { useQuery } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MenuItem, MenuFormData } from './types';
+import { MenuFormData } from "./types";
+import { validateMenuItemAvailability } from "./utils/menuItemValidation";
+import { toast } from "@/hooks/use-toast";
 
 interface MenuItemFormProps {
-  editingItem: MenuItem | null;
-  formData: MenuFormData;
-  setFormData: (data: MenuFormData) => void;
-  selectedImage: File | null;
-  setSelectedImage: (file: File | null) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (data: MenuFormData & { image?: File }) => Promise<void>;
+  initialData?: MenuFormData & { image?: string };
 }
 
-export function MenuItemForm({
-  editingItem,
-  formData,
-  setFormData,
-  selectedImage,
-  setSelectedImage,
-  onSubmit
-}: MenuItemFormProps) {
+export function MenuItemForm({ onSubmit, initialData }: MenuItemFormProps) {
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<MenuFormData>({
+    defaultValues: {
+      name: initialData?.name || '',
+      name_ko: initialData?.name_ko || '',
+      description: initialData?.description || '',
+      description_ko: initialData?.description_ko || '',
+      price: initialData?.price || '',
+      quantity_limit: initialData?.quantity_limit || '',
+      is_available: initialData?.is_available || false,
+      category_id: initialData?.category_id || undefined,
+    }
+  });
+
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
@@ -44,30 +43,79 @@ export function MenuItemForm({
     },
   });
 
+  const watchCategoryId = watch('category_id');
+  const watchIsAvailable = watch('is_available');
+
+  // Validate availability when category changes
+  const availabilityError = validateMenuItemAvailability(watchCategoryId, watchIsAvailable);
+  if (availabilityError && watchIsAvailable) {
+    setValue('is_available', false);
+    toast({
+      title: "Availability Update",
+      description: availabilityError,
+      variant: "destructive",
+    });
+  }
+
+  const onFormSubmit = async (data: MenuFormData) => {
+    const availabilityError = validateMenuItemAvailability(data.category_id, data.is_available);
+    if (availabilityError) {
+      toast({
+        title: "Validation Error",
+        description: availabilityError,
+        variant: "destructive",
+      });
+      return;
+    }
+    await onSubmit(data);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="image">Image</Label>
-        <Input
-          id="image"
-          type="file"
-          accept="image/*"
-          onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
+        <Label htmlFor="name">Name (English)</Label>
+        <Input id="name" {...register('name', { required: true })} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="name_ko">Name (Korean)</Label>
+        <Input id="name_ko" {...register('name_ko', { required: true })} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description (English)</Label>
+        <Textarea id="description" {...register('description')} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description_ko">Description (Korean)</Label>
+        <Textarea id="description_ko" {...register('description_ko')} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="price">Price</Label>
+        <Input 
+          id="price" 
+          type="number" 
+          step="0.01" 
+          {...register('price', { required: true })} 
         />
-        {(selectedImage || editingItem?.image) && (
-          <img
-            src={selectedImage ? URL.createObjectURL(selectedImage) : editingItem?.image}
-            alt="Preview"
-            className="w-full h-32 object-cover rounded-lg"
-          />
-        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="quantity_limit">Quantity Limit (optional)</Label>
+        <Input 
+          id="quantity_limit" 
+          type="number" 
+          {...register('quantity_limit')} 
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="category">Category</Label>
-        <Select
-          value={formData.category_id || ''}
-          onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+        <Select 
+          onValueChange={(value) => setValue('category_id', value)}
+          value={watchCategoryId}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select a category" />
@@ -82,79 +130,24 @@ export function MenuItemForm({
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="name">Name (English)</Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="name_ko">Name (Korean)</Label>
-        <Input
-          id="name_ko"
-          value={formData.name_ko}
-          onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description (English)</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description_ko">Description (Korean)</Label>
-        <Textarea
-          id="description_ko"
-          value={formData.description_ko}
-          onChange={(e) => setFormData({ ...formData, description_ko: e.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="price">Price ($)</Label>
-        <Input
-          id="price"
-          type="number"
-          step="0.01"
-          value={formData.price}
-          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="quantity_limit">Quantity Limit</Label>
-        <Input
-          id="quantity_limit"
-          type="number"
-          value={formData.quantity_limit}
-          onChange={(e) => setFormData({ ...formData, quantity_limit: e.target.value })}
-          placeholder="Leave blank for unlimited"
-        />
-      </div>
-
       <div className="flex items-center space-x-2">
-        <Switch
-          id="is_available"
-          checked={formData.is_available}
-          onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
+        <Switch 
+          id="is_available" 
+          checked={watchIsAvailable}
+          onCheckedChange={(checked) => setValue('is_available', checked)}
+          disabled={!watchCategoryId}
         />
-        <Label htmlFor="is_available">Available</Label>
+        <Label htmlFor="is_available">
+          Available
+          {!watchCategoryId && (
+            <span className="ml-2 text-sm text-muted-foreground">
+              (Requires category)
+            </span>
+          )}
+        </Label>
       </div>
 
-      <Button type="submit" className="w-full">
-        {editingItem ? 'Update' : 'Add'} Item
-      </Button>
+      <Button type="submit">Save</Button>
     </form>
   );
 }
