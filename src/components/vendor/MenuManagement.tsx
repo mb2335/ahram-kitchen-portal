@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -53,8 +54,8 @@ export function MenuManagement() {
   async function handleSubmit(data: MenuFormData & { image?: File }) {
     try {
       let imageUrl = editingItem?.image;
-      if (selectedImage) {
-        imageUrl = await handleImageUpload(selectedImage);
+      if (data.image) {
+        imageUrl = await handleImageUpload(data.image);
       }
 
       const menuItemData = {
@@ -142,20 +143,25 @@ export function MenuManagement() {
       <CategoryManagement />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
             </DialogTitle>
+            <DialogDescription>
+              Fill in the details below to {editingItem ? 'update' : 'add'} a menu item.
+            </DialogDescription>
           </DialogHeader>
-          <MenuItemForm
-            editingItem={editingItem}
-            formData={formData}
-            setFormData={setFormData}
-            selectedImage={selectedImage}
-            setSelectedImage={setSelectedImage}
-            onSubmit={handleSubmit}
-          />
+          <ScrollArea className="max-h-[60vh] overflow-y-auto px-1">
+            <MenuItemForm
+              editingItem={editingItem}
+              formData={formData}
+              setFormData={setFormData}
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              onSubmit={handleSubmit}
+            />
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
