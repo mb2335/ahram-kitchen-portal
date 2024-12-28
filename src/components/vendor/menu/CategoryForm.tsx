@@ -1,11 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format, parse } from "date-fns";
-import { cn } from "@/lib/utils";
+import { parse } from "date-fns";
 import { CategoryFormData } from "./types/category";
 
 interface CategoryFormProps {
@@ -54,70 +50,23 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
 
       <div className="space-y-2">
         <Label>Delivery Available From</Label>
-        <div className="flex gap-2">
-          <Input
-            type="date"
-            value={formData.deliveryAvailableFrom ? format(formData.deliveryAvailableFrom, 'yyyy-MM-dd') : ''}
-            onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
-            className="flex-1"
-          />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-10 p-0",
-                  !formData.deliveryAvailableFrom && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={formData.deliveryAvailableFrom}
-                onSelect={(date) => setFormData({ ...formData, deliveryAvailableFrom: date })}
-                disabled={(date) => date < new Date()}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+        <Input
+          type="date"
+          value={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : ''}
+          onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
+          className="flex-1"
+        />
       </div>
 
       <div className="space-y-2">
         <Label>Delivery Available Until</Label>
-        <div className="flex gap-2">
-          <Input
-            type="date"
-            value={formData.deliveryAvailableUntil ? format(formData.deliveryAvailableUntil, 'yyyy-MM-dd') : ''}
-            onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
-            className="flex-1"
-          />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-10 p-0",
-                  !formData.deliveryAvailableUntil && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={formData.deliveryAvailableUntil}
-                onSelect={(date) => setFormData({ ...formData, deliveryAvailableUntil: date })}
-                disabled={(date) => date < (formData.deliveryAvailableFrom || new Date())}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+        <Input
+          type="date"
+          value={formData.deliveryAvailableUntil ? formData.deliveryAvailableUntil.toISOString().split('T')[0] : ''}
+          onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
+          className="flex-1"
+          min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
+        />
       </div>
 
       <Button type="submit" className="w-full">
