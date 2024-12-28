@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast';
 import { MenuItemForm } from './menu/MenuItemForm';
 import { MenuItemGrid } from './menu/MenuItemGrid';
+import { CategoryManagement } from './menu/CategoryManagement';
 import { MenuItem, MenuFormData } from './menu/types';
 import { loadVendorMenuItems, saveMenuItem, deleteMenuItem, updateMenuItemOrder, handleImageUpload } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
@@ -137,6 +138,8 @@ export function MenuManagement() {
         setIsDialogOpen={setIsDialogOpen}
       />
       
+      <CategoryManagement />
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-hidden">
           <DialogHeader>
@@ -167,6 +170,7 @@ export function MenuManagement() {
             price: item.price.toString(),
             quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
             is_available: item.is_available,
+            category_id: item.category_id || undefined,
           });
           setIsDialogOpen(true);
         }}

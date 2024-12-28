@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
   DragEndEvent,
@@ -15,6 +16,7 @@ import {
 import { SortableMenuItem } from "./SortableMenuItem";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MenuItemGridProps {
   items: MenuItem[];
@@ -30,6 +32,19 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleDelete = async (id: string) => {
     try {
@@ -55,7 +70,6 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
       const [movedItem] = newItems.splice(oldIndex, 1);
       newItems.splice(newIndex, 0, movedItem);
 
-      // Update order_index values
       const reorderedItems = newItems.map((item, index) => ({
         ...item,
         order_index: index + 1,
@@ -65,27 +79,64 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
     }
   }
 
+  const itemsByCategory = items.reduce((acc, item) => {
+    const categoryId = item.category_id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = [];
+    }
+    acc[categoryId].push(item);
+    return acc;
+  }, {} as Record<string, MenuItem[]>);
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext
-        items={items}
-        strategy={verticalListSortingStrategy}
-      >
-        <div className="grid gap-4 pb-6">
-          {items.map((item) => (
-            <SortableMenuItem
-              key={item.id}
-              item={item}
-              onEdit={onEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      </SortableContext>
+      <div className="space-y-6">
+        {categories.map((category) => (
+          <div key={category.id} className="space-y-2">
+            <h3 className="text-lg font-semibold">{category.name}</h3>
+            <SortableContext
+              items={itemsByCategory[category.id] || []}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid gap-4">
+                {(itemsByCategory[category.id] || []).map((item) => (
+                  <SortableMenuItem
+                    key={item.id}
+                    item={item}
+                    onEdit={onEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+        ))}
+
+        {itemsByCategory['uncategorized'] && (
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Uncategorized</h3>
+            <SortableContext
+              items={itemsByCategory['uncategorized']}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid gap-4">
+                {itemsByCategory['uncategorized'].map((item) => (
+                  <SortableMenuItem
+                    key={item.id}
+                    item={item}
+                    onEdit={onEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+        )}
+      </div>
     </DndContext>
   );
 }
