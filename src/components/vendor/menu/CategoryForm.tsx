@@ -53,11 +53,11 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={formData.deliveryAvailableFrom}
-              onSelect={(date) => setFormData({ ...formData, deliveryAvailableFrom: date })}
+              onSelect={(date) => setFormData({ ...formData, deliveryAvailableFrom: date || undefined })}
               disabled={(date) => date < new Date()}
               initialFocus
             />
@@ -84,11 +84,11 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={formData.deliveryAvailableUntil}
-              onSelect={(date) => setFormData({ ...formData, deliveryAvailableUntil: date })}
+              onSelect={(date) => setFormData({ ...formData, deliveryAvailableUntil: date || undefined })}
               disabled={(date) => date < (formData.deliveryAvailableFrom || new Date())}
               initialFocus
             />
@@ -97,7 +97,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
       </div>
 
       <Button type="submit" className="w-full">
-        Add Category
+        {formData.name ? 'Save Changes' : 'Add Category'}
       </Button>
     </form>
   );
