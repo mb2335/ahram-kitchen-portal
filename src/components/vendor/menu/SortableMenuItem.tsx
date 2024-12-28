@@ -38,6 +38,13 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
     return `${item.quantity_limit} remaining`;
   };
 
+  const getAvailabilityDisplay = () => {
+    if (!item.category_id) {
+      return 'Uncategorized (Locked)';
+    }
+    return item.is_available ? 'Available' : 'Unavailable';
+  };
+
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="p-4">
@@ -65,8 +72,8 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
                 {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
                 <p className="mt-2">${item.price}</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={item.is_available ? 'default' : 'secondary'}>
-                    {item.is_available ? 'Available' : 'Unavailable'}
+                  <Badge variant={item.category_id && item.is_available ? 'default' : 'secondary'}>
+                    {getAvailabilityDisplay()}
                   </Badge>
                   <Badge variant="secondary">
                     {getRemainingDisplay()}
