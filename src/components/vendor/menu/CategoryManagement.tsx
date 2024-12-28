@@ -7,11 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { CategoryFormData } from './types/category';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export function CategoryManagement() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string, hasItems: boolean } | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     name_ko: '',
@@ -119,6 +121,45 @@ export function CategoryManagement() {
 
   const handleDelete = async (categoryId: string) => {
     try {
+      // First check if category has items
+      const { data: items, error: itemsError } = await supabase
+        .from('menu_items')
+        .select('id')
+        .eq('category_id', categoryId);
+
+      if (itemsError) throw itemsError;
+
+      if (items && items.length > 0) {
+        setCategoryToDelete({ id: categoryId, hasItems: true });
+        return;
+      }
+
+      // If no items, proceed with deletion
+      await deleteCategory(categoryId);
+      
+    } catch (error) {
+      console.error('Error checking category items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check category items",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteCategory = async (categoryId: string, removeItems: boolean = false) => {
+    try {
+      if (removeItems) {
+        // Update items to remove category
+        const { error: updateError } = await supabase
+          .from('menu_items')
+          .update({ category_id: null })
+          .eq('category_id', categoryId);
+
+        if (updateError) throw updateError;
+      }
+
+      // Delete the category
       const { error } = await supabase
         .from('menu_categories')
         .delete()
@@ -130,6 +171,8 @@ export function CategoryManagement() {
         title: "Success",
         description: "Category deleted successfully",
       });
+      
+      setCategoryToDelete(null);
       refetch();
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -181,6 +224,26 @@ export function CategoryManagement() {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              This category contains menu items. Would you like to remove the category from these items or cancel the deletion?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => categoryToDelete && deleteCategory(categoryToDelete.id, true)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove Category
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
