@@ -57,8 +57,15 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             <Calendar
               mode="single"
               selected={formData.deliveryAvailableFrom}
-              onSelect={(date) => setFormData({ ...formData, deliveryAvailableFrom: date || undefined })}
-              disabled={(date) => date < new Date()}
+              onSelect={(date) => {
+                setFormData({ 
+                  ...formData, 
+                  deliveryAvailableFrom: date || undefined,
+                  // Reset end date if it's before the new start date
+                  deliveryAvailableUntil: formData.deliveryAvailableUntil && date && 
+                    formData.deliveryAvailableUntil < date ? undefined : formData.deliveryAvailableUntil
+                });
+              }}
               initialFocus
             />
           </PopoverContent>
@@ -75,12 +82,13 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                 "w-full justify-start text-left font-normal",
                 !formData.deliveryAvailableUntil && "text-muted-foreground"
               )}
+              disabled={!formData.deliveryAvailableFrom}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formData.deliveryAvailableUntil ? (
                 format(formData.deliveryAvailableUntil, "PPP")
               ) : (
-                <span>Pick an end date</span>
+                <span>{formData.deliveryAvailableFrom ? 'Pick an end date' : 'Set start date first'}</span>
               )}
             </Button>
           </PopoverTrigger>
@@ -89,7 +97,11 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               mode="single"
               selected={formData.deliveryAvailableUntil}
               onSelect={(date) => setFormData({ ...formData, deliveryAvailableUntil: date || undefined })}
-              disabled={(date) => date < (formData.deliveryAvailableFrom || new Date())}
+              disabled={(date) => 
+                !date || 
+                !formData.deliveryAvailableFrom || 
+                date < formData.deliveryAvailableFrom
+              }
               initialFocus
             />
           </PopoverContent>
