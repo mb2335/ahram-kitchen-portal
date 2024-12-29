@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -64,7 +65,7 @@ export function DeliveryForm({
     try {
       return format(date, 'yyyy-MM-dd');
     } catch (error) {
-      return format(new Date(), 'yyyy-MM-dd');
+      return '';
     }
   };
 
@@ -75,25 +76,49 @@ export function DeliveryForm({
           <div key={category.id} className="space-y-4">
             <div>
               <Label className="text-lg font-medium">{category.name}</Label>
-              <div className="mt-2">
+              <div className="mt-2 space-y-2">
                 <Input
                   type="date"
                   value={deliveryDates[category.id] ? formatDateForInput(deliveryDates[category.id]) : ''}
                   onChange={(e) => {
-                    const selectedDate = new Date(e.target.value);
-                    if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate, category)) {
-                      onDateChange(category.id, selectedDate);
+                    if (e.target.value) {
+                      // Create date at noon to avoid timezone issues
+                      const selectedDate = new Date(e.target.value + 'T12:00:00');
+                      if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate, category)) {
+                        onDateChange(category.id, selectedDate);
+                      }
                     }
                   }}
                   min={category.delivery_available_from ? formatDateForInput(new Date(category.delivery_available_from)) : formatDateForInput(new Date())}
                   max={category.delivery_available_until ? formatDateForInput(new Date(category.delivery_available_until)) : undefined}
-                  className="flex-1"
+                  className={cn(
+                    "flex-1",
+                    "focus:ring-2 focus:ring-primary",
+                    "hover:border-primary transition-colors"
+                  )}
                 />
-                {category.delivery_available_from && category.delivery_available_until && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Delivery available between {format(new Date(category.delivery_available_from), 'PPP')} and {format(new Date(category.delivery_available_until), 'PPP')}
-                  </p>
-                )}
+                <div className="text-sm space-y-1">
+                  {category.delivery_available_from && category.delivery_available_until && (
+                    <p className="text-muted-foreground">
+                      Available for delivery between{' '}
+                      <span className="font-medium text-foreground">
+                        {format(new Date(category.delivery_available_from), 'MMM d, yyyy')}
+                      </span>
+                      {' '}and{' '}
+                      <span className="font-medium text-foreground">
+                        {format(new Date(category.delivery_available_until), 'MMM d, yyyy')}
+                      </span>
+                    </p>
+                  )}
+                  {!category.delivery_available_from && !category.delivery_available_until && (
+                    <p className="text-muted-foreground">
+                      Available for delivery starting{' '}
+                      <span className="font-medium text-foreground">
+                        {format(new Date(), 'MMM d, yyyy')}
+                      </span>
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             <Separator />
