@@ -18,7 +18,7 @@ export function useOrderSubmission() {
     total,
     taxAmount,
     notes,
-    deliveryDate,
+    deliveryDates,
     customerData,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
@@ -50,49 +50,67 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
-      // Create order
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert([
-          {
-            customer_id: customerId,
-            total_amount: total + taxAmount,
-            tax_amount: taxAmount,
-            notes: notes,
-            status: 'pending',
-            delivery_date: deliveryDate.toISOString(),
-            payment_proof_url: uploadData.path,
-          },
-        ])
-        .select()
-        .single();
+      // Create orders for each delivery date
+      const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
+        const categoryItems = items.filter(item => item.category_id === categoryId);
+        if (categoryItems.length === 0) return null;
 
-      if (orderError) throw orderError;
+        const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const categoryTaxAmount = categoryTotal * (taxAmount / total); // Proportional tax amount
 
-      // Create order items
-      const orderItems = items.map((item) => ({
-        order_id: orderData.id,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-      }));
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .insert([
+            {
+              customer_id: customerId,
+              total_amount: categoryTotal + categoryTaxAmount,
+              tax_amount: categoryTaxAmount,
+              notes: notes,
+              status: 'pending',
+              delivery_date: deliveryDate.toISOString(),
+              payment_proof_url: uploadData.path,
+            },
+          ])
+          .select()
+          .single();
 
-      const { error: orderItemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+        if (orderError) throw orderError;
 
-      if (orderItemsError) throw orderItemsError;
+        // Create order items for this category
+        const orderItems = categoryItems.map((item) => ({
+          order_id: orderData.id,
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price,
+        }));
+
+        const { error: orderItemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (orderItemsError) throw orderItemsError;
+
+        return orderData;
+      });
+
+      const orders = await Promise.all(orderPromises);
+      const validOrders = orders.filter(Boolean);
+
+      if (validOrders.length === 0) {
+        throw new Error('No valid orders could be created');
+      }
 
       // Update menu item quantities
       await updateMenuItemQuantities(items);
 
-      onOrderSuccess(orderData.id);
+      // Call onOrderSuccess with the first order ID (we can enhance this later if needed)
+      onOrderSuccess(validOrders[0].id);
       
       // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {
-            id: orderData.id,
+            id: validOrders[0].id,
             items: items.map(item => ({
               name: item.name,
               nameKo: item.nameKo,
@@ -101,7 +119,7 @@ export function useOrderSubmission() {
             })),
             total: total + taxAmount,
             taxAmount: taxAmount,
-            createdAt: orderData.created_at
+            createdAt: validOrders[0].created_at
           }
         },
         replace: true

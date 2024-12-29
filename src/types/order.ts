@@ -6,6 +6,7 @@ export interface OrderItem {
   nameKo: string;
   quantity: number;
   price: number;
+  category_id?: string;
 }
 
 export interface OrderSubmissionProps {
@@ -13,7 +14,7 @@ export interface OrderSubmissionProps {
   total: number;
   taxAmount: number;
   notes: string;
-  deliveryDate: Date;
+  deliveryDates: Record<string, Date>;
   customerData: CustomerData;
   onOrderSuccess: (orderId: string) => void;
 }
