@@ -55,7 +55,13 @@ export function DeliveryForm({
     const from = category.delivery_available_from ? new Date(category.delivery_available_from) : null;
     const until = category.delivery_available_until ? new Date(category.delivery_available_until) : null;
 
+    // Set hours to noon for consistent comparison
+    if (from) from.setHours(12, 0, 0, 0);
+    if (until) until.setHours(12, 0, 0, 0);
+    date.setHours(12, 0, 0, 0);
+
     if (from && date < from) return true;
+    // Changed to include the end date in the valid range
     if (until && date > until) return true;
 
     return false;
@@ -108,6 +114,7 @@ export function DeliveryForm({
                       <span className="font-medium text-foreground">
                         {format(new Date(category.delivery_available_until), 'MMM d, yyyy')}
                       </span>
+                      {' '}(inclusive)
                     </p>
                   )}
                   {!category.delivery_available_from && !category.delivery_available_until && (
