@@ -10,7 +10,7 @@ import { useOrderSubmission } from './useOrderSubmission';
 interface CheckoutFormProps {
   formData: {
     notes: string;
-    deliveryDate: Date;
+    deliveryDates: Record<string, Date>;
   };
   setFormData: (data: any) => void;
   customerData: {
@@ -27,6 +27,7 @@ interface CheckoutFormProps {
     nameKo: string;
     quantity: number;
     price: number;
+    category_id?: string;
   }>;
 }
 
@@ -62,12 +63,27 @@ export function CheckoutForm({
       return;
     }
 
+    // Validate that all categories have delivery dates
+    const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
+    const missingDates = Array.from(categoriesWithItems).filter(
+      categoryId => !formData.deliveryDates[categoryId as string]
+    );
+
+    if (missingDates.length > 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select delivery dates for all categories',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     await submitOrder({
       items,
       total,
       taxAmount,
       notes: formData.notes,
-      deliveryDate: formData.deliveryDate,
+      deliveryDates: formData.deliveryDates,
       customerData,
       onOrderSuccess
     }, paymentProof);
@@ -76,9 +92,17 @@ export function CheckoutForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <DeliveryForm
-        deliveryDate={formData.deliveryDate}
+        deliveryDates={formData.deliveryDates}
         notes={formData.notes}
-        onDateChange={(date) => date && setFormData({ ...formData, deliveryDate: date })}
+        onDateChange={(categoryId, date) => 
+          setFormData({ 
+            ...formData, 
+            deliveryDates: { 
+              ...formData.deliveryDates, 
+              [categoryId]: date 
+            } 
+          })
+        }
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
       />
 

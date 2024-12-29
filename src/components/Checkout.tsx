@@ -18,7 +18,7 @@ export function Checkout() {
 
   const [formData, setFormData] = useState({
     notes: '',
-    deliveryDate: new Date(),
+    deliveryDates: {} as Record<string, Date>, // Changed to store dates per category
   });
 
   const [customerData, setCustomerData] = useState({
@@ -79,13 +79,13 @@ export function Checkout() {
     );
   }
 
-  // Map cart items to checkout items with correct property names
   const checkoutItems = items.map(item => ({
     id: item.id,
     name: item.name,
     nameKo: item.name_ko,
     quantity: item.quantity,
-    price: item.price
+    price: item.price,
+    category_id: item.category_id
   }));
 
   return (
