@@ -25,8 +25,8 @@ const App = () => (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SessionContextProvider supabaseClient={supabase}>
-        <TooltipProvider>
-          <LanguageProvider>
+        <LanguageProvider>
+          <TooltipProvider>
             <CartProvider>
               <BrowserRouter>
                 <div className="min-h-screen bg-gray-50">
@@ -53,8 +53,8 @@ const App = () => (
               <Toaster />
               <Sonner />
             </CartProvider>
-          </LanguageProvider>
-        </TooltipProvider>
+          </TooltipProvider>
+        </LanguageProvider>
       </SessionContextProvider>
     </QueryClientProvider>
   </StrictMode>
