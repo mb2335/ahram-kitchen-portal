@@ -14,6 +14,7 @@ export interface MenuItem {
   created_at: string | null;
   order_index: number;
   remaining_quantity: number | null;
+  category_id: string | null;
 }
 
 interface CartItem extends MenuItem {
