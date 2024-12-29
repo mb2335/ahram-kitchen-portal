@@ -61,6 +61,15 @@ export function DeliveryForm({ deliveryDate, notes, onDateChange, onNotesChange 
     return false;
   };
 
+  // Ensure we have a valid date string for the input
+  const formatDateForInput = (date: Date) => {
+    try {
+      return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+      return format(new Date(), 'yyyy-MM-dd');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -68,15 +77,15 @@ export function DeliveryForm({ deliveryDate, notes, onDateChange, onNotesChange 
         <div className="flex gap-2">
           <Input
             type="date"
-            value={deliveryDate ? deliveryDate.toISOString().split('T')[0] : ''}
+            value={formatDateForInput(deliveryDate)}
             onChange={(e) => {
-              const date = new Date(e.target.value);
-              if (!isDateDisabled(date)) {
-                onDateChange(date);
+              const selectedDate = new Date(e.target.value);
+              if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate)) {
+                onDateChange(selectedDate);
               }
             }}
-            min={dateRestrictions.earliestStart?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0]}
-            max={dateRestrictions.latestEnd?.toISOString().split('T')[0]}
+            min={dateRestrictions.earliestStart ? formatDateForInput(dateRestrictions.earliestStart) : formatDateForInput(new Date())}
+            max={dateRestrictions.latestEnd ? formatDateForInput(dateRestrictions.latestEnd) : undefined}
             className="flex-1"
           />
         </div>
