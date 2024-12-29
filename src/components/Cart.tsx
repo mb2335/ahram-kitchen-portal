@@ -15,6 +15,19 @@ export function Cart() {
   const session = useSession();
   const { toast } = useToast();
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const handleCheckoutClick = () => {
     navigate('/checkout');
   };
@@ -48,62 +61,67 @@ export function Cart() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-4">
-        {Object.keys(itemsByCategory).map((categoryId) => (
-          <div key={categoryId} className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {categoryId === 'uncategorized' ? 'Other Items' : categoryId}
-            </h2>
-            {itemsByCategory[categoryId].map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in"
-              >
-                <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                  <img
-                    src={item.image}
-                    alt={language === 'en' ? item.name : item.name_ko}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                  <div>
-                    <h3 className="font-medium text-lg">
-                      {language === 'en' ? item.name : item.name_ko}
-                    </h3>
-                    <p className="text-primary font-bold">${item.price}</p>
+        {Object.entries(itemsByCategory).map(([categoryId, categoryItems]) => {
+          const category = categories.find(cat => cat.id === categoryId);
+          return (
+            <div key={categoryId} className="space-y-4">
+              <h2 className="text-xl font-semibold">
+                {categoryId === 'uncategorized' 
+                  ? t('cart.uncategorized') 
+                  : (language === 'en' ? category?.name : category?.name_ko)}
+              </h2>
+              {categoryItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in"
+                >
+                  <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+                    <img
+                      src={item.image}
+                      alt={language === 'en' ? item.name : item.name_ko}
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                    <div>
+                      <h3 className="font-medium text-lg">
+                        {language === 'en' ? item.name : item.name_ko}
+                      </h3>
+                      <p className="text-primary font-bold">${item.price}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="h-8 w-8"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="w-8 text-center font-medium">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="h-8 w-8"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(item.id)}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="h-8 w-8"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="h-8 w-8"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(item.id)}
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          );
+        })}
       </div>
       <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
@@ -114,7 +132,7 @@ export function Cart() {
           className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
           onClick={handleCheckoutClick}
         >
-          {session ? 'Proceed to Checkout' : 'Continue as Guest'}
+          {session ? t('cart.checkout') : t('cart.guest_checkout')}
         </Button>
       </div>
     </div>
