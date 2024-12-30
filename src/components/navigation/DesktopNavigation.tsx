@@ -32,7 +32,7 @@ export function DesktopNavigation({ isVendor, session, handleSignOut }: DesktopN
             <Button variant="ghost" size="sm" className="flex items-center">
               <History className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">
-                {language === 'en' ? 'Orders' : '주문'}
+                {language === 'en' ? 'Order History' : '주문 내역'}
               </span>
             </Button>
           </Link>
@@ -52,7 +52,7 @@ export function DesktopNavigation({ isVendor, session, handleSignOut }: DesktopN
           <Button variant="ghost" size="sm" className="flex items-center">
             <Store className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">
-              {language === 'en' ? 'Dashboard' : '대시보드'}
+              {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
             </span>
           </Button>
         </Link>

@@ -48,7 +48,7 @@ export function MobileNavigation({ isVendor, session, handleSignOut }: MobileNav
             <Link to="/" className="w-full">
               <Button variant="ghost" size="lg" className="w-full justify-start">
                 <MenuIcon className="h-5 w-5 mr-3" />
-                {language === 'en' ? 'Browse Menu' : '메뉴 보기'}
+                {language === 'en' ? 'Menu' : '메뉴'}
               </Button>
             </Link>
 
@@ -63,7 +63,7 @@ export function MobileNavigation({ isVendor, session, handleSignOut }: MobileNav
                 <Link to="/profile" className="w-full">
                   <Button variant="ghost" size="lg" className="w-full justify-start">
                     <User className="h-5 w-5 mr-3" />
-                    {language === 'en' ? 'My Profile' : '내 프로필'}
+                    {language === 'en' ? 'Profile' : '프로필'}
                   </Button>
                 </Link>
               </>
