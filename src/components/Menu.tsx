@@ -41,6 +41,7 @@ export function Menu() {
     return <LoadingState />;
   }
 
+  // Group items by category
   const itemsByCategory = menuItems.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
     if (!acc[categoryId]) {
@@ -58,7 +59,7 @@ export function Menu() {
           {categories.map((category) => (
             itemsByCategory[category.id] && (
               <div key={category.id} className="space-y-4">
-                <h2 className="text-2xl font-semibold px-4 sm:px-0">
+                <h2 className="text-2xl font-semibold">
                   {language === 'en' ? category.name : category.name_ko}
                 </h2>
                 <MenuGrid items={itemsByCategory[category.id]} onAddToCart={addItem} />
@@ -67,7 +68,7 @@ export function Menu() {
           ))}
           {itemsByCategory['uncategorized'] && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold px-4 sm:px-0">Menu</h2>
+              <h2 className="text-2xl font-semibold">Menu</h2>
               <MenuGrid items={itemsByCategory['uncategorized']} onAddToCart={addItem} />
             </div>
           )}
