@@ -37,17 +37,11 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        // Force network-first strategy for all requests
         runtimeCaching: [{
           urlPattern: ({ url }) => true,
-          handler: 'NetworkOnly',
-          options: {
-            backgroundSync: false
-          }
+          handler: 'NetworkOnly'
         }],
-        // Don't precache anything
-        precacheManifest: [],
-        cleanupOutdatedCaches: true,
+        cleanupOutdatedCaches: true
       }
     })
   ].filter(Boolean),
