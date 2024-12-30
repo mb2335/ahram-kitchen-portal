@@ -17,24 +17,56 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
 
+  const validateForm = () => {
+    if (!email || !password) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setIsLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sign in error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Successfully signed in!",
+      });
 
     } catch (error: any) {
+      let errorMessage = "Invalid email or password";
+      
+      if (error.message.includes("invalid_credentials")) {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (error.message.includes("email")) {
+        errorMessage = "Please enter a valid email address";
+      }
+      
       toast({
         title: "Error signing in",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
+      console.error('Detailed error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +81,10 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
+          className="mt-1"
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -60,7 +95,10 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter your password"
+          className="mt-1"
           required
+          disabled={isLoading}
         />
       </div>
 
@@ -81,6 +119,7 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
           type="button"
           onClick={onToggleForm}
           className="text-primary hover:underline"
+          disabled={isLoading}
         >
           Sign Up
         </button>
