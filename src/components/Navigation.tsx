@@ -77,9 +77,9 @@ export function Navigation() {
   };
 
   const NavigationLinks = () => (
-    <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+    <div className="flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-4">
       <Link to="/">
-        <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+        <Button variant="ghost" size="sm" className="w-full justify-start">
           <MenuIcon className="h-5 w-5 mr-2" />
           {language === 'en' ? 'Menu' : '메뉴'}
         </Button>
@@ -87,13 +87,13 @@ export function Navigation() {
       {session && (
         <>
           <Link to="/orders">
-            <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+            <Button variant="ghost" size="sm" className="w-full justify-start">
               <History className="h-4 w-4 mr-2" />
               {language === 'en' ? 'Order History' : '주문 내역'}
             </Button>
           </Link>
           <Link to="/profile">
-            <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+            <Button variant="ghost" size="sm" className="w-full justify-start">
               <User className="h-4 w-4 mr-2" />
               {language === 'en' ? 'Profile' : '프로필'}
             </Button>
@@ -102,20 +102,20 @@ export function Navigation() {
       )}
       {isVendor && session && (
         <Link to="/vendor/summary">
-          <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+          <Button variant="ghost" size="sm" className="w-full justify-start">
             <Store className="h-4 w-4 mr-2" />
             {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
           </Button>
         </Link>
       )}
       {session ? (
-        <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full md:w-auto justify-start">
+        <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full justify-start">
           <LogOut className="h-4 w-4 mr-2" />
           {language === 'en' ? 'Sign Out' : '로그아웃'}
         </Button>
       ) : (
         <Link to="/auth">
-          <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+          <Button variant="ghost" size="sm" className="w-full justify-start">
             {language === 'en' ? 'Sign In' : '로그인'}
           </Button>
         </Link>
@@ -141,7 +141,7 @@ export function Navigation() {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-start">
             <NavigationLinks />
           </div>
 
