@@ -2,6 +2,7 @@ import { Order } from './types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import { Image } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +15,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -22,6 +30,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 
 interface OrderCardProps {
   order: Order;
@@ -31,6 +41,7 @@ interface OrderCardProps {
 
 export function OrderCard({ order, onDelete, children }: OrderCardProps) {
   const { language } = useLanguage();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
@@ -45,6 +56,20 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
+  };
+
+  const handleViewPaymentProof = async () => {
+    try {
+      const { data } = await supabase.storage
+        .from('payment_proofs')
+        .createSignedUrl(order.payment_proof_url, 60); // URL valid for 60 seconds
+
+      if (data?.signedUrl) {
+        setImageUrl(data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching payment proof:', error);
+    }
   };
 
   return (
@@ -125,6 +150,37 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
             <span>${order.total_amount.toFixed(2)}</span>
           </div>
         </div>
+      </div>
+
+      {/* Payment Proof */}
+      <div className="border-t pt-4">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={handleViewPaymentProof}
+            >
+              <Image className="h-4 w-4" />
+              View Payment Proof
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Payment Proof</DialogTitle>
+            </DialogHeader>
+            {imageUrl && (
+              <div className="relative aspect-video">
+                <img
+                  src={imageUrl}
+                  alt="Payment proof"
+                  className="rounded-lg object-contain w-full h-full"
+                />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Notes and Additional Information */}
