@@ -39,10 +39,20 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         runtimeCaching: [{
           urlPattern: ({ url }) => true,
-          handler: 'NetworkOnly',
+          handler: 'NetworkFirst',
           options: {
             cacheName: 'api-cache',
-            networkTimeoutSeconds: 10
+            networkTimeoutSeconds: 10,
+            plugins: [
+              {
+                cacheWillUpdate: async ({ response }) => {
+                  if (response && response.status === 200) {
+                    return response;
+                  }
+                  return null;
+                }
+              }
+            ]
           }
         }],
         cleanupOutdatedCaches: true
