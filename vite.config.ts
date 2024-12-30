@@ -39,7 +39,11 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         runtimeCaching: [{
           urlPattern: ({ url }) => true,
-          handler: 'NetworkOnly'
+          handler: 'NetworkOnly',
+          options: {
+            cacheName: 'api-cache',
+            networkTimeoutSeconds: 10
+          }
         }],
         cleanupOutdatedCaches: true
       }
