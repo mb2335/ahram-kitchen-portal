@@ -7,7 +7,6 @@ import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lu
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { useNavigate } from "react-router-dom";
 
 export function Navigation() {
   const session = useSession();
@@ -17,7 +16,6 @@ export function Navigation() {
   const { language, setLanguage } = useLanguage();
   const [isVendor, setIsVendor] = useState(false);
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const checkVendorStatus = async () => {
@@ -39,10 +37,7 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
-      // First, clear all local storage
       localStorage.clear();
-      
-      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -53,10 +48,7 @@ export function Navigation() {
         }
       }
 
-      // Clear session and state
       setIsVendor(false);
-      
-      // Force reload the page to clear all state
       window.location.href = '/';
       
       toast({
@@ -79,13 +71,14 @@ export function Navigation() {
 
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-16">
+          {/* Logo and Language Toggle */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors">
               Ahram Kitchen
             </Link>
-            <div className="flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-2">
               <span className="text-sm text-gray-600">ENG</span>
               <Switch
                 checked={language === 'ko'}
@@ -95,57 +88,80 @@ export function Navigation() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 md:space-x-4">
+          {/* Navigation Links */}
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Link to="/">
-              <Button variant="ghost" size="sm" className="hidden md:flex">
-                <MenuIcon className="h-5 w-5 mr-2" />
-                {language === 'en' ? 'Menu' : '메뉴'}
+              <Button variant="ghost" size="sm" className="flex items-center">
+                <MenuIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {language === 'en' ? 'Menu' : '메뉴'}
+                </span>
               </Button>
             </Link>
+
             {session && (
               <>
                 <Link to="/orders">
-                  <Button variant="ghost" size="sm" className="hidden md:flex">
-                    <History className="h-4 w-4 mr-2" />
-                    {language === 'en' ? 'Order History' : '주문 내역'}
+                  <Button variant="ghost" size="sm" className="flex items-center">
+                    <History className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {language === 'en' ? 'Orders' : '주문'}
+                    </span>
                   </Button>
                 </Link>
                 <Link to="/profile">
-                  <Button variant="ghost" size="sm" className="hidden md:flex">
-                    <User className="h-4 w-4 mr-2" />
-                    {language === 'en' ? 'Profile' : '프로필'}
+                  <Button variant="ghost" size="sm" className="flex items-center">
+                    <User className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {language === 'en' ? 'Profile' : '프로필'}
+                    </span>
                   </Button>
                 </Link>
               </>
             )}
+
             {isVendor && session && (
               <Link to="/vendor/summary">
-                <Button variant="ghost" size="sm">
-                  <Store className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">
-                    {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
+                <Button variant="ghost" size="sm" className="flex items-center">
+                  <Store className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {language === 'en' ? 'Dashboard' : '대시보드'}
                   </span>
                 </Button>
               </Link>
             )}
+
             {session ? (
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleSignOut}
+                className="flex items-center"
+              >
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
                   {language === 'en' ? 'Sign Out' : '로그아웃'}
                 </span>
               </Button>
             ) : (
               <Link to="/auth">
-                <Button variant="ghost" size="sm">
-                  {language === 'en' ? 'Sign In' : '로그인'}
+                <Button variant="ghost" size="sm" className="flex items-center">
+                  <User className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {language === 'en' ? 'Sign In' : '로그인'}
+                  </span>
                 </Button>
               </Link>
             )}
+
             <Link to="/cart">
-              <Button variant="default" size="sm" className="bg-primary relative">
-                <ShoppingCart className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-primary relative flex items-center"
+              >
+                <ShoppingCart className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
                   {language === 'en' ? 'Cart' : '장바구니'}
                 </span>
                 {cartItemCount > 0 && (
@@ -155,6 +171,18 @@ export function Navigation() {
                 )}
               </Button>
             </Link>
+          </div>
+        </div>
+
+        {/* Mobile Language Toggle */}
+        <div className="sm:hidden flex justify-center pb-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">ENG</span>
+            <Switch
+              checked={language === 'ko'}
+              onCheckedChange={toggleLanguage}
+            />
+            <span className="text-sm text-gray-600">KOR</span>
           </div>
         </div>
       </div>
