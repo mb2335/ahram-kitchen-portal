@@ -16,48 +16,67 @@ import { OrderHistory } from "./components/OrderHistory";
 import { OrderThankYou } from "./components/checkout/OrderThankYou";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
+import { OfflineAlert } from "./components/shared/OfflineAlert";
 import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <SessionContextProvider supabaseClient={supabase}>
-        <LanguageProvider>
-          <TooltipProvider>
-            <CartProvider>
-              <BrowserRouter>
-                <div className="min-h-screen bg-gray-50">
-                  <Navigation />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/thank-you" element={<OrderThankYou />} />
-                    <Route path="/orders" element={<OrderHistory />} />
-                    <Route path="/profile" element={<CustomerProfile />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route
-                      path="/vendor/*"
-                      element={
-                        <ProtectedRoute requiredRole="vendor">
-                          <VendorDashboard />
-                        </ProtectedRoute>
-                      }
-                    />
-                  </Routes>
-                </div>
-              </BrowserRouter>
-              <Toaster />
-              <Sonner />
-            </CartProvider>
-          </TooltipProvider>
-        </LanguageProvider>
-      </SessionContextProvider>
-    </QueryClientProvider>
-  </StrictMode>
-);
+const App = () => {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return (
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <SessionContextProvider supabaseClient={supabase}>
+          <LanguageProvider>
+            <TooltipProvider>
+              <CartProvider>
+                <BrowserRouter>
+                  <div className="min-h-screen bg-gray-50">
+                    <Navigation />
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/thank-you" element={<OrderThankYou />} />
+                      <Route path="/orders" element={<OrderHistory />} />
+                      <Route path="/profile" element={<CustomerProfile />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route
+                        path="/vendor/*"
+                        element={
+                          <ProtectedRoute requiredRole="vendor">
+                            <VendorDashboard />
+                          </ProtectedRoute>
+                        }
+                      />
+                    </Routes>
+                  </div>
+                </BrowserRouter>
+                {isOffline && <OfflineAlert />}
+                <Toaster />
+                <Sonner />
+              </CartProvider>
+            </TooltipProvider>
+          </LanguageProvider>
+        </SessionContextProvider>
+      </QueryClientProvider>
+    </StrictMode>
+  );
+};
 
 export default App;
