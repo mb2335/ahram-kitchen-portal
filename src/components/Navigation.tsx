@@ -78,12 +78,15 @@ export function Navigation() {
 
   const NavigationLinks = () => (
     <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      {/* Menu link - always visible */}
       <Link to="/">
         <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
           <MenuIcon className="h-5 w-5 mr-2" />
           {language === 'en' ? 'Menu' : '메뉴'}
         </Button>
       </Link>
+
+      {/* Links for authenticated users */}
       {session && (
         <>
           <Link to="/orders">
@@ -100,6 +103,8 @@ export function Navigation() {
           </Link>
         </>
       )}
+
+      {/* Vendor-specific link */}
       {isVendor && session && (
         <Link to="/vendor/summary">
           <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
@@ -108,6 +113,8 @@ export function Navigation() {
           </Button>
         </Link>
       )}
+
+      {/* Authentication button */}
       {session ? (
         <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full md:w-auto justify-start">
           <LogOut className="h-4 w-4 mr-2" />
@@ -127,6 +134,7 @@ export function Navigation() {
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
+          {/* Logo and Language Toggle */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors">
               Ahram Kitchen
@@ -141,10 +149,12 @@ export function Navigation() {
             </div>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
             <NavigationLinks />
           </div>
 
+          {/* Cart and Mobile Menu */}
           <div className="flex items-center space-x-2">
             <Link to="/cart">
               <Button variant="default" size="sm" className="bg-primary relative">
@@ -160,6 +170,7 @@ export function Navigation() {
               </Button>
             </Link>
 
+            {/* Mobile Menu */}
             <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
