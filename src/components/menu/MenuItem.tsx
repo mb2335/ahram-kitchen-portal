@@ -26,25 +26,25 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
   };
 
   return (
-    <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
-      <div className="aspect-w-16 aspect-h-9 relative overflow-hidden">
+    <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in h-full flex flex-col">
+      <div className="relative aspect-video overflow-hidden">
         {item.image && (
           <img
             src={item.image}
             alt={displayName}
-            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-grow">
         <h3 className="text-lg font-medium mb-1">
           {displayName}
         </h3>
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+        <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
           {displayDescription}
         </p>
-        <div className="flex flex-col gap-2">
+        <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-primary">${item.price}</span>
             <Badge 

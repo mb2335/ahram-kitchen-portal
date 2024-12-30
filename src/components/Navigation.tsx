@@ -7,7 +7,13 @@ import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lu
 import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { useNavigate } from "react-router-dom";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export function Navigation() {
   const session = useSession();
@@ -17,7 +23,6 @@ export function Navigation() {
   const { language, setLanguage } = useLanguage();
   const [isVendor, setIsVendor] = useState(false);
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const checkVendorStatus = async () => {
@@ -39,10 +44,7 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
-      // First, clear all local storage
       localStorage.clear();
-      
-      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -53,10 +55,7 @@ export function Navigation() {
         }
       }
 
-      // Clear session and state
       setIsVendor(false);
-      
-      // Force reload the page to clear all state
       window.location.href = '/';
       
       toast({
@@ -77,6 +76,53 @@ export function Navigation() {
     setLanguage(language === 'en' ? 'ko' : 'en');
   };
 
+  const NavigationLinks = () => (
+    <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      <Link to="/">
+        <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+          <MenuIcon className="h-5 w-5 mr-2" />
+          {language === 'en' ? 'Menu' : '메뉴'}
+        </Button>
+      </Link>
+      {session && (
+        <>
+          <Link to="/orders">
+            <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+              <History className="h-4 w-4 mr-2" />
+              {language === 'en' ? 'Order History' : '주문 내역'}
+            </Button>
+          </Link>
+          <Link to="/profile">
+            <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+              <User className="h-4 w-4 mr-2" />
+              {language === 'en' ? 'Profile' : '프로필'}
+            </Button>
+          </Link>
+        </>
+      )}
+      {isVendor && session && (
+        <Link to="/vendor/summary">
+          <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+            <Store className="h-4 w-4 mr-2" />
+            {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
+          </Button>
+        </Link>
+      )}
+      {session ? (
+        <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full md:w-auto justify-start">
+          <LogOut className="h-4 w-4 mr-2" />
+          {language === 'en' ? 'Sign Out' : '로그아웃'}
+        </Button>
+      ) : (
+        <Link to="/auth">
+          <Button variant="ghost" size="sm" className="w-full md:w-auto justify-start">
+            {language === 'en' ? 'Sign In' : '로그인'}
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -85,7 +131,7 @@ export function Navigation() {
             <Link to="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors">
               Ahram Kitchen
             </Link>
-            <div className="flex items-center space-x-2">
+            <div className="hidden md:flex items-center space-x-2">
               <span className="text-sm text-gray-600">ENG</span>
               <Switch
                 checked={language === 'ko'}
@@ -95,53 +141,11 @@ export function Navigation() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="hidden md:flex">
-                <MenuIcon className="h-5 w-5 mr-2" />
-                {language === 'en' ? 'Menu' : '메뉴'}
-              </Button>
-            </Link>
-            {session && (
-              <>
-                <Link to="/orders">
-                  <Button variant="ghost" size="sm" className="hidden md:flex">
-                    <History className="h-4 w-4 mr-2" />
-                    {language === 'en' ? 'Order History' : '주문 내역'}
-                  </Button>
-                </Link>
-                <Link to="/profile">
-                  <Button variant="ghost" size="sm" className="hidden md:flex">
-                    <User className="h-4 w-4 mr-2" />
-                    {language === 'en' ? 'Profile' : '프로필'}
-                  </Button>
-                </Link>
-              </>
-            )}
-            {isVendor && session && (
-              <Link to="/vendor/summary">
-                <Button variant="ghost" size="sm">
-                  <Store className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">
-                    {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
-                  </span>
-                </Button>
-              </Link>
-            )}
-            {session ? (
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">
-                  {language === 'en' ? 'Sign Out' : '로그아웃'}
-                </span>
-              </Button>
-            ) : (
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">
-                  {language === 'en' ? 'Sign In' : '로그인'}
-                </Button>
-              </Link>
-            )}
+          <div className="hidden md:flex items-center space-x-4">
+            <NavigationLinks />
+          </div>
+
+          <div className="flex items-center space-x-2">
             <Link to="/cart">
               <Button variant="default" size="sm" className="bg-primary relative">
                 <ShoppingCart className="h-4 w-4 md:mr-2" />
@@ -155,6 +159,32 @@ export function Navigation() {
                 )}
               </Button>
             </Link>
+
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MenuIcon className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-4">
+                    <div className="flex items-center justify-center space-x-2 mb-6">
+                      <span className="text-sm text-gray-600">ENG</span>
+                      <Switch
+                        checked={language === 'ko'}
+                        onCheckedChange={toggleLanguage}
+                      />
+                      <span className="text-sm text-gray-600">KOR</span>
+                    </div>
+                    <NavigationLinks />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>
