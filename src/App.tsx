@@ -7,7 +7,6 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { CartProvider } from "./contexts/CartContext";
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { Navigation } from "./components/Navigation";
-import { Menu } from "./components/Menu";
 import { Cart } from "./components/Cart";
 import { Auth } from "./components/Auth";
 import { VendorDashboard } from "./components/vendor/VendorDashboard";
@@ -18,6 +17,7 @@ import { OrderThankYou } from "./components/checkout/OrderThankYou";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
 import { StrictMode } from "react";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +32,7 @@ const App = () => (
                 <div className="min-h-screen bg-gray-50">
                   <Navigation />
                   <Routes>
-                    <Route path="/" element={<Menu />} />
+                    <Route path="/" element={<Index />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/thank-you" element={<OrderThankYou />} />
