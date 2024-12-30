@@ -1,25 +1,23 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
-import { Menu as MenuIcon } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
+import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
 import { useToast } from "./ui/use-toast";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { NavigationLinks } from "./navigation/NavigationLinks";
-import { LanguageToggle } from "./navigation/LanguageToggle";
-import { CartButton } from "./navigation/CartButton";
+import { useEffect, useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "react-router-dom";
 
 export function Navigation() {
   const session = useSession();
   const supabase = useSupabaseClient();
+  const { items } = useCart();
   const { toast } = useToast();
+  const { language, setLanguage } = useLanguage();
   const [isVendor, setIsVendor] = useState(false);
+  const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkVendorStatus = async () => {
@@ -41,7 +39,10 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
+      // First, clear all local storage
       localStorage.clear();
+      
+      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -52,7 +53,10 @@ export function Navigation() {
         }
       }
 
+      // Clear session and state
       setIsVendor(false);
+      
+      // Force reload the page to clear all state
       window.location.href = '/';
       
       toast({
@@ -69,50 +73,88 @@ export function Navigation() {
     }
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ko' : 'en');
+  };
+
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Language Toggle */}
-          <div className="flex items-center space-x-6">
-            <Link to="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors whitespace-nowrap">
+          <div className="flex items-center space-x-4">
+            <Link to="/" className="text-xl font-bold text-primary hover:text-primary/90 transition-colors">
               Ahram Kitchen
             </Link>
-            <div className="hidden md:block">
-              <LanguageToggle />
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">ENG</span>
+              <Switch
+                checked={language === 'ko'}
+                onCheckedChange={toggleLanguage}
+              />
+              <span className="text-sm text-gray-600">KOR</span>
             </div>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center justify-center flex-1 px-4">
-            <NavigationLinks isVendor={isVendor} onSignOut={handleSignOut} />
-          </div>
-
-          {/* Cart and Mobile Menu */}
-          <div className="flex items-center space-x-2">
-            <CartButton />
-
-            {/* Mobile Menu */}
-            <div className="md:hidden">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MenuIcon className="h-5 w-5" />
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="hidden md:flex">
+                <MenuIcon className="h-5 w-5 mr-2" />
+                {language === 'en' ? 'Menu' : '메뉴'}
+              </Button>
+            </Link>
+            {session && (
+              <>
+                <Link to="/orders">
+                  <Button variant="ghost" size="sm" className="hidden md:flex">
+                    <History className="h-4 w-4 mr-2" />
+                    {language === 'en' ? 'Order History' : '주문 내역'}
                   </Button>
-                </SheetTrigger>
-                <SheetContent>
-                  <SheetHeader>
-                    <SheetTitle>Menu</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-4">
-                    <div className="flex items-center justify-center mb-6">
-                      <LanguageToggle />
-                    </div>
-                    <NavigationLinks isVendor={isVendor} onSignOut={handleSignOut} />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+                </Link>
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="hidden md:flex">
+                    <User className="h-4 w-4 mr-2" />
+                    {language === 'en' ? 'Profile' : '프로필'}
+                  </Button>
+                </Link>
+              </>
+            )}
+            {isVendor && session && (
+              <Link to="/vendor/summary">
+                <Button variant="ghost" size="sm">
+                  <Store className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">
+                    {language === 'en' ? 'Vendor Dashboard' : '판매자 대시보드'}
+                  </span>
+                </Button>
+              </Link>
+            )}
+            {session ? (
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">
+                  {language === 'en' ? 'Sign Out' : '로그아웃'}
+                </span>
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm">
+                  {language === 'en' ? 'Sign In' : '로그인'}
+                </Button>
+              </Link>
+            )}
+            <Link to="/cart">
+              <Button variant="default" size="sm" className="bg-primary relative">
+                <ShoppingCart className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">
+                  {language === 'en' ? 'Cart' : '장바구니'}
+                </span>
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-accent text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
