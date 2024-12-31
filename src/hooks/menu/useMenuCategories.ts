@@ -6,14 +6,25 @@ export function useMenuCategories(menuItems: MenuItem[]) {
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .order('order_index');
-      
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from('menu_categories')
+          .select('*')
+          .order('order_index');
+        
+        if (error) {
+          console.error('Error fetching categories:', error);
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Unexpected error in useMenuCategories:', error);
+        throw error;
+      }
     },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const itemsByCategory = menuItems.reduce((acc, item) => {
