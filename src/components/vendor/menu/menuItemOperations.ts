@@ -61,6 +61,27 @@ export async function saveMenuItem(
 
 export async function deleteMenuItem(itemId: string) {
   try {
+    // Get the item's image URL first
+    const { data: item } = await supabase
+      .from('menu_items')
+      .select('image')
+      .eq('id', itemId)
+      .single();
+
+    // If there's an image, delete it from storage
+    if (item?.image) {
+      const fileName = item.image.split('/').pop();
+      if (fileName) {
+        const { error: storageError } = await supabase.storage
+          .from('menu_items')
+          .remove([fileName]);
+
+        if (storageError) {
+          console.error('Error deleting image:', storageError);
+        }
+      }
+    }
+
     const { error } = await supabase
       .from('menu_items')
       .delete()

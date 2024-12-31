@@ -11,7 +11,8 @@ import { MenuFormData } from "./types";
 import { validateMenuItemAvailability } from "./utils/menuItemValidation";
 import { toast } from "@/hooks/use-toast";
 import { MenuItem } from "./types";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useCallback } from "react";
+import { Loader2, X } from "lucide-react";
 
 export interface MenuItemFormProps {
   onSubmit: (data: MenuFormData & { image?: File }) => Promise<void>;
@@ -50,6 +51,40 @@ export function MenuItemForm({
   const watchCategoryId = watch('category_id');
   const watchIsAvailable = watch('is_available');
 
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedImage(file);
+    }
+  }, [setSelectedImage]);
+
+  const removeImage = useCallback(() => {
+    setSelectedImage(null);
+    const input = document.getElementById('image') as HTMLInputElement;
+    if (input) input.value = '';
+  }, [setSelectedImage]);
+
   // Validate availability when category changes
   const availabilityError = validateMenuItemAvailability(watchCategoryId, watchIsAvailable);
   if (availabilityError && watchIsAvailable) {
@@ -77,6 +112,37 @@ export function MenuItemForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 py-4">
       <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="image">Image</Label>
+          <div className="space-y-2">
+            {(selectedImage || editingItem?.image) && (
+              <div className="relative w-full h-48">
+                <img
+                  src={selectedImage ? URL.createObjectURL(selectedImage) : editingItem?.image}
+                  alt="Preview"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={removeImage}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <Input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="cursor-pointer"
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="name">Name (English)</Label>
           <Input id="name" {...register('name', { required: true })} />

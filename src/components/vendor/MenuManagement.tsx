@@ -53,8 +53,22 @@ export function MenuManagement() {
   async function handleSubmit(data: MenuFormData & { image?: File }) {
     try {
       let imageUrl = editingItem?.image;
+      
+      // If there's a new image, upload it
       if (data.image) {
         imageUrl = await handleImageUpload(data.image);
+      }
+
+      // If editing and image was removed (no new image and no existing image)
+      if (editingItem?.image && !data.image && !selectedImage) {
+        // Delete the old image from storage
+        const fileName = editingItem.image.split('/').pop();
+        if (fileName) {
+          await supabase.storage
+            .from('menu_items')
+            .remove([fileName]);
+        }
+        imageUrl = null;
       }
 
       const menuItemData = {
