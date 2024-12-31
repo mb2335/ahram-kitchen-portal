@@ -1,6 +1,7 @@
 import { Apple, Smartphone, ArrowDown, CheckCircle, Info } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card } from "@/components/ui/card";
+import { InstallPWA } from "@/components/shared/InstallPWA";
 
 export function Help() {
   const { language } = useLanguage();
@@ -97,6 +98,15 @@ export function Help() {
                 {language === 'en'
                   ? 'The app will be installed automatically'
                   : '앱이 자동으로 설치됩니다'}
+              </p>
+            </div>
+
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p>
+                {language === 'en'
+                  ? "Don't see the install banner? "
+                  : "설치 배너가 보이지 않나요? "}
+                <InstallPWA />
               </p>
             </div>
           </div>
