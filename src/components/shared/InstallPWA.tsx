@@ -11,7 +11,6 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
   const { toast } = useToast();
   const { language } = useLanguage();
 
@@ -19,15 +18,9 @@ export function InstallPWA() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsInstallable(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if running as standalone PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstallable(false);
-    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -36,6 +29,13 @@ export function InstallPWA() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
+      toast({
+        title: language === 'en' ? 'Installation not available' : '설치할 수 없음',
+        description: language === 'en' 
+          ? 'Please use your browser\'s install option' 
+          : '브라우저의 설치 옵션을 사용하세요',
+        variant: "destructive",
+      });
       return;
     }
 
@@ -50,7 +50,6 @@ export function InstallPWA() {
             ? 'You can now access the app from your home screen' 
             : '이제 홈 화면에서 앱에 액세스할 수 있습니다',
         });
-        setIsInstallable(false);
       }
     } catch (error) {
       console.error('Error installing PWA:', error);
@@ -66,14 +65,10 @@ export function InstallPWA() {
     setDeferredPrompt(null);
   };
 
-  if (!isInstallable) {
-    return null;
-  }
-
   return (
     <Button
       onClick={handleInstallClick}
-      className="w-full mt-4"
+      className="w-full mt-6 mb-2"
       variant="default"
     >
       <Download className="h-4 w-4 mr-2" />

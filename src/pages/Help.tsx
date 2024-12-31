@@ -59,8 +59,8 @@ export function Help() {
         </Card>
 
         {/* Android Installation */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-center gap-2">
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
             <Smartphone className="h-6 w-6" />
             <h2 className="text-xl font-semibold">
               {language === 'en' ? 'Android Installation' : '안드로이드 설치'}
@@ -101,7 +101,9 @@ export function Help() {
               </p>
             </div>
 
-            <InstallPWA />
+            <div className="mt-4 flex justify-center">
+              <InstallPWA />
+            </div>
           </div>
         </Card>
       </div>
