@@ -16,14 +16,19 @@ export const useMenuItems = () => {
           schema: 'public', 
           table: 'menu_items' 
         },
-        () => {
-          console.log('Menu items changed, invalidating query...');
-          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        (payload) => {
+          console.log('Menu items changed, invalidating query...', payload);
+          // Invalidate and refetch immediately
+          queryClient.invalidateQueries({ 
+            queryKey: ['menu-items'],
+            refetchType: 'active',
+          });
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up menu channel subscription');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
@@ -40,6 +45,11 @@ export const useMenuItems = () => {
 
       if (error) {
         console.error('Error fetching menu items:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load menu items. Please try again.",
+          variant: "destructive",
+        });
         throw error;
       }
 
@@ -52,7 +62,10 @@ export const useMenuItems = () => {
       console.log('Fetched menu items:', mappedData);
       return mappedData || [];
     },
-    staleTime: 1000,
-    gcTime: 2000
+    staleTime: 30000, // Consider data stale after 30 seconds
+    gcTime: 300000,   // Keep unused data in cache for 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };

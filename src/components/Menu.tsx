@@ -7,20 +7,33 @@ import { ErrorState } from "./shared/ErrorState";
 import { MenuHeader } from "./menu/MenuHeader";
 import { CategorySection } from "./menu/CategorySection";
 import { useMenuCategories } from "@/hooks/menu/useMenuCategories";
+import { useEffect } from "react";
 
 export function Menu() {
   const { addItem } = useCart();
-  const { data: menuItems = [], isLoading: menuLoading, error: menuError } = useMenuItems();
+  const { data: menuItems = [], isLoading: menuLoading, error: menuError, refetch } = useMenuItems();
   const { categories, itemsByCategory, isLoading: categoriesLoading } = useMenuCategories(menuItems);
+
+  // Attempt to refetch on mount and when there's an error
+  useEffect(() => {
+    if (menuError) {
+      const timer = setTimeout(() => {
+        console.log('Attempting to refetch menu items...');
+        refetch();
+      }, 5000); // Retry after 5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [menuError, refetch]);
 
   if (menuError) {
     console.error('Error in menu component:', menuError);
     toast({
       title: "Error",
-      description: "Failed to load menu items. Please try again later.",
+      description: "Failed to load menu items. Retrying...",
       variant: "destructive"
     });
-    return <ErrorState message="Failed to load menu items. Please try again later." />;
+    return <ErrorState message="Failed to load menu items. Please wait while we retry..." />;
   }
 
   if (menuLoading || categoriesLoading) {
