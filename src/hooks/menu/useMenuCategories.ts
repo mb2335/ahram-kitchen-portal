@@ -11,9 +11,13 @@ export function useMenuCategories(menuItems: MenuItem[]) {
         .select('*')
         .order('order_index');
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
+      return data || [];
     },
+    retry: false
   });
 
   const itemsByCategory = menuItems.reduce((acc, item) => {

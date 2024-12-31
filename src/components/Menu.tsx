@@ -15,11 +15,6 @@ export function Menu() {
 
   if (menuError) {
     console.error('Error in menu component:', menuError);
-    toast({
-      title: "Error",
-      description: "Failed to load menu items. Please try again later.",
-      variant: "destructive"
-    });
     return <ErrorState message="Failed to load menu items. Please try again later." />;
   }
 
