@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -14,7 +14,33 @@ export function InstallPWA() {
   const { toast } = useToast();
   const { language } = useLanguage();
 
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   const handleInstallClick = async () => {
+    // Check if app is in standalone mode (already installed)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      toast({
+        title: language === 'en' ? 'App Already Installed' : '앱이 이미 설치되어 있습니다',
+        description: language === 'en' 
+          ? 'The app is already installed on your device' 
+          : '앱이 이미 기기에 설치되어 있습니다',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // If we have the install prompt, use it
     if (deferredPrompt) {
       try {
         await deferredPrompt.prompt();
@@ -26,13 +52,20 @@ export function InstallPWA() {
             description: language === 'en' 
               ? 'You can now access the app from your home screen' 
               : '이제 홈 화면에서 앱에 액세스할 수 있습니다',
-            duration: 5000,
+            duration: 3000,
           });
         }
+        setDeferredPrompt(null);
       } catch (error) {
         console.error('Error installing PWA:', error);
+        toast({
+          title: language === 'en' ? 'Installation Error' : '설치 오류',
+          description: language === 'en' 
+            ? 'There was an error installing the app. Please try again.' 
+            : '앱 설치 중 오류가 발생했습니다. 다시 시도해주세요.',
+          duration: 3000,
+        });
       }
-      setDeferredPrompt(null);
     } else {
       // Show installation instructions based on platform
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -58,20 +91,6 @@ export function InstallPWA() {
       }
     }
   };
-
-  // Add event listener for beforeinstallprompt
-  useState(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  });
 
   return (
     <Button
