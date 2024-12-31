@@ -5,9 +5,12 @@ const supabaseUrl = "https://lvlsisdftrouwzlaprtq.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2bHNpc2RmdHJvdXd6bGFwcnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDQwNjQwMDAsImV4cCI6MjAxOTY0MDAwMH0.qgDMwWgqsNqVzDEpXQJpxXABYtGQZcW_ZkDEtGjg9Eo";
 
 // Initialize the Supabase client with console logging for debugging
-const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 // Add debug logging for initialization
 console.log('Supabase client initialized with URL:', supabaseUrl);
-
-export { supabase };
