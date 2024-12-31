@@ -66,12 +66,13 @@ export function InstallPWA() {
       return;
     }
 
-    if (!deferredPrompt) {
+    // For Android users who already have the app installed but try to install again
+    if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
       toast({
-        title: language === 'en' ? 'Installation not available' : '설치할 수 없음',
+        title: language === 'en' ? 'App already installed' : '앱이 이미 설치되어 있습니다',
         description: language === 'en' 
-          ? 'Please use Chrome browser to install the app' 
-          : 'Chrome 브라우저를 사용하여 앱을 설치하세요',
+          ? 'The app is already installed on your device' 
+          : '앱이 이미 기기에 설치되어 있습니다',
         variant: "destructive",
       });
       return;
