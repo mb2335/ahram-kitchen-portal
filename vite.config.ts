@@ -57,34 +57,30 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [{
           urlPattern: ({ url }) => true,
           handler: 'NetworkFirst',
           options: {
             cacheName: 'api-cache',
-            networkTimeoutSeconds: 10,
+            networkTimeoutSeconds: 5,
             cacheableResponse: {
               statuses: [0, 200]
             },
             expiration: {
-              maxEntries: 100,
-              maxAgeSeconds: 60 * 60 // 1 hour
-            },
-            plugins: [
-              {
-                cacheWillUpdate: async ({ response }) => {
-                  if (response && response.status === 200) {
-                    return response;
-                  }
-                  return null;
-                }
-              }
-            ]
+              maxEntries: 50,
+              maxAgeSeconds: 300 // 5 minutes
+            }
           }
         }],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
-        clientsClaim: true
+        clientsClaim: true,
+        navigationPreload: true
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ].filter(Boolean),
