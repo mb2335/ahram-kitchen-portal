@@ -6,6 +6,8 @@ import { CategoryHeader } from './components/CategoryHeader';
 import { useCategoryManagement } from './hooks/useCategoryManagement';
 import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export function CategoryManagement() {
   const { toast } = useToast();
@@ -21,6 +23,19 @@ export function CategoryManagement() {
     resetForm,
     handleSubmit,
   } = useCategoryManagement();
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleDelete = async (categoryId: string) => {
     try {
@@ -82,6 +97,7 @@ export function CategoryManagement() {
       />
       
       <CategoryList 
+        categories={categories}
         onEdit={(category) => {
           setEditingCategory(category);
           setFormData({
