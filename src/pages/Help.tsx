@@ -101,14 +101,12 @@ export function Help() {
               </p>
             </div>
 
-            <div className="text-sm text-muted-foreground mb-2">
+            <div className="text-sm text-muted-foreground">
               {language === 'en'
                 ? "If you don't see the install option, click the button below:"
                 : "설치 옵션이 보이지 않는 경우 아래 버튼을 클릭하세요:"}
             </div>
-            <div className="flex justify-center">
-              <InstallPWA />
-            </div>
+            <InstallPWA />
           </div>
         </Card>
       </div>
