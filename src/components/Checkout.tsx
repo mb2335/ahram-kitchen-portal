@@ -18,7 +18,7 @@ export function Checkout() {
 
   const [formData, setFormData] = useState({
     notes: '',
-    deliveryDates: {} as Record<string, Date>, // Changed to store dates per category
+    deliveryDates: {} as Record<string, Date>,
   });
 
   const [customerData, setCustomerData] = useState({
