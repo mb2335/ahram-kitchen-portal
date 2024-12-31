@@ -40,7 +40,6 @@ export function useAuthForm(isSignUp: boolean) {
       return false;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast({
@@ -63,7 +62,7 @@ export function useAuthForm(isSignUp: boolean) {
     console.log('Attempting sign in with:', { email: formData.email });
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
@@ -77,26 +76,22 @@ export function useAuthForm(isSignUp: boolean) {
             description: "Please check your email and verify your account before signing in.",
             variant: "destructive",
           });
-        } else if (error.message.includes('Invalid login credentials')) {
+        } else {
           toast({
             title: "Login Failed",
             description: "The email or password you entered is incorrect. Please try again.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message,
             variant: "destructive",
           });
         }
         return;
       }
 
-      toast({
-        title: "Success",
-        description: "Successfully signed in!",
-      });
+      if (data.user) {
+        toast({
+          title: "Success",
+          description: "Successfully signed in!",
+        });
+      }
 
     } catch (error: any) {
       console.error('Unexpected error during sign in:', error);
