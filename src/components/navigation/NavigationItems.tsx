@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
+import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User, HelpCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { InstallPWA } from "@/components/shared/InstallPWA";
@@ -26,6 +26,15 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
           <MenuIcon className={iconClass} />
           <span className={isMobile ? "" : "hidden sm:inline"}>
             {language === 'en' ? 'Menu' : '메뉴'}
+          </span>
+        </Button>
+      </Link>
+
+      <Link to="/help" className={isMobile ? "w-full" : ""}>
+        <Button variant="ghost" size={isMobile ? "lg" : "sm"} className={buttonClass}>
+          <HelpCircle className={iconClass} />
+          <span className={isMobile ? "" : "hidden sm:inline"}>
+            {language === 'en' ? 'Help' : '도움말'}
           </span>
         </Button>
       </Link>
