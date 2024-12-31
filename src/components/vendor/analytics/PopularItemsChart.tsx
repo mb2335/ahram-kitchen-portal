@@ -80,7 +80,7 @@ export function PopularItemsChart() {
       if (error) throw error;
 
       // Aggregate quantities by menu item
-      const aggregatedData = (data as OrderItem[]).reduce((acc: AggregatedData[], item) => {
+      const aggregatedData = (data as unknown as OrderItem[]).reduce((acc: AggregatedData[], item) => {
         if (!item.menu_item) return acc;
         
         const existingItem = acc.find(i => i.name === item.menu_item.name);
