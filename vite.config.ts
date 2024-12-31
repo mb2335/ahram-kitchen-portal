@@ -122,19 +122,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        navigationPreload: true,
-        backgroundSync: {
-          name: 'syncQueue',
-          options: {
-            maxRetentionTime: 24 * 60
-          }
-        },
-        periodicSync: {
-          name: 'content-sync',
-          options: {
-            minInterval: 24 * 60 * 60
-          }
-        }
+        navigationPreload: true
       },
       devOptions: {
         enabled: true,
