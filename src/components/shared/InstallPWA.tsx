@@ -75,10 +75,10 @@ export function InstallPWA() {
       variant="ghost"
       size="sm"
       onClick={handleInstallClick}
-      className="flex items-center"
+      className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-center"
     >
-      <Download className="h-4 w-4 sm:mr-2" />
-      <span className="hidden sm:inline">
+      <Download className="h-4 w-4" />
+      <span className="block">
         {language === 'en' ? 'Install App' : '앱 설치'}
       </span>
     </Button>
