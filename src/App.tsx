@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StrictMode, useEffect, useState } from "react";
 import { OfflineAlert } from "./components/shared/OfflineAlert";
 import Index from "./pages/Index";
-import Help from "./pages/Help";
+import { Help } from "./pages/Help";
 
 const queryClient = new QueryClient();
 
