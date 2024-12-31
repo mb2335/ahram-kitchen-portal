@@ -102,11 +102,14 @@ export function Help() {
             </div>
 
             <div className="mt-4 text-sm text-muted-foreground">
-              <p>
+              <p className="flex items-center gap-1">
                 {language === 'en'
                   ? "Don't see the install banner? "
                   : "설치 배너가 보이지 않나요? "}
-                <InstallPWA />
+                <span className="inline-flex items-center hover:text-primary active:text-primary/80 transition-colors">
+                  {language === 'en' ? 'Click here' : '여기를 클릭하세요'}
+                  <InstallPWA />
+                </span>
               </p>
             </div>
           </div>
