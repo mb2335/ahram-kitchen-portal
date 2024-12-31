@@ -12,7 +12,7 @@ export const useMenuItems = () => {
           .from('menu_items')
           .select('*')
           .eq('is_available', true)
-          .order('order_index', { ascending: true });
+          .order('order_index');
 
         if (error) {
           console.error('Error fetching menu items:', error);
@@ -25,21 +25,24 @@ export const useMenuItems = () => {
         }
 
         // Map quantity_limit to remaining_quantity
-        const mappedData = data?.map(item => ({
+        return data?.map(item => ({
           ...item,
           remaining_quantity: item.quantity_limit,
-        }));
+        })) || [];
 
-        console.log('Successfully fetched menu items:', mappedData);
-        return mappedData || [];
       } catch (error) {
         console.error('Unexpected error in useMenuItems:', error);
         throw error;
       }
     },
-    staleTime: 30000, // Consider data stale after 30 seconds
-    gcTime: 300000,   // Keep unused data in cache for 5 minutes
-    retry: 1,         // Only retry once on failure
-    retryDelay: 1000, // Wait 1 second before retrying
+    staleTime: 30000,
+    gcTime: 300000,
+    retry: (failureCount, error) => {
+      // Only retry twice and not for 401 errors
+      if (failureCount > 2) return false;
+      if (error?.message?.includes('401')) return false;
+      return true;
+    },
+    retryDelay: 1000,
   });
 };
