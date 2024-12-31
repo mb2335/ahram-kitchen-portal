@@ -1,48 +1,58 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 export const useMenuItems = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('menu-updates')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        () => {
+          console.log('Menu items changed, invalidating query...');
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['menu-items'],
     queryFn: async () => {
       console.log('Fetching menu items...');
-      try {
-        const { data, error } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('is_available', true)
-          .order('order_index');
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('order_index', { ascending: true });
 
-        if (error) {
-          console.error('Error fetching menu items:', error);
-          toast({
-            title: "Error",
-            description: "Failed to load menu items. Please try again.",
-            variant: "destructive",
-          });
-          throw error;
-        }
-
-        // Map quantity_limit to remaining_quantity
-        return data?.map(item => ({
-          ...item,
-          remaining_quantity: item.quantity_limit,
-        })) || [];
-
-      } catch (error) {
-        console.error('Unexpected error in useMenuItems:', error);
+      if (error) {
+        console.error('Error fetching menu items:', error);
         throw error;
       }
+
+      // Map quantity_limit to remaining_quantity
+      const mappedData = data?.map(item => ({
+        ...item,
+        remaining_quantity: item.quantity_limit,
+      }));
+
+      console.log('Fetched menu items:', mappedData);
+      return mappedData || [];
     },
-    staleTime: 30000,
-    gcTime: 300000,
-    retry: (failureCount, error) => {
-      // Only retry twice and not for 401 errors
-      if (failureCount > 2) return false;
-      if (error?.message?.includes('401')) return false;
-      return true;
-    },
-    retryDelay: 1000,
+    staleTime: 1000,
+    gcTime: 2000
   });
 };
