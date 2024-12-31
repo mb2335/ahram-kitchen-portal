@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
+      injectRegister: null,
       registerType: 'autoUpdate',
       manifest: {
         name: 'Ahram Kitchen',
@@ -33,6 +34,8 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'portrait',
+        prefer_related_applications: true,
         scope: '/',
         start_url: '/',
         icons: [
