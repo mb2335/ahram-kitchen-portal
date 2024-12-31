@@ -4,7 +4,6 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -18,6 +17,7 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: 'Ahram Kitchen',
         short_name: 'Ahram Kitchen',
+        description: 'Order delicious Korean food from Ahram Kitchen',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
@@ -27,12 +27,20 @@ export default defineConfig(({ mode }) => ({
           {
             src: '/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: '/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'apple touch icon'
           }
         ]
       },
