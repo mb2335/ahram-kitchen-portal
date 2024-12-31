@@ -10,7 +10,7 @@ interface MenuItemDialogProps {
   setFormData: (data: MenuFormData) => void;
   selectedImage: File | null;
   setSelectedImage: (file: File | null) => void;
-  onSubmit: (data: MenuFormData & { image?: File }) => void;
+  onSubmit: (data: MenuFormData & { image?: File }) => Promise<void>;
 }
 
 export function MenuItemDialog({

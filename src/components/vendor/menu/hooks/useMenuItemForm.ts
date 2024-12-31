@@ -51,6 +51,14 @@ export function useMenuItemForm(onSuccess: () => void) {
         imageUrl = null;
       }
 
+      // Get the maximum order_index for the current vendor
+      const { data: maxOrderIndex } = await supabase
+        .from('menu_items')
+        .select('order_index')
+        .order('order_index', { ascending: false })
+        .limit(1)
+        .single();
+
       const menuItemData = {
         name: data.name,
         name_ko: data.name_ko,
@@ -61,6 +69,7 @@ export function useMenuItemForm(onSuccess: () => void) {
         is_available: data.is_available,
         image: imageUrl,
         category_id: data.category_id || null,
+        order_index: editingItem?.order_index || (maxOrderIndex?.order_index || 0) + 1,
       };
 
       await saveMenuItem(userId, menuItemData, editingItem?.id);
