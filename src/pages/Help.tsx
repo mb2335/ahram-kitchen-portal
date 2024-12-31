@@ -74,8 +74,8 @@ export function Help() {
               </div>
               <p>
                 {language === 'en'
-                  ? 'Click the button below to install our app on your Android device'
-                  : '아래 버튼을 클릭하여 안드로이드 기기에 앱을 설치하세요'}
+                  ? 'Open this website in Chrome browser'
+                  : 'Chrome 브라우저에서 이 웹사이트를 열어주세요'}
               </p>
             </div>
             
@@ -85,8 +85,8 @@ export function Help() {
               </div>
               <p>
                 {language === 'en'
-                  ? 'Follow the installation prompts that appear'
-                  : '표시되는 설치 메시지를 따르세요'}
+                  ? 'Click on the Install option near the address bar'
+                  : '주소 표시줄 근처의 설치 옵션을 클릭하세요'}
               </p>
             </div>
             
@@ -96,12 +96,19 @@ export function Help() {
               </div>
               <p>
                 {language === 'en'
-                  ? 'The app will be installed automatically'
-                  : '앱이 자동으로 설치됩니다'}
+                  ? 'Follow the installation prompts that appear and the app will be installed automatically'
+                  : '표시되는 설치 메시지를 따르면 앱이 자동으로 설치됩니다'}
               </p>
             </div>
 
-            <div className="mt-4 flex justify-center">
+            <div className="mt-6 flex justify-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                {language === 'en'
+                  ? "If you don't see the install option, click the button below:"
+                  : "설치 옵션이 보이지 않는 경우 아래 버튼을 클릭하세요:"}
+              </p>
+            </div>
+            <div className="flex justify-center">
               <InstallPWA />
             </div>
           </div>
