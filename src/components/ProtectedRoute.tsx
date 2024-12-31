@@ -34,7 +34,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
           .from(requiredRole === 'vendor' ? 'vendors' : 'customers')
           .select('id')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle(); // Changed from .single() to .maybeSingle()
 
         if (error) throw error;
 
