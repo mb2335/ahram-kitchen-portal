@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -11,7 +11,6 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
   const { toast } = useToast();
   const { language } = useLanguage();
 
@@ -20,12 +19,10 @@ export function InstallPWA() {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsInstallable(true);
     };
 
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
-      setIsInstallable(false);
       toast({
         title: language === 'en' ? 'App installed successfully!' : '앱이 성공적으로 설치되었습니다!',
         description: language === 'en' 
@@ -37,11 +34,6 @@ export function InstallPWA() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Check if running as standalone PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstallable(false);
-    }
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -49,26 +41,48 @@ export function InstallPWA() {
   }, [language, toast]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      // Show instructions for iOS or when installation is not available
+    // Check if running as standalone PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      toast({
+        title: language === 'en' ? 'App already installed' : '앱이 이미 설치되어 있습니다',
+        description: language === 'en' 
+          ? 'The app is already installed on your device' 
+          : '앱이 이미 기기에 설치되어 있습니다',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if it's an iOS device
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
       toast({
         title: language === 'en' ? 'Installation not available' : '설치할 수 없음',
         description: language === 'en' 
-          ? 'Please use your browser\'s install option or check if the app is already installed' 
-          : '브라우저의 설치 옵션을 사용하거나 앱이 이미 설치되어 있는지 확인하세요',
+          ? 'Please use Safari\'s "Add to Home Screen" option to install the app' 
+          : 'Safari의 "홈 화면에 추가" 옵션을 사용하여 앱을 설치하세요',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!deferredPrompt) {
+      toast({
+        title: language === 'en' ? 'Installation not available' : '설치할 수 없음',
+        description: language === 'en' 
+          ? 'Please use Chrome browser to install the app' 
+          : 'Chrome 브라우저를 사용하여 앱을 설치하세요',
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Show the install prompt
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
-        setIsInstallable(false);
       }
     } catch (error) {
       console.error('Error installing PWA:', error);
@@ -81,9 +95,6 @@ export function InstallPWA() {
       });
     }
   };
-
-  // Only show the button if the app is installable
-  if (!isInstallable) return null;
 
   return (
     <Button
