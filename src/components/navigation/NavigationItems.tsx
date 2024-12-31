@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User, HelpCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { InstallPWA } from "@/components/shared/InstallPWA";
 
 interface NavigationItemsProps {
   isVendor: boolean;
@@ -52,7 +51,7 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
           <Link to="/profile" className={isMobile ? "w-full" : ""}>
             <Button variant="ghost" size={isMobile ? "lg" : "sm"} className={buttonClass}>
               <User className={iconClass} />
-              <span className={isMobile ? "" : "hidden sm:inline"}>
+              <span className={iMobile ? "" : "hidden sm:inline"}>
                 {language === 'en' ? 'Profile' : '프로필'}
               </span>
             </Button>
@@ -71,27 +70,23 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
         </Link>
       )}
 
-      <div className={isMobile ? "w-full" : ""}>
-        <InstallPWA />
-      </div>
-
       {session ? (
         <Button 
           variant="ghost" 
-          size={isMobile ? "lg" : "sm"} 
+          size={iMobile ? "lg" : "sm"} 
           onClick={handleSignOut}
           className={buttonClass}
         >
           <LogOut className={iconClass} />
-          <span className={isMobile ? "" : "hidden sm:inline"}>
+          <span className={iMobile ? "" : "hidden sm:inline"}>
             {language === 'en' ? 'Sign Out' : '로그아웃'}
           </span>
         </Button>
       ) : (
         <Link to="/auth" className={isMobile ? "w-full" : ""}>
-          <Button variant="ghost" size={isMobile ? "lg" : "sm"} className={buttonClass}>
+          <Button variant="ghost" size={iMobile ? "lg" : "sm"} className={buttonClass}>
             <User className={iconClass} />
-            <span className={isMobile ? "" : "hidden sm:inline"}>
+            <span className={iMobile ? "" : "hidden sm:inline"}>
               {language === 'en' ? 'Sign In' : '로그인'}
             </span>
           </Button>
@@ -101,11 +96,11 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
       <Link to="/cart" className={isMobile ? "w-full" : ""}>
         <Button 
           variant="default" 
-          size={isMobile ? "lg" : "sm"} 
+          size={iMobile ? "lg" : "sm"} 
           className={`bg-primary relative ${buttonClass}`}
         >
           <ShoppingCart className={iconClass} />
-          <span className={isMobile ? "" : "hidden sm:inline"}>
+          <span className={iMobile ? "" : "hidden sm:inline"}>
             {language === 'en' ? 'Cart' : '장바구니'}
           </span>
           {cartItemCount > 0 && (
