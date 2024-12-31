@@ -39,6 +39,18 @@ export function useAuthForm(isSignUp: boolean) {
       });
       return false;
     }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -91,14 +103,13 @@ export function useAuthForm(isSignUp: boolean) {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    if (!validatePassword(formData.password)) return;
+    
     setIsLoading(true);
 
     try {
-      if (!validatePassword(formData.password)) {
-        setIsLoading(false);
-        return;
-      }
-
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('*')
