@@ -74,8 +74,8 @@ export function Help() {
               </div>
               <p>
                 {language === 'en'
-                  ? 'When visiting our website, you\'ll see an "Install App" banner'
-                  : '웹사이트 방문 시 "앱 설치" 배너가 표시됩니다'}
+                  ? 'Click the button below to install our app on your Android device'
+                  : '아래 버튼을 클릭하여 안드로이드 기기에 앱을 설치하세요'}
               </p>
             </div>
             
@@ -85,8 +85,8 @@ export function Help() {
               </div>
               <p>
                 {language === 'en'
-                  ? 'Tap "Install" when prompted'
-                  : '설치 메시지가 표시되면 "설치"를 탭하세요'}
+                  ? 'Follow the installation prompts that appear'
+                  : '표시되는 설치 메시지를 따르세요'}
               </p>
             </div>
             
@@ -101,17 +101,7 @@ export function Help() {
               </p>
             </div>
 
-            <div className="mt-4 text-sm text-muted-foreground">
-              <p className="flex items-center gap-1">
-                {language === 'en'
-                  ? "Don't see the install banner? "
-                  : "설치 배너가 보이지 않나요? "}
-                <span className="inline-flex items-center hover:text-primary active:text-primary/80 transition-colors">
-                  {language === 'en' ? 'Click here' : '여기를 클릭하세요'}
-                  <InstallPWA />
-                </span>
-              </p>
-            </div>
+            <InstallPWA />
           </div>
         </Card>
       </div>
