@@ -9,6 +9,7 @@ import { MenuItem, MenuFormData } from './menu/types';
 import { loadVendorMenuItems, saveMenuItem, deleteMenuItem, updateMenuItemOrder, handleImageUpload } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
+import { supabase } from "@/integrations/supabase/client";
 
 export function MenuManagement() {
   const session = useSession();
@@ -198,3 +199,4 @@ export function MenuManagement() {
     </div>
   );
 }
+
