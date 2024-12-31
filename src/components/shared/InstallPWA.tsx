@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, AlertOctagon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,20 +12,38 @@ interface BeforeInstallPromptEvent extends Event {
 export function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [installState, setInstallState] = useState<'installable' | 'incompatible' | 'standalone' | null>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
 
   useEffect(() => {
+    // Check if running as standalone PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstallState('standalone');
+      setIsInstallable(false);
+      return;
+    }
+
+    // Check if it's an iOS device
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      setInstallState('incompatible');
+      setIsInstallable(false);
+      return;
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
+      setInstallState('installable');
     };
 
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
       setIsInstallable(false);
+      setInstallState('standalone');
       toast({
         title: language === 'en' ? 'App installed successfully!' : '앱이 성공적으로 설치되었습니다!',
         description: language === 'en' 
@@ -37,11 +55,6 @@ export function InstallPWA() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Check if running as standalone PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstallable(false);
-    }
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -50,7 +63,6 @@ export function InstallPWA() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      // Show instructions for iOS or when installation is not available
       toast({
         title: language === 'en' ? 'Installation not available' : '설치할 수 없음',
         description: language === 'en' 
@@ -62,7 +74,6 @@ export function InstallPWA() {
     }
 
     try {
-      // Show the install prompt
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       
@@ -82,17 +93,47 @@ export function InstallPWA() {
     }
   };
 
-  // Only show the button if the app is installable
-  if (!isInstallable) return null;
+  // Show status message based on install state
+  const renderStatusMessage = () => {
+    if (!installState) return null;
+
+    let message = '';
+    let icon = null;
+
+    switch (installState) {
+      case 'incompatible':
+        message = language === 'en' ? 'Incompatible device' : '호환되지 않는 기기';
+        icon = <AlertOctagon className="h-4 w-4 mr-2" />;
+        break;
+      case 'standalone':
+        message = language === 'en' ? 'App already installed' : '앱이 이미 설치됨';
+        icon = <Check className="h-4 w-4 mr-2" />;
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <div className="flex items-center justify-center text-sm text-muted-foreground mt-2">
+        {icon}
+        <span>{message}</span>
+      </div>
+    );
+  };
 
   return (
-    <Button
-      onClick={handleInstallClick}
-      className="w-full mt-6 mb-2"
-      variant="default"
-    >
-      <Download className="h-4 w-4 mr-2" />
-      {language === 'en' ? 'Install App' : '앱 설치'}
-    </Button>
+    <div>
+      {isInstallable && (
+        <Button
+          onClick={handleInstallClick}
+          className="w-full mt-6 mb-2"
+          variant="default"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {language === 'en' ? 'Install App' : '앱 설치'}
+        </Button>
+      )}
+      {renderStatusMessage()}
+    </div>
   );
 }
