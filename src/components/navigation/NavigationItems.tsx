@@ -51,7 +51,7 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
           <Link to="/profile" className={isMobile ? "w-full" : ""}>
             <Button variant="ghost" size={isMobile ? "lg" : "sm"} className={buttonClass}>
               <User className={iconClass} />
-              <span className={iMobile ? "" : "hidden sm:inline"}>
+              <span className={isMobile ? "" : "hidden sm:inline"}>
                 {language === 'en' ? 'Profile' : '프로필'}
               </span>
             </Button>
@@ -73,20 +73,20 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
       {session ? (
         <Button 
           variant="ghost" 
-          size={iMobile ? "lg" : "sm"} 
+          size={isMobile ? "lg" : "sm"} 
           onClick={handleSignOut}
           className={buttonClass}
         >
           <LogOut className={iconClass} />
-          <span className={iMobile ? "" : "hidden sm:inline"}>
+          <span className={isMobile ? "" : "hidden sm:inline"}>
             {language === 'en' ? 'Sign Out' : '로그아웃'}
           </span>
         </Button>
       ) : (
         <Link to="/auth" className={isMobile ? "w-full" : ""}>
-          <Button variant="ghost" size={iMobile ? "lg" : "sm"} className={buttonClass}>
+          <Button variant="ghost" size={isMobile ? "lg" : "sm"} className={buttonClass}>
             <User className={iconClass} />
-            <span className={iMobile ? "" : "hidden sm:inline"}>
+            <span className={isMobile ? "" : "hidden sm:inline"}>
               {language === 'en' ? 'Sign In' : '로그인'}
             </span>
           </Button>
@@ -96,11 +96,11 @@ export function NavigationItems({ isVendor, session, handleSignOut, isMobile = f
       <Link to="/cart" className={isMobile ? "w-full" : ""}>
         <Button 
           variant="default" 
-          size={iMobile ? "lg" : "sm"} 
+          size={isMobile ? "lg" : "sm"} 
           className={`bg-primary relative ${buttonClass}`}
         >
           <ShoppingCart className={iconClass} />
-          <span className={iMobile ? "" : "hidden sm:inline"}>
+          <span className={isMobile ? "" : "hidden sm:inline"}>
             {language === 'en' ? 'Cart' : '장바구니'}
           </span>
           {cartItemCount > 0 && (
