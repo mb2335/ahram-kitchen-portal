@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
+import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User, Download } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
+import { InstallPWA } from "@/components/shared/InstallPWA";
 
 interface MobileNavigationProps {
   isVendor: boolean;
@@ -77,6 +78,10 @@ export function MobileNavigation({ isVendor, session, handleSignOut }: MobileNav
                 </Button>
               </Link>
             )}
+
+            <div className="w-full">
+              <InstallPWA />
+            </div>
 
             {session ? (
               <Button 

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu as MenuIcon, History, LogOut, Store, ShoppingCart, User } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
+import { InstallPWA } from "@/components/shared/InstallPWA";
 
 interface DesktopNavigationProps {
   isVendor: boolean;
@@ -57,6 +58,8 @@ export function DesktopNavigation({ isVendor, session, handleSignOut }: DesktopN
           </Button>
         </Link>
       )}
+
+      <InstallPWA />
 
       {session ? (
         <Button 
