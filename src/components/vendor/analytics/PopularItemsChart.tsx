@@ -22,21 +22,6 @@ import { subDays, subMonths, subYears, startOfDay } from 'date-fns';
 
 type TimeRange = 'week' | 'month' | '6months' | 'year' | 'all';
 
-interface MenuItem {
-  name: string;
-  name_ko: string;
-}
-
-interface OrderItem {
-  quantity: number;
-  menu_item: MenuItem;
-}
-
-interface AggregatedData {
-  name: string;
-  quantity: number;
-}
-
 export function PopularItemsChart() {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
 
@@ -80,13 +65,11 @@ export function PopularItemsChart() {
       if (error) throw error;
 
       // Aggregate quantities by menu item
-      const aggregatedData = (data as unknown as OrderItem[]).reduce((acc: AggregatedData[], item) => {
-        if (!item.menu_item) return acc;
-        
-        const existingItem = acc.find(i => i.name === item.menu_item.name);
+      const aggregatedData = data.reduce((acc: any[], item) => {
+        const existingItem = acc.find(i => i.name === item.menu_item?.name);
         if (existingItem) {
           existingItem.quantity += item.quantity;
-        } else {
+        } else if (item.menu_item) {
           acc.push({
             name: item.menu_item.name,
             quantity: item.quantity,
