@@ -9,6 +9,18 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
+      }
+    }
+  },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
@@ -51,6 +63,13 @@ export default defineConfig(({ mode }) => ({
           options: {
             cacheName: 'api-cache',
             networkTimeoutSeconds: 10,
+            cacheableResponse: {
+              statuses: [0, 200]
+            },
+            expiration: {
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 // 1 hour
+            },
             plugins: [
               {
                 cacheWillUpdate: async ({ response }) => {
@@ -63,7 +82,9 @@ export default defineConfig(({ mode }) => ({
             ]
           }
         }],
-        cleanupOutdatedCaches: true
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true
       }
     })
   ].filter(Boolean),

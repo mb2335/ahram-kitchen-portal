@@ -18,7 +18,9 @@ export function useMenuCategories(menuItems: MenuItem[]) {
       return data || [];
     },
     retry: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // Consider data stale after 5 minutes
+    cacheTime: 1000 * 60 * 30, // Keep unused data in cache for 30 minutes
   });
 
   const itemsByCategory = menuItems.reduce((acc, item) => {
