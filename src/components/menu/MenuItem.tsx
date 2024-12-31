@@ -17,12 +17,12 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
 
   const getQuantityDisplay = () => {
     if (item.remaining_quantity === 0) {
-      return t('Sold Out');
+      return t('item.soldOut');
     }
     if (item.remaining_quantity === null) {
-      return t('No Limit');
+      return t('item.inStock');
     }
-    return `${t('Remaining')}: ${item.remaining_quantity}`;
+    return `${t('item.remainingStock')}: ${item.remaining_quantity}`;
   };
 
   return (
