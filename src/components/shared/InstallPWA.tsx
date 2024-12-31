@@ -11,45 +11,64 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
   const { toast } = useToast();
   const { language } = useLanguage();
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setIsInstallable(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+      toast({
+        title: language === 'en' ? 'App installed successfully!' : '앱이 성공적으로 설치되었습니다!',
+        description: language === 'en' 
+          ? 'You can now access the app from your home screen' 
+          : '이제 홈 화면에서 앱에 액세스할 수 있습니다',
+      });
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if running as standalone PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstallable(false);
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [language, toast]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
+      // Show instructions for iOS or when installation is not available
       toast({
         title: language === 'en' ? 'Installation not available' : '설치할 수 없음',
         description: language === 'en' 
-          ? 'Please use your browser\'s install option' 
-          : '브라우저의 설치 옵션을 사용하세요',
+          ? 'Please use your browser\'s install option or check if the app is already installed' 
+          : '브라우저의 설치 옵션을 사용하거나 앱이 이미 설치되어 있는지 확인하세요',
         variant: "destructive",
       });
       return;
     }
 
     try {
+      // Show the install prompt
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        toast({
-          title: language === 'en' ? 'App installed successfully!' : '앱이 성공적으로 설치되었습니다!',
-          description: language === 'en' 
-            ? 'You can now access the app from your home screen' 
-            : '이제 홈 화면에서 앱에 액세스할 수 있습니다',
-        });
+        setDeferredPrompt(null);
+        setIsInstallable(false);
       }
     } catch (error) {
       console.error('Error installing PWA:', error);
@@ -61,9 +80,10 @@ export function InstallPWA() {
         variant: "destructive",
       });
     }
-
-    setDeferredPrompt(null);
   };
+
+  // Only show the button if the app is installable
+  if (!isInstallable) return null;
 
   return (
     <Button
