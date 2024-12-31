@@ -8,12 +8,13 @@ import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
 
+const TAX_RATE = 0.1;
+
 export function Checkout() {
   const { items, total, clearCart } = useCart();
   const session = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const TAX_RATE = 0.1;
   const taxAmount = total * TAX_RATE;
 
   const [formData, setFormData] = useState({
@@ -32,6 +33,7 @@ export function Checkout() {
   useEffect(() => {
     if (items.length === 0) {
       navigate('/cart');
+      return;
     }
     
     if (session?.user) {
