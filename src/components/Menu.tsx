@@ -1,6 +1,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMenuItems } from "@/hooks/useMenuItems";
+import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { LoadingState } from "./shared/LoadingState";
 import { ErrorState } from "./shared/ErrorState";
@@ -13,8 +14,18 @@ export function Menu() {
   const { data: menuItems = [], isLoading: menuLoading, error: menuError } = useMenuItems();
   const { categories, itemsByCategory, isLoading: categoriesLoading } = useMenuCategories(menuItems);
 
+  useEffect(() => {
+    if (menuError) {
+      console.error('Error in menu component:', menuError);
+      toast({
+        title: "Error",
+        description: "Failed to load menu items. Please try again later.",
+        variant: "destructive"
+      });
+    }
+  }, [menuError]);
+
   if (menuError) {
-    console.error('Error in menu component:', menuError);
     return <ErrorState message="Failed to load menu items. Please try again later." />;
   }
 

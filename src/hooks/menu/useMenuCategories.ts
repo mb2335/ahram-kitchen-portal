@@ -17,7 +17,8 @@ export function useMenuCategories(menuItems: MenuItem[]) {
       }
       return data || [];
     },
-    retry: false
+    retry: false,
+    refetchOnWindowFocus: false
   });
 
   const itemsByCategory = menuItems.reduce((acc, item) => {

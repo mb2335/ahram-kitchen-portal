@@ -25,6 +25,7 @@ export const useMenuItems = () => {
       console.log('Fetched menu items:', mappedData);
       return mappedData || [];
     },
-    retry: false
+    retry: false,
+    refetchOnWindowFocus: false
   });
 };
