@@ -55,7 +55,22 @@ export function useAuthForm(isSignUp: boolean) {
         password: formData.password.trim(),
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password. Please check your credentials and try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
 
       toast({
         title: "Success",
@@ -63,17 +78,9 @@ export function useAuthForm(isSignUp: boolean) {
       });
 
     } catch (error: any) {
-      let errorMessage = "Invalid email or password";
-      
-      if (error.message.includes("invalid_credentials")) {
-        errorMessage = "Invalid email or password. Please try again.";
-      } else if (error.message.includes("email")) {
-        errorMessage = "Please enter a valid email address";
-      }
-      
       toast({
-        title: "Error signing in",
-        description: errorMessage,
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
       console.error('Detailed error:', error);
@@ -120,7 +127,14 @@ export function useAuthForm(isSignUp: boolean) {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error creating account",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Success",
