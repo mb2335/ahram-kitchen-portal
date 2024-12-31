@@ -60,6 +60,7 @@ export function useAuthForm(isSignUp: boolean) {
     if (!validateForm()) return;
     
     setIsLoading(true);
+    console.log('Attempting sign in with:', { email: formData.email });
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -68,10 +69,18 @@ export function useAuthForm(isSignUp: boolean) {
       });
 
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+        console.error('Sign in error:', error);
+        
+        if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Email Not Verified",
+            description: "Please check your email and verify your account before signing in.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes('Invalid login credentials')) {
           toast({
             title: "Login Failed",
-            description: "Invalid email or password. Please check your credentials and try again.",
+            description: "The email or password you entered is incorrect. Please try again.",
             variant: "destructive",
           });
         } else {
@@ -90,12 +99,12 @@ export function useAuthForm(isSignUp: boolean) {
       });
 
     } catch (error: any) {
+      console.error('Unexpected error during sign in:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      console.error('Detailed error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +117,7 @@ export function useAuthForm(isSignUp: boolean) {
     if (!validatePassword(formData.password)) return;
     
     setIsLoading(true);
+    console.log('Attempting sign up with:', { email: formData.email });
 
     try {
       const { data: existingCustomer } = await supabase
@@ -139,6 +149,7 @@ export function useAuthForm(isSignUp: boolean) {
       });
 
       if (error) {
+        console.error('Sign up error:', error);
         toast({
           title: "Error creating account",
           description: error.message,
@@ -153,6 +164,7 @@ export function useAuthForm(isSignUp: boolean) {
       });
       
     } catch (error: any) {
+      console.error('Unexpected error during sign up:', error);
       toast({
         title: "Error creating account",
         description: error.message,
