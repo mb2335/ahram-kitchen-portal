@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
@@ -8,6 +8,7 @@ import { CategoryManagement } from './menu/CategoryManagement';
 import { MenuItemDialog } from './menu/components/MenuItemDialog';
 import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
+import { supabase } from "@/integrations/supabase/client";
 
 export function MenuManagement() {
   const session = useSession();
@@ -26,6 +27,47 @@ export function MenuManagement() {
     setIsDialogOpen(false);
     loadMenuItems();
   });
+
+  useEffect(() => {
+    // Subscribe to menu items changes
+    const menuChannel = supabase
+      .channel('menu-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        (payload) => {
+          console.log('Menu item change detected:', payload);
+          loadMenuItems();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to category changes
+    const categoryChannel = supabase
+      .channel('category-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        (payload) => {
+          console.log('Category change detected:', payload);
+          loadMenuItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoryChannel);
+    };
+  }, [loadMenuItems]);
 
   if (loading) {
     return <LoadingState />;
