@@ -116,11 +116,16 @@ export function useAuthForm(isSignUp: boolean) {
 
     try {
       // First, check if a customer with this email already exists
-      const { data: existingCustomer } = await supabase
+      const { data: existingCustomer, error: customerCheckError } = await supabase
         .from('customers')
         .select('*')
         .eq('email', formData.email)
-        .single();
+        .maybeSingle();
+
+      if (customerCheckError) {
+        console.error('Error checking existing customer:', customerCheckError);
+        throw customerCheckError;
+      }
 
       if (existingCustomer) {
         toast({
