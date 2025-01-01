@@ -9,7 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MenuFormData } from "./types";
 import { validateMenuItemAvailability } from "./utils/menuItemValidation";
-import { toast } from "@/hooks/use-toast";
 import { MenuItem } from "./types";
 import { Dispatch, SetStateAction } from "react";
 import { Loader2, X } from "lucide-react";
@@ -42,26 +41,14 @@ export function MenuItemForm({
   const watchCategoryId = watch('category_id');
   const watchIsAvailable = watch('is_available');
 
-  // Only show availability error toast when trying to enable availability without a category
+  // Only disable availability when trying to enable without a category
   if (watchIsAvailable && !watchCategoryId) {
     setValue('is_available', false);
-    toast({
-      title: "Availability Update",
-      description: "Items must be categorized before they can be made available",
-      variant: "destructive",
-      duration: 10000,
-    });
   }
 
   const handleFormSubmit = async (data: MenuFormData) => {
     const availabilityError = validateMenuItemAvailability(data.category_id, data.is_available);
     if (availabilityError && data.is_available) {
-      toast({
-        title: "Validation Error",
-        description: availabilityError,
-        variant: "destructive",
-        duration: 10000,
-      });
       return;
     }
     await onSubmit({ ...data, image: selectedImage || undefined });
