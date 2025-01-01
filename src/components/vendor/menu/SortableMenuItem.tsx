@@ -5,6 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical } from "lucide-react";
 import { MenuItem } from "./types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface SortableMenuItemProps {
   item: MenuItem;
@@ -13,6 +24,7 @@ interface SortableMenuItemProps {
 }
 
 export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const {
     attributes,
     listeners,
@@ -43,6 +55,11 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
       return 'Uncategorized (Locked)';
     }
     return item.is_available ? 'Available' : 'Unavailable';
+  };
+
+  const handleDelete = () => {
+    onDelete(item.id);
+    setIsDeleteDialogOpen(false);
   };
 
   return (
@@ -106,14 +123,28 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
               >
                 Edit
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(item.id)}
-                className="flex-1 sm:flex-none"
-              >
-                Delete
-              </Button>
+              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="flex-1 sm:flex-none"
+                >
+                  Delete
+                </Button>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
