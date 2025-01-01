@@ -42,20 +42,16 @@ export function MenuItemForm({
   const watchCategoryId = watch('category_id');
   const watchIsAvailable = watch('is_available');
 
-  // Handle availability toggle changes
-  const handleAvailabilityChange = (checked: boolean) => {
-    if (checked && !watchCategoryId) {
-      toast({
-        title: "Availability Update",
-        description: "Items must be categorized before they can be made available",
-        variant: "destructive",
-        duration: 10000,
-      });
-      setValue('is_available', false);
-    } else {
-      setValue('is_available', checked);
-    }
-  };
+  // Only show availability error toast when trying to enable availability without a category
+  if (watchIsAvailable && !watchCategoryId) {
+    setValue('is_available', false);
+    toast({
+      title: "Availability Update",
+      description: "Items must be categorized before they can be made available",
+      variant: "destructive",
+      duration: 10000,
+    });
+  }
 
   const handleFormSubmit = async (data: MenuFormData) => {
     const availabilityError = validateMenuItemAvailability(data.category_id, data.is_available);
@@ -85,7 +81,6 @@ export function MenuItemForm({
           watchCategoryId={watchCategoryId}
           setValue={setValue}
           watchIsAvailable={watchIsAvailable}
-          onAvailabilityChange={handleAvailabilityChange}
         />
       </div>
 
