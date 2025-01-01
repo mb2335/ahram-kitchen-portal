@@ -112,9 +112,10 @@ export function useAuthForm(isSignUp: boolean) {
     if (!validatePassword(formData.password)) return;
     
     setIsLoading(true);
-    console.log('Attempting sign up with:', { email: formData.email });
+    console.log('Attempting sign up with:', { email: formData.email, fullName: formData.fullName });
 
     try {
+      // First, check if a customer with this email already exists
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('*')
@@ -131,26 +132,32 @@ export function useAuthForm(isSignUp: boolean) {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      // Sign up the user with metadata
+      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
-            user_type: 'customer',
             full_name: formData.fullName,
             phone: formData.phone,
           }
         }
       });
 
-      if (error) {
-        console.error('Sign up error:', error);
-        toast({
-          title: "Error creating account",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
+      if (signUpError) throw signUpError;
+
+      if (user) {
+        // Create the customer profile
+        const { error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            user_id: user.id,
+            full_name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone
+          });
+
+        if (customerError) throw customerError;
       }
 
       toast({
@@ -159,7 +166,7 @@ export function useAuthForm(isSignUp: boolean) {
       });
       
     } catch (error: any) {
-      console.error('Unexpected error during sign up:', error);
+      console.error('Error during sign up:', error);
       toast({
         title: "Error creating account",
         description: error.message,

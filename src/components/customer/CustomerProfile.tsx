@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 interface CustomerProfile {
   id: string;
@@ -21,6 +22,7 @@ export function CustomerProfile() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -45,6 +47,7 @@ export function CustomerProfile() {
 
       if (error) throw error;
 
+      console.log('Loaded profile:', data);
       setProfile(data);
       setFormData({
         full_name: data.full_name,
@@ -70,6 +73,7 @@ export function CustomerProfile() {
       return;
     }
     
+    setUpdating(true);
     try {
       const { error } = await supabase
         .from('customers')
@@ -95,6 +99,8 @@ export function CustomerProfile() {
         description: 'Failed to update profile',
         variant: 'destructive',
       });
+    } finally {
+      setUpdating(false);
     }
   }
 
@@ -103,7 +109,11 @@ export function CustomerProfile() {
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -118,6 +128,7 @@ export function CustomerProfile() {
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               required
+              disabled={updating}
             />
           </div>
           <div className="space-y-2">
@@ -128,6 +139,7 @@ export function CustomerProfile() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
+              disabled={updating}
             />
           </div>
           <div className="space-y-2">
@@ -137,9 +149,19 @@ export function CustomerProfile() {
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              disabled={updating}
             />
           </div>
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit" disabled={updating}>
+            {updating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
         </form>
       </Card>
     </div>
