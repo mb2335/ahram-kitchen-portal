@@ -10,12 +10,14 @@ interface CategorySelectionProps {
   watchCategoryId: string | undefined;
   setValue: UseFormSetValue<MenuFormData>;
   watchIsAvailable: boolean;
+  onAvailabilityChange: (checked: boolean) => void;
 }
 
 export function CategorySelection({ 
   watchCategoryId, 
   setValue, 
-  watchIsAvailable 
+  watchIsAvailable,
+  onAvailabilityChange
 }: CategorySelectionProps) {
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -55,7 +57,7 @@ export function CategorySelection({
         <Switch 
           id="is_available" 
           checked={watchIsAvailable}
-          onCheckedChange={(checked) => setValue('is_available', checked)}
+          onCheckedChange={onAvailabilityChange}
           disabled={!watchCategoryId}
         />
         <Label htmlFor="is_available">
