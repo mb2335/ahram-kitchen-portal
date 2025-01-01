@@ -35,13 +35,15 @@ export function useMenuItemForm(onSuccess: () => void) {
 
   const handleSubmit = async (data: MenuFormData & { image?: File }, userId: string) => {
     try {
+      // Keep the existing image URL if no new image is selected
       let imageUrl = editingItem?.image;
       
       if (data.image) {
         imageUrl = await handleImageUpload(data.image);
       }
 
-      if (editingItem?.image && !data.image && !selectedImage) {
+      // Only remove the image if explicitly cleared by the user
+      if (editingItem?.image && !imageUrl && !selectedImage) {
         const fileName = editingItem.image.split('/').pop();
         if (fileName) {
           await supabase.storage
@@ -67,7 +69,7 @@ export function useMenuItemForm(onSuccess: () => void) {
         price: parseFloat(data.price),
         quantity_limit: data.quantity_limit ? parseInt(data.quantity_limit) : null,
         is_available: data.is_available,
-        image: imageUrl,
+        image: imageUrl, // Preserve the image URL
         category_id: data.category_id || null,
         order_index: editingItem?.order_index || (maxOrderIndex?.order_index || 0) + 1,
       };
