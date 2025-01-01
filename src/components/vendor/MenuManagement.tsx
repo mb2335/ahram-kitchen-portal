@@ -9,9 +9,11 @@ import { MenuItemDialog } from './menu/components/MenuItemDialog';
 import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function MenuManagement() {
   const session = useSession();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { menuItems, loading, loadMenuItems, handleDeleteMenuItem } = useMenuItems();
   const {
@@ -31,7 +33,7 @@ export function MenuManagement() {
   useEffect(() => {
     // Subscribe to menu items changes
     const menuChannel = supabase
-      .channel('menu-changes')
+      .channel('menu-management-changes')
       .on(
         'postgres_changes',
         { 
@@ -41,6 +43,7 @@ export function MenuManagement() {
         },
         (payload) => {
           console.log('Menu item change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
           loadMenuItems();
         }
       )
@@ -48,7 +51,7 @@ export function MenuManagement() {
 
     // Subscribe to category changes
     const categoryChannel = supabase
-      .channel('category-changes')
+      .channel('category-management-changes')
       .on(
         'postgres_changes',
         { 
@@ -58,6 +61,7 @@ export function MenuManagement() {
         },
         (payload) => {
           console.log('Category change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           loadMenuItems();
         }
       )
@@ -67,7 +71,7 @@ export function MenuManagement() {
       supabase.removeChannel(menuChannel);
       supabase.removeChannel(categoryChannel);
     };
-  }, [loadMenuItems]);
+  }, [queryClient, loadMenuItems]);
 
   if (loading) {
     return <LoadingState />;

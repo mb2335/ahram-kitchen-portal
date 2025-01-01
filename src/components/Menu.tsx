@@ -8,9 +8,12 @@ import { ErrorState } from "./shared/ErrorState";
 import { MenuHeader } from "./menu/MenuHeader";
 import { CategorySection } from "./menu/CategorySection";
 import { useMenuCategories } from "@/hooks/menu/useMenuCategories";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Menu() {
   const { addItem } = useCart();
+  const queryClient = useQueryClient();
   const { data: menuItems = [], isLoading: menuLoading, error: menuError } = useMenuItems();
   const { categories, itemsByCategory, isLoading: categoriesLoading } = useMenuCategories(menuItems);
 
@@ -24,6 +27,47 @@ export function Menu() {
       });
     }
   }, [menuError]);
+
+  useEffect(() => {
+    // Subscribe to menu items changes
+    const menuChannel = supabase
+      .channel('menu-items-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        (payload) => {
+          console.log('Menu item change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to category changes
+    const categoryChannel = supabase
+      .channel('menu-categories-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        (payload) => {
+          console.log('Category change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoryChannel);
+    };
+  }, [queryClient]);
 
   if (menuError) {
     return <ErrorState message="Failed to load menu items. Please try again later." />;
