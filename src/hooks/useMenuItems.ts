@@ -8,7 +8,14 @@ export const useMenuItems = () => {
       console.log('Fetching menu items...');
       const { data, error } = await supabase
         .from('menu_items')
-        .select('*')
+        .select(`
+          *,
+          category:menu_categories(
+            id,
+            name,
+            name_ko
+          )
+        `)
         .eq('is_available', true)
         .order('order_index');
 
@@ -20,6 +27,11 @@ export const useMenuItems = () => {
       const mappedData = data?.map(item => ({
         ...item,
         remaining_quantity: item.quantity_limit,
+        category: item.category ? {
+          id: item.category.id,
+          name: item.category.name,
+          name_ko: item.category.name_ko
+        } : null
       }));
 
       console.log('Fetched menu items:', mappedData);
