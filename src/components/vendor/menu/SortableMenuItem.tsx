@@ -48,55 +48,73 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="p-4">
-        <div className="flex justify-between items-start">
-          <div className="flex gap-4">
-            <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing mt-2"
-            >
-              <GripVertical className="h-5 w-5 text-gray-400" />
-            </div>
-            <div className="flex gap-4">
-              {item.image && (
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-24 h-24 object-cover rounded-lg"
-                />
-              )}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing self-start sm:mt-2"
+          >
+            <GripVertical className="h-5 w-5 text-gray-400" />
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            {item.image && (
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-full sm:w-24 h-32 sm:h-24 object-cover rounded-lg"
+              />
+            )}
+            
+            <div className="flex-1 space-y-2">
               <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                {item.name_ko && <p className="text-sm text-gray-600">{item.name_ko}</p>}
-                {item.description && <p className="text-sm mt-1">{item.description}</p>}
-                {item.description_ko && <p className="text-sm text-gray-600">{item.description_ko}</p>}
-                <p className="mt-2">${item.price}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={item.category_id && item.is_available ? 'default' : 'secondary'}>
-                    {getAvailabilityDisplay()}
-                  </Badge>
-                  <Badge variant="secondary">
-                    {getRemainingDisplay()}
-                  </Badge>
+                <h3 className="font-semibold text-lg">{item.name}</h3>
+                {item.name_ko && (
+                  <p className="text-sm text-gray-600">{item.name_ko}</p>
+                )}
+              </div>
+              
+              {(item.description || item.description_ko) && (
+                <div className="space-y-1">
+                  {item.description && (
+                    <p className="text-sm">{item.description}</p>
+                  )}
+                  {item.description_ko && (
+                    <p className="text-sm text-gray-600">{item.description_ko}</p>
+                  )}
                 </div>
+              )}
+              
+              <p className="text-lg font-medium">${item.price}</p>
+              
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={item.category_id && item.is_available ? 'default' : 'secondary'}>
+                  {getAvailabilityDisplay()}
+                </Badge>
+                <Badge variant="secondary">
+                  {getRemainingDisplay()}
+                </Badge>
               </div>
             </div>
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(item)}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete(item.id)}
-            >
-              Delete
-            </Button>
+            
+            <div className="flex sm:flex-col gap-2 self-start mt-4 sm:mt-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(item)}
+                className="flex-1 sm:flex-none"
+              >
+                Edit
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onDelete(item.id)}
+                className="flex-1 sm:flex-none"
+              >
+                Delete
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
