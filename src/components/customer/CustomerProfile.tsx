@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { ErrorState } from '@/components/shared/ErrorState';
 
 interface CustomerProfile {
   id: string;
@@ -22,6 +23,7 @@ export function CustomerProfile() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -43,9 +45,19 @@ export function CustomerProfile() {
         .from('customers')
         .select('*')
         .eq('user_id', session?.user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading profile:', error);
+        setError('Failed to load profile. Please try again.');
+        return;
+      }
+
+      if (!data) {
+        console.log('No profile found for user');
+        setError('No profile found. Please create one.');
+        return;
+      }
 
       console.log('Loaded profile:', data);
       setProfile(data);
@@ -54,13 +66,10 @@ export function CustomerProfile() {
         email: data.email,
         phone: data.phone || '',
       });
+      setError(null);
     } catch (error) {
       console.error('Error loading profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load profile',
-        variant: 'destructive',
-      });
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -114,6 +123,10 @@ export function CustomerProfile() {
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState message={error} />;
   }
 
   return (
