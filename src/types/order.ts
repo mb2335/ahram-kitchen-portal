@@ -1,4 +1,5 @@
 import { CustomerData } from './customer';
+import { PickupDetail } from './pickup';
 
 export interface OrderItem {
   id: string;
@@ -11,6 +12,7 @@ export interface OrderItem {
     id: string;
     name: string;
     has_custom_pickup: boolean;
+    pickup_details?: PickupDetail[];
   };
 }
 
