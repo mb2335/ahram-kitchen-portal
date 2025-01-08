@@ -27,7 +27,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       }
 
       try {
-        // Check if user has the required role
+        // Check if user has the required role by looking up their record in the appropriate table
         const { data: profile, error } = await supabase
           .from(requiredRole === 'vendor' ? 'vendors' : 'customers')
           .select('id')
