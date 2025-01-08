@@ -27,7 +27,6 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
-      // Validate all item IDs are proper UUIDs
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -36,11 +35,9 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      // Get or create customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
       console.log('Customer ID retrieved:', customerId);
 
-      // Upload payment proof with unique filename
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -55,7 +52,6 @@ export function useOrderSubmission() {
       if (uploadError) throw uploadError;
       console.log('Payment proof uploaded successfully:', uploadData.path);
 
-      // Create orders for each delivery date
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         console.log('Processing order for category:', categoryId);
         const categoryItems = items.filter(item => item.category_id === categoryId);
@@ -64,7 +60,6 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Get pickup details for this category if available
         const pickupDetailsForCategory = pickupDetails[categoryId];
         console.log('Pickup details for category:', pickupDetailsForCategory);
 
@@ -76,10 +71,8 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetailsForCategory ? {
-            time: pickupDetailsForCategory.time,
-            location: pickupDetailsForCategory.location
-          } : null
+          pickup_time: pickupDetailsForCategory?.time || null,
+          pickup_location: pickupDetailsForCategory?.location || null
         };
 
         console.log('Creating order with data:', orderData);
@@ -87,7 +80,7 @@ export function useOrderSubmission() {
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
-          .select('*, pickup_details')
+          .select()
           .single();
 
         if (orderError) {
@@ -102,7 +95,6 @@ export function useOrderSubmission() {
 
         console.log('Order created successfully:', insertResult);
 
-        // Create order items
         const orderItems = categoryItems.map((item) => ({
           order_id: insertResult.id,
           menu_item_id: item.id,
@@ -137,7 +129,6 @@ export function useOrderSubmission() {
 
       onOrderSuccess(validOrders[0].id);
       
-      // Navigate to thank you page with order details including pickup details
       navigate('/thank-you', {
         state: {
           orderDetails: {
@@ -151,7 +142,10 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: validOrders[0].created_at,
-            pickupDetails: validOrders[0].pickup_details
+            pickupDetails: {
+              time: validOrders[0].pickup_time,
+              location: validOrders[0].pickup_location
+            }
           }
         },
         replace: true
