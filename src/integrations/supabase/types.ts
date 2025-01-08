@@ -88,30 +88,39 @@ export type Database = {
           created_at: string | null
           delivery_available_from: string | null
           delivery_available_until: string | null
+          has_custom_pickup: boolean | null
           id: string
           name: string
           name_ko: string
           order_index: number
+          pickup_location: string | null
+          pickup_time: string | null
           vendor_id: string | null
         }
         Insert: {
           created_at?: string | null
           delivery_available_from?: string | null
           delivery_available_until?: string | null
+          has_custom_pickup?: boolean | null
           id?: string
           name: string
           name_ko: string
           order_index: number
+          pickup_location?: string | null
+          pickup_time?: string | null
           vendor_id?: string | null
         }
         Update: {
           created_at?: string | null
           delivery_available_from?: string | null
           delivery_available_until?: string | null
+          has_custom_pickup?: boolean | null
           id?: string
           name?: string
           name_ko?: string
           order_index?: number
+          pickup_location?: string | null
+          pickup_time?: string | null
           vendor_id?: string | null
         }
         Relationships: [

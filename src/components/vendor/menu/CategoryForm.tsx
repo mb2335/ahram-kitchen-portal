@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { parse } from "date-fns";
 import { CategoryFormData } from "./types/category";
 
@@ -68,6 +69,38 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
           min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
         />
       </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="has_custom_pickup"
+          checked={formData.has_custom_pickup}
+          onCheckedChange={(checked) => 
+            setFormData({ ...formData, has_custom_pickup: checked as boolean })
+          }
+        />
+        <Label htmlFor="has_custom_pickup">Custom locations & times</Label>
+      </div>
+
+      {formData.has_custom_pickup && (
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Label>Pickup Time</Label>
+            <Input
+              value={formData.pickup_time || ''}
+              onChange={(e) => setFormData({ ...formData, pickup_time: e.target.value })}
+              placeholder="e.g., 2-4 PM"
+            />
+          </div>
+          <div className="flex-1">
+            <Label>Pickup Location</Label>
+            <Input
+              value={formData.pickup_location || ''}
+              onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
+              placeholder="e.g., Main Entrance"
+            />
+          </div>
+        </div>
+      )}
 
       <Button type="submit" className="w-full">
         {formData.name ? 'Save Changes' : 'Add Category'}
