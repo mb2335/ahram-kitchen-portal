@@ -49,7 +49,6 @@ export function CheckoutForm({
   const [selectedPickupDetails, setSelectedPickupDetails] = useState<Record<string, string>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
-  // Fetch categories to attach to items
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
@@ -61,12 +60,10 @@ export function CheckoutForm({
     },
   });
 
-  // Transform category data to match OrderItem type
   const itemsWithCategories = items.map(item => {
     const category = categories.find(cat => cat.id === item.category_id);
     if (!category) return { ...item, category: undefined };
     
-    // Transform pickup_details from Json[] to PickupDetail[]
     const transformedPickupDetails = category.pickup_details?.map((detail: any) => ({
       time: detail.time as string,
       location: detail.location as string
@@ -101,7 +98,6 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate that all categories have delivery dates and pickup details if required
     const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
     const missingDates = Array.from(categoriesWithItems).filter(
       categoryId => !formData.deliveryDates[categoryId as string]
@@ -116,7 +112,6 @@ export function CheckoutForm({
       return;
     }
 
-    // Check if pickup details are required and selected
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       return category?.has_custom_pickup && !selectedPickupDetails[categoryId];
@@ -131,14 +126,16 @@ export function CheckoutForm({
       return;
     }
 
-    // Create pickup details object for each category
     const pickupDetailsForOrder = Object.entries(selectedPickupDetails).reduce((acc, [categoryId, pickupDetailIndex]) => {
       const category = categories.find(cat => cat.id === categoryId);
       if (category?.pickup_details && category.pickup_details[parseInt(pickupDetailIndex)]) {
-        acc[categoryId] = category.pickup_details[parseInt(pickupDetailIndex)];
+        acc[categoryId] = {
+          time: category.pickup_details[parseInt(pickupDetailIndex)].time,
+          location: category.pickup_details[parseInt(pickupDetailIndex)].location
+        };
       }
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, PickupDetail>);
 
     await submitOrder({
       items: itemsWithCategories,

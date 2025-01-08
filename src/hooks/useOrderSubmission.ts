@@ -26,7 +26,6 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
-      // Validate all item IDs are proper UUIDs
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -35,10 +34,8 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      // Get or create customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
-      // Upload payment proof with unique filename
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -51,28 +48,12 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
-      // Create orders for each delivery date
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
-
-        // Format pickup details for this category
-        const pickupDetail = pickupDetails[categoryId];
-        const category = categoryItems[0]?.category;
-        let formattedPickupDetails = null;
-
-        if (category?.has_custom_pickup && pickupDetail && category.pickup_details) {
-          const selectedPickup = category.pickup_details[parseInt(pickupDetail)];
-          if (selectedPickup) {
-            formattedPickupDetails = {
-              time: selectedPickup.time,
-              location: selectedPickup.location
-            };
-          }
-        }
 
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
@@ -85,7 +66,7 @@ export function useOrderSubmission() {
               status: 'pending',
               delivery_date: deliveryDate.toISOString(),
               payment_proof_url: uploadData.path,
-              pickup_details: formattedPickupDetails
+              pickup_details: pickupDetails[categoryId] || null
             },
           ])
           .select()
@@ -93,7 +74,6 @@ export function useOrderSubmission() {
 
         if (orderError) throw orderError;
 
-        // Create order items for this category
         const orderItems = categoryItems.map((item) => ({
           order_id: orderData.id,
           menu_item_id: item.id,
@@ -117,13 +97,10 @@ export function useOrderSubmission() {
         throw new Error('No valid orders could be created');
       }
 
-      // Update menu item quantities
       await updateMenuItemQuantities(items);
 
-      // Call onOrderSuccess with the first order ID
       onOrderSuccess(validOrders[0].id);
       
-      // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {
