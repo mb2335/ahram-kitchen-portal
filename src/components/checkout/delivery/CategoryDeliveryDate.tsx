@@ -2,10 +2,9 @@ import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { MapPin, Clock } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { PickupDetail } from '@/components/vendor/menu/types/category';
+import { PickupDetail } from '@/types/pickup';
 
 interface CategoryDeliveryDateProps {
   category: {
@@ -74,9 +73,6 @@ export function CategoryDeliveryDate({
                 const selectedDate = new Date(e.target.value + 'T12:00:00');
                 if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate)) {
                   onDateChange(selectedDate);
-                  if (onPickupDetailChange) {
-                    onPickupDetailChange('');
-                  }
                 }
               }
             }}
@@ -92,19 +88,12 @@ export function CategoryDeliveryDate({
 
         {hasPickupOptions && (
           <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <div className="flex-grow border-t border-gray-200" />
-              <span className="text-sm text-gray-500">OR</span>
-              <div className="flex-grow border-t border-gray-200" />
-            </div>
-
-            <Label>Pickup Options</Label>
+            <Label>Pickup Location & Time</Label>
             <RadioGroup
               value={selectedPickupDetail}
               onValueChange={(value) => {
                 if (onPickupDetailChange) {
                   onPickupDetailChange(value);
-                  onDateChange(undefined);
                 }
               }}
               className="grid gap-2"

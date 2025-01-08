@@ -43,6 +43,7 @@ export function CheckoutForm({
   const session = useSession();
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [selectedPickupDetails, setSelectedPickupDetails] = useState<Record<string, string>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +64,7 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate that all categories have delivery dates
+    // Validate that all categories have delivery dates and pickup details if required
     const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
     const missingDates = Array.from(categoriesWithItems).filter(
       categoryId => !formData.deliveryDates[categoryId as string]
@@ -78,6 +79,21 @@ export function CheckoutForm({
       return;
     }
 
+    // Check if pickup details are required and selected
+    const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
+      const category = items.find(item => item.category_id === categoryId)?.category;
+      return category?.has_custom_pickup && !selectedPickupDetails[categoryId as string];
+    });
+
+    if (missingPickupDetails.length > 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select pickup locations and times for all categories',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     await submitOrder({
       items,
       total,
@@ -85,7 +101,8 @@ export function CheckoutForm({
       notes: formData.notes,
       deliveryDates: formData.deliveryDates,
       customerData,
-      onOrderSuccess
+      onOrderSuccess,
+      pickupDetails: selectedPickupDetails
     }, paymentProof);
   };
 
@@ -104,6 +121,13 @@ export function CheckoutForm({
           })
         }
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        selectedPickupDetails={selectedPickupDetails}
+        onPickupDetailChange={(categoryId, pickupDetail) => 
+          setSelectedPickupDetails({
+            ...selectedPickupDetails,
+            [categoryId]: pickupDetail
+          })
+        }
       />
 
       <PaymentInstructions
