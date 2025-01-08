@@ -23,7 +23,12 @@ export function useOrderSubmission() {
     onOrderSuccess,
     pickupDetails
   }: OrderSubmissionProps, paymentProof: File) => {
-    console.log('Starting order submission with pickup details:', pickupDetails);
+    console.log('[useOrderSubmission] Starting submission with:', {
+      items,
+      pickupDetails,
+      deliveryDates
+    });
+    
     setIsUploading(true);
 
     try {
@@ -56,10 +61,17 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
         
-        // Get pickup details for this category
         const pickupDetail = pickupDetails[categoryId];
-        console.log(`Processing category ${categoryId} with pickup details:`, pickupDetail);
+        console.log('[useOrderSubmission] Creating order for category:', {
+          categoryId,
+          pickupDetail,
+          deliveryDate: deliveryDate.toISOString()
+        });
         
+        if (!pickupDetail) {
+          console.warn('[useOrderSubmission] No pickup detail found for category:', categoryId);
+        }
+
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -68,11 +80,11 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_time: pickupDetail ? pickupDetail.time : null,
-          pickup_location: pickupDetail ? pickupDetail.location : null
+          pickup_time: pickupDetail?.time,
+          pickup_location: pickupDetail?.location
         };
 
-        console.log('Creating order with data:', orderData);
+        console.log('[useOrderSubmission] Order data to insert:', orderData);
 
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
@@ -80,7 +92,12 @@ export function useOrderSubmission() {
           .select()
           .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+          console.error('[useOrderSubmission] Order creation failed:', orderError);
+          throw orderError;
+        }
+
+        console.log('[useOrderSubmission] Order created:', insertResult);
 
         const orderItems = categoryItems.map((item) => ({
           order_id: insertResult.id,
@@ -112,30 +129,32 @@ export function useOrderSubmission() {
       const firstCategoryId = Object.keys(deliveryDates)[0];
       const firstPickupDetail = pickupDetails[firstCategoryId];
 
-      const thankYouPageData = {
-        id: firstOrder.id,
-        items: items.map(item => ({
-          name: item.name,
-          nameKo: item.nameKo,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        total: total + taxAmount,
-        taxAmount: taxAmount,
-        createdAt: firstOrder.created_at,
+      console.log('[useOrderSubmission] Order successful, navigating to thank you with:', {
+        orderId: firstOrder.id,
         pickupDetails: firstPickupDetail
-      };
-      
-      console.log('Navigating to thank you page with data:', thankYouPageData);
+      });
 
       navigate('/thank-you', {
         state: {
-          orderDetails: thankYouPageData
+          orderDetails: {
+            id: firstOrder.id,
+            items: items.map(item => ({
+              name: item.name,
+              nameKo: item.nameKo,
+              quantity: item.quantity,
+              price: item.price
+            })),
+            total: total + taxAmount,
+            taxAmount: taxAmount,
+            createdAt: firstOrder.created_at,
+            pickupTime: firstPickupDetail?.time,
+            pickupLocation: firstPickupDetail?.location
+          }
         },
         replace: true
       });
     } catch (error: any) {
-      console.error('Error in order submission:', error);
+      console.error('[useOrderSubmission] Error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',

@@ -55,6 +55,11 @@ export function CategoryDeliveryDate({
   };
 
   const handlePickupDetailSelection = (detail: PickupDetail) => {
+    console.log('[CategoryDeliveryDate] Selected pickup detail:', {
+      categoryId: category.id,
+      detail,
+      rawSelectedDetail: selectedPickupDetail
+    });
     onPickupDetailChange?.(detail);
   };
 

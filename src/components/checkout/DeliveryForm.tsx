@@ -25,6 +25,12 @@ export function DeliveryForm({
 }: DeliveryFormProps) {
   const { items } = useCart();
 
+  console.log('[DeliveryForm] Current state:', {
+    deliveryDates,
+    selectedPickupDetails,
+    items
+  });
+
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
@@ -34,6 +40,7 @@ export function DeliveryForm({
         .order('order_index');
       
       if (error) throw error;
+      console.log('[DeliveryForm] Fetched categories:', data);
 
       return data.map(category => ({
         id: category.id,
@@ -49,6 +56,15 @@ export function DeliveryForm({
     },
   });
 
+  const handlePickupDetailChange = (categoryId: string, pickupDetail: PickupDetail) => {
+    console.log('[DeliveryForm] Pickup detail change:', {
+      categoryId,
+      pickupDetail,
+      currentDetails: selectedPickupDetails
+    });
+    onPickupDetailChange(categoryId, pickupDetail);
+  };
+
   const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
     if (!acc[categoryId]) {
@@ -57,6 +73,8 @@ export function DeliveryForm({
     acc[categoryId].push(item);
     return acc;
   }, {} as Record<string, typeof items>);
+
+  console.log('[DeliveryForm] Items by category:', itemsByCategory);
 
   return (
     <div className="space-y-6">
@@ -68,7 +86,7 @@ export function DeliveryForm({
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
               selectedPickupDetail={selectedPickupDetails[category.id] ? JSON.stringify(selectedPickupDetails[category.id]) : undefined}
-              onPickupDetailChange={(pickupDetail) => onPickupDetailChange(category.id, pickupDetail)}
+              onPickupDetailChange={(pickupDetail) => handlePickupDetailChange(category.id, pickupDetail)}
             />
             <Separator />
           </div>
