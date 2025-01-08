@@ -55,13 +55,15 @@ export function OrderManagement() {
 
   const filterOrders = (orders: Order[]) => {
     return orders?.filter(order => {
-      const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
-      const dateTo = filters.dateTo ? new Date(filters.dateTo) : null;
+      const selectedDate = filters.date ? new Date(filters.date) : null;
       const orderDate = new Date(order.delivery_date);
 
-      // Date range filter
-      if (dateFrom && orderDate < dateFrom) return false;
-      if (dateTo && orderDate > dateTo) return false;
+      // Date filter
+      if (selectedDate) {
+        const orderDateString = orderDate.toDateString();
+        const selectedDateString = selectedDate.toDateString();
+        if (orderDateString !== selectedDateString) return false;
+      }
 
       // Category filter
       if (filters.categoryId && !order.order_items?.some(item => 
