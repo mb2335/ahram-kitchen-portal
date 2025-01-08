@@ -131,7 +131,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                     <Input
                       value={detail.time}
                       onChange={(e) => updatePickupDetail(index, 'time', e.target.value)}
-                      placeholder="e.g., 2-4 PM"
+                      placeholder="e.g., 1:00 PM"
                       className="w-full"
                     />
                   </div>
@@ -140,7 +140,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                     <Input
                       value={detail.location}
                       onChange={(e) => updatePickupDetail(index, 'location', e.target.value)}
-                      placeholder="e.g., Main Entrance"
+                      placeholder="e.g., Kirkland"
                       className="w-full"
                     />
                   </div>
