@@ -38,7 +38,7 @@ export function OrderThankYou() {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Thanks, your order has been placed.</h1>
           <p className="text-gray-600">
-            Here is a detailed summary of your order. Contact mjbutler.35@gmail.com if you have any questions, changes, etc.
+            Here is a detailed summary of your order.
           </p>
         </div>
 
