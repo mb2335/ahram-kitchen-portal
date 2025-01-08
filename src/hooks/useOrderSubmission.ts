@@ -58,6 +58,16 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
+        // Ensure pickup details are properly formatted as JSONB
+        const pickupDetailsForCategory = pickupDetails[categoryId] 
+          ? {
+              time: pickupDetails[categoryId].time,
+              location: pickupDetails[categoryId].location
+            }
+          : null;
+
+        console.log('Pickup details for category:', categoryId, pickupDetailsForCategory);
+
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -66,7 +76,7 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetails[categoryId] ? pickupDetails[categoryId] as Json : null
+          pickup_details: pickupDetailsForCategory as Json
         };
 
         console.log('Creating order with data:', orderData);
@@ -77,7 +87,10 @@ export function useOrderSubmission() {
           .select()
           .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+          console.error('Error creating order:', orderError);
+          throw orderError;
+        }
 
         const orderItems = categoryItems.map((item) => ({
           order_id: order.id,
