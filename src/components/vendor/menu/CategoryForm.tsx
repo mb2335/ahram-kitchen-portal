@@ -61,24 +61,27 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   };
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-2xl mx-auto">
+    <form onSubmit={onSubmit} className="space-y-6">
       <ScrollArea className="h-[60vh] pr-6">
-        <div className="space-y-4 w-full">
-          <div>
-            <Label className="block text-sm font-medium mb-1">Name (English)</Label>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Name (English)</Label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              placeholder="Enter category name in English"
               className="w-full"
             />
           </div>
-          <div>
-            <Label className="block text-sm font-medium mb-1">Name (Korean)</Label>
+
+          <div className="space-y-2">
+            <Label>Name (Korean)</Label>
             <Input
               value={formData.name_ko}
               onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
               required
+              placeholder="Enter category name in Korean"
               className="w-full"
             />
           </div>
@@ -122,8 +125,8 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
           {formData.has_custom_pickup && (
             <div className="space-y-4">
               {formData.pickup_details.map((detail, index) => (
-                <div key={index} className="flex gap-4 items-start">
-                  <div className="flex-1">
+                <div key={index} className="flex gap-4 items-start bg-secondary/10 p-4 rounded-lg">
+                  <div className="flex-1 space-y-2">
                     <Label>Pickup Time</Label>
                     <Input
                       value={detail.time}
@@ -132,7 +135,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       className="w-full"
                     />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 space-y-2">
                     <Label>Pickup Location</Label>
                     <Input
                       value={detail.location}
@@ -145,7 +148,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="mt-6"
+                    className="mt-8"
                     onClick={() => removePickupDetail(index)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -166,7 +169,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
         </div>
       </ScrollArea>
 
-      <Button type="submit" className="w-full mt-4">
+      <Button type="submit" className="w-full">
         {formData.name ? 'Save Changes' : 'Add Category'}
       </Button>
     </form>
