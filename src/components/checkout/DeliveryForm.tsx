@@ -11,13 +11,17 @@ interface DeliveryFormProps {
   notes: string;
   onDateChange: (categoryId: string, date: Date | undefined) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  selectedPickupDetails: Record<string, string>;
+  onPickupDetailChange: (categoryId: string, pickupDetail: string) => void;
 }
 
 export function DeliveryForm({ 
   deliveryDates, 
   notes, 
   onDateChange, 
-  onNotesChange 
+  onNotesChange,
+  selectedPickupDetails,
+  onPickupDetailChange
 }: DeliveryFormProps) {
   const { items } = useCart();
 
@@ -31,7 +35,6 @@ export function DeliveryForm({
       
       if (error) throw error;
 
-      // Transform the pickup_details to ensure it matches PickupDetail type
       return data.map(category => ({
         id: category.id,
         name: category.name,
@@ -65,6 +68,8 @@ export function DeliveryForm({
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
+              selectedPickupDetail={selectedPickupDetails[category.id]}
+              onPickupDetailChange={(pickupDetail) => onPickupDetailChange(category.id, pickupDetail)}
             />
             <Separator />
           </div>

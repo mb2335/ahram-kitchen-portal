@@ -6,6 +6,8 @@ import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CheckoutFormProps {
   formData: {
@@ -46,6 +48,24 @@ export function CheckoutForm({
   const [selectedPickupDetails, setSelectedPickupDetails] = useState<Record<string, string>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
+  // Fetch categories to attach to items
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Attach category information to items
+  const itemsWithCategories = items.map(item => ({
+    ...item,
+    category: categories.find(cat => cat.id === item.category_id)
+  }));
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setPaymentProof(e.target.files[0]);
@@ -81,8 +101,8 @@ export function CheckoutForm({
 
     // Check if pickup details are required and selected
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
-      const category = items.find(item => item.category_id === categoryId)?.category;
-      return category?.has_custom_pickup && !selectedPickupDetails[categoryId as string];
+      const category = categories.find(cat => cat.id === categoryId);
+      return category?.has_custom_pickup && !selectedPickupDetails[categoryId];
     });
 
     if (missingPickupDetails.length > 0) {
@@ -95,7 +115,7 @@ export function CheckoutForm({
     }
 
     await submitOrder({
-      items,
+      items: itemsWithCategories,
       total,
       taxAmount,
       notes: formData.notes,
