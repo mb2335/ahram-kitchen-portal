@@ -97,8 +97,6 @@ export function useOrderSubmission() {
           unit_price: item.price,
         }));
 
-        console.log('Creating order items:', orderItems);
-
         const { error: orderItemsError } = await supabase
           .from('order_items')
           .insert(orderItems);
