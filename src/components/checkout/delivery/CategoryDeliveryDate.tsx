@@ -16,7 +16,7 @@ interface CategoryDeliveryDateProps {
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
-  selectedPickupDetail?: PickupDetail;
+  selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (pickupDetail: PickupDetail) => void;
 }
 
