@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { MapPin, Clock } from 'lucide-react';
 
 interface OrderDetails {
   id: string;
@@ -16,6 +17,10 @@ interface OrderDetails {
   total: number;
   taxAmount: number;
   createdAt: string;
+  pickupDetails?: {
+    time: string;
+    location: string;
+  };
 }
 
 export function OrderThankYou() {
@@ -43,6 +48,20 @@ export function OrderThankYou() {
           <p className="text-sm text-gray-600">
             Placed on {format(new Date(orderDetails.createdAt), 'PPP')}
           </p>
+
+          {orderDetails.pickupDetails && (
+            <div className="space-y-2 border-t pt-4">
+              <h3 className="font-semibold">Pickup Details</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Clock className="h-4 w-4" />
+                <span>{orderDetails.pickupDetails.time}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MapPin className="h-4 w-4" />
+                <span>{orderDetails.pickupDetails.location}</span>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             {orderDetails.items.map((item, index) => (

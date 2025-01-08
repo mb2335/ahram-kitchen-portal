@@ -93,7 +93,7 @@ export function CheckoutForm({
     if (missingDates.length > 0) {
       toast({
         title: 'Error',
-        description: 'Please select delivery dates for all categories',
+        description: 'Please select pickup dates for all categories',
         variant: 'destructive',
       });
       return;
@@ -114,6 +114,15 @@ export function CheckoutForm({
       return;
     }
 
+    // Create pickup details object for each category
+    const pickupDetailsForOrder = Object.entries(selectedPickupDetails).reduce((acc, [categoryId, pickupDetailIndex]) => {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (category?.pickup_details && category.pickup_details[parseInt(pickupDetailIndex)]) {
+        acc[categoryId] = category.pickup_details[parseInt(pickupDetailIndex)];
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
     await submitOrder({
       items: itemsWithCategories,
       total,
@@ -122,7 +131,7 @@ export function CheckoutForm({
       deliveryDates: formData.deliveryDates,
       customerData,
       onOrderSuccess,
-      pickupDetails: selectedPickupDetails
+      pickupDetails: pickupDetailsForOrder
     }, paymentProof);
   };
 
