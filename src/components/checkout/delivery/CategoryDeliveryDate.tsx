@@ -59,9 +59,36 @@ export function CategoryDeliveryDate({
     <div>
       <Label className="text-lg font-medium">{category.name}</Label>
       <div className="mt-2 space-y-4">
-        {category.has_custom_pickup && category.pickup_details && category.pickup_details.length > 0 ? (
+        <div className="space-y-4">
+          <Label>Select Delivery Date</Label>
+          <Input
+            type="date"
+            value={selectedDate ? formatDateForInput(selectedDate) : ''}
+            onChange={(e) => {
+              if (e.target.value) {
+                const selectedDate = new Date(e.target.value + 'T12:00:00');
+                if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate)) {
+                  onDateChange(selectedDate);
+                  // Clear pickup selection when date is selected
+                  if (onPickupChange) {
+                    onPickupChange(undefined);
+                  }
+                }
+              }
+            }}
+            min={category.delivery_available_from ? formatDateForInput(new Date(category.delivery_available_from)) : formatDateForInput(new Date())}
+            max={category.delivery_available_until ? formatDateForInput(new Date(category.delivery_available_until)) : undefined}
+            className={cn(
+              "flex-1",
+              "focus:ring-2 focus:ring-primary",
+              "hover:border-primary transition-colors"
+            )}
+          />
+        </div>
+
+        {category.has_custom_pickup && category.pickup_details && category.pickup_details.length > 0 && (
           <div className="space-y-3">
-            <Label>Select Pickup Option</Label>
+            <Label>Or Select Pickup Option</Label>
             <div className="grid grid-cols-1 gap-2">
               {category.pickup_details.map((pickup, index) => (
                 <Button
@@ -96,30 +123,6 @@ export function CategoryDeliveryDate({
               ))}
             </div>
           </div>
-        ) : (
-          <Input
-            type="date"
-            value={selectedDate ? formatDateForInput(selectedDate) : ''}
-            onChange={(e) => {
-              if (e.target.value) {
-                const selectedDate = new Date(e.target.value + 'T12:00:00');
-                if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate)) {
-                  onDateChange(selectedDate);
-                  // Clear pickup selection when date is selected
-                  if (onPickupChange) {
-                    onPickupChange(undefined);
-                  }
-                }
-              }
-            }}
-            min={category.delivery_available_from ? formatDateForInput(new Date(category.delivery_available_from)) : formatDateForInput(new Date())}
-            max={category.delivery_available_until ? formatDateForInput(new Date(category.delivery_available_until)) : undefined}
-            className={cn(
-              "flex-1",
-              "focus:ring-2 focus:ring-primary",
-              "hover:border-primary transition-colors"
-            )}
-          />
         )}
 
         <div className="text-sm space-y-1">
