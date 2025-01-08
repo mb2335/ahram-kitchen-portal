@@ -58,6 +58,14 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
+        // Format pickup details as proper JSON
+        const pickupDetailsForCategory = pickupDetails[categoryId] 
+          ? {
+              time: pickupDetails[categoryId].time,
+              location: pickupDetails[categoryId].location
+            }
+          : null;
+
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -66,7 +74,7 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetails[categoryId] as Json
+          pickup_details: pickupDetailsForCategory as Json
         };
 
         console.log('Creating order with data:', orderData);
