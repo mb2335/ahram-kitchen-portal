@@ -17,46 +17,52 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl!, supabaseKey!)
 
     const payload = await req.json()
-    console.log('Received order submission payload:', payload)
+    console.log('[Debug] Full order submission payload:', JSON.stringify(payload, null, 2))
 
     // Verify pickup details in the payload
     if (payload.pickupDetails) {
-      console.log('Pickup details found in payload:', payload.pickupDetails)
+      console.log('[Debug] Pickup details found:', JSON.stringify(payload.pickupDetails, null, 2))
       
+      // Log the exact order data being inserted
+      const orderData = {
+        customer_id: payload.customerId,
+        total_amount: payload.total,
+        tax_amount: payload.taxAmount,
+        pickup_time: payload.pickupDetails.time,
+        pickup_location: payload.pickupDetails.location,
+        delivery_date: payload.deliveryDate,
+        payment_proof_url: payload.paymentProofUrl,
+        notes: payload.notes
+      }
+      
+      console.log('[Debug] Attempting to insert order with data:', JSON.stringify(orderData, null, 2))
+
       // Attempt to create an order with pickup details
       const { data: order, error } = await supabase
         .from('orders')
-        .insert([{
-          customer_id: payload.customerId,
-          total_amount: payload.total,
-          tax_amount: payload.taxAmount,
-          pickup_time: payload.pickupDetails.time,
-          pickup_location: payload.pickupDetails.location,
-          delivery_date: payload.deliveryDate,
-          payment_proof_url: payload.paymentProofUrl,
-          notes: payload.notes
-        }])
+        .insert([orderData])
         .select()
         .single()
 
       if (error) {
-        console.error('Error creating order:', error)
+        console.error('[Debug] Error creating order:', error)
         throw error
       }
 
-      console.log('Order created successfully with pickup details:', order)
+      console.log('[Debug] Order created successfully:', JSON.stringify(order, null, 2))
       return new Response(
         JSON.stringify({ success: true, order }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log('[Debug] No pickup details found in payload')
     return new Response(
       JSON.stringify({ error: 'No pickup details found in payload' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
   } catch (error) {
-    console.error('Error processing order:', error)
+    console.error('[Debug] Error processing order:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
