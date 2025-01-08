@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { MapPin, Clock } from 'lucide-react';
 
 interface PickupDetailsProps {
   pickupDate: string;
@@ -20,20 +21,20 @@ export function PickupDetails({ pickupDate, pickupLocation, pickupDetails }: Pic
         </p>
         {pickupDetails ? (
           <>
-            <p>
-              <span className="font-medium">Time:</span>{' '}
-              {pickupDetails.time}
-            </p>
-            <p>
-              <span className="font-medium">Location:</span>{' '}
-              {pickupDetails.location}
-            </p>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>{pickupDetails.time}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span>{pickupDetails.location}</span>
+            </div>
           </>
         ) : pickupLocation ? (
-          <p>
-            <span className="font-medium">Location:</span>{' '}
-            {pickupLocation}
-          </p>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span>{pickupLocation}</span>
+          </div>
         ) : null}
       </div>
     </div>

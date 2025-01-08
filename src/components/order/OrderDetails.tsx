@@ -5,6 +5,7 @@ import { OrderItemsList } from './OrderItemsList';
 import { OrderTotals } from './OrderTotals';
 import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
+import { MapPin, Clock } from 'lucide-react';
 
 interface OrderDetailsProps {
   order: any; // Type should be properly defined based on your order structure
@@ -32,6 +33,20 @@ export function OrderDetails({ order }: OrderDetailsProps) {
         taxAmount={order.tax_amount}
         total={order.total_amount}
       />
+
+      {order.pickup_details && (
+        <div className="mt-4 space-y-2">
+          <h3 className="font-medium">Pickup Details</h3>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock className="h-4 w-4" />
+            <span>{order.pickup_details.time}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="h-4 w-4" />
+            <span>{order.pickup_details.location}</span>
+          </div>
+        </div>
+      )}
 
       <OrderNotes
         notes={order.notes}
