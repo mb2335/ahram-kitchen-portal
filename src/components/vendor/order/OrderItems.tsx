@@ -36,7 +36,9 @@ export function OrderItems({ items }: OrderItemsProps) {
                 {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
               </TableCell>
               <TableCell>
-                {item.menu_item?.category?.name || 'Uncategorized'}
+                {language === 'en' 
+                  ? item.menu_item?.category?.name 
+                  : item.menu_item?.category?.name_ko || 'Uncategorized'}
               </TableCell>
               <TableCell className="text-right">{item.quantity}</TableCell>
               <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>
