@@ -22,6 +22,11 @@ export interface OrderItem {
     id: string;
     name: string;
     name_ko: string;
+    category_id?: string;
+    category?: {
+      id: string;
+      name: string;
+    };
   };
 }
 
@@ -33,6 +38,7 @@ export interface Order {
   status: OrderStatus;
   notes: string | null;
   delivery_date: string;
+  pickup_location: string;
   payment_proof_url: string;
   rejection_reason: string | null;
   created_at: string | null;
