@@ -58,14 +58,21 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Format pickup details for this category
-        const pickupDetailsJson = pickupDetails[categoryId] ? {
-          time: pickupDetails[categoryId].time,
-          location: pickupDetails[categoryId].location
-        } : null;
+        // Ensure pickup details are properly structured
+        let pickupDetailsJson = null;
+        if (pickupDetails && pickupDetails[categoryId]) {
+          try {
+            pickupDetailsJson = {
+              time: String(pickupDetails[categoryId].time),
+              location: String(pickupDetails[categoryId].location)
+            };
+            console.log('Formatted pickup details:', pickupDetailsJson);
+          } catch (error) {
+            console.error('Error formatting pickup details:', error);
+          }
+        }
 
-        console.log('Creating order with pickup details:', pickupDetailsJson);
-
+        // First try to create the order
         const { data: order, error: orderError } = await supabase
           .from('orders')
           .insert([{
@@ -76,9 +83,9 @@ export function useOrderSubmission() {
             status: 'pending',
             delivery_date: deliveryDate.toISOString(),
             payment_proof_url: uploadData.path,
-            pickup_details: pickupDetailsJson // This should now work with the json column type
+            pickup_details: pickupDetailsJson
           }])
-          .select()
+          .select('*, pickup_details')
           .single();
 
         if (orderError) {
@@ -86,7 +93,21 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        console.log('Order created successfully with pickup details:', order.pickup_details);
+        console.log('Order created with ID:', order.id);
+        console.log('Saved pickup details:', order.pickup_details);
+
+        // Verify the pickup details were saved
+        const { data: verifyOrder, error: verifyError } = await supabase
+          .from('orders')
+          .select('pickup_details')
+          .eq('id', order.id)
+          .single();
+
+        if (verifyError) {
+          console.error('Error verifying order:', verifyError);
+        } else {
+          console.log('Verified pickup details:', verifyOrder.pickup_details);
+        }
 
         const orderItems = categoryItems.map((item) => ({
           order_id: order.id,
