@@ -6,6 +6,7 @@ import { OrderSummary } from './order/OrderSummary';
 import { PaymentProof } from './order/PaymentProof';
 import { OrderNotes } from './order/OrderNotes';
 import { OrderActions } from './order/OrderActions';
+import { PickupDetails } from './order/PickupDetails';
 
 interface OrderCardProps {
   order: Order;
@@ -27,6 +28,11 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
       )}
 
       <OrderSummary order={order} />
+      
+      <PickupDetails 
+        pickupDate={order.delivery_date}
+        pickupLocation={order.pickup_location}
+      />
       
       <PaymentProof paymentProofUrl={order.payment_proof_url} />
 

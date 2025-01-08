@@ -23,6 +23,7 @@ export function OrderItems({ items }: OrderItemsProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Item</TableHead>
+            <TableHead>Category</TableHead>
             <TableHead className="text-right">Quantity</TableHead>
             <TableHead className="text-right">Unit Price</TableHead>
             <TableHead className="text-right">Total</TableHead>
@@ -33,6 +34,9 @@ export function OrderItems({ items }: OrderItemsProps) {
             <TableRow key={item.id}>
               <TableCell>
                 {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
+              </TableCell>
+              <TableCell>
+                {item.menu_item?.category?.name || 'Uncategorized'}
               </TableCell>
               <TableCell className="text-right">{item.quantity}</TableCell>
               <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>

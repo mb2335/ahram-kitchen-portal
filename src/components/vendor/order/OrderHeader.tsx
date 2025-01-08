@@ -30,7 +30,7 @@ export function OrderHeader({ order }: OrderHeaderProps) {
           Placed: {format(new Date(order.created_at || ''), 'PPP')}
         </p>
         <p className="text-sm text-gray-600">
-          Delivery: {format(new Date(order.delivery_date), 'PPP')}
+          Pickup: {format(new Date(order.delivery_date), 'PPP')}
         </p>
       </div>
       <div className="text-right space-y-2">
