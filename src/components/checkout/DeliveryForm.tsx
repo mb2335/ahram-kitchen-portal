@@ -4,24 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CategoryDeliveryDate } from './delivery/CategoryDeliveryDate';
 import { DeliveryNotes } from './delivery/DeliveryNotes';
-import { PickupDetail } from '@/components/vendor/menu/types/category';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
   notes: string;
   onDateChange: (categoryId: string, date: Date | undefined) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  pickupDetails: Record<string, PickupDetail>;
-  onPickupDetailChange: (categoryId: string, detail: PickupDetail) => void;
 }
 
 export function DeliveryForm({ 
   deliveryDates, 
   notes, 
   onDateChange, 
-  onNotesChange,
-  pickupDetails,
-  onPickupDetailChange
+  onNotesChange 
 }: DeliveryFormProps) {
   const { items } = useCart();
 
@@ -54,18 +49,9 @@ export function DeliveryForm({
         itemsByCategory[category.id] && (
           <div key={category.id} className="space-y-4">
             <CategoryDeliveryDate
-              category={{
-                id: category.id,
-                name: category.name,
-                delivery_available_from: category.delivery_available_from,
-                delivery_available_until: category.delivery_available_until,
-                has_custom_pickup: category.has_custom_pickup,
-                pickup_details: (category.pickup_details as PickupDetail[]) || []
-              }}
+              category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickupDetail={pickupDetails[category.id]}
-              onPickupDetailChange={(detail) => onPickupDetailChange(category.id, detail)}
             />
             <Separator />
           </div>
