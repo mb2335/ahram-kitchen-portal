@@ -60,6 +60,12 @@ export function useOrderSubmission() {
         const category = categoryItems[0]?.category;
         const needsCustomPickup = category?.has_custom_pickup;
 
+        console.log('Debug pickup details:');
+        console.log('pickupDetail:', pickupDetail);
+        console.log('pickupDetail?.time:', pickupDetail?.time);
+        console.log('pickupDetail?.location:', pickupDetail?.location);
+        console.log('needsCustomPickup:', needsCustomPickup);
+
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
