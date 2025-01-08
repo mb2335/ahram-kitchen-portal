@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSubmissionProps } from '@/types/order';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
+import { Json } from '@/integrations/supabase/types';
 
 export function useOrderSubmission() {
   const session = useSession();
