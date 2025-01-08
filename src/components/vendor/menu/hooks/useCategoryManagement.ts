@@ -15,6 +15,9 @@ export function useCategoryManagement() {
     name_ko: '',
     deliveryAvailableFrom: undefined,
     deliveryAvailableUntil: undefined,
+    has_custom_pickup: false,
+    pickup_time: '',
+    pickup_location: '',
   });
 
   const resetForm = () => {
@@ -23,6 +26,9 @@ export function useCategoryManagement() {
       name_ko: '',
       deliveryAvailableFrom: undefined,
       deliveryAvailableUntil: undefined,
+      has_custom_pickup: false,
+      pickup_time: '',
+      pickup_location: '',
     });
     setEditingCategory(null);
   };
@@ -100,7 +106,7 @@ export function useCategoryManagement() {
       });
     }
   };
-
+  
   return {
     isDialogOpen,
     setIsDialogOpen,
