@@ -58,32 +58,28 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Ensure pickup details are properly formatted as JSONB
+        // Create a properly structured JSONB object for pickup details
         const pickupDetailsForCategory = pickupDetails[categoryId] 
-          ? {
+          ? JSON.stringify({
               time: pickupDetails[categoryId].time,
               location: pickupDetails[categoryId].location
-            }
+            })
           : null;
 
         console.log('Pickup details for category:', categoryId, pickupDetailsForCategory);
 
-        const orderData = {
-          customer_id: customerId,
-          total_amount: categoryTotal + categoryTaxAmount,
-          tax_amount: categoryTaxAmount,
-          notes: notes,
-          status: 'pending',
-          delivery_date: deliveryDate.toISOString(),
-          payment_proof_url: uploadData.path,
-          pickup_details: pickupDetailsForCategory as Json
-        };
-
-        console.log('Creating order with data:', orderData);
-
         const { data: order, error: orderError } = await supabase
           .from('orders')
-          .insert([orderData])
+          .insert([{
+            customer_id: customerId,
+            total_amount: categoryTotal + categoryTaxAmount,
+            tax_amount: categoryTaxAmount,
+            notes: notes,
+            status: 'pending',
+            delivery_date: deliveryDate.toISOString(),
+            payment_proof_url: uploadData.path,
+            pickup_details: pickupDetailsForCategory
+          }])
           .select()
           .single();
 
