@@ -23,6 +23,7 @@ export function useOrderSubmission() {
     onOrderSuccess,
     pickupDetails
   }: OrderSubmissionProps, paymentProof: File) => {
+    console.log('Starting order submission with pickup details:', pickupDetails);
     setIsUploading(true);
 
     try {
@@ -37,11 +38,13 @@ export function useOrderSubmission() {
 
       // Get or create customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
+      console.log('Customer ID retrieved:', customerId);
 
       // Upload payment proof with unique filename
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
+      console.log('Uploading payment proof:', fileName);
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('payment_proofs')
         .upload(fileName, paymentProof, {
@@ -50,23 +53,31 @@ export function useOrderSubmission() {
         });
 
       if (uploadError) throw uploadError;
+      console.log('Payment proof uploaded successfully:', uploadData.path);
 
       // Create orders for each delivery date
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
+        console.log('Processing order for category:', categoryId);
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Get pickup details for this category and simplify to basic time/location object
+        // Get pickup details for this category
         const pickupDetailsForCategory = pickupDetails[categoryId];
+        console.log('Raw pickup details for category:', {
+          categoryId,
+          pickupDetails: pickupDetailsForCategory
+        });
+
+        // Simplify to basic time/location object
         const simplifiedPickupDetails = pickupDetailsForCategory ? {
           time: pickupDetailsForCategory.time,
           location: pickupDetailsForCategory.location
         } : null;
 
-        console.log('Simplified pickup details for order:', simplifiedPickupDetails);
+        console.log('Simplified pickup details:', simplifiedPickupDetails);
 
         const orderPayload = {
           customer_id: customerId,
@@ -76,16 +87,16 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: simplifiedPickupDetails // Store as simple JSON object
+          pickup_details: simplifiedPickupDetails
         };
 
-        console.log('Full order payload:', orderPayload);
+        console.log('Submitting order with payload:', orderPayload);
 
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
           .insert([orderPayload])
           .select('*, pickup_details')
-          .maybeSingle();
+          .single();
 
         if (orderError) {
           console.error('Error creating order:', orderError);
@@ -93,20 +104,26 @@ export function useOrderSubmission() {
         }
 
         if (!insertResult) {
+          console.error('No order data returned after insertion');
           throw new Error('No order data returned after insertion');
         }
+
+        console.log('Order created successfully:', insertResult);
 
         // Verify the saved pickup details
         const { data: verifiedOrder, error: verifyError } = await supabase
           .from('orders')
           .select('id, pickup_details')
           .eq('id', insertResult.id)
-          .maybeSingle();
+          .single();
 
         if (verifyError) {
           console.error('Error verifying order:', verifyError);
         } else {
-          console.log('Verified pickup details in database:', verifiedOrder?.pickup_details);
+          console.log('Verified pickup details in database:', {
+            orderId: verifiedOrder.id,
+            pickupDetails: verifiedOrder.pickup_details
+          });
         }
 
         // Create order items
@@ -117,11 +134,15 @@ export function useOrderSubmission() {
           unit_price: item.price,
         }));
 
+        console.log('Creating order items:', orderItems);
+
         const { error: orderItemsError } = await supabase
           .from('order_items')
           .insert(orderItems);
 
         if (orderItemsError) throw orderItemsError;
+
+        console.log('Order items created successfully');
 
         return insertResult;
       });
@@ -133,7 +154,10 @@ export function useOrderSubmission() {
         throw new Error('No valid orders could be created');
       }
 
+      console.log('All orders created successfully:', validOrders);
+
       await updateMenuItemQuantities(items);
+      console.log('Menu item quantities updated');
 
       onOrderSuccess(validOrders[0].id);
       
@@ -151,7 +175,7 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: validOrders[0].created_at,
-            pickupDetails: validOrders[0].pickup_details // Use the verified pickup details
+            pickupDetails: validOrders[0].pickup_details
           }
         },
         replace: true
