@@ -11,10 +11,10 @@ export function PaymentInstructions({ paymentProof, onFileChange }: PaymentInstr
     <div className="bg-blue-50 p-4 rounded-lg">
       <h3 className="font-semibold mb-2">Payment Instructions</h3>
       <p className="text-sm mb-4">
-        Please send payment via Zelle to: <strong>ahramkitchen@gmail.com</strong>
+        Please send payment via Zelle to: <strong>kyjuri@gmail.com</strong> or via Venmo to: <strong>@juri_y</strong>
       </p>
       <div>
-        <Label htmlFor="paymentProof">Upload Payment Proof</Label>
+        <Label htmlFor="paymentProof">Upload Screenshot as Payment Proof</Label>
         <Input
           id="paymentProof"
           type="file"
