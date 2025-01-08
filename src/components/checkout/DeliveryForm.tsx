@@ -4,24 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CategoryDeliveryDate } from './delivery/CategoryDeliveryDate';
 import { DeliveryNotes } from './delivery/DeliveryNotes';
-import { PickupDetail } from '@/components/vendor/menu/types/category';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
   notes: string;
   onDateChange: (categoryId: string, date: Date | undefined) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  pickupDetails: Record<string, PickupDetail>;
-  onPickupChange: (categoryId: string, pickup: PickupDetail | undefined) => void;
 }
 
 export function DeliveryForm({ 
   deliveryDates, 
   notes, 
   onDateChange, 
-  onNotesChange,
-  pickupDetails,
-  onPickupChange
+  onNotesChange 
 }: DeliveryFormProps) {
   const { items } = useCart();
 
@@ -34,10 +29,7 @@ export function DeliveryForm({
         .order('order_index');
       
       if (error) throw error;
-      return data.map(category => ({
-        ...category,
-        pickup_details: (category.pickup_details as unknown as PickupDetail[]) || []
-      }));
+      return data;
     },
   });
 
@@ -60,8 +52,6 @@ export function DeliveryForm({
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickup={pickupDetails[category.id]}
-              onPickupChange={(pickup) => onPickupChange(category.id, pickup)}
             />
             <Separator />
           </div>

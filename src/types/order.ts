@@ -1,4 +1,4 @@
-import { PickupDetail } from '@/components/vendor/menu/types/category';
+import { CustomerData } from './customer';
 
 export interface OrderItem {
   id: string;
@@ -15,11 +15,6 @@ export interface OrderSubmissionProps {
   taxAmount: number;
   notes: string;
   deliveryDates: Record<string, Date>;
-  customerData: {
-    fullName: string;
-    email: string;
-    phone: string;
-  };
+  customerData: CustomerData;
   onOrderSuccess: (orderId: string) => void;
-  pickupDetails: Record<string, PickupDetail>;
 }

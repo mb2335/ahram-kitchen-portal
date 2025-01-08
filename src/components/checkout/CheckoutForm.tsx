@@ -6,7 +6,6 @@ import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
-import { PickupDetail } from '@/components/vendor/menu/types/category';
 
 interface CheckoutFormProps {
   formData: {
@@ -45,7 +44,6 @@ export function CheckoutForm({
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const { submitOrder, isUploading } = useOrderSubmission();
-  const [pickupDetails, setPickupDetails] = useState<Record<string, PickupDetail>>({});
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -65,16 +63,16 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate that all categories have either delivery dates or pickup details
+    // Validate that all categories have delivery dates
     const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
-    const missingDeliveryInfo = Array.from(categoriesWithItems).filter(
-      categoryId => !formData.deliveryDates[categoryId as string] && !pickupDetails[categoryId as string]
+    const missingDates = Array.from(categoriesWithItems).filter(
+      categoryId => !formData.deliveryDates[categoryId as string]
     );
 
-    if (missingDeliveryInfo.length > 0) {
+    if (missingDates.length > 0) {
       toast({
         title: 'Error',
-        description: 'Please select either a delivery date or pickup option for all categories',
+        description: 'Please select delivery dates for all categories',
         variant: 'destructive',
       });
       return;
@@ -87,8 +85,7 @@ export function CheckoutForm({
       notes: formData.notes,
       deliveryDates: formData.deliveryDates,
       customerData,
-      onOrderSuccess,
-      pickupDetails
+      onOrderSuccess
     }, paymentProof);
   };
 
@@ -107,13 +104,6 @@ export function CheckoutForm({
           })
         }
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-        pickupDetails={pickupDetails}
-        onPickupChange={(categoryId, pickup) => {
-          setPickupDetails(prev => ({
-            ...prev,
-            [categoryId]: pickup
-          }));
-        }}
       />
 
       <PaymentInstructions
