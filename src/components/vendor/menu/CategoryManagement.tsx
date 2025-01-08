@@ -39,7 +39,10 @@ export function CategoryManagement() {
       
       return data.map(category => ({
         ...category,
-        pickup_details: (category.pickup_details || []) as PickupDetail[]
+        pickup_details: (category.pickup_details || []).map((detail: any) => ({
+          time: detail.time || '',
+          location: detail.location || ''
+        })) as PickupDetail[]
       })) as Category[];
     },
   });
