@@ -90,33 +90,39 @@ export function useOrderSubmission() {
 
         console.log('Full order payload:', JSON.stringify(orderPayload, null, 2));
 
-        const { data: order, error: orderError } = await supabase
+        const { data: insertResult, error: orderError } = await supabase
           .from('orders')
           .insert([orderPayload])
           .select('*, pickup_details')
-          .single();
+          .maybeSingle();
 
         if (orderError) {
           console.error('Error creating order:', orderError);
           throw orderError;
         }
 
+        if (!insertResult) {
+          throw new Error('No order data returned after insertion');
+        }
+
         // Verify the saved pickup details
         const { data: verifiedOrder, error: verifyError } = await supabase
           .from('orders')
           .select('id, pickup_details')
-          .eq('id', order.id)
-          .single();
+          .eq('id', insertResult.id)
+          .maybeSingle();
 
         if (verifyError) {
           console.error('Error verifying order:', verifyError);
+        } else if (!verifiedOrder) {
+          console.error('Could not verify order data');
         } else {
           console.log('Database stored pickup details:', JSON.stringify(verifiedOrder.pickup_details, null, 2));
         }
 
         // Create order items
         const orderItems = categoryItems.map((item) => ({
-          order_id: order.id,
+          order_id: insertResult.id,
           menu_item_id: item.id,
           quantity: item.quantity,
           unit_price: item.price,
@@ -128,7 +134,7 @@ export function useOrderSubmission() {
 
         if (orderItemsError) throw orderItemsError;
 
-        return order;
+        return insertResult;
       });
 
       const orders = await Promise.all(orderPromises);
