@@ -59,6 +59,21 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
+        // Format pickup details for this category
+        const pickupDetail = pickupDetails[categoryId];
+        const category = categoryItems[0]?.category;
+        let formattedPickupDetails = null;
+
+        if (category?.has_custom_pickup && pickupDetail && category.pickup_details) {
+          const selectedPickup = category.pickup_details[parseInt(pickupDetail)];
+          if (selectedPickup) {
+            formattedPickupDetails = {
+              time: selectedPickup.time,
+              location: selectedPickup.location
+            };
+          }
+        }
+
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .insert([
@@ -70,7 +85,7 @@ export function useOrderSubmission() {
               status: 'pending',
               delivery_date: deliveryDate.toISOString(),
               payment_proof_url: uploadData.path,
-              pickup_details: pickupDetails[categoryId] || null
+              pickup_details: formattedPickupDetails
             },
           ])
           .select()
