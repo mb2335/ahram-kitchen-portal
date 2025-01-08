@@ -59,24 +59,15 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Validate and format pickup details
+        // Get pickup details for this category and simplify to basic time/location object
         const pickupDetailsForCategory = pickupDetails[categoryId];
-        if (!pickupDetailsForCategory && categoryItems.some(item => 
-          item.category?.has_custom_pickup && item.category?.pickup_details?.length > 0
-        )) {
-          throw new Error(`Missing pickup details for category: ${categoryId}`);
-        }
-
-        // Format pickup details as a plain JSON object for JSONB storage
-        const formattedPickupDetails = pickupDetailsForCategory ? {
+        const simplifiedPickupDetails = pickupDetailsForCategory ? {
           time: pickupDetailsForCategory.time,
           location: pickupDetailsForCategory.location
         } : null;
 
-        console.log('Raw pickup details:', pickupDetailsForCategory);
-        console.log('Formatted pickup details for JSONB:', JSON.stringify(formattedPickupDetails));
+        console.log('Simplified pickup details for order:', simplifiedPickupDetails);
 
-        // Create order with explicit JSONB handling
         const orderPayload = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -85,10 +76,10 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: formattedPickupDetails // PostgreSQL will handle the JSONB conversion
+          pickup_details: simplifiedPickupDetails // Store as simple JSON object
         };
 
-        console.log('Full order payload:', JSON.stringify(orderPayload, null, 2));
+        console.log('Full order payload:', orderPayload);
 
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
@@ -114,10 +105,8 @@ export function useOrderSubmission() {
 
         if (verifyError) {
           console.error('Error verifying order:', verifyError);
-        } else if (!verifiedOrder) {
-          console.error('Could not verify order data');
         } else {
-          console.log('Database stored pickup details:', JSON.stringify(verifiedOrder.pickup_details, null, 2));
+          console.log('Verified pickup details in database:', verifiedOrder?.pickup_details);
         }
 
         // Create order items
