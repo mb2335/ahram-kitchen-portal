@@ -8,6 +8,7 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { PickupDetail } from '@/types/pickup';
 
 interface CheckoutFormProps {
   formData: {
@@ -60,11 +61,27 @@ export function CheckoutForm({
     },
   });
 
-  // Attach category information to items
-  const itemsWithCategories = items.map(item => ({
-    ...item,
-    category: categories.find(cat => cat.id === item.category_id)
-  }));
+  // Transform category data to match OrderItem type
+  const itemsWithCategories = items.map(item => {
+    const category = categories.find(cat => cat.id === item.category_id);
+    if (!category) return { ...item, category: undefined };
+    
+    // Transform pickup_details from Json[] to PickupDetail[]
+    const transformedPickupDetails = category.pickup_details?.map((detail: any) => ({
+      time: detail.time as string,
+      location: detail.location as string
+    })) as PickupDetail[] | undefined;
+
+    return {
+      ...item,
+      category: {
+        id: category.id,
+        name: category.name,
+        has_custom_pickup: category.has_custom_pickup || false,
+        pickup_details: transformedPickupDetails
+      }
+    };
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
