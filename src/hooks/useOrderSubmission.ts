@@ -64,22 +64,11 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Get pickup details for this category
+        // Get pickup details for this category if available
         const pickupDetailsForCategory = pickupDetails[categoryId];
-        console.log('Raw pickup details for category:', {
-          categoryId,
-          pickupDetails: pickupDetailsForCategory
-        });
+        console.log('Pickup details for category:', pickupDetailsForCategory);
 
-        // Simplify to basic time/location object
-        const simplifiedPickupDetails = pickupDetailsForCategory ? {
-          time: pickupDetailsForCategory.time,
-          location: pickupDetailsForCategory.location
-        } : null;
-
-        console.log('Simplified pickup details:', simplifiedPickupDetails);
-
-        const orderPayload = {
+        const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
           tax_amount: categoryTaxAmount,
@@ -87,14 +76,17 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: simplifiedPickupDetails
+          pickup_details: pickupDetailsForCategory ? {
+            time: pickupDetailsForCategory.time,
+            location: pickupDetailsForCategory.location
+          } : null
         };
 
-        console.log('Submitting order with payload:', orderPayload);
+        console.log('Creating order with data:', orderData);
 
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
-          .insert([orderPayload])
+          .insert([orderData])
           .select('*, pickup_details')
           .single();
 
@@ -109,22 +101,6 @@ export function useOrderSubmission() {
         }
 
         console.log('Order created successfully:', insertResult);
-
-        // Verify the saved pickup details
-        const { data: verifiedOrder, error: verifyError } = await supabase
-          .from('orders')
-          .select('id, pickup_details')
-          .eq('id', insertResult.id)
-          .single();
-
-        if (verifyError) {
-          console.error('Error verifying order:', verifyError);
-        } else {
-          console.log('Verified pickup details in database:', {
-            orderId: verifiedOrder.id,
-            pickupDetails: verifiedOrder.pickup_details
-          });
-        }
 
         // Create order items
         const orderItems = categoryItems.map((item) => ({
@@ -161,7 +137,7 @@ export function useOrderSubmission() {
 
       onOrderSuccess(validOrders[0].id);
       
-      // Navigate to thank you page with verified pickup details
+      // Navigate to thank you page with order details including pickup details
       navigate('/thank-you', {
         state: {
           orderDetails: {
