@@ -57,7 +57,6 @@ export function useOrderSubmission() {
         throw new Error('Debug function failed: ' + debugError.message);
       }
 
-      // Validate items
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -194,6 +193,7 @@ export function useOrderSubmission() {
         },
         replace: true
       });
+
     } catch (error: any) {
       console.error('[useOrderSubmission] Error during order submission:', error);
       toast({
