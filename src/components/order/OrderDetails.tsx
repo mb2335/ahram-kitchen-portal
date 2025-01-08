@@ -6,6 +6,7 @@ import { OrderTotals } from './OrderTotals';
 import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
 import { MapPin, Clock } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface OrderDetailsProps {
   order: any; // Type should be properly defined based on your order structure
@@ -15,7 +16,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
   const subtotal = order.total_amount - order.tax_amount;
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 space-y-6">
       <OrderStatusSection
         id={order.id}
         status={order.status}

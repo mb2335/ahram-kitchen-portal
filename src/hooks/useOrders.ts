@@ -44,7 +44,12 @@ export const useOrders = () => {
               menu_item:menu_items (
                 id,
                 name,
-                name_ko
+                name_ko,
+                category:menu_categories (
+                  id,
+                  name,
+                  name_ko
+                )
               )
             )
           `)
