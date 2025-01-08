@@ -55,27 +55,27 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        const { data: orderData, error: orderError } = await supabase
+        const orderData = {
+          customer_id: customerId,
+          total_amount: categoryTotal + categoryTaxAmount,
+          tax_amount: categoryTaxAmount,
+          notes: notes,
+          status: 'pending',
+          delivery_date: deliveryDate.toISOString(),
+          payment_proof_url: uploadData.path,
+          pickup_details: pickupDetails[categoryId] as unknown as Json
+        };
+
+        const { data: order, error: orderError } = await supabase
           .from('orders')
-          .insert([
-            {
-              customer_id: customerId,
-              total_amount: categoryTotal + categoryTaxAmount,
-              tax_amount: categoryTaxAmount,
-              notes: notes,
-              status: 'pending',
-              delivery_date: deliveryDate.toISOString(),
-              payment_proof_url: uploadData.path,
-              pickup_details: pickupDetails[categoryId] || null
-            },
-          ])
+          .insert([orderData])
           .select()
           .single();
 
         if (orderError) throw orderError;
 
         const orderItems = categoryItems.map((item) => ({
-          order_id: orderData.id,
+          order_id: order.id,
           menu_item_id: item.id,
           quantity: item.quantity,
           unit_price: item.price,
@@ -87,7 +87,7 @@ export function useOrderSubmission() {
 
         if (orderItemsError) throw orderItemsError;
 
-        return orderData;
+        return order;
       });
 
       const orders = await Promise.all(orderPromises);
