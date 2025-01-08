@@ -24,5 +24,5 @@ export interface OrderSubmissionProps {
   deliveryDates: Record<string, Date>;
   customerData: CustomerData;
   onOrderSuccess: (orderId: string) => void;
-  pickupDetails: Record<string, string>;
+  pickupDetails: Record<string, PickupDetail>;
 }

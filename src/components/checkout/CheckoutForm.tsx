@@ -129,9 +129,10 @@ export function CheckoutForm({
     const pickupDetailsForOrder = Object.entries(selectedPickupDetails).reduce((acc, [categoryId, pickupDetailIndex]) => {
       const category = categories.find(cat => cat.id === categoryId);
       if (category?.pickup_details && category.pickup_details[parseInt(pickupDetailIndex)]) {
+        const detail = category.pickup_details[parseInt(pickupDetailIndex)];
         acc[categoryId] = {
-          time: category.pickup_details[parseInt(pickupDetailIndex)].time,
-          location: category.pickup_details[parseInt(pickupDetailIndex)].location
+          time: detail.time as string,
+          location: detail.location as string
         };
       }
       return acc;
