@@ -23,16 +23,47 @@ export function useOrderSubmission() {
     pickupDetails,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
-    console.log('[useOrderSubmission] Starting order submission process');
-    console.log('[useOrderSubmission] Pickup details received:', pickupDetails);
+    console.log('[useOrderSubmission] Starting order submission with data:', {
+      items,
+      total,
+      taxAmount,
+      notes,
+      deliveryDates,
+      customerData,
+      pickupDetails
+    });
+
     setIsUploading(true);
 
     try {
+      console.log('[useOrderSubmission] Calling debug-order-submission function');
+      const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-order-submission', {
+        body: {
+          items,
+          total,
+          taxAmount,
+          notes,
+          deliveryDates,
+          customerData,
+          pickupDetails,
+          paymentProofName: paymentProof.name
+        }
+      });
+
+      console.log('[useOrderSubmission] Debug function response:', { debugData, debugError });
+
+      if (debugError) {
+        console.error('[useOrderSubmission] Debug function error:', debugError);
+        throw new Error('Debug function failed: ' + debugError.message);
+      }
+
+      // Validate items
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
       
       if (invalidItems.length > 0) {
+        console.error('[useOrderSubmission] Invalid item IDs detected:', invalidItems);
         throw new Error('Invalid menu item IDs detected');
       }
 
@@ -74,11 +105,6 @@ export function useOrderSubmission() {
           categoryTotal,
           categoryTaxAmount
         });
-
-        if (!categoryPickupDetails && categoryItems[0]?.category?.has_custom_pickup) {
-          console.error('[useOrderSubmission] Missing required pickup details for category:', categoryId);
-          throw new Error(`Missing pickup details for category ${categoryItems[0]?.category?.name || categoryId}`);
-        }
 
         const orderData = {
           customer_id: customerId,
