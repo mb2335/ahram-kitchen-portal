@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CategoryDeliveryDate } from './delivery/CategoryDeliveryDate';
 import { DeliveryNotes } from './delivery/DeliveryNotes';
-import { PickupDetail } from '@/components/vendor/menu/types/category';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -30,15 +29,7 @@ export function DeliveryForm({
         .order('order_index');
       
       if (error) throw error;
-
-      // Transform the pickup_details from Json[] to PickupDetail[]
-      return data.map(category => ({
-        ...category,
-        pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          time: detail.time as string,
-          location: detail.location as string
-        }))
-      }));
+      return data;
     },
   });
 
