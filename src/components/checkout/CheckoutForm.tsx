@@ -6,6 +6,7 @@ import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
+import { PickupDetail } from '@/components/vendor/menu/types/category';
 
 interface CheckoutFormProps {
   formData: {
@@ -44,6 +45,7 @@ export function CheckoutForm({
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const { submitOrder, isUploading } = useOrderSubmission();
+  const [pickupDetails, setPickupDetails] = useState<Record<string, PickupDetail>>({});
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -63,16 +65,20 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate that all categories have delivery dates
+    // Validate that all categories have delivery dates or pickup details
     const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
-    const missingDates = Array.from(categoriesWithItems).filter(
-      categoryId => !formData.deliveryDates[categoryId as string]
+    const missingDeliveryInfo = Array.from(categoriesWithItems).filter(
+      categoryId => {
+        const hasPickup = pickupDetails[categoryId as string];
+        const hasDeliveryDate = formData.deliveryDates[categoryId as string];
+        return !hasPickup && !hasDeliveryDate;
+      }
     );
 
-    if (missingDates.length > 0) {
+    if (missingDeliveryInfo.length > 0) {
       toast({
         title: 'Error',
-        description: 'Please select delivery dates for all categories',
+        description: 'Please select delivery dates or pickup options for all categories',
         variant: 'destructive',
       });
       return;
@@ -85,7 +91,8 @@ export function CheckoutForm({
       notes: formData.notes,
       deliveryDates: formData.deliveryDates,
       customerData,
-      onOrderSuccess
+      onOrderSuccess,
+      pickupDetails
     }, paymentProof);
   };
 
@@ -104,6 +111,13 @@ export function CheckoutForm({
           })
         }
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        pickupDetails={pickupDetails}
+        onPickupDetailChange={(categoryId, detail) => {
+          setPickupDetails(prev => ({
+            ...prev,
+            [categoryId]: detail
+          }));
+        }}
       />
 
       <PaymentInstructions
