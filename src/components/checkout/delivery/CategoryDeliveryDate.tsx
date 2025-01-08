@@ -90,11 +90,14 @@ export function CategoryDeliveryDate({
             <Label>Pickup Location & Time</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {pickupDetails.map((detail, index) => (
-                <button
+                <div
                   key={index}
-                  onClick={() => onPickupDetailChange?.(index.toString())}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onPickupDetailChange?.(index.toString());
+                  }}
                   className={cn(
-                    "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all",
+                    "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all cursor-pointer",
                     "hover:border-primary hover:bg-accent",
                     "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                     selectedPickupDetail === index.toString() 
@@ -110,7 +113,7 @@ export function CategoryDeliveryDate({
                     <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground">{detail.location}</span>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
