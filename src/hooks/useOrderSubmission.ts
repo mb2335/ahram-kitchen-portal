@@ -23,7 +23,8 @@ export function useOrderSubmission() {
     pickupDetails,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
-    console.log('[useOrderSubmission] Starting submission with pickup details:', pickupDetails);
+    console.log('[useOrderSubmission] Starting order submission process');
+    console.log('[useOrderSubmission] Pickup details received:', pickupDetails);
     setIsUploading(true);
 
     try {
@@ -35,11 +36,14 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
+      console.log('[useOrderSubmission] Creating/getting customer');
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
+      console.log('[useOrderSubmission] Customer ID:', customerId);
 
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
+      console.log('[useOrderSubmission] Uploading payment proof');
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('payment_proofs')
         .upload(fileName, paymentProof, {
@@ -47,7 +51,12 @@ export function useOrderSubmission() {
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[useOrderSubmission] Payment proof upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('[useOrderSubmission] Payment proof uploaded successfully:', uploadData.path);
 
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
@@ -57,14 +66,17 @@ export function useOrderSubmission() {
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
         const categoryPickupDetails = pickupDetails[categoryId];
-        console.log('[useOrderSubmission] Creating order for category:', {
+        console.log('[useOrderSubmission] Processing category order:', {
           categoryId,
+          deliveryDate: deliveryDate.toISOString(),
           pickupDetails: categoryPickupDetails,
-          deliveryDate: deliveryDate.toISOString()
+          itemsCount: categoryItems.length,
+          categoryTotal,
+          categoryTaxAmount
         });
 
         if (!categoryPickupDetails && categoryItems[0]?.category?.has_custom_pickup) {
-          console.error('[useOrderSubmission] Missing pickup details for category:', categoryId);
+          console.error('[useOrderSubmission] Missing required pickup details for category:', categoryId);
           throw new Error(`Missing pickup details for category ${categoryItems[0]?.category?.name || categoryId}`);
         }
 
@@ -89,7 +101,7 @@ export function useOrderSubmission() {
           .single();
 
         if (orderError) {
-          console.error('[useOrderSubmission] Order creation failed:', orderError);
+          console.error('[useOrderSubmission] Order insertion error:', orderError);
           throw orderError;
         }
 
@@ -102,11 +114,16 @@ export function useOrderSubmission() {
           unit_price: item.price,
         }));
 
+        console.log('[useOrderSubmission] Creating order items:', orderItems);
+
         const { error: orderItemsError } = await supabase
           .from('order_items')
           .insert(orderItems);
 
-        if (orderItemsError) throw orderItemsError;
+        if (orderItemsError) {
+          console.error('[useOrderSubmission] Order items insertion error:', orderItemsError);
+          throw orderItemsError;
+        }
 
         return insertedOrder;
       });
@@ -118,6 +135,8 @@ export function useOrderSubmission() {
         throw new Error('No valid orders could be created');
       }
 
+      console.log('[useOrderSubmission] All orders created successfully:', validOrders);
+
       await updateMenuItemQuantities(items);
       onOrderSuccess(validOrders[0].id);
 
@@ -125,7 +144,7 @@ export function useOrderSubmission() {
       const firstCategoryId = Object.keys(deliveryDates)[0];
       const firstPickupDetail = pickupDetails[firstCategoryId];
 
-      console.log('[useOrderSubmission] Order successful, navigating to thank you with:', {
+      console.log('[useOrderSubmission] Navigating to thank you page with:', {
         orderId: firstOrder.id,
         pickupDetails: firstPickupDetail
       });
@@ -150,7 +169,7 @@ export function useOrderSubmission() {
         replace: true
       });
     } catch (error: any) {
-      console.error('[useOrderSubmission] Error:', error);
+      console.error('[useOrderSubmission] Error during order submission:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
