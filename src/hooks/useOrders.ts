@@ -57,10 +57,8 @@ export const useOrders = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        console.log('Customer orders fetched:', orders);
         return orders as unknown as Order[];
       } catch (error: any) {
-        console.error('Error fetching orders:', error);
         toast({
           title: 'Error fetching orders',
           description: error.message,
@@ -83,7 +81,6 @@ export const useVendorOrders = () => {
     queryKey: orderKeys.vendor,
     queryFn: async () => {
       try {
-        console.log('Fetching vendor orders...');
         const { data, error } = await supabase
           .from('orders')
           .select(`
@@ -113,15 +110,9 @@ export const useVendorOrders = () => {
           `)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching vendor orders:', error);
-          throw error;
-        }
-
-        console.log('Vendor orders fetched successfully:', data);
+        if (error) throw error;
         return data as unknown as Order[];
       } catch (error: any) {
-        console.error('Error in useVendorOrders:', error);
         toast({
           title: 'Error fetching vendor orders',
           description: error.message,
@@ -136,8 +127,6 @@ export const useVendorOrders = () => {
 
   const updateOrderStatus = async (orderId: string, status: string, reason?: string) => {
     try {
-      console.log('Updating order status:', { orderId, status, reason });
-      
       const updateData: any = { status };
       if (reason) {
         updateData.rejection_reason = reason;
@@ -154,10 +143,8 @@ export const useVendorOrders = () => {
       await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });
       await refetch();
       
-      console.log('Order status updated successfully');
       return { success: true };
     } catch (error: any) {
-      console.error('Error updating order status:', error);
       return { success: false, error: error.message };
     }
   };
@@ -183,7 +170,6 @@ export const useVendorOrders = () => {
 
       return { success: true };
     } catch (error: any) {
-      console.error('Error deleting order:', error);
       return { success: false, error: error.message };
     }
   };

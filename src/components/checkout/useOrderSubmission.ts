@@ -24,7 +24,6 @@ export function useOrderSubmission() {
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
-    console.log('Starting order submission with pickup details:', pickupDetail);
 
     try {
       const invalidItems = items.filter(item => 
@@ -51,35 +50,22 @@ export function useOrderSubmission() {
 
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
-        console.log('categoryItems:', categoryItems);
-        console.log('categoryItems[0]:', categoryItems[0]);
         
         if (categoryItems.length === 0) return null;
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Get the category details from Supabase
         const { data: categoryData, error: categoryError } = await supabase
           .from('menu_categories')
           .select('*')
           .eq('id', categoryId)
           .single();
 
-        if (categoryError) {
-          console.error('Error fetching category:', categoryError);
-          throw categoryError;
-        }
+        if (categoryError) throw categoryError;
 
         const category = categoryData;
-        console.log('Debug pickup details:');
-        console.log('Category:', category);
-        console.log('pickupDetail:', pickupDetail);
-        console.log('pickupDetail?.time:', pickupDetail?.time);
-        console.log('pickupDetail?.location:', pickupDetail?.location);
-        
         const needsCustomPickup = category?.has_custom_pickup ?? false;
-        console.log('needsCustomPickup:', needsCustomPickup);
 
         const orderData = {
           customer_id: customerId,
@@ -92,8 +78,6 @@ export function useOrderSubmission() {
           pickup_time: needsCustomPickup ? pickupDetail?.time : null,
           pickup_location: needsCustomPickup ? pickupDetail?.location : null,
         };
-
-        console.log('Creating order with data:', orderData);
 
         const { data: insertedOrder, error: orderError } = await supabase
           .from('orders')
@@ -152,7 +136,6 @@ export function useOrderSubmission() {
       });
 
     } catch (error: any) {
-      console.error('Error submitting order:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
