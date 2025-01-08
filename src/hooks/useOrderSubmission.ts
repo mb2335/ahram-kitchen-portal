@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSubmissionProps } from '@/types/order';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
+import { Json } from '@/integrations/supabase/types';
 
 export function useOrderSubmission() {
   const session = useSession();
@@ -79,7 +80,7 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetailsForCategory as unknown as Json // Type assertion to satisfy Supabase
+          pickup_details: pickupDetailsForCategory as unknown as Json
         };
 
         console.log('Submitting order with payload:', orderPayload);
