@@ -26,6 +26,7 @@ export interface OrderItem {
     category?: {
       id: string;
       name: string;
+      name_ko: string;
     };
   };
 }
