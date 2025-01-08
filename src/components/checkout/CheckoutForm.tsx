@@ -24,12 +24,12 @@ interface CheckoutFormProps {
   formData: {
     notes: string;
     deliveryDates: Record<string, Date>;
-    pickupDetails: Record<string, PickupDetail>;
+    pickupDetail: PickupDetail | null;
   };
   setFormData: React.Dispatch<React.SetStateAction<{
     notes: string;
     deliveryDates: Record<string, Date>;
-    pickupDetails: Record<string, PickupDetail>;
+    pickupDetail: PickupDetail | null;
   }>>;
 }
 
@@ -63,13 +63,10 @@ export function CheckoutForm({
     }));
   };
 
-  const handlePickupDetailChange = (categoryId: string, detail: PickupDetail) => {
+  const handlePickupDetailChange = (detail: PickupDetail) => {
     setFormData(prev => ({
       ...prev,
-      pickupDetails: {
-        ...prev.pickupDetails,
-        [categoryId]: detail
-      }
+      pickupDetail: detail
     }));
   };
 
@@ -119,8 +116,7 @@ export function CheckoutForm({
 
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
-      const hasPickupDetails = formData.pickupDetails[categoryId as string];
-      return category?.has_custom_pickup && !hasPickupDetails;
+      return category?.has_custom_pickup && !formData.pickupDetail;
     });
 
     if (missingPickupDetails.length > 0) {
@@ -144,7 +140,7 @@ export function CheckoutForm({
       notes: formData.notes,
       deliveryDates: formData.deliveryDates,
       customerData,
-      pickupDetails: formData.pickupDetails,
+      pickupDetail: formData.pickupDetail,
       onOrderSuccess
     }, paymentProof);
   };
@@ -156,7 +152,7 @@ export function CheckoutForm({
         notes={formData.notes}
         onDateChange={handleDateChange}
         onNotesChange={handleNotesChange}
-        pickupDetails={formData.pickupDetails}
+        pickupDetail={formData.pickupDetail}
         onPickupDetailChange={handlePickupDetailChange}
       />
 
