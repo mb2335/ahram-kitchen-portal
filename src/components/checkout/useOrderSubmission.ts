@@ -51,6 +51,9 @@ export function useOrderSubmission() {
 
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
+        console.log('categoryItems:', categoryItems);
+        console.log('categoryItems[0]:', categoryItems[0]);
+        
         if (categoryItems.length === 0) return null;
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
