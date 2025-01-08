@@ -11,16 +11,13 @@ export function useMenuCategories(menuItems: MenuItem[]) {
         .select('*')
         .order('order_index');
       
-      if (error) {
-        console.error('Error fetching categories:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data || [];
     },
     retry: false,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5, // Consider data stale after 5 minutes
-    gcTime: 1000 * 60 * 30, // Keep unused data in cache for 30 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 
   const itemsByCategory = menuItems.reduce((acc, item) => {

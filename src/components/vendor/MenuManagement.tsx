@@ -31,7 +31,6 @@ export function MenuManagement() {
   });
 
   useEffect(() => {
-    // Subscribe to menu items changes
     const menuChannel = supabase
       .channel('menu-management-changes')
       .on(
@@ -41,15 +40,13 @@ export function MenuManagement() {
           schema: 'public', 
           table: 'menu_items' 
         },
-        (payload) => {
-          console.log('Menu item change detected:', payload);
+        () => {
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
           loadMenuItems();
         }
       )
       .subscribe();
 
-    // Subscribe to category changes
     const categoryChannel = supabase
       .channel('category-management-changes')
       .on(
@@ -59,8 +56,7 @@ export function MenuManagement() {
           schema: 'public', 
           table: 'menu_categories' 
         },
-        (payload) => {
-          console.log('Category change detected:', payload);
+        () => {
           queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           loadMenuItems();
         }

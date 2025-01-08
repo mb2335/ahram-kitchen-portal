@@ -21,16 +21,14 @@ export const useMenuChannel = () => {
           schema: 'public', 
           table: 'menu_items' 
         },
-        (payload: MenuItemChange) => {
-          console.log('Menu item change detected:', payload);
+        () => {
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
       )
       .on(
         'system',
         { event: 'error' },
-        (error) => {
-          console.error('Menu channel error:', error);
+        () => {
           toast({
             title: "Connection Error",
             description: "Having trouble receiving menu updates. Please refresh the page.",
@@ -39,10 +37,7 @@ export const useMenuChannel = () => {
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Subscribed to menu updates');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Failed to subscribe to menu updates');
+        if (status === 'CHANNEL_ERROR') {
           toast({
             title: "Connection Error",
             description: "Failed to connect to menu updates. Please refresh the page.",
@@ -52,7 +47,6 @@ export const useMenuChannel = () => {
       });
 
     return () => {
-      console.log('Cleaning up menu channel subscription');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);

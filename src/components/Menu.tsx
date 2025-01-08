@@ -19,7 +19,6 @@ export function Menu() {
 
   useEffect(() => {
     if (menuError) {
-      console.error('Error in menu component:', menuError);
       toast({
         title: "Error",
         description: "Failed to load menu items. Please try again later.",
@@ -29,7 +28,6 @@ export function Menu() {
   }, [menuError]);
 
   useEffect(() => {
-    // Subscribe to menu items changes
     const menuChannel = supabase
       .channel('menu-items-changes')
       .on(
@@ -39,14 +37,12 @@ export function Menu() {
           schema: 'public', 
           table: 'menu_items' 
         },
-        (payload) => {
-          console.log('Menu item change detected:', payload);
+        () => {
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
       )
       .subscribe();
 
-    // Subscribe to category changes
     const categoryChannel = supabase
       .channel('menu-categories-changes')
       .on(
@@ -56,8 +52,7 @@ export function Menu() {
           schema: 'public', 
           table: 'menu_categories' 
         },
-        (payload) => {
-          console.log('Category change detected:', payload);
+        () => {
           queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
         }
       )
