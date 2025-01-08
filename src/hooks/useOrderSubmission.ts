@@ -26,6 +26,8 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
+      console.log('Starting order submission with pickup details:', pickupDetails);
+      
       // Validate item IDs
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
@@ -53,6 +55,8 @@ export function useOrderSubmission() {
 
       // Create orders for each category
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
+        console.log('Processing category:', categoryId);
+        
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
 
@@ -61,6 +65,7 @@ export function useOrderSubmission() {
 
         // Get pickup details for this category
         const pickupDetail = pickupDetails[categoryId];
+        console.log('Pickup details for category:', categoryId, pickupDetail);
         
         // Prepare order data with pickup details
         const orderData = {
@@ -75,6 +80,8 @@ export function useOrderSubmission() {
           pickup_location: pickupDetail ? pickupDetail.location : null
         };
 
+        console.log('Order data before insertion:', orderData);
+
         // Insert order
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
@@ -82,7 +89,12 @@ export function useOrderSubmission() {
           .select()
           .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+          console.error('Error inserting order:', orderError);
+          throw orderError;
+        }
+
+        console.log('Inserted order result:', insertResult);
 
         // Create order items
         const orderItems = categoryItems.map((item) => ({
@@ -115,6 +127,21 @@ export function useOrderSubmission() {
       await updateMenuItemQuantities(items);
       onOrderSuccess(validOrders[0].id);
       
+      console.log('Final order data being passed to thank you page:', {
+        id: validOrders[0].id,
+        items: items.map(item => ({
+          name: item.name,
+          nameKo: item.nameKo,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        total: total + taxAmount,
+        taxAmount: taxAmount,
+        createdAt: validOrders[0].created_at,
+        pickupTime: validOrders[0].pickup_time,
+        pickupLocation: validOrders[0].pickup_location
+      });
+
       // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
@@ -136,6 +163,7 @@ export function useOrderSubmission() {
         replace: true
       });
     } catch (error: any) {
+      console.error('Error in order submission:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
