@@ -24,6 +24,7 @@ export function useOrderSubmission() {
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
+    console.log('Submitting order with pickup details:', pickupDetail);
 
     try {
       const invalidItems = items.filter(item => 
@@ -55,6 +56,10 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
+        // Check if this category requires custom pickup details
+        const category = categoryItems[0]?.category;
+        const needsCustomPickup = category?.has_custom_pickup;
+
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -63,9 +68,11 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_time: pickupDetail?.time || null,
-          pickup_location: pickupDetail?.location || null,
+          pickup_time: needsCustomPickup ? pickupDetail?.time : null,
+          pickup_location: needsCustomPickup ? pickupDetail?.location : null,
         };
+
+        console.log('Creating order with data:', orderData);
 
         const { data: insertedOrder, error: orderError } = await supabase
           .from('orders')
@@ -102,7 +109,7 @@ export function useOrderSubmission() {
       onOrderSuccess(validOrders[0].id);
 
       const firstOrder = validOrders[0];
-
+      
       navigate('/thank-you', {
         state: {
           orderDetails: {
@@ -116,14 +123,15 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: firstOrder.created_at,
-            pickupTime: pickupDetail?.time || null,
-            pickupLocation: pickupDetail?.location || null
+            pickupTime: firstOrder.pickup_time,
+            pickupLocation: firstOrder.pickup_location
           }
         },
         replace: true
       });
 
     } catch (error: any) {
+      console.error('Error submitting order:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
