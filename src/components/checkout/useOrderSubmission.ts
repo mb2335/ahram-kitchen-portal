@@ -59,10 +59,19 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Get the first item's category to check for custom pickup
-        const firstItem = categoryItems[0];
-        const category = firstItem?.category;
-        
+        // Get the category details from Supabase
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('menu_categories')
+          .select('*')
+          .eq('id', categoryId)
+          .single();
+
+        if (categoryError) {
+          console.error('Error fetching category:', categoryError);
+          throw categoryError;
+        }
+
+        const category = categoryData;
         console.log('Debug pickup details:');
         console.log('Category:', category);
         console.log('pickupDetail:', pickupDetail);
