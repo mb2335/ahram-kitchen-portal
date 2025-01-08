@@ -15,9 +15,9 @@ interface CategoryDeliveryDateProps {
     pickup_details: PickupDetail[];
   };
   selectedDate: Date | undefined;
-  onDateChange: (date: Date | undefined) => void;
-  selectedPickupDetail?: string;
-  onPickupDetailChange?: (pickupDetail: PickupDetail) => void;
+  onDateChange: (date: Date) => void;
+  selectedPickupDetail?: PickupDetail;
+  onPickupDetailChange: (pickupDetail: PickupDetail) => void;
 }
 
 export function CategoryDeliveryDate({ 
@@ -55,21 +55,11 @@ export function CategoryDeliveryDate({
   };
 
   const handlePickupDetailSelection = (detail: PickupDetail) => {
-    console.log('[CategoryDeliveryDate] Before selection:', {
-      categoryId: category.id,
-      currentSelectedDetail: selectedPickupDetail,
-      newDetail: detail
-    });
-    
-    onPickupDetailChange?.(detail);
-    
-    console.log('[CategoryDeliveryDate] After selection:', {
-      categoryId: category.id,
-      detail
-    });
+    console.log('[CategoryDeliveryDate] Selecting pickup detail:', detail);
+    onPickupDetailChange(detail);
   };
 
-  const pickupDetails = category.pickup_details as PickupDetail[];
+  const pickupDetails = category.pickup_details || [];
   const hasPickupOptions = category.has_custom_pickup && pickupDetails.length > 0;
 
   return (
@@ -84,9 +74,9 @@ export function CategoryDeliveryDate({
             value={selectedDate ? formatDateForInput(selectedDate) : ''}
             onChange={(e) => {
               if (e.target.value) {
-                const selectedDate = new Date(e.target.value + 'T12:00:00');
-                if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate)) {
-                  onDateChange(selectedDate);
+                const date = new Date(e.target.value + 'T12:00:00');
+                if (!isNaN(date.getTime()) && !isDateDisabled(date)) {
+                  onDateChange(date);
                 }
               }
             }}
@@ -112,7 +102,9 @@ export function CategoryDeliveryDate({
                     "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all cursor-pointer",
                     "hover:border-primary hover:bg-accent",
                     "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                    selectedPickupDetail === JSON.stringify(detail)
+                    selectedPickupDetail && 
+                    selectedPickupDetail.time === detail.time && 
+                    selectedPickupDetail.location === detail.location
                       ? "border-primary bg-accent shadow-sm" 
                       : "border-input"
                   )}

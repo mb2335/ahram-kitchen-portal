@@ -9,9 +9,9 @@ import { PickupDetail } from '@/types/pickup';
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
   notes: string;
-  onDateChange: (categoryId: string, date: Date | undefined) => void;
+  onDateChange: (categoryId: string, date: Date) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  selectedPickupDetails: Record<string, PickupDetail>;
+  pickupDetails: Record<string, PickupDetail>;
   onPickupDetailChange: (categoryId: string, pickupDetail: PickupDetail) => void;
 }
 
@@ -20,16 +20,10 @@ export function DeliveryForm({
   notes, 
   onDateChange, 
   onNotesChange,
-  selectedPickupDetails,
+  pickupDetails,
   onPickupDetailChange
 }: DeliveryFormProps) {
   const { items } = useCart();
-
-  console.log('[DeliveryForm] Current state:', {
-    deliveryDates,
-    selectedPickupDetails,
-    items
-  });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -40,8 +34,6 @@ export function DeliveryForm({
         .order('order_index');
       
       if (error) throw error;
-      console.log('[DeliveryForm] Fetched categories:', data);
-
       return data.map(category => ({
         id: category.id,
         name: category.name,
@@ -51,26 +43,10 @@ export function DeliveryForm({
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
           time: detail.time,
           location: detail.location
-        })) as PickupDetail[]
+        }))
       }));
     },
   });
-
-  const handlePickupDetailChange = (categoryId: string, pickupDetail: PickupDetail) => {
-    console.log('[DeliveryForm] Before pickup detail change:', {
-      categoryId,
-      pickupDetail,
-      currentDetails: selectedPickupDetails
-    });
-    
-    onPickupDetailChange(categoryId, pickupDetail);
-    
-    console.log('[DeliveryForm] After pickup detail change:', {
-      categoryId,
-      pickupDetail,
-      newDetails: { ...selectedPickupDetails, [categoryId]: pickupDetail }
-    });
-  };
 
   const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
@@ -81,8 +57,6 @@ export function DeliveryForm({
     return acc;
   }, {} as Record<string, typeof items>);
 
-  console.log('[DeliveryForm] Items by category:', itemsByCategory);
-
   return (
     <div className="space-y-6">
       {categories.map((category) => (
@@ -92,8 +66,8 @@ export function DeliveryForm({
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickupDetail={selectedPickupDetails[category.id] ? JSON.stringify(selectedPickupDetails[category.id]) : undefined}
-              onPickupDetailChange={(pickupDetail) => handlePickupDetailChange(category.id, pickupDetail)}
+              selectedPickupDetail={pickupDetails[category.id]}
+              onPickupDetailChange={(detail) => onPickupDetailChange(category.id, detail)}
             />
             <Separator />
           </div>

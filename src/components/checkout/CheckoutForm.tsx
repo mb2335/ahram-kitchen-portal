@@ -8,14 +8,10 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PickupDetail } from '@/types/pickup';
+import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
+import type { OrderItem } from '@/types/order';
 
 interface CheckoutFormProps {
-  formData: {
-    notes: string;
-    deliveryDates: Record<string, Date>;
-  };
-  setFormData: (data: any) => void;
   customerData: {
     fullName: string;
     email: string;
@@ -24,30 +20,20 @@ interface CheckoutFormProps {
   onOrderSuccess: (orderId: string) => void;
   total: number;
   taxAmount: number;
-  items: Array<{
-    id: string;
-    name: string;
-    nameKo: string;
-    quantity: number;
-    price: number;
-    category_id?: string;
-  }>;
+  items: OrderItem[];
 }
 
 export function CheckoutForm({
-  formData,
-  setFormData,
   customerData,
   onOrderSuccess,
   total,
   taxAmount,
   items
 }: CheckoutFormProps) {
-  const session = useSession();
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
-  const [selectedPickupDetails, setSelectedPickupDetails] = useState<Record<string, PickupDetail>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
+  const { formData, handleDateChange, handleNotesChange, handlePickupDetailChange } = useCheckoutForm();
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -60,26 +46,6 @@ export function CheckoutForm({
     },
   });
 
-  const itemsWithCategories = items.map(item => {
-    const category = categories.find(cat => cat.id === item.category_id);
-    if (!category) return { ...item, category: undefined };
-    
-    const transformedPickupDetails = category.pickup_details?.map((detail: any) => ({
-      time: detail.time as string,
-      location: detail.location as string
-    })) as PickupDetail[] | undefined;
-
-    return {
-      ...item,
-      category: {
-        id: category.id,
-        name: category.name,
-        has_custom_pickup: category.has_custom_pickup || false,
-        pickup_details: transformedPickupDetails
-      }
-    };
-  });
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setPaymentProof(e.target.files[0]);
@@ -88,7 +54,7 @@ export function CheckoutForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[CheckoutForm] Starting form submission with pickup details:', selectedPickupDetails);
+    console.log('[CheckoutForm] Starting form submission with data:', formData);
     
     if (!paymentProof) {
       toast({
@@ -100,14 +66,12 @@ export function CheckoutForm({
     }
 
     const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
-    console.log('Categories with items:', categoriesWithItems);
     
     const missingDates = Array.from(categoriesWithItems).filter(
       categoryId => !formData.deliveryDates[categoryId as string]
     );
 
     if (missingDates.length > 0) {
-      console.log('Missing dates for categories:', missingDates);
       toast({
         title: 'Error',
         description: 'Please select pickup dates for all categories',
@@ -116,14 +80,12 @@ export function CheckoutForm({
       return;
     }
 
-    // Check for missing pickup details for categories that require them
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
-      return category?.has_custom_pickup && !selectedPickupDetails[categoryId as string];
+      return category?.has_custom_pickup && !formData.pickupDetails[categoryId as string];
     });
 
     if (missingPickupDetails.length > 0) {
-      console.log('Missing pickup details for categories:', missingPickupDetails);
       const categoryNames = missingPickupDetails
         .map(id => categories.find(cat => cat.id === id)?.name)
         .filter(Boolean)
@@ -137,25 +99,15 @@ export function CheckoutForm({
       return;
     }
 
-    console.log('Form validation passed, submitting order with:', {
-      items: itemsWithCategories,
-      total,
-      taxAmount,
-      notes: formData.notes,
-      deliveryDates: formData.deliveryDates,
-      customerData,
-      pickupDetails: selectedPickupDetails
-    });
-
     await submitOrder({
-      items: itemsWithCategories,
+      items,
       total,
       taxAmount,
       notes: formData.notes,
       deliveryDates: formData.deliveryDates,
       customerData,
-      onOrderSuccess,
-      pickupDetails: selectedPickupDetails
+      pickupDetails: formData.pickupDetails,
+      onOrderSuccess
     }, paymentProof);
   };
 
@@ -164,24 +116,10 @@ export function CheckoutForm({
       <DeliveryForm
         deliveryDates={formData.deliveryDates}
         notes={formData.notes}
-        onDateChange={(categoryId, date) => 
-          setFormData({ 
-            ...formData, 
-            deliveryDates: { 
-              ...formData.deliveryDates, 
-              [categoryId]: date 
-            } 
-          })
-        }
-        onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-        selectedPickupDetails={selectedPickupDetails}
-        onPickupDetailChange={(categoryId, pickupDetail) => {
-          console.log('Pickup detail changed for category:', categoryId, pickupDetail);
-          setSelectedPickupDetails({
-            ...selectedPickupDetails,
-            [categoryId]: pickupDetail
-          });
-        }}
+        onDateChange={handleDateChange}
+        onNotesChange={handleNotesChange}
+        pickupDetails={formData.pickupDetails}
+        onPickupDetailChange={handlePickupDetailChange}
       />
 
       <PaymentInstructions
