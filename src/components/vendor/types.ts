@@ -39,14 +39,11 @@ export interface Order {
   status: OrderStatus;
   notes: string | null;
   delivery_date: string;
-  pickup_location: string;
+  pickup_time: string | null;
+  pickup_location: string | null;
   payment_proof_url: string;
   rejection_reason: string | null;
   created_at: string | null;
-  pickup_details?: {
-    time: string;
-    location: string;
-  };
   customer?: {
     full_name: string;
     email: string;
