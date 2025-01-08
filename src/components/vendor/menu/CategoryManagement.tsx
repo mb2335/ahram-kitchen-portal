@@ -30,12 +30,16 @@ export function CategoryManagement() {
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
+      console.log('Fetching categories...');
       const { data, error } = await supabase
         .from('menu_categories')
         .select('*')
         .order('order_index');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
       
       return data.map(category => ({
         ...category,
@@ -49,6 +53,7 @@ export function CategoryManagement() {
 
   // Subscribe to real-time changes
   useEffect(() => {
+    console.log('Setting up category subscription...');
     const channel = supabase
       .channel('category-changes')
       .on(
@@ -60,12 +65,16 @@ export function CategoryManagement() {
         },
         (payload) => {
           console.log('Category change detected:', payload);
+          // Invalidate and refetch
           queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up category subscription');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
@@ -130,7 +139,7 @@ export function CategoryManagement() {
       />
       
       <CategoryList 
-        categories={categories}
+        categories={categories || []}
         onEdit={(category) => {
           setEditingCategory(category);
           setFormData({
