@@ -36,7 +36,7 @@ export function DeliveryForm({
       if (error) throw error;
       return data.map(category => ({
         ...category,
-        pickup_details: category.pickup_details as PickupDetail[]
+        pickup_details: (category.pickup_details as unknown as PickupDetail[]) || []
       }));
     },
   });
