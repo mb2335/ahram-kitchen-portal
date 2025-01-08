@@ -8,8 +8,8 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
 import type { OrderItem } from '@/types/order';
+import { PickupDetail } from '@/types/pickup';
 
 interface CheckoutFormProps {
   customerData: {
@@ -21,6 +21,16 @@ interface CheckoutFormProps {
   total: number;
   taxAmount: number;
   items: OrderItem[];
+  formData: {
+    notes: string;
+    deliveryDates: Record<string, Date>;
+    pickupDetails: Record<string, PickupDetail>;
+  };
+  setFormData: React.Dispatch<React.SetStateAction<{
+    notes: string;
+    deliveryDates: Record<string, Date>;
+    pickupDetails: Record<string, PickupDetail>;
+  }>>;
 }
 
 export function CheckoutForm({
@@ -28,12 +38,41 @@ export function CheckoutForm({
   onOrderSuccess,
   total,
   taxAmount,
-  items
+  items,
+  formData,
+  setFormData
 }: CheckoutFormProps) {
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const { submitOrder, isUploading } = useOrderSubmission();
-  const { formData, handleDateChange, handleNotesChange, handlePickupDetailChange } = useCheckoutForm();
+
+  const handleDateChange = (categoryId: string, date: Date) => {
+    setFormData(prev => ({
+      ...prev,
+      deliveryDates: {
+        ...prev.deliveryDates,
+        [categoryId]: date
+      }
+    }));
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      notes: e.target.value
+    }));
+  };
+
+  const handlePickupDetailChange = (categoryId: string, detail: PickupDetail) => {
+    console.log('[CheckoutForm] Updating pickup detail:', { categoryId, detail });
+    setFormData(prev => ({
+      ...prev,
+      pickupDetails: {
+        ...prev.pickupDetails,
+        [categoryId]: detail
+      }
+    }));
+  };
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],

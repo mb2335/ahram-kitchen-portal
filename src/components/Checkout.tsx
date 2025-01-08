@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
+import { PickupDetail } from '@/types/pickup';
 
 const TAX_RATE = 0.1;
 
@@ -20,6 +21,7 @@ export function Checkout() {
   const [formData, setFormData] = useState({
     notes: '',
     deliveryDates: {} as Record<string, Date>,
+    pickupDetails: {} as Record<string, PickupDetail>
   });
 
   const [customerData, setCustomerData] = useState({
