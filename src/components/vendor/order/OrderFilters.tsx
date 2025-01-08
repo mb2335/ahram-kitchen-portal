@@ -20,15 +20,19 @@ export interface OrderFilters {
 
 export function OrderFilters({ onFilterChange, categories, pickupLocations }: OrderFiltersProps) {
   const [filters, setFilters] = useState<OrderFilters>({});
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const handleFilterChange = (key: keyof OrderFilters, value: any) => {
-    const newFilters = { ...filters, [key]: value };
+    // If value is "all", set it to undefined to clear the filter
+    const newValue = value === "all" ? undefined : value;
+    const newFilters = { ...filters, [key]: newValue };
     setFilters(newFilters);
     onFilterChange(newFilters);
   };
 
   const clearFilters = () => {
     setFilters({});
+    setDateRange(undefined);
     onFilterChange({});
   };
 
@@ -51,9 +55,10 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         <div className="space-y-2">
           <Label>Pickup Date</Label>
           <DatePickerWithRange
-            date={filters.date ? { from: filters.date, to: filters.date } : undefined}
-            onSelect={(dateRange: DateRange | undefined) => {
-              handleFilterChange('date', dateRange?.from);
+            date={dateRange}
+            onSelect={(newDateRange: DateRange | undefined) => {
+              setDateRange(newDateRange);
+              handleFilterChange('date', newDateRange?.from);
             }}
             mode="single"
             className="w-full"
@@ -63,13 +68,14 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         <div className="space-y-2">
           <Label>Category</Label>
           <Select
-            value={filters.categoryId}
+            value={filters.categoryId || "all"}
             onValueChange={(value) => handleFilterChange('categoryId', value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
@@ -82,13 +88,14 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         <div className="space-y-2">
           <Label>Pickup Location</Label>
           <Select
-            value={filters.pickupLocation}
+            value={filters.pickupLocation || "all"}
             onValueChange={(value) => handleFilterChange('pickupLocation', value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="All locations" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All locations</SelectItem>
               {pickupLocations.map((location) => (
                 <SelectItem key={location} value={location}>
                   {location}
