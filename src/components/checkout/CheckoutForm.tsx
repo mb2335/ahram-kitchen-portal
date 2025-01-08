@@ -46,7 +46,7 @@ export function CheckoutForm({
   const session = useSession();
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
-  const [selectedPickupDetails, setSelectedPickupDetails] = useState<Record<string, string>>({});
+  const [selectedPickupDetails, setSelectedPickupDetails] = useState<Record<string, PickupDetail>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const { data: categories = [] } = useQuery({
@@ -126,20 +126,7 @@ export function CheckoutForm({
       return;
     }
 
-    // Transform selectedPickupDetails indices into actual pickup detail objects
-    const pickupDetailsForOrder = Object.entries(selectedPickupDetails).reduce((acc, [categoryId, pickupDetailIndex]) => {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (category?.pickup_details && category.pickup_details[parseInt(pickupDetailIndex)]) {
-        const detail = category.pickup_details[parseInt(pickupDetailIndex)] as { time: string; location: string };
-        acc[categoryId] = {
-          time: detail.time,
-          location: detail.location
-        };
-      }
-      return acc;
-    }, {} as Record<string, PickupDetail>);
-
-    console.log('Transformed pickup details for submission:', pickupDetailsForOrder);
+    console.log('Selected pickup details before submission:', selectedPickupDetails);
 
     await submitOrder({
       items: itemsWithCategories,
@@ -149,7 +136,7 @@ export function CheckoutForm({
       deliveryDates: formData.deliveryDates,
       customerData,
       onOrderSuccess,
-      pickupDetails: pickupDetailsForOrder
+      pickupDetails: selectedPickupDetails
     }, paymentProof);
   };
 

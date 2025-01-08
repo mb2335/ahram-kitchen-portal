@@ -17,7 +17,7 @@ interface CategoryDeliveryDateProps {
   selectedDate: Date | undefined;
   onDateChange: (date: Date | undefined) => void;
   selectedPickupDetail?: string;
-  onPickupDetailChange?: (pickupDetail: string) => void;
+  onPickupDetailChange?: (pickupDetail: PickupDetail) => void;
 }
 
 export function CategoryDeliveryDate({ 
@@ -54,25 +54,17 @@ export function CategoryDeliveryDate({
     }
   };
 
-  const handlePickupDetailSelection = (index: string) => {
+  const handlePickupDetailSelection = (detail: PickupDetail) => {
     console.log('Pickup detail selected:', {
       categoryId: category.id,
       categoryName: category.name,
-      selectedIndex: index,
-      pickupDetail: category.pickup_details[parseInt(index)]
+      detail
     });
-    onPickupDetailChange?.(index);
+    onPickupDetailChange?.(detail);
   };
 
   const pickupDetails = category.pickup_details as PickupDetail[];
   const hasPickupOptions = category.has_custom_pickup && pickupDetails.length > 0;
-
-  console.log('Category pickup options:', {
-    categoryId: category.id,
-    hasCustomPickup: category.has_custom_pickup,
-    pickupDetails: pickupDetails,
-    selectedPickupDetail
-  });
 
   return (
     <div className="space-y-4">
@@ -113,12 +105,12 @@ export function CategoryDeliveryDate({
               {pickupDetails.map((detail, index) => (
                 <div
                   key={index}
-                  onClick={() => handlePickupDetailSelection(index.toString())}
+                  onClick={() => handlePickupDetailSelection(detail)}
                   className={cn(
                     "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all cursor-pointer",
                     "hover:border-primary hover:bg-accent",
                     "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                    selectedPickupDetail === index.toString() 
+                    selectedPickupDetail === JSON.stringify(detail)
                       ? "border-primary bg-accent shadow-sm" 
                       : "border-input"
                   )}

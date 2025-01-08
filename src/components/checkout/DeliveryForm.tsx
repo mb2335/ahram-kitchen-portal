@@ -11,8 +11,8 @@ interface DeliveryFormProps {
   notes: string;
   onDateChange: (categoryId: string, date: Date | undefined) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  selectedPickupDetails: Record<string, string>;
-  onPickupDetailChange: (categoryId: string, pickupDetail: string) => void;
+  selectedPickupDetails: Record<string, PickupDetail>;
+  onPickupDetailChange: (categoryId: string, pickupDetail: PickupDetail) => void;
 }
 
 export function DeliveryForm({ 
@@ -49,7 +49,6 @@ export function DeliveryForm({
     },
   });
 
-  // Group items by category
   const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
     if (!acc[categoryId]) {
@@ -68,7 +67,7 @@ export function DeliveryForm({
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickupDetail={selectedPickupDetails[category.id]}
+              selectedPickupDetail={selectedPickupDetails[category.id] ? JSON.stringify(selectedPickupDetails[category.id]) : undefined}
               onPickupDetailChange={(pickupDetail) => onPickupDetailChange(category.id, pickupDetail)}
             />
             <Separator />
