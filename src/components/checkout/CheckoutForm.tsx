@@ -64,7 +64,6 @@ export function CheckoutForm({
   };
 
   const handlePickupDetailChange = (categoryId: string, detail: PickupDetail) => {
-    console.log('[CheckoutForm] Updating pickup detail:', { categoryId, detail });
     setFormData(prev => ({
       ...prev,
       pickupDetails: {
@@ -93,11 +92,6 @@ export function CheckoutForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[CheckoutForm] Starting form submission with data:', {
-      formData,
-      items,
-      customerData
-    });
     
     if (!paymentProof) {
       toast({
@@ -123,22 +117,9 @@ export function CheckoutForm({
       return;
     }
 
-    console.log('[CheckoutForm] Checking pickup details requirements:', {
-      categoriesWithItems: Array.from(categoriesWithItems),
-      pickupDetails: formData.pickupDetails,
-      categories
-    });
-
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       const hasPickupDetails = formData.pickupDetails[categoryId as string];
-      console.log('[CheckoutForm] Checking category pickup requirements:', {
-        categoryId,
-        categoryName: category?.name,
-        hasCustomPickup: category?.has_custom_pickup,
-        hasPickupDetails,
-        pickupDetails: formData.pickupDetails[categoryId as string]
-      });
       return category?.has_custom_pickup && !hasPickupDetails;
     });
 
@@ -155,8 +136,6 @@ export function CheckoutForm({
       });
       return;
     }
-
-    console.log('[CheckoutForm] All validation passed, submitting order with pickup details:', formData.pickupDetails);
 
     await submitOrder({
       items,
