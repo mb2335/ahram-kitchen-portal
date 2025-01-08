@@ -6,6 +6,7 @@ import { OrderTotals } from './OrderTotals';
 import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
 import { MapPin, Clock } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface OrderDetailsProps {
   order: any; // Type should be properly defined based on your order structure
