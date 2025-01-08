@@ -49,7 +49,7 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
-      console.log('Processing orders with pickup details:', pickupDetails);
+      console.log('Processing orders with pickup details:', JSON.stringify(pickupDetails, null, 2));
 
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
@@ -58,33 +58,34 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Ensure pickup details are properly structured
-        let pickupDetailsJson = null;
-        if (pickupDetails && pickupDetails[categoryId]) {
-          try {
-            pickupDetailsJson = {
-              time: String(pickupDetails[categoryId].time),
-              location: String(pickupDetails[categoryId].location)
-            };
-            console.log('Formatted pickup details:', pickupDetailsJson);
-          } catch (error) {
-            console.error('Error formatting pickup details:', error);
-          }
-        }
+        // Ensure pickup details are properly structured as a JSON object
+        const pickupDetailsForCategory = pickupDetails[categoryId];
+        console.log('Raw pickup details for category:', categoryId, JSON.stringify(pickupDetailsForCategory, null, 2));
 
-        // First try to create the order
+        const pickupDetailsJson = pickupDetailsForCategory ? {
+          time: String(pickupDetailsForCategory.time),
+          location: String(pickupDetailsForCategory.location)
+        } : null;
+
+        console.log('Formatted pickup details JSON:', JSON.stringify(pickupDetailsJson, null, 2));
+
+        // Create the order with explicit JSON handling
+        const orderData = {
+          customer_id: customerId,
+          total_amount: categoryTotal + categoryTaxAmount,
+          tax_amount: categoryTaxAmount,
+          notes: notes,
+          status: 'pending',
+          delivery_date: deliveryDate.toISOString(),
+          payment_proof_url: uploadData.path,
+          pickup_details: pickupDetailsJson as Json
+        };
+
+        console.log('Inserting order with data:', JSON.stringify(orderData, null, 2));
+
         const { data: order, error: orderError } = await supabase
           .from('orders')
-          .insert([{
-            customer_id: customerId,
-            total_amount: categoryTotal + categoryTaxAmount,
-            tax_amount: categoryTaxAmount,
-            notes: notes,
-            status: 'pending',
-            delivery_date: deliveryDate.toISOString(),
-            payment_proof_url: uploadData.path,
-            pickup_details: pickupDetailsJson
-          }])
+          .insert([orderData])
           .select('*, pickup_details')
           .single();
 
@@ -93,10 +94,12 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        console.log('Order created with ID:', order.id);
-        console.log('Saved pickup details:', order.pickup_details);
+        console.log('Order created successfully:', {
+          orderId: order.id,
+          pickupDetails: order.pickup_details
+        });
 
-        // Verify the pickup details were saved
+        // Double-check the saved data
         const { data: verifyOrder, error: verifyError } = await supabase
           .from('orders')
           .select('pickup_details')
@@ -106,7 +109,7 @@ export function useOrderSubmission() {
         if (verifyError) {
           console.error('Error verifying order:', verifyError);
         } else {
-          console.log('Verified pickup details:', verifyOrder.pickup_details);
+          console.log('Verified pickup details in database:', JSON.stringify(verifyOrder.pickup_details, null, 2));
         }
 
         const orderItems = categoryItems.map((item) => ({
