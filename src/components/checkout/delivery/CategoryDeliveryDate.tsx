@@ -3,7 +3,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { MapPin, Clock } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PickupDetail } from '@/types/pickup';
 
 interface CategoryDeliveryDateProps {
@@ -89,34 +88,31 @@ export function CategoryDeliveryDate({
         {hasPickupOptions && (
           <div className="space-y-2">
             <Label>Pickup Location & Time</Label>
-            <RadioGroup
-              value={selectedPickupDetail}
-              onValueChange={(value) => {
-                if (onPickupDetailChange) {
-                  onPickupDetailChange(value);
-                }
-              }}
-              className="grid gap-2"
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {pickupDetails.map((detail, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <RadioGroupItem value={`${index}`} id={`pickup-${category.id}-${index}`} />
-                  <Label
-                    htmlFor={`pickup-${category.id}-${index}`}
-                    className="flex items-center gap-4 rounded-lg border p-4 hover:bg-accent cursor-pointer w-full"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{detail.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{detail.location}</span>
-                    </div>
-                  </Label>
-                </div>
+                <button
+                  key={index}
+                  onClick={() => onPickupDetailChange?.(index.toString())}
+                  className={cn(
+                    "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all",
+                    "hover:border-primary hover:bg-accent",
+                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                    selectedPickupDetail === index.toString() 
+                      ? "border-primary bg-accent shadow-sm" 
+                      : "border-input"
+                  )}
+                >
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="font-medium">{detail.time}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">{detail.location}</span>
+                  </div>
+                </button>
               ))}
-            </RadioGroup>
+            </div>
           </div>
         )}
 
