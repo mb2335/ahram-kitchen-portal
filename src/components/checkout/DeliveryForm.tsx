@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CategoryDeliveryDate } from './delivery/CategoryDeliveryDate';
 import { DeliveryNotes } from './delivery/DeliveryNotes';
+import { PickupDetail } from '@/types/pickup';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -29,7 +30,19 @@ export function DeliveryForm({
         .order('order_index');
       
       if (error) throw error;
-      return data;
+
+      // Transform the pickup_details to ensure it matches PickupDetail type
+      return data.map(category => ({
+        id: category.id,
+        name: category.name,
+        delivery_available_from: category.delivery_available_from,
+        delivery_available_until: category.delivery_available_until,
+        has_custom_pickup: category.has_custom_pickup,
+        pickup_details: (category.pickup_details || []).map((detail: any) => ({
+          time: detail.time,
+          location: detail.location
+        })) as PickupDetail[]
+      }));
     },
   });
 
