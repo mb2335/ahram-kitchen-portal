@@ -139,7 +139,7 @@ export function CheckoutForm({
       return acc;
     }, {} as Record<string, PickupDetail>);
 
-    console.log('Submitting order with pickup details:', pickupDetailsForOrder);
+    console.log('Transformed pickup details for submission:', pickupDetailsForOrder);
 
     await submitOrder({
       items: itemsWithCategories,
@@ -170,7 +170,7 @@ export function CheckoutForm({
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
         selectedPickupDetails={selectedPickupDetails}
         onPickupDetailChange={(categoryId, pickupDetail) => {
-          console.log('Pickup detail changed:', { categoryId, pickupDetail });
+          console.log('Pickup detail selected:', { categoryId, pickupDetail });
           setSelectedPickupDetails({
             ...selectedPickupDetails,
             [categoryId]: pickupDetail
