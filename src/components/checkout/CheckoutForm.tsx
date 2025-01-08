@@ -114,7 +114,7 @@ export function CheckoutForm({
 
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
-      return category?.has_custom_pickup && !selectedPickupDetails[categoryId];
+      return category?.has_custom_pickup && !selectedPickupDetails[categoryId as string];
     });
 
     if (missingPickupDetails.length > 0) {
@@ -137,6 +137,8 @@ export function CheckoutForm({
       }
       return acc;
     }, {} as Record<string, PickupDetail>);
+
+    console.log('Submitting order with pickup details:', pickupDetailsForOrder);
 
     await submitOrder({
       items: itemsWithCategories,
@@ -166,12 +168,13 @@ export function CheckoutForm({
         }
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
         selectedPickupDetails={selectedPickupDetails}
-        onPickupDetailChange={(categoryId, pickupDetail) => 
+        onPickupDetailChange={(categoryId, pickupDetail) => {
+          console.log('Pickup detail changed:', { categoryId, pickupDetail });
           setSelectedPickupDetails({
             ...selectedPickupDetails,
             [categoryId]: pickupDetail
-          })
-        }
+          });
+        }}
       />
 
       <PaymentInstructions
