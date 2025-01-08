@@ -24,7 +24,6 @@ export function useOrderSubmission() {
     pickupDetails
   }: OrderSubmissionProps, paymentProof: File) => {
     console.log('[useOrderSubmission] Starting submission with pickup details:', pickupDetails);
-    
     setIsUploading(true);
 
     try {
@@ -37,7 +36,7 @@ export function useOrderSubmission() {
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
-      
+
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -56,35 +55,30 @@ export function useOrderSubmission() {
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
-        
-        const pickupDetail = pickupDetails[categoryId];
+
+        // Get pickup details for this specific category
+        const categoryPickupDetails = pickupDetails[categoryId];
         console.log('[useOrderSubmission] Creating order for category:', {
           categoryId,
-          pickupDetail,
+          pickupDetails: categoryPickupDetails,
           deliveryDate: deliveryDate.toISOString()
         });
-        
-        if (!pickupDetail) {
-          console.warn('[useOrderSubmission] No pickup detail found for category:', categoryId);
-        }
 
-        const orderData = {
-          customer_id: customerId,
-          total_amount: categoryTotal + categoryTaxAmount,
-          tax_amount: categoryTaxAmount,
-          notes: notes,
-          status: 'pending',
-          delivery_date: deliveryDate.toISOString(),
-          payment_proof_url: uploadData.path,
-          pickup_time: pickupDetail?.time,
-          pickup_location: pickupDetail?.location
-        };
-
-        console.log('[useOrderSubmission] Order data to insert:', orderData);
-
-        const { data: insertResult, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabase
           .from('orders')
-          .insert([orderData])
+          .insert([
+            {
+              customer_id: customerId,
+              total_amount: categoryTotal + categoryTaxAmount,
+              tax_amount: categoryTaxAmount,
+              notes: notes,
+              status: 'pending',
+              delivery_date: deliveryDate.toISOString(),
+              payment_proof_url: uploadData.path,
+              pickup_time: categoryPickupDetails?.time,
+              pickup_location: categoryPickupDetails?.location,
+            },
+          ])
           .select()
           .single();
 
@@ -93,10 +87,10 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        console.log('[useOrderSubmission] Order created successfully:', insertResult);
+        console.log('[useOrderSubmission] Order created successfully:', orderData);
 
         const orderItems = categoryItems.map((item) => ({
-          order_id: insertResult.id,
+          order_id: orderData.id,
           menu_item_id: item.id,
           quantity: item.quantity,
           unit_price: item.price,
@@ -108,7 +102,7 @@ export function useOrderSubmission() {
 
         if (orderItemsError) throw orderItemsError;
 
-        return insertResult;
+        return orderData;
       });
 
       const orders = await Promise.all(orderPromises);
@@ -120,7 +114,7 @@ export function useOrderSubmission() {
 
       await updateMenuItemQuantities(items);
       onOrderSuccess(validOrders[0].id);
-      
+
       const firstOrder = validOrders[0];
       const firstCategoryId = Object.keys(deliveryDates)[0];
       const firstPickupDetail = pickupDetails[firstCategoryId];
