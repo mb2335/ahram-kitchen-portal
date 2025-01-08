@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { format } from 'date-fns';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import { DateRange } from 'react-day-picker';
 
 interface OrderFiltersProps {
   onFilterChange: (filters: OrderFilters) => void;
@@ -13,11 +13,9 @@ interface OrderFiltersProps {
 }
 
 export interface OrderFilters {
-  dateFrom?: Date;
-  dateTo?: Date;
+  date?: Date;
   categoryId?: string;
   pickupLocation?: string;
-  pickupTime?: string;
 }
 
 export function OrderFilters({ onFilterChange, categories, pickupLocations }: OrderFiltersProps) {
@@ -32,10 +30,6 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
   const clearFilters = () => {
     setFilters({});
     onFilterChange({});
-  };
-
-  const formatDateForInput = (date: Date) => {
-    return format(date, 'yyyy-MM-dd');
   };
 
   return (
@@ -55,22 +49,15 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label>Pickup Date Range</Label>
-          <div className="flex gap-2 items-center">
-            <Input
-              type="date"
-              value={filters.dateFrom ? formatDateForInput(filters.dateFrom) : ''}
-              onChange={(e) => handleFilterChange('dateFrom', e.target.value ? new Date(e.target.value) : undefined)}
-              className="w-full"
-            />
-            <span>to</span>
-            <Input
-              type="date"
-              value={filters.dateTo ? formatDateForInput(filters.dateTo) : ''}
-              onChange={(e) => handleFilterChange('dateTo', e.target.value ? new Date(e.target.value) : undefined)}
-              className="w-full"
-            />
-          </div>
+          <Label>Pickup Date</Label>
+          <DatePickerWithRange
+            date={filters.date ? { from: filters.date, to: filters.date } : undefined}
+            onSelect={(dateRange: DateRange | undefined) => {
+              handleFilterChange('date', dateRange?.from);
+            }}
+            mode="single"
+            className="w-full"
+          />
         </div>
 
         <div className="space-y-2">
