@@ -66,10 +66,11 @@ export function OrderManagement() {
       }
 
       // Category filter
-      if (filters.categoryId && !order.order_items?.some(item => 
-        item.menu_item?.category_id === filters.categoryId
-      )) {
-        return false;
+      if (filters.categoryId) {
+        const hasCategory = order.order_items?.some(item => 
+          item.menu_item?.category?.id === filters.categoryId
+        );
+        if (!hasCategory) return false;
       }
 
       // Pickup location filter
@@ -91,10 +92,16 @@ export function OrderManagement() {
   const categories = Array.from(new Set(
     orders?.flatMap(order => 
       order.order_items?.map(item => ({
-        id: item.menu_item?.category_id,
-        name: item.menu_item?.category?.name
+        id: item.menu_item?.category?.id,
+        name: item.menu_item?.category?.name,
+        name_ko: item.menu_item?.category?.name_ko
       }))
-    ).filter(Boolean) || []
+    )
+    .filter(Boolean)
+    .filter((category, index, self) => 
+      category && 
+      index === self.findIndex(c => c?.id === category.id)
+    ) || []
   ));
 
   // Extract unique pickup locations from orders
