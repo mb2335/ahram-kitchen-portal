@@ -20,12 +20,13 @@ export function useOrderSubmission() {
     notes,
     deliveryDates,
     customerData,
+    pickupDetail,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
+    console.log('Starting order submission with pickup details:', pickupDetail);
 
     try {
-      // Validate all item IDs are proper UUIDs
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -34,10 +35,8 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      // Get or create customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
-      // Upload payment proof with unique filename
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -50,35 +49,48 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
-      // Create orders for each delivery date
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const categoryTaxAmount = categoryTotal * (taxAmount / total); // Proportional tax amount
+        const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        const { data: orderData, error: orderError } = await supabase
+        // Check if this category requires custom pickup details
+        const category = categoryItems[0]?.category;
+        const needsCustomPickup = category?.has_custom_pickup;
+
+        console.log('Debug pickup details:');
+        console.log('pickupDetail:', pickupDetail);
+        console.log('pickupDetail?.time:', pickupDetail?.time);
+        console.log('pickupDetail?.location:', pickupDetail?.location);
+        console.log('needsCustomPickup:', needsCustomPickup);
+        console.log('category:', category);
+
+        const orderData = {
+          customer_id: customerId,
+          total_amount: categoryTotal + categoryTaxAmount,
+          tax_amount: categoryTaxAmount,
+          notes: notes,
+          status: 'pending',
+          delivery_date: deliveryDate.toISOString(),
+          payment_proof_url: uploadData.path,
+          pickup_time: needsCustomPickup ? pickupDetail?.time : null,
+          pickup_location: needsCustomPickup ? pickupDetail?.location : null,
+        };
+
+        console.log('Creating order with data:', orderData);
+
+        const { data: insertedOrder, error: orderError } = await supabase
           .from('orders')
-          .insert([
-            {
-              customer_id: customerId,
-              total_amount: categoryTotal + categoryTaxAmount,
-              tax_amount: categoryTaxAmount,
-              notes: notes,
-              status: 'pending',
-              delivery_date: deliveryDate.toISOString(),
-              payment_proof_url: uploadData.path,
-            },
-          ])
+          .insert([orderData])
           .select()
           .single();
 
         if (orderError) throw orderError;
 
-        // Create order items for this category
         const orderItems = categoryItems.map((item) => ({
-          order_id: orderData.id,
+          order_id: insertedOrder.id,
           menu_item_id: item.id,
           quantity: item.quantity,
           unit_price: item.price,
@@ -90,7 +102,7 @@ export function useOrderSubmission() {
 
         if (orderItemsError) throw orderItemsError;
 
-        return orderData;
+        return insertedOrder;
       });
 
       const orders = await Promise.all(orderPromises);
@@ -100,17 +112,15 @@ export function useOrderSubmission() {
         throw new Error('No valid orders could be created');
       }
 
-      // Update menu item quantities
       await updateMenuItemQuantities(items);
-
-      // Call onOrderSuccess with the first order ID (we can enhance this later if needed)
       onOrderSuccess(validOrders[0].id);
+
+      const firstOrder = validOrders[0];
       
-      // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {
-            id: validOrders[0].id,
+            id: firstOrder.id,
             items: items.map(item => ({
               name: item.name,
               nameKo: item.nameKo,
@@ -119,11 +129,14 @@ export function useOrderSubmission() {
             })),
             total: total + taxAmount,
             taxAmount: taxAmount,
-            createdAt: validOrders[0].created_at
+            createdAt: firstOrder.created_at,
+            pickupTime: firstOrder.pickup_time,
+            pickupLocation: firstOrder.pickup_location
           }
         },
         replace: true
       });
+
     } catch (error: any) {
       console.error('Error submitting order:', error);
       toast({
