@@ -71,16 +71,15 @@ export function useOrderSubmission() {
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         console.log('Processing category:', categoryId);
         console.log('Delivery date:', deliveryDate);
-        console.log('Pickup details for category:', pickupDetails[categoryId]);
+        
+        const pickupDetail = pickupDetails[categoryId];
+        console.log('Using pickup detail for category:', categoryId, pickupDetail);
         
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
 
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
-
-        const pickupDetail = pickupDetails[categoryId];
-        console.log('Using pickup detail:', pickupDetail);
         
         const orderData = {
           customer_id: customerId,
@@ -90,8 +89,8 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_time: pickupDetail ? pickupDetail.time : null,
-          pickup_location: pickupDetail ? pickupDetail.location : null
+          pickup_time: pickupDetail?.time || null,
+          pickup_location: pickupDetail?.location || null
         };
 
         console.log('Creating order with data:', orderData);
@@ -127,10 +126,7 @@ export function useOrderSubmission() {
           throw orderItemsError;
         }
 
-        return {
-          ...insertResult,
-          pickupDetails: pickupDetail
-        };
+        return insertResult;
       });
 
       const orders = await Promise.all(orderPromises);
@@ -146,8 +142,9 @@ export function useOrderSubmission() {
       console.log('Order submission successful');
       onOrderSuccess(validOrders[0].id);
       
+      const firstOrder = validOrders[0];
       const thankYouPageData = {
-        id: validOrders[0].id,
+        id: firstOrder.id,
         items: items.map(item => ({
           name: item.name,
           nameKo: item.nameKo,
@@ -156,9 +153,9 @@ export function useOrderSubmission() {
         })),
         total: total + taxAmount,
         taxAmount: taxAmount,
-        createdAt: validOrders[0].created_at,
-        pickupTime: validOrders[0].pickup_time,
-        pickupLocation: validOrders[0].pickup_location
+        createdAt: firstOrder.created_at,
+        pickupTime: firstOrder.pickup_time,
+        pickupLocation: firstOrder.pickup_location
       };
       
       console.log('Navigating to thank you page with data:', thankYouPageData);
