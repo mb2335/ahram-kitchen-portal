@@ -17,10 +17,8 @@ interface OrderDetails {
   total: number;
   taxAmount: number;
   createdAt: string;
-  pickupDetails?: {
-    time: string;
-    location: string;
-  };
+  pickupTime: string | null;
+  pickupLocation: string | null;
 }
 
 export function OrderThankYou() {
@@ -49,19 +47,19 @@ export function OrderThankYou() {
             Placed on {format(new Date(orderDetails.createdAt), 'PPP')}
           </p>
 
-          {orderDetails.pickupDetails && (
+          {(orderDetails.pickupTime || orderDetails.pickupLocation) && (
             <div className="space-y-2 border-t pt-4">
               <h3 className="font-semibold">Pickup Details</h3>
-              {orderDetails.pickupDetails.time && (
+              {orderDetails.pickupTime && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Clock className="h-4 w-4" />
-                  <span>{orderDetails.pickupDetails.time}</span>
+                  <span>{orderDetails.pickupTime}</span>
                 </div>
               )}
-              {orderDetails.pickupDetails.location && (
+              {orderDetails.pickupLocation && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <MapPin className="h-4 w-4" />
-                  <span>{orderDetails.pickupDetails.location}</span>
+                  <span>{orderDetails.pickupLocation}</span>
                 </div>
               )}
             </div>

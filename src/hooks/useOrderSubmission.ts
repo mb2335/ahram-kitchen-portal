@@ -88,11 +88,6 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        if (!insertResult) {
-          console.error('No order data returned after insertion');
-          throw new Error('No order data returned after insertion');
-        }
-
         console.log('Order created successfully:', insertResult);
 
         const orderItems = categoryItems.map((item) => ({
@@ -109,8 +104,6 @@ export function useOrderSubmission() {
           .insert(orderItems);
 
         if (orderItemsError) throw orderItemsError;
-
-        console.log('Order items created successfully');
 
         return insertResult;
       });
@@ -142,10 +135,8 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: validOrders[0].created_at,
-            pickupDetails: {
-              time: validOrders[0].pickup_time,
-              location: validOrders[0].pickup_location
-            }
+            pickupTime: validOrders[0].pickup_time,
+            pickupLocation: validOrders[0].pickup_location
           }
         },
         replace: true
