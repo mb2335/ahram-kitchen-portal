@@ -56,16 +56,18 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Check if this category requires custom pickup details
-        const category = categoryItems[0]?.category;
-        const needsCustomPickup = category?.has_custom_pickup;
-
+        // Get the first item's category to check for custom pickup
+        const firstItem = categoryItems[0];
+        const category = firstItem?.category;
+        
         console.log('Debug pickup details:');
+        console.log('Category:', category);
         console.log('pickupDetail:', pickupDetail);
         console.log('pickupDetail?.time:', pickupDetail?.time);
         console.log('pickupDetail?.location:', pickupDetail?.location);
+        
+        const needsCustomPickup = category?.has_custom_pickup ?? false;
         console.log('needsCustomPickup:', needsCustomPickup);
-        console.log('category:', category);
 
         const orderData = {
           customer_id: customerId,
