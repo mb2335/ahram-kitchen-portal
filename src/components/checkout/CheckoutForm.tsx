@@ -126,8 +126,6 @@ export function CheckoutForm({
       return;
     }
 
-    console.log('Selected pickup details before submission:', selectedPickupDetails);
-
     await submitOrder({
       items: itemsWithCategories,
       total,
@@ -157,7 +155,6 @@ export function CheckoutForm({
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
         selectedPickupDetails={selectedPickupDetails}
         onPickupDetailChange={(categoryId, pickupDetail) => {
-          console.log('Pickup detail selected:', { categoryId, pickupDetail });
           setSelectedPickupDetails({
             ...selectedPickupDetails,
             [categoryId]: pickupDetail

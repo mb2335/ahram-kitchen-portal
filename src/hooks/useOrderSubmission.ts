@@ -23,7 +23,6 @@ export function useOrderSubmission() {
     onOrderSuccess,
     pickupDetails
   }: OrderSubmissionProps, paymentProof: File) => {
-    console.log('Starting order submission with pickup details:', pickupDetails);
     setIsUploading(true);
 
     try {
@@ -36,12 +35,10 @@ export function useOrderSubmission() {
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
-      console.log('Customer ID retrieved:', customerId);
 
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
-      console.log('Uploading payment proof:', fileName);
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('payment_proofs')
         .upload(fileName, paymentProof, {
@@ -50,10 +47,8 @@ export function useOrderSubmission() {
         });
 
       if (uploadError) throw uploadError;
-      console.log('Payment proof uploaded successfully:', uploadData.path);
 
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
-        console.log('Processing order for category:', categoryId);
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
 
@@ -61,7 +56,6 @@ export function useOrderSubmission() {
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
         const pickupDetailsForCategory = pickupDetails[categoryId];
-        console.log('Pickup details for category:', pickupDetailsForCategory);
 
         const orderData = {
           customer_id: customerId,
@@ -75,20 +69,13 @@ export function useOrderSubmission() {
           pickup_location: pickupDetailsForCategory?.location || null
         };
 
-        console.log('Creating order with data:', orderData);
-
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
           .select()
           .single();
 
-        if (orderError) {
-          console.error('Error creating order:', orderError);
-          throw orderError;
-        }
-
-        console.log('Order created successfully:', insertResult);
+        if (orderError) throw orderError;
 
         const orderItems = categoryItems.map((item) => ({
           order_id: insertResult.id,
@@ -113,11 +100,7 @@ export function useOrderSubmission() {
         throw new Error('No valid orders could be created');
       }
 
-      console.log('All orders created successfully:', validOrders);
-
       await updateMenuItemQuantities(items);
-      console.log('Menu item quantities updated');
-
       onOrderSuccess(validOrders[0].id);
       
       navigate('/thank-you', {
@@ -140,7 +123,6 @@ export function useOrderSubmission() {
         replace: true
       });
     } catch (error: any) {
-      console.error('Error submitting order:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',

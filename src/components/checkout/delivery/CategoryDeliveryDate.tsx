@@ -55,11 +55,6 @@ export function CategoryDeliveryDate({
   };
 
   const handlePickupDetailSelection = (detail: PickupDetail) => {
-    console.log('Pickup detail selected:', {
-      categoryId: category.id,
-      categoryName: category.name,
-      detail
-    });
     onPickupDetailChange?.(detail);
   };
 
@@ -80,10 +75,6 @@ export function CategoryDeliveryDate({
               if (e.target.value) {
                 const selectedDate = new Date(e.target.value + 'T12:00:00');
                 if (!isNaN(selectedDate.getTime()) && !isDateDisabled(selectedDate)) {
-                  console.log('Date selected for category:', {
-                    categoryId: category.id,
-                    date: selectedDate
-                  });
                   onDateChange(selectedDate);
                 }
               }
