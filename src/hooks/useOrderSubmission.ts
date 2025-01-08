@@ -36,19 +36,35 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
-      console.log('[useOrderSubmission] Calling debug-order-submission function');
-      const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-order-submission', {
-        body: {
-          items,
-          total,
-          taxAmount,
-          notes,
-          deliveryDates,
-          customerData,
-          pickupDetails,
-          paymentProofName: paymentProof.name
+      // Prepare debug payload
+      const debugPayload = {
+        items: items.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          category_id: item.category_id
+        })),
+        total,
+        taxAmount,
+        notes,
+        deliveryDates,
+        customerData,
+        pickupDetails,
+        paymentProofName: paymentProof.name
+      };
+
+      console.log('[useOrderSubmission] Calling debug-order-submission with payload:', debugPayload);
+
+      const { data: debugData, error: debugError } = await supabase.functions.invoke(
+        'debug-order-submission',
+        {
+          body: debugPayload,
+          headers: {
+            'Content-Type': 'application/json',
+          }
         }
-      });
+      );
 
       console.log('[useOrderSubmission] Debug function response:', { debugData, debugError });
 
