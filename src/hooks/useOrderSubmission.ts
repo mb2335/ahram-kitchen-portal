@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSubmissionProps } from '@/types/order';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
-import { Json } from '@/integrations/supabase/types';
 
 export function useOrderSubmission() {
   const session = useSession();
@@ -67,10 +66,18 @@ export function useOrderSubmission() {
 
         // Get pickup details for this category
         const pickupDetailsForCategory = pickupDetails[categoryId];
-        console.log('Pickup details for category:', {
+        console.log('Raw pickup details for category:', {
           categoryId,
           pickupDetails: pickupDetailsForCategory
         });
+
+        // Simplify to basic time/location object
+        const simplifiedPickupDetails = pickupDetailsForCategory ? {
+          time: pickupDetailsForCategory.time,
+          location: pickupDetailsForCategory.location
+        } : null;
+
+        console.log('Simplified pickup details:', simplifiedPickupDetails);
 
         const orderPayload = {
           customer_id: customerId,
@@ -80,14 +87,14 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetailsForCategory as unknown as Json
+          pickup_details: simplifiedPickupDetails
         };
 
         console.log('Submitting order with payload:', orderPayload);
 
-        const { data: orderData, error: orderError } = await supabase
+        const { data: insertResult, error: orderError } = await supabase
           .from('orders')
-          .insert(orderPayload)
+          .insert([orderPayload])
           .select('*, pickup_details')
           .single();
 
@@ -96,16 +103,32 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        if (!orderData) {
+        if (!insertResult) {
           console.error('No order data returned after insertion');
           throw new Error('No order data returned after insertion');
         }
 
-        console.log('Order created successfully:', orderData);
+        console.log('Order created successfully:', insertResult);
+
+        // Verify the saved pickup details
+        const { data: verifiedOrder, error: verifyError } = await supabase
+          .from('orders')
+          .select('id, pickup_details')
+          .eq('id', insertResult.id)
+          .single();
+
+        if (verifyError) {
+          console.error('Error verifying order:', verifyError);
+        } else {
+          console.log('Verified pickup details in database:', {
+            orderId: verifiedOrder.id,
+            pickupDetails: verifiedOrder.pickup_details
+          });
+        }
 
         // Create order items
         const orderItems = categoryItems.map((item) => ({
-          order_id: orderData.id,
+          order_id: insertResult.id,
           menu_item_id: item.id,
           quantity: item.quantity,
           unit_price: item.price,
@@ -121,7 +144,7 @@ export function useOrderSubmission() {
 
         console.log('Order items created successfully');
 
-        return orderData;
+        return insertResult;
       });
 
       const orders = await Promise.all(orderPromises);
@@ -138,7 +161,7 @@ export function useOrderSubmission() {
 
       onOrderSuccess(validOrders[0].id);
       
-      // Navigate to thank you page with order details
+      // Navigate to thank you page with verified pickup details
       navigate('/thank-you', {
         state: {
           orderDetails: {
