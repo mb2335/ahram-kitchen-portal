@@ -88,9 +88,7 @@ export function CheckoutForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Starting form validation');
-    console.log('Current form data:', formData);
-    console.log('Selected pickup details:', selectedPickupDetails);
+    console.log('[CheckoutForm] Starting form submission with pickup details:', selectedPickupDetails);
     
     if (!paymentProof) {
       toast({

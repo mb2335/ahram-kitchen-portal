@@ -23,11 +23,7 @@ export function useOrderSubmission() {
     onOrderSuccess,
     pickupDetails
   }: OrderSubmissionProps, paymentProof: File) => {
-    console.log('[useOrderSubmission] Starting submission with:', {
-      items,
-      pickupDetails,
-      deliveryDates
-    });
+    console.log('[useOrderSubmission] Starting submission with pickup details:', pickupDetails);
     
     setIsUploading(true);
 
@@ -97,7 +93,7 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        console.log('[useOrderSubmission] Order created:', insertResult);
+        console.log('[useOrderSubmission] Order created successfully:', insertResult);
 
         const orderItems = categoryItems.map((item) => ({
           order_id: insertResult.id,

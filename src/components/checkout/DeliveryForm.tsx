@@ -57,12 +57,19 @@ export function DeliveryForm({
   });
 
   const handlePickupDetailChange = (categoryId: string, pickupDetail: PickupDetail) => {
-    console.log('[DeliveryForm] Pickup detail change:', {
+    console.log('[DeliveryForm] Before pickup detail change:', {
       categoryId,
       pickupDetail,
       currentDetails: selectedPickupDetails
     });
+    
     onPickupDetailChange(categoryId, pickupDetail);
+    
+    console.log('[DeliveryForm] After pickup detail change:', {
+      categoryId,
+      pickupDetail,
+      newDetails: { ...selectedPickupDetails, [categoryId]: pickupDetail }
+    });
   };
 
   const itemsByCategory = items.reduce((acc, item) => {

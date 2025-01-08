@@ -55,12 +55,18 @@ export function CategoryDeliveryDate({
   };
 
   const handlePickupDetailSelection = (detail: PickupDetail) => {
-    console.log('[CategoryDeliveryDate] Selected pickup detail:', {
+    console.log('[CategoryDeliveryDate] Before selection:', {
       categoryId: category.id,
-      detail,
-      rawSelectedDetail: selectedPickupDetail
+      currentSelectedDetail: selectedPickupDetail,
+      newDetail: detail
     });
+    
     onPickupDetailChange?.(detail);
+    
+    console.log('[CategoryDeliveryDate] After selection:', {
+      categoryId: category.id,
+      detail
+    });
   };
 
   const pickupDetails = category.pickup_details as PickupDetail[];
