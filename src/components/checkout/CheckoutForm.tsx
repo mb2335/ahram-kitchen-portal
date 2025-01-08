@@ -126,6 +126,7 @@ export function CheckoutForm({
       return;
     }
 
+    // Transform selectedPickupDetails indices into actual pickup detail objects
     const pickupDetailsForOrder = Object.entries(selectedPickupDetails).reduce((acc, [categoryId, pickupDetailIndex]) => {
       const category = categories.find(cat => cat.id === categoryId);
       if (category?.pickup_details && category.pickup_details[parseInt(pickupDetailIndex)]) {
