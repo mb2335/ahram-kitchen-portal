@@ -89,20 +89,22 @@ export function OrderManagement() {
   };
 
   // Extract unique categories from orders
-  const categories = Array.from(new Set(
-    orders?.flatMap(order => 
-      order.order_items?.map(item => ({
-        id: item.menu_item?.category?.id,
-        name: item.menu_item?.category?.name,
-        name_ko: item.menu_item?.category?.name_ko
-      }))
-    )
-    .filter(Boolean)
-    .filter((category, index, self) => 
-      category && 
-      index === self.findIndex(c => c?.id === category.id)
-    ) || []
-  ));
+  const uniqueCategories = new Set();
+  const categories = orders?.flatMap(order => 
+    order.order_items?.map(item => {
+      const category = item.menu_item?.category;
+      if (category && !uniqueCategories.has(category.id)) {
+        uniqueCategories.add(category.id);
+        return {
+          id: category.id,
+          name: category.name,
+          name_ko: category.name_ko
+        };
+      }
+      return null;
+    })
+  )
+  .filter(Boolean) || [];
 
   // Extract unique pickup locations from orders
   const pickupLocations = Array.from(new Set(
