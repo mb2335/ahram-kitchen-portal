@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2 } from "lucide-react";
 import { parse } from "date-fns";
 import { CategoryFormData, PickupDetail } from "./types/category";
@@ -60,104 +61,108 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <Label className="block text-sm font-medium mb-1">Name (English)</Label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-        />
-      </div>
-      <div>
-        <Label className="block text-sm font-medium mb-1">Name (Korean)</Label>
-        <Input
-          value={formData.name_ko}
-          onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Delivery Available From</Label>
-        <Input
-          type="date"
-          value={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : ''}
-          onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
-          className="flex-1"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Delivery Available Until</Label>
-        <Input
-          type="date"
-          value={formData.deliveryAvailableUntil ? formData.deliveryAvailableUntil.toISOString().split('T')[0] : ''}
-          onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
-          className="flex-1"
-          min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
-        />
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="has_custom_pickup"
-          checked={formData.has_custom_pickup}
-          onCheckedChange={(checked) => 
-            setFormData({ 
-              ...formData, 
-              has_custom_pickup: checked as boolean,
-              pickup_details: checked ? [{ time: '', location: '' }] : []
-            })
-          }
-        />
-        <Label htmlFor="has_custom_pickup">Custom locations & times</Label>
-      </div>
-
-      {formData.has_custom_pickup && (
+    <form onSubmit={onSubmit}>
+      <ScrollArea className="h-[60vh] pr-4">
         <div className="space-y-4">
-          {formData.pickup_details.map((detail, index) => (
-            <div key={index} className="flex gap-4 items-start">
-              <div className="flex-1">
-                <Label>Pickup Time</Label>
-                <Input
-                  value={detail.time}
-                  onChange={(e) => updatePickupDetail(index, 'time', e.target.value)}
-                  placeholder="e.g., 2-4 PM"
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Pickup Location</Label>
-                <Input
-                  value={detail.location}
-                  onChange={(e) => updatePickupDetail(index, 'location', e.target.value)}
-                  placeholder="e.g., Main Entrance"
-                />
-              </div>
+          <div>
+            <Label className="block text-sm font-medium mb-1">Name (English)</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <Label className="block text-sm font-medium mb-1">Name (Korean)</Label>
+            <Input
+              value={formData.name_ko}
+              onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Delivery Available From</Label>
+            <Input
+              type="date"
+              value={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : ''}
+              onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
+              className="flex-1"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Delivery Available Until</Label>
+            <Input
+              type="date"
+              value={formData.deliveryAvailableUntil ? formData.deliveryAvailableUntil.toISOString().split('T')[0] : ''}
+              onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
+              className="flex-1"
+              min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="has_custom_pickup"
+              checked={formData.has_custom_pickup}
+              onCheckedChange={(checked) => 
+                setFormData({ 
+                  ...formData, 
+                  has_custom_pickup: checked as boolean,
+                  pickup_details: checked ? [{ time: '', location: '' }] : []
+                })
+              }
+            />
+            <Label htmlFor="has_custom_pickup">Custom locations & times</Label>
+          </div>
+
+          {formData.has_custom_pickup && (
+            <div className="space-y-4">
+              {formData.pickup_details.map((detail, index) => (
+                <div key={index} className="flex gap-4 items-start">
+                  <div className="flex-1">
+                    <Label>Pickup Time</Label>
+                    <Input
+                      value={detail.time}
+                      onChange={(e) => updatePickupDetail(index, 'time', e.target.value)}
+                      placeholder="e.g., 2-4 PM"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label>Pickup Location</Label>
+                    <Input
+                      value={detail.location}
+                      onChange={(e) => updatePickupDetail(index, 'location', e.target.value)}
+                      placeholder="e.g., Main Entrance"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="mt-6"
+                    onClick={() => removePickupDetail(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
               <Button
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="mt-6"
-                onClick={() => removePickupDetail(index)}
+                variant="outline"
+                className="w-full"
+                onClick={addPickupDetail}
               >
-                <Trash2 className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Time & Location
               </Button>
             </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={addPickupDetail}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Another Time & Location
-          </Button>
+          )}
         </div>
-      )}
+      </ScrollArea>
 
-      <Button type="submit" className="w-full">
+      <Button type="submit" className="w-full mt-4">
         {formData.name ? 'Save Changes' : 'Add Category'}
       </Button>
     </form>
