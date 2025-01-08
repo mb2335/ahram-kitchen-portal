@@ -55,8 +55,8 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        const pickupDetailsForCategory = pickupDetails[categoryId];
-
+        const pickupDetail = pickupDetails[categoryId];
+        
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -65,8 +65,8 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_time: pickupDetailsForCategory?.time || null,
-          pickup_location: pickupDetailsForCategory?.location || null
+          pickup_time: pickupDetail?.time || null,
+          pickup_location: pickupDetail?.location || null
         };
 
         const { data: insertResult, error: orderError } = await supabase
@@ -90,7 +90,10 @@ export function useOrderSubmission() {
 
         if (orderItemsError) throw orderItemsError;
 
-        return insertResult;
+        return {
+          ...insertResult,
+          pickupDetails: pickupDetail
+        };
       });
 
       const orders = await Promise.all(orderPromises);
@@ -116,8 +119,7 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: validOrders[0].created_at,
-            pickupTime: validOrders[0].pickup_time,
-            pickupLocation: validOrders[0].pickup_location
+            pickupDetails: validOrders[0].pickupDetails
           }
         },
         replace: true
