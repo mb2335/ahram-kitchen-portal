@@ -66,18 +66,10 @@ export function useOrderSubmission() {
 
         // Get pickup details for this category
         const pickupDetailsForCategory = pickupDetails[categoryId];
-        console.log('Raw pickup details for category:', {
+        console.log('Pickup details for category:', {
           categoryId,
           pickupDetails: pickupDetailsForCategory
         });
-
-        // Simplify to basic time/location object
-        const simplifiedPickupDetails = pickupDetailsForCategory ? {
-          time: pickupDetailsForCategory.time,
-          location: pickupDetailsForCategory.location
-        } : null;
-
-        console.log('Simplified pickup details:', simplifiedPickupDetails);
 
         const orderPayload = {
           customer_id: customerId,
@@ -87,12 +79,12 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: simplifiedPickupDetails
+          pickup_details: pickupDetailsForCategory
         };
 
         console.log('Submitting order with payload:', orderPayload);
 
-        const { data: insertResult, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .insert([orderPayload])
           .select('*, pickup_details')
@@ -103,32 +95,16 @@ export function useOrderSubmission() {
           throw orderError;
         }
 
-        if (!insertResult) {
+        if (!orderData) {
           console.error('No order data returned after insertion');
           throw new Error('No order data returned after insertion');
         }
 
-        console.log('Order created successfully:', insertResult);
-
-        // Verify the saved pickup details
-        const { data: verifiedOrder, error: verifyError } = await supabase
-          .from('orders')
-          .select('id, pickup_details')
-          .eq('id', insertResult.id)
-          .single();
-
-        if (verifyError) {
-          console.error('Error verifying order:', verifyError);
-        } else {
-          console.log('Verified pickup details in database:', {
-            orderId: verifiedOrder.id,
-            pickupDetails: verifiedOrder.pickup_details
-          });
-        }
+        console.log('Order created successfully:', orderData);
 
         // Create order items
         const orderItems = categoryItems.map((item) => ({
-          order_id: insertResult.id,
+          order_id: orderData.id,
           menu_item_id: item.id,
           quantity: item.quantity,
           unit_price: item.price,
@@ -144,7 +120,7 @@ export function useOrderSubmission() {
 
         console.log('Order items created successfully');
 
-        return insertResult;
+        return orderData;
       });
 
       const orders = await Promise.all(orderPromises);
@@ -161,7 +137,7 @@ export function useOrderSubmission() {
 
       onOrderSuccess(validOrders[0].id);
       
-      // Navigate to thank you page with verified pickup details
+      // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {

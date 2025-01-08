@@ -243,6 +243,7 @@ export type Database = {
           id: string
           notes: string | null
           payment_proof_url: string
+          pickup_details: Json | null
           rejection_reason: string | null
           status: string
           tax_amount: number
@@ -255,6 +256,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_proof_url: string
+          pickup_details?: Json | null
           rejection_reason?: string | null
           status?: string
           tax_amount: number
@@ -267,6 +269,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_proof_url?: string
+          pickup_details?: Json | null
           rejection_reason?: string | null
           status?: string
           tax_amount?: number
