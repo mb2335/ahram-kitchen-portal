@@ -6,12 +6,14 @@ import { CategoryHeader } from './components/CategoryHeader';
 import { useCategoryManagement } from './hooks/useCategoryManagement';
 import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PickupDetail } from './types/category';
+import { useEffect } from 'react';
 
 export function CategoryManagement() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const {
     isDialogOpen,
     setIsDialogOpen,
@@ -35,16 +37,35 @@ export function CategoryManagement() {
       
       if (error) throw error;
       
-      // Convert the JSON pickup_details to PickupDetail type
       return data.map(category => ({
         ...category,
-        pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          time: detail.time || '',
-          location: detail.location || ''
-        }))
+        pickup_details: (category.pickup_details || []) as PickupDetail[]
       })) as Category[];
     },
   });
+
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('category-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        (payload) => {
+          console.log('Category change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const handleDelete = async (categoryId: string) => {
     try {
@@ -123,7 +144,7 @@ export function CategoryManagement() {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
           </DialogHeader>

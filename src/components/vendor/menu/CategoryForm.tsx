@@ -61,15 +61,16 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   };
 
   return (
-    <form onSubmit={onSubmit}>
-      <ScrollArea className="h-[60vh] pr-4">
-        <div className="space-y-4">
+    <form onSubmit={onSubmit} className="w-full max-w-2xl mx-auto">
+      <ScrollArea className="h-[60vh] pr-6">
+        <div className="space-y-4 w-full">
           <div>
             <Label className="block text-sm font-medium mb-1">Name (English)</Label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              className="w-full"
             />
           </div>
           <div>
@@ -78,6 +79,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               value={formData.name_ko}
               onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })}
               required
+              className="w-full"
             />
           </div>
 
@@ -87,7 +89,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               type="date"
               value={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : ''}
               onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
-              className="flex-1"
+              className="w-full"
             />
           </div>
 
@@ -97,7 +99,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               type="date"
               value={formData.deliveryAvailableUntil ? formData.deliveryAvailableUntil.toISOString().split('T')[0] : ''}
               onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
-              className="flex-1"
+              className="w-full"
               min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
             />
           </div>
@@ -127,6 +129,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       value={detail.time}
                       onChange={(e) => updatePickupDetail(index, 'time', e.target.value)}
                       placeholder="e.g., 2-4 PM"
+                      className="w-full"
                     />
                   </div>
                   <div className="flex-1">
@@ -135,6 +138,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       value={detail.location}
                       onChange={(e) => updatePickupDetail(index, 'location', e.target.value)}
                       placeholder="e.g., Main Entrance"
+                      className="w-full"
                     />
                   </div>
                   <Button
