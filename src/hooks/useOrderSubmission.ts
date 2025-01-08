@@ -59,19 +59,19 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Format pickup details as JSONB
+        // Format pickup details as JSONB with proper structure
         const pickupDetailsForCategory = pickupDetails[categoryId];
         const formattedPickupDetails = pickupDetailsForCategory ? {
           time: pickupDetailsForCategory.time,
           location: pickupDetailsForCategory.location
         } : null;
 
-        console.log('Submitting order with pickup details:', JSON.stringify(formattedPickupDetails, null, 2));
+        console.log('Submitting order with formatted pickup details:', JSON.stringify(formattedPickupDetails, null, 2));
 
-        // Create order with explicit JSONB handling
+        // Create order with explicit JSONB handling and array wrapper
         const { data: order, error: orderError } = await supabase
           .from('orders')
-          .insert({
+          .insert([{
             customer_id: customerId,
             total_amount: categoryTotal + categoryTaxAmount,
             tax_amount: categoryTaxAmount,
@@ -80,13 +80,26 @@ export function useOrderSubmission() {
             delivery_date: deliveryDate.toISOString(),
             payment_proof_url: uploadData.path,
             pickup_details: formattedPickupDetails
-          })
-          .select()
+          }])
+          .select('*, pickup_details')
           .single();
 
         if (orderError) {
           console.error('Error creating order:', orderError);
           throw orderError;
+        }
+
+        // Verify the saved pickup details
+        const { data: verifiedOrder, error: verifyError } = await supabase
+          .from('orders')
+          .select('pickup_details')
+          .eq('id', order.id)
+          .single();
+
+        if (verifyError) {
+          console.error('Error verifying order:', verifyError);
+        } else {
+          console.log('Verified pickup details in database:', JSON.stringify(verifiedOrder.pickup_details, null, 2));
         }
 
         // Create order items
@@ -117,7 +130,7 @@ export function useOrderSubmission() {
 
       onOrderSuccess(validOrders[0].id);
       
-      // Navigate to thank you page with order details
+      // Navigate to thank you page with verified pickup details
       navigate('/thank-you', {
         state: {
           orderDetails: {
