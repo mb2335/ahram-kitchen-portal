@@ -26,6 +26,7 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
+      // Validate item IDs
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -34,8 +35,10 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
+      // Get or create customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
+      // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -48,6 +51,7 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
+      // Create orders for each category
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
@@ -55,8 +59,10 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
+        // Get pickup details for this category
         const pickupDetail = pickupDetails[categoryId];
         
+        // Prepare order data with pickup details
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -65,10 +71,11 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_time: pickupDetail?.time || null,
-          pickup_location: pickupDetail?.location || null
+          pickup_time: pickupDetail ? pickupDetail.time : null,
+          pickup_location: pickupDetail ? pickupDetail.location : null
         };
 
+        // Insert order
         const { data: insertResult, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
@@ -77,6 +84,7 @@ export function useOrderSubmission() {
 
         if (orderError) throw orderError;
 
+        // Create order items
         const orderItems = categoryItems.map((item) => ({
           order_id: insertResult.id,
           menu_item_id: item.id,
@@ -103,9 +111,11 @@ export function useOrderSubmission() {
         throw new Error('No valid orders could be created');
       }
 
+      // Update menu item quantities
       await updateMenuItemQuantities(items);
       onOrderSuccess(validOrders[0].id);
       
+      // Navigate to thank you page with order details
       navigate('/thank-you', {
         state: {
           orderDetails: {
@@ -119,7 +129,8 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: validOrders[0].created_at,
-            pickupDetails: validOrders[0].pickupDetails
+            pickupTime: validOrders[0].pickup_time,
+            pickupLocation: validOrders[0].pickup_location
           }
         },
         replace: true
