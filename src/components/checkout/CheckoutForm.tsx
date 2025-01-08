@@ -88,6 +88,9 @@ export function CheckoutForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Starting form validation');
+    console.log('Current form data:', formData);
+    console.log('Selected pickup details:', selectedPickupDetails);
     
     if (!paymentProof) {
       toast({
@@ -99,11 +102,14 @@ export function CheckoutForm({
     }
 
     const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
+    console.log('Categories with items:', categoriesWithItems);
+    
     const missingDates = Array.from(categoriesWithItems).filter(
       categoryId => !formData.deliveryDates[categoryId as string]
     );
 
     if (missingDates.length > 0) {
+      console.log('Missing dates for categories:', missingDates);
       toast({
         title: 'Error',
         description: 'Please select pickup dates for all categories',
@@ -119,6 +125,7 @@ export function CheckoutForm({
     });
 
     if (missingPickupDetails.length > 0) {
+      console.log('Missing pickup details for categories:', missingPickupDetails);
       const categoryNames = missingPickupDetails
         .map(id => categories.find(cat => cat.id === id)?.name)
         .filter(Boolean)
@@ -131,6 +138,16 @@ export function CheckoutForm({
       });
       return;
     }
+
+    console.log('Form validation passed, submitting order with:', {
+      items: itemsWithCategories,
+      total,
+      taxAmount,
+      notes: formData.notes,
+      deliveryDates: formData.deliveryDates,
+      customerData,
+      pickupDetails: selectedPickupDetails
+    });
 
     await submitOrder({
       items: itemsWithCategories,
@@ -161,6 +178,7 @@ export function CheckoutForm({
         onNotesChange={(e) => setFormData({ ...formData, notes: e.target.value })}
         selectedPickupDetails={selectedPickupDetails}
         onPickupDetailChange={(categoryId, pickupDetail) => {
+          console.log('Pickup detail changed for category:', categoryId, pickupDetail);
           setSelectedPickupDetails({
             ...selectedPickupDetails,
             [categoryId]: pickupDetail
