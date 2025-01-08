@@ -112,15 +112,21 @@ export function CheckoutForm({
       return;
     }
 
+    // Check for missing pickup details for categories that require them
     const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       return category?.has_custom_pickup && !selectedPickupDetails[categoryId as string];
     });
 
     if (missingPickupDetails.length > 0) {
+      const categoryNames = missingPickupDetails
+        .map(id => categories.find(cat => cat.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      
       toast({
         title: 'Error',
-        description: 'Please select pickup locations and times for all categories',
+        description: `Please select pickup time and location for: ${categoryNames}`,
         variant: 'destructive',
       });
       return;

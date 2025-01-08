@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { MapPin, Clock } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface OrderDetails {
   id: string;
@@ -36,7 +37,7 @@ export function OrderThankYou() {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Thanks, your order has been placed.</h1>
           <p className="text-gray-600">
-            Here is a detailed summary of your order. Contact mjbutler.35@gmail.com if you have any questions, changes, etc.
+            Here is a detailed summary of your order.
           </p>
         </div>
 
@@ -48,21 +49,24 @@ export function OrderThankYou() {
           </p>
 
           {(orderDetails.pickupTime || orderDetails.pickupLocation) && (
-            <div className="space-y-2 border-t pt-4">
-              <h3 className="font-semibold">Pickup Details</h3>
-              {orderDetails.pickupTime && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  <span>{orderDetails.pickupTime}</span>
-                </div>
-              )}
-              {orderDetails.pickupLocation && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4" />
-                  <span>{orderDetails.pickupLocation}</span>
-                </div>
-              )}
-            </div>
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <h3 className="font-semibold">Pickup Details</h3>
+                {orderDetails.pickupTime && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>{orderDetails.pickupTime}</span>
+                  </div>
+                )}
+                {orderDetails.pickupLocation && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    <span>{orderDetails.pickupLocation}</span>
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           <div className="space-y-2">

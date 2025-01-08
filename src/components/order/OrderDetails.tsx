@@ -6,6 +6,7 @@ import { OrderTotals } from './OrderTotals';
 import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
 import { MapPin, Clock } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface OrderDetailsProps {
   order: any; // Type should be properly defined based on your order structure
@@ -34,30 +35,37 @@ export function OrderDetails({ order }: OrderDetailsProps) {
         total={order.total_amount}
       />
 
-      {(order.pickup_time || order.pickup_location) && (
-        <div className="mt-4 space-y-2">
-          <h3 className="font-medium">Pickup Details</h3>
-          {order.pickup_time && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>{order.pickup_time}</span>
+      <div className="space-y-4">
+        <DeliveryInfo deliveryDate={order.delivery_date} />
+
+        {(order.pickup_time || order.pickup_location) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h3 className="font-medium">Pickup Details</h3>
+              {order.pickup_time && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Clock className="h-4 w-4" />
+                  <span>{order.pickup_time}</span>
+                </div>
+              )}
+              {order.pickup_location && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span>{order.pickup_location}</span>
+                </div>
+              )}
             </div>
-          )}
-          {order.pickup_location && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="h-4 w-4" />
-              <span>{order.pickup_location}</span>
-            </div>
-          )}
-        </div>
+          </>
+        )}
+      </div>
+
+      {(order.notes || order.rejection_reason) && (
+        <OrderNotes
+          notes={order.notes}
+          rejectionReason={order.rejection_reason}
+        />
       )}
-
-      <OrderNotes
-        notes={order.notes}
-        rejectionReason={order.rejection_reason}
-      />
-
-      <DeliveryInfo deliveryDate={order.delivery_date} />
     </Card>
   );
 }
