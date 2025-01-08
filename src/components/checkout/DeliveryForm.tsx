@@ -60,7 +60,7 @@ export function DeliveryForm({
                 delivery_available_from: category.delivery_available_from,
                 delivery_available_until: category.delivery_available_until,
                 has_custom_pickup: category.has_custom_pickup,
-                pickup_details: category.pickup_details as PickupDetail[]
+                pickup_details: (category.pickup_details as PickupDetail[]) || []
               }}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
