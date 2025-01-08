@@ -92,10 +92,7 @@ export function CategoryDeliveryDate({
               {pickupDetails.map((detail, index) => (
                 <div
                   key={index}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onPickupDetailChange?.(index.toString());
-                  }}
+                  onClick={() => onPickupDetailChange?.(index.toString())}
                   className={cn(
                     "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all cursor-pointer",
                     "hover:border-primary hover:bg-accent",
