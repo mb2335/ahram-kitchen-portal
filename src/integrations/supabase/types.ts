@@ -93,8 +93,7 @@ export type Database = {
           name: string
           name_ko: string
           order_index: number
-          pickup_location: string | null
-          pickup_time: string | null
+          pickup_details: Json[] | null
           vendor_id: string | null
         }
         Insert: {
@@ -106,8 +105,7 @@ export type Database = {
           name: string
           name_ko: string
           order_index: number
-          pickup_location?: string | null
-          pickup_time?: string | null
+          pickup_details?: Json[] | null
           vendor_id?: string | null
         }
         Update: {
@@ -119,8 +117,7 @@ export type Database = {
           name?: string
           name_ko?: string
           order_index?: number
-          pickup_location?: string | null
-          pickup_time?: string | null
+          pickup_details?: Json[] | null
           vendor_id?: string | null
         }
         Relationships: [

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CategoryFormData } from '../types/category';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 export function useCategoryManagement() {
   const { toast } = useToast();
@@ -16,8 +16,7 @@ export function useCategoryManagement() {
     deliveryAvailableFrom: undefined,
     deliveryAvailableUntil: undefined,
     has_custom_pickup: false,
-    pickup_time: '',
-    pickup_location: '',
+    pickup_details: [],
   });
 
   const resetForm = () => {
@@ -27,8 +26,7 @@ export function useCategoryManagement() {
       deliveryAvailableFrom: undefined,
       deliveryAvailableUntil: undefined,
       has_custom_pickup: false,
-      pickup_time: '',
-      pickup_location: '',
+      pickup_details: [],
     });
     setEditingCategory(null);
   };
@@ -72,6 +70,8 @@ export function useCategoryManagement() {
         delivery_available_from: formData.deliveryAvailableFrom?.toISOString(),
         delivery_available_until: formData.deliveryAvailableUntil?.toISOString(),
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
+        has_custom_pickup: formData.has_custom_pickup,
+        pickup_details: formData.has_custom_pickup ? formData.pickup_details : [],
       };
 
       if (editingCategory) {

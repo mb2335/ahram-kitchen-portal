@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2 } from "lucide-react";
 import { parse } from "date-fns";
-import { CategoryFormData } from "./types/category";
+import { CategoryFormData, PickupDetail } from "./types/category";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -21,13 +22,41 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
       
       const parsedDate = parse(value, 'yyyy-MM-dd', new Date());
       if (isNaN(parsedDate.getTime())) {
-        return; // Invalid date, don't update
+        return;
       }
       
       setFormData({ ...formData, [field]: parsedDate });
     } catch (error) {
       console.error('Error parsing date:', error);
     }
+  };
+
+  const addPickupDetail = () => {
+    setFormData({
+      ...formData,
+      pickup_details: [...formData.pickup_details, { time: '', location: '' }]
+    });
+  };
+
+  const removePickupDetail = (index: number) => {
+    const newPickupDetails = formData.pickup_details.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      pickup_details: newPickupDetails
+    });
+  };
+
+  const updatePickupDetail = (index: number, field: keyof PickupDetail, value: string) => {
+    const newPickupDetails = formData.pickup_details.map((detail, i) => {
+      if (i === index) {
+        return { ...detail, [field]: value };
+      }
+      return detail;
+    });
+    setFormData({
+      ...formData,
+      pickup_details: newPickupDetails
+    });
   };
 
   return (
@@ -75,30 +104,56 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
           id="has_custom_pickup"
           checked={formData.has_custom_pickup}
           onCheckedChange={(checked) => 
-            setFormData({ ...formData, has_custom_pickup: checked as boolean })
+            setFormData({ 
+              ...formData, 
+              has_custom_pickup: checked as boolean,
+              pickup_details: checked ? [{ time: '', location: '' }] : []
+            })
           }
         />
         <Label htmlFor="has_custom_pickup">Custom locations & times</Label>
       </div>
 
       {formData.has_custom_pickup && (
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <Label>Pickup Time</Label>
-            <Input
-              value={formData.pickup_time || ''}
-              onChange={(e) => setFormData({ ...formData, pickup_time: e.target.value })}
-              placeholder="e.g., 2-4 PM"
-            />
-          </div>
-          <div className="flex-1">
-            <Label>Pickup Location</Label>
-            <Input
-              value={formData.pickup_location || ''}
-              onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
-              placeholder="e.g., Main Entrance"
-            />
-          </div>
+        <div className="space-y-4">
+          {formData.pickup_details.map((detail, index) => (
+            <div key={index} className="flex gap-4 items-start">
+              <div className="flex-1">
+                <Label>Pickup Time</Label>
+                <Input
+                  value={detail.time}
+                  onChange={(e) => updatePickupDetail(index, 'time', e.target.value)}
+                  placeholder="e.g., 2-4 PM"
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Pickup Location</Label>
+                <Input
+                  value={detail.location}
+                  onChange={(e) => updatePickupDetail(index, 'location', e.target.value)}
+                  placeholder="e.g., Main Entrance"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="mt-6"
+                onClick={() => removePickupDetail(index)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={addPickupDetail}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Another Time & Location
+          </Button>
         </div>
       )}
 

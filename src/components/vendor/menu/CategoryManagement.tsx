@@ -98,19 +98,20 @@ export function CategoryManagement() {
       
       <CategoryList 
         categories={categories}
-        onEdit={(category) => {
-          setEditingCategory(category);
-          setFormData({
-            name: category.name,
-            name_ko: category.name_ko,
-            deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
-            deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
-            has_custom_pickup: category.has_custom_pickup || false,
-            pickup_time: category.pickup_time || '',
-            pickup_location: category.pickup_location || '',
-          });
-          setIsDialogOpen(true);
-        }}
+
+onEdit={(category) => {
+  setEditingCategory(category);
+  setFormData({
+    name: category.name,
+    name_ko: category.name_ko,
+    deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
+    deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
+    has_custom_pickup: category.has_custom_pickup || false,
+    pickup_details: category.pickup_details || [],
+  });
+  setIsDialogOpen(true);
+}}
+
         onDelete={handleDelete}
       />
 

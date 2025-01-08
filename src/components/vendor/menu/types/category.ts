@@ -7,9 +7,13 @@ export interface Category {
   created_at: string | null;
   delivery_available_from: string | null;
   delivery_available_until: string | null;
-  pickup_location: string | null;
-  pickup_time: string | null;
+  pickup_details: PickupDetail[];
   has_custom_pickup: boolean;
+}
+
+export interface PickupDetail {
+  time: string;
+  location: string;
 }
 
 export interface CategoryFormData {
@@ -17,7 +21,6 @@ export interface CategoryFormData {
   name_ko: string;
   deliveryAvailableFrom: Date | undefined;
   deliveryAvailableUntil: Date | undefined;
-  pickup_location?: string;
-  pickup_time?: string;
   has_custom_pickup: boolean;
+  pickup_details: PickupDetail[];
 }
