@@ -79,14 +79,14 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetailsForCategory
+          pickup_details: pickupDetailsForCategory as unknown as Json // Type assertion to satisfy Supabase
         };
 
         console.log('Submitting order with payload:', orderPayload);
 
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
-          .insert([orderPayload])
+          .insert(orderPayload)
           .select('*, pickup_details')
           .single();
 
