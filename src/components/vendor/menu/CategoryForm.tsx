@@ -61,8 +61,8 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <ScrollArea className="h-[60vh] pr-6">
+    <ScrollArea className="h-[80vh] w-full">
+      <form onSubmit={onSubmit} className="space-y-6 px-1">
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Name (English)</Label>
@@ -167,11 +167,11 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             </div>
           )}
         </div>
-      </ScrollArea>
 
-      <Button type="submit" className="w-full">
-        {formData.name ? 'Save Changes' : 'Add Category'}
-      </Button>
-    </form>
+        <Button type="submit" className="w-full">
+          {formData.name ? 'Save Changes' : 'Add Category'}
+        </Button>
+      </form>
+    </ScrollArea>
   );
 }
