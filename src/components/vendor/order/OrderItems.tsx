@@ -1,13 +1,5 @@
-import { useLanguage } from '@/contexts/LanguageContext';
-import { OrderItem } from '../types';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { OrderItem } from "../types";
 
 interface OrderItemsProps {
   items: OrderItem[];
@@ -17,38 +9,30 @@ export function OrderItems({ items }: OrderItemsProps) {
   const { language } = useLanguage();
 
   return (
-    <div>
-      <h4 className="font-medium mb-2">Order Items</h4>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Item</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Unit Price</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items?.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
-              </TableCell>
-              <TableCell>
-                {language === 'en' 
-                  ? item.menu_item?.category?.name 
-                  : item.menu_item?.category?.name_ko || 'Uncategorized'}
-              </TableCell>
-              <TableCell className="text-right">{item.quantity}</TableCell>
-              <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>
-              <TableCell className="text-right">
-                ${(item.quantity * item.unit_price).toFixed(2)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="space-y-4">
+      <h3 className="font-medium">Order Items</h3>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.id} className="flex justify-between items-start py-2 border-b">
+            <div className="space-y-1">
+              <span className="font-medium">
+                {item.quantity}x {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
+              </span>
+              {item.menu_item?.category && (
+                <p className="text-sm text-muted-foreground">
+                  {language === 'en' ? item.menu_item.category.name : item.menu_item.category.name_ko}
+                </p>
+              )}
+              <p className="text-sm text-gray-600">
+                ${item.unit_price.toFixed(2)} each
+              </p>
+            </div>
+            <span className="font-medium">
+              ${(item.quantity * item.unit_price).toFixed(2)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
