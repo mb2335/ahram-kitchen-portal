@@ -42,6 +42,10 @@ export interface Order {
   payment_proof_url: string;
   rejection_reason: string | null;
   created_at: string | null;
+  pickup_details?: {
+    time: string;
+    location: string;
+  };
   customer?: {
     full_name: string;
     email: string;
