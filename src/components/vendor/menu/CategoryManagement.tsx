@@ -8,6 +8,7 @@ import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItem
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Category, PickupDetail } from './types/category';
 
 export function CategoryManagement() {
   const { toast } = useToast();
@@ -33,7 +34,15 @@ export function CategoryManagement() {
         .order('order_index');
       
       if (error) throw error;
-      return data;
+      
+      // Convert the JSON pickup_details to PickupDetail type
+      return data.map(category => ({
+        ...category,
+        pickup_details: (category.pickup_details || []).map((detail: any) => ({
+          time: detail.time || '',
+          location: detail.location || ''
+        }))
+      })) as Category[];
     },
   });
 
@@ -98,20 +107,18 @@ export function CategoryManagement() {
       
       <CategoryList 
         categories={categories}
-
-onEdit={(category) => {
-  setEditingCategory(category);
-  setFormData({
-    name: category.name,
-    name_ko: category.name_ko,
-    deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
-    deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
-    has_custom_pickup: category.has_custom_pickup || false,
-    pickup_details: category.pickup_details || [],
-  });
-  setIsDialogOpen(true);
-}}
-
+        onEdit={(category) => {
+          setEditingCategory(category);
+          setFormData({
+            name: category.name,
+            name_ko: category.name_ko,
+            deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
+            deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
+            has_custom_pickup: category.has_custom_pickup || false,
+            pickup_details: category.pickup_details || [],
+          });
+          setIsDialogOpen(true);
+        }}
         onDelete={handleDelete}
       />
 

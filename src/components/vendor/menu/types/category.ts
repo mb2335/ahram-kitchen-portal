@@ -1,3 +1,8 @@
+export interface PickupDetail {
+  time: string;
+  location: string;
+}
+
 export interface Category {
   id: string;
   vendor_id: string | null;
@@ -9,11 +14,6 @@ export interface Category {
   delivery_available_until: string | null;
   pickup_details: PickupDetail[];
   has_custom_pickup: boolean;
-}
-
-export interface PickupDetail {
-  time: string;
-  location: string;
 }
 
 export interface CategoryFormData {

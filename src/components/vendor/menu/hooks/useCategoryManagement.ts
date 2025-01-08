@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CategoryFormData } from '../types/category';
+import { CategoryFormData, PickupDetail } from '../types/category';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,7 +52,6 @@ export function useCategoryManagement() {
 
       if (!vendorData) throw new Error('Vendor not found');
 
-      // Get the current highest order_index
       const { data: maxOrderData } = await supabase
         .from('menu_categories')
         .select('order_index')
@@ -63,6 +62,7 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
+      // Convert pickup_details to JSON format
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
@@ -71,7 +71,10 @@ export function useCategoryManagement() {
         delivery_available_until: formData.deliveryAvailableUntil?.toISOString(),
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         has_custom_pickup: formData.has_custom_pickup,
-        pickup_details: formData.has_custom_pickup ? formData.pickup_details : [],
+        pickup_details: formData.pickup_details.map(detail => ({
+          time: detail.time,
+          location: detail.location
+        })),
       };
 
       if (editingCategory) {
