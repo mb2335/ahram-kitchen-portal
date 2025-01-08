@@ -64,6 +64,11 @@ export function useOrderSubmission() {
           deliveryDate: deliveryDate.toISOString()
         });
 
+        if (!categoryPickupDetails && categoryItems[0]?.category?.has_custom_pickup) {
+          console.error('[useOrderSubmission] Missing pickup details for category:', categoryId);
+          throw new Error(`Missing pickup details for category ${categoryItems[0]?.category?.name || categoryId}`);
+        }
+
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .insert([
@@ -75,8 +80,8 @@ export function useOrderSubmission() {
               status: 'pending',
               delivery_date: deliveryDate.toISOString(),
               payment_proof_url: uploadData.path,
-              pickup_time: categoryPickupDetails?.time,
-              pickup_location: categoryPickupDetails?.location,
+              pickup_time: categoryPickupDetails?.time || null,
+              pickup_location: categoryPickupDetails?.location || null,
             },
           ])
           .select()
