@@ -13,11 +13,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
+interface DatePickerWithRangeProps {
   date?: DateRange | undefined;
   onSelect?: (date: DateRange | undefined) => void;
   className?: string;
   mode?: "single" | "range";
+  disabled?: boolean;
 }
 
 export function DatePickerWithRange({
@@ -25,6 +26,7 @@ export function DatePickerWithRange({
   onSelect,
   className,
   mode = "range",
+  disabled = false,
 }: DatePickerWithRangeProps) {
   return (
     <div className={cn("grid gap-2", className)}>
@@ -35,8 +37,10 @@ export function DatePickerWithRange({
             variant={"outline"}
             className={cn(
               "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground"
+              !date && "text-muted-foreground",
+              disabled && "opacity-50 cursor-not-allowed"
             )}
+            disabled={disabled}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
@@ -60,10 +64,16 @@ export function DatePickerWithRange({
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             initialFocus
-            mode={mode}
+            mode={mode === "single" ? "single" : "range"}
             defaultMonth={date?.from}
-            selected={date}
-            onSelect={onSelect}
+            selected={mode === "single" ? date?.from : date}
+            onSelect={(value) => {
+              if (mode === "single" && value) {
+                onSelect?.({ from: value as Date, to: value as Date });
+              } else {
+                onSelect?.(value as DateRange);
+              }
+            }}
             numberOfMonths={1}
             className="p-3"
           />
