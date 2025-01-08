@@ -58,15 +58,13 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        // Create a properly structured JSONB object for pickup details
-        const pickupDetailsForCategory = pickupDetails[categoryId] 
-          ? JSON.stringify({
-              time: pickupDetails[categoryId].time,
-              location: pickupDetails[categoryId].location
-            })
-          : null;
+        // Format pickup details for this category
+        const pickupDetailsJson = pickupDetails[categoryId] ? {
+          time: pickupDetails[categoryId].time,
+          location: pickupDetails[categoryId].location
+        } : null;
 
-        console.log('Pickup details for category:', categoryId, pickupDetailsForCategory);
+        console.log('Creating order with pickup details:', pickupDetailsJson);
 
         const { data: order, error: orderError } = await supabase
           .from('orders')
@@ -78,7 +76,7 @@ export function useOrderSubmission() {
             status: 'pending',
             delivery_date: deliveryDate.toISOString(),
             payment_proof_url: uploadData.path,
-            pickup_details: pickupDetailsForCategory
+            pickup_details: pickupDetailsJson // This should now work with the json column type
           }])
           .select()
           .single();
@@ -87,6 +85,8 @@ export function useOrderSubmission() {
           console.error('Error creating order:', orderError);
           throw orderError;
         }
+
+        console.log('Order created successfully with pickup details:', order.pickup_details);
 
         const orderItems = categoryItems.map((item) => ({
           order_id: order.id,
