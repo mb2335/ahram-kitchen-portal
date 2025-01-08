@@ -27,7 +27,7 @@ export function CategoryManagement() {
     handleSubmit,
   } = useCategoryManagement();
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], refetch } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
       console.log('Fetching categories...');
@@ -63,10 +63,11 @@ export function CategoryManagement() {
           schema: 'public', 
           table: 'menu_categories' 
         },
-        (payload) => {
+        async (payload) => {
           console.log('Category change detected:', payload);
-          // Invalidate and refetch
-          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          // Invalidate the cache and immediately refetch
+          await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          refetch();
         }
       )
       .subscribe((status) => {
@@ -77,7 +78,7 @@ export function CategoryManagement() {
       console.log('Cleaning up category subscription');
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, refetch]);
 
   const handleDelete = async (categoryId: string) => {
     try {
@@ -86,6 +87,8 @@ export function CategoryManagement() {
         setCategoryToDelete({ id: categoryId, itemCount });
       } else {
         await deleteCategory(categoryId);
+        // Immediately refetch after deletion
+        await refetch();
         toast({
           title: "Success",
           description: "Category deleted successfully",
@@ -112,6 +115,9 @@ export function CategoryManagement() {
       }
       
       await deleteCategory(categoryToDelete.id);
+      
+      // Immediately refetch after deletion
+      await refetch();
       
       toast({
         title: "Success",
