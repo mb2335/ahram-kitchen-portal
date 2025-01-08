@@ -49,6 +49,8 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
+      console.log('Processing orders with pickup details:', pickupDetails);
+
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
         if (categoryItems.length === 0) return null;
@@ -64,8 +66,10 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_details: pickupDetails[categoryId] as unknown as Json
+          pickup_details: pickupDetails[categoryId] as Json
         };
+
+        console.log('Creating order with data:', orderData);
 
         const { data: order, error: orderError } = await supabase
           .from('orders')
