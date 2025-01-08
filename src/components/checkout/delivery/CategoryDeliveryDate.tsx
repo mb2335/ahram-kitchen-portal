@@ -63,7 +63,7 @@ export function CategoryDeliveryDate({
       
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Delivery Date</Label>
+          <Label>Pickup Date</Label>
           <Input
             type="date"
             value={selectedDate ? formatDateForInput(selectedDate) : ''}
@@ -119,7 +119,7 @@ export function CategoryDeliveryDate({
         <div className="text-sm space-y-1">
           {category.delivery_available_from && category.delivery_available_until && (
             <p className="text-muted-foreground">
-              Available for delivery between{' '}
+              Available for pickup between{' '}
               <span className="font-medium text-foreground">
                 {format(new Date(category.delivery_available_from), 'MMM d, yyyy')}
               </span>
@@ -132,7 +132,7 @@ export function CategoryDeliveryDate({
           )}
           {!category.delivery_available_from && !category.delivery_available_until && (
             <p className="text-muted-foreground">
-              Available for delivery starting{' '}
+              Available for pickup starting{' '}
               <span className="font-medium text-foreground">
                 {format(new Date(), 'MMM d, yyyy')}
               </span>
