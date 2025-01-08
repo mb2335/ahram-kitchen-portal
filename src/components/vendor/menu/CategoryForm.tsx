@@ -62,8 +62,8 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
 
   return (
     <ScrollArea className="h-[80vh] w-full">
-      <form onSubmit={onSubmit} className="space-y-6 px-1">
-        <div className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-6 px-6">
+        <div className="space-y-4 pr-4">
           <div className="space-y-2">
             <Label>Name (English)</Label>
             <Input
@@ -168,7 +168,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
           )}
         </div>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full mb-6">
           {formData.name ? 'Save Changes' : 'Add Category'}
         </Button>
       </form>
