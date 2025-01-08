@@ -11,8 +11,8 @@ interface DeliveryFormProps {
   notes: string;
   onDateChange: (categoryId: string, date: Date) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  pickupDetails: Record<string, PickupDetail>;
-  onPickupDetailChange: (categoryId: string, pickupDetail: PickupDetail) => void;
+  pickupDetail: PickupDetail | null;
+  onPickupDetailChange: (pickupDetail: PickupDetail) => void;
 }
 
 export function DeliveryForm({ 
@@ -20,7 +20,7 @@ export function DeliveryForm({
   notes, 
   onDateChange, 
   onNotesChange,
-  pickupDetails,
+  pickupDetail,
   onPickupDetailChange
 }: DeliveryFormProps) {
   const { items } = useCart();
@@ -66,8 +66,8 @@ export function DeliveryForm({
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickupDetail={pickupDetails[category.id]}
-              onPickupDetailChange={(detail) => onPickupDetailChange(category.id, detail)}
+              selectedPickupDetail={pickupDetail}
+              onPickupDetailChange={onPickupDetailChange}
             />
             <Separator />
           </div>

@@ -20,7 +20,7 @@ export function useOrderSubmission() {
     notes,
     deliveryDates,
     customerData,
-    pickupDetails,
+    pickupDetail,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
@@ -55,8 +55,6 @@ export function useOrderSubmission() {
         const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
-        const categoryPickupDetails = pickupDetails[categoryId];
-
         const orderData = {
           customer_id: customerId,
           total_amount: categoryTotal + categoryTaxAmount,
@@ -65,8 +63,8 @@ export function useOrderSubmission() {
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
-          pickup_time: categoryPickupDetails?.time || null,
-          pickup_location: categoryPickupDetails?.location || null,
+          pickup_time: pickupDetail?.time || null,
+          pickup_location: pickupDetail?.location || null,
         };
 
         const { data: insertedOrder, error: orderError } = await supabase
@@ -104,8 +102,6 @@ export function useOrderSubmission() {
       onOrderSuccess(validOrders[0].id);
 
       const firstOrder = validOrders[0];
-      const firstCategoryId = Object.keys(deliveryDates)[0];
-      const firstPickupDetail = pickupDetails[firstCategoryId];
 
       navigate('/thank-you', {
         state: {
@@ -120,8 +116,8 @@ export function useOrderSubmission() {
             total: total + taxAmount,
             taxAmount: taxAmount,
             createdAt: firstOrder.created_at,
-            pickupTime: firstPickupDetail?.time || null,
-            pickupLocation: firstPickupDetail?.location || null
+            pickupTime: pickupDetail?.time || null,
+            pickupLocation: pickupDetail?.location || null
           }
         },
         replace: true
