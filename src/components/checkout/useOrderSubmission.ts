@@ -110,18 +110,22 @@ export function useOrderSubmission() {
         // Create order items with correct discounted prices
         const orderItems = categoryItems.map((item) => {
           // Calculate the discounted unit price if applicable
-          const unitPrice = item.discount_percentage 
-            ? item.price * (1 - item.discount_percentage / 100)
-            : item.price;
+          const unitPrice = item.price * (1 - (item.discount_percentage || 0) / 100);
+
+          console.log('Creating order item:', {
+            itemName: item.name,
+            originalPrice: item.price,
+            discountPercentage: item.discount_percentage || 0,
+            calculatedUnitPrice: unitPrice
+          });
 
           const orderItem = {
             order_id: insertedOrder.id,
             menu_item_id: item.id,
             quantity: item.quantity,
-            unit_price: unitPrice, // Store the actual (potentially discounted) unit price
+            unit_price: unitPrice,
           };
 
-          console.log('Creating order item:', orderItem);
           return orderItem;
         });
 
