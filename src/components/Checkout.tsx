@@ -105,7 +105,7 @@ export function Checkout() {
     quantity: item.quantity,
     price: item.price,
     category_id: item.category_id,
-    discount_percentage: item.discount_percentage // Add this line
+    discount_percentage: item.discount_percentage
   }));
 
   return (
