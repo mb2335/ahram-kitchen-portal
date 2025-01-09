@@ -1,17 +1,11 @@
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { MenuFormData } from "./types";
 import { validateMenuItemAvailability } from "./utils/menuItemValidation";
 import { MenuItem } from "./types";
 import { Dispatch, SetStateAction } from "react";
-import { Loader2, X } from "lucide-react";
 import { ImageUpload } from "./components/ImageUpload";
 import { BasicDetails } from "./components/BasicDetails";
 import { PricingDetails } from "./components/PricingDetails";
@@ -52,13 +46,7 @@ export function MenuItemForm({
       return;
     }
 
-    // Ensure discount_percentage is a number or null
-    const formattedData = {
-      ...data,
-      discount_percentage: data.discount_percentage ? parseInt(data.discount_percentage) : null
-    };
-
-    await onSubmit({ ...formattedData, image: selectedImage || undefined });
+    await onSubmit({ ...data, image: selectedImage || undefined });
   };
 
   return (
