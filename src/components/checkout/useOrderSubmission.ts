@@ -53,6 +53,7 @@ export function useOrderSubmission() {
         
         if (categoryItems.length === 0) return null;
 
+        // Calculate category total with discounts applied
         const categoryTotal = categoryItems.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
           const discountAmount = item.discount_percentage 
@@ -94,18 +95,18 @@ export function useOrderSubmission() {
 
         if (orderError) throw orderError;
 
+        // Create order items with correct discounted prices
         const orderItems = categoryItems.map((item) => {
-          // Calculate the discounted unit price
-          const discountMultiplier = item.discount_percentage 
-            ? (100 - item.discount_percentage) / 100
-            : 1;
-          const discountedUnitPrice = item.price * discountMultiplier;
+          // Calculate the discounted unit price if applicable
+          const unitPrice = item.discount_percentage 
+            ? item.price * (1 - item.discount_percentage / 100)
+            : item.price;
 
           return {
             order_id: insertedOrder.id,
             menu_item_id: item.id,
             quantity: item.quantity,
-            unit_price: discountedUnitPrice,
+            unit_price: unitPrice, // Store the actual (potentially discounted) unit price
           };
         });
 
