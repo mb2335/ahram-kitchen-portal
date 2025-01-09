@@ -37,17 +37,22 @@ export function OrderManagement() {
   };
 
   const handleDelete = async (orderId: string) => {
-    const result = await deleteOrder(orderId);
-    if (result.success) {
-      toast({
-        title: 'Success',
-        description: 'Order deleted successfully',
-      });
-      await refetch();
-    } else {
+    try {
+      const result = await deleteOrder(orderId);
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Order deleted successfully',
+        });
+        // Immediately refetch orders after successful deletion
+        await refetch();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
       toast({
         title: 'Error deleting order',
-        description: result.error,
+        description: error.message || 'Failed to delete the order',
         variant: 'destructive',
       });
     }
