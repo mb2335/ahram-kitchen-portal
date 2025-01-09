@@ -28,7 +28,6 @@ interface OrderDetails {
 
 export function OrderThankYou() {
   const location = useLocation();
-  const { language } = useLanguage();
   const orderDetails = location.state?.orderDetails as OrderDetails | undefined;
 
   if (!orderDetails) {
@@ -73,16 +72,8 @@ export function OrderThankYou() {
             </>
           )}
 
-          <div className="space-y-2">
-            {orderDetails.items.map((item, index) => (
-              <div key={index} className="flex justify-between">
-                <span>{item.quantity}x {language === 'en' ? item.name : item.nameKo}</span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-
           <OrderSummary
+            items={orderDetails.items}
             subtotal={orderDetails.subtotal}
             taxAmount={orderDetails.taxAmount}
             total={orderDetails.total}

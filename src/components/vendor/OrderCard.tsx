@@ -15,6 +15,14 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onDelete, children }: OrderCardProps) {
+  const orderItems = order.order_items?.map(item => ({
+    name: item.menu_item?.name || '',
+    nameKo: item.menu_item?.name_ko || '',
+    quantity: item.quantity,
+    price: item.unit_price,
+    category: item.menu_item?.category
+  })) || [];
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
       <OrderHeader order={order} />
@@ -23,11 +31,8 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
         <CustomerDetails customer={order.customer} />
       )}
 
-      {order.order_items && (
-        <OrderItems items={order.order_items} />
-      )}
-
       <OrderSummary 
+        items={orderItems}
         subtotal={order.total_amount - order.tax_amount}
         taxAmount={order.tax_amount}
         total={order.total_amount}
