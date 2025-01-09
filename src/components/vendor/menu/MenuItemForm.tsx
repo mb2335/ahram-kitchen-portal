@@ -1,7 +1,5 @@
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { MenuFormData } from "./types";
 import { validateMenuItemAvailability } from "./utils/menuItemValidation";
 import { MenuItem } from "./types";
@@ -58,20 +56,7 @@ export function MenuItemForm({
           setSelectedImage={setSelectedImage}
         />
         <BasicDetails register={register} errors={errors} />
-        <PricingDetails register={register} errors={errors} />
-        
-        <div className="space-y-2">
-          <Label htmlFor="discount_percentage">Discount Percentage</Label>
-          <Input
-            id="discount_percentage"
-            type="number"
-            min="0"
-            max="100"
-            {...register('discount_percentage')}
-            placeholder="Enter discount percentage (0-100)"
-          />
-        </div>
-
+        <PricingDetails register={register} errors={errors} editingItem={editingItem} />
         <CategorySelection
           watchCategoryId={watchCategoryId}
           setValue={setValue}

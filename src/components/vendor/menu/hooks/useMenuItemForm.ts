@@ -16,6 +16,7 @@ export function useMenuItemForm(onSuccess: () => void) {
     price: '',
     quantity_limit: '',
     is_available: true,
+    discount_percentage: '',
   });
 
   const resetForm = () => {
@@ -28,6 +29,7 @@ export function useMenuItemForm(onSuccess: () => void) {
       quantity_limit: '',
       is_available: true,
       category_id: undefined,
+      discount_percentage: '',
     });
     setEditingItem(null);
     setSelectedImage(null);
@@ -35,14 +37,12 @@ export function useMenuItemForm(onSuccess: () => void) {
 
   const handleSubmit = async (data: MenuFormData & { image?: File }, userId: string) => {
     try {
-      // Keep the existing image URL if no new image is selected
       let imageUrl = editingItem?.image;
       
       if (data.image) {
         imageUrl = await handleImageUpload(data.image);
       }
 
-      // Only remove the image if explicitly cleared by the user
       if (editingItem?.image && !imageUrl && !selectedImage) {
         const fileName = editingItem.image.split('/').pop();
         if (fileName) {
@@ -53,7 +53,6 @@ export function useMenuItemForm(onSuccess: () => void) {
         imageUrl = null;
       }
 
-      // Get the maximum order_index for the current vendor
       const { data: maxOrderIndex } = await supabase
         .from('menu_items')
         .select('order_index')
@@ -69,9 +68,10 @@ export function useMenuItemForm(onSuccess: () => void) {
         price: parseFloat(data.price),
         quantity_limit: data.quantity_limit ? parseInt(data.quantity_limit) : null,
         is_available: data.is_available,
-        image: imageUrl, // Preserve the image URL
+        image: imageUrl,
         category_id: data.category_id || null,
         order_index: editingItem?.order_index || (maxOrderIndex?.order_index || 0) + 1,
+        discount_percentage: data.discount_percentage ? parseInt(data.discount_percentage) : null,
       };
 
       await saveMenuItem(userId, menuItemData, editingItem?.id);

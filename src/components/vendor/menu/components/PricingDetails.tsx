@@ -2,13 +2,15 @@ import { UseFormRegister } from "react-hook-form";
 import { MenuFormData } from "../types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { MenuItem } from "../types";
 
 interface PricingDetailsProps {
   register: UseFormRegister<MenuFormData>;
   errors: Record<string, any>;
+  editingItem: MenuItem | null;
 }
 
-export function PricingDetails({ register, errors }: PricingDetailsProps) {
+export function PricingDetails({ register, errors, editingItem }: PricingDetailsProps) {
   return (
     <>
       <div className="space-y-2">
@@ -23,12 +25,13 @@ export function PricingDetails({ register, errors }: PricingDetailsProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="discount_percentage">Discount Percentage (optional)</Label>
+        <Label htmlFor="discount_percentage">Discount Percentage (0-100)</Label>
         <Input 
           id="discount_percentage" 
           type="number" 
           min="0"
           max="100"
+          defaultValue={editingItem?.discount_percentage || ''}
           {...register('discount_percentage')} 
           placeholder="e.g., 20 for 20% off"
         />
