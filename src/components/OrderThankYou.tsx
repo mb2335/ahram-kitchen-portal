@@ -1,6 +1,5 @@
 import { useLocation, Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -77,6 +76,7 @@ export function OrderThankYou() {
             subtotal={orderDetails.subtotal}
             taxAmount={orderDetails.taxAmount}
             total={orderDetails.total}
+            showItems={true}
           />
         </div>
 

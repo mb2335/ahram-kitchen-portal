@@ -1,7 +1,6 @@
 import { Order } from './types';
 import { OrderHeader } from './order/OrderHeader';
 import { CustomerDetails } from './order/CustomerDetails';
-import { OrderItems } from './order/OrderItems';
 import { OrderNotes } from './order/OrderNotes';
 import { OrderActions } from './order/OrderActions';
 import { PickupDetails } from './order/PickupDetails';
@@ -36,6 +35,7 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
         subtotal={order.total_amount - order.tax_amount}
         taxAmount={order.tax_amount}
         total={order.total_amount}
+        showItems={true}
       />
       
       <PickupDetails 

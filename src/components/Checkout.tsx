@@ -4,7 +4,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useToast } from './ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { OrderSummary } from './checkout/OrderSummary';
+import { OrderSummary } from '@/components/shared/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
 import { PickupDetail } from '@/types/pickup';
@@ -79,7 +79,7 @@ export function Checkout() {
           createdAt: new Date().toISOString(),
           pickupTime: formData.pickupDetail?.time || null,
           pickupLocation: formData.pickupDetail?.location || null,
-          paymentProofUrl: null // This will be updated after upload
+          paymentProofUrl: null
         }
       },
       replace: true
@@ -110,7 +110,13 @@ export function Checkout() {
   return (
     <div className="container mx-auto max-w-2xl p-6">
       <div className="space-y-6">
-        <OrderSummary />
+        <OrderSummary 
+          items={checkoutItems}
+          subtotal={total - taxAmount}
+          taxAmount={taxAmount}
+          total={total}
+          showItems={true}
+        />
         {!session && (
           <CustomerForm
             fullName={customerData.fullName}
