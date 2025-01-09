@@ -19,3 +19,25 @@ export interface OrderItem {
     };
   };
 }
+
+export interface Order {
+  id: string;
+  customer_id: string;
+  customer?: {
+    id: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+  };
+  total_amount: number;
+  tax_amount: number;
+  status: OrderStatus;
+  notes?: string | null;
+  delivery_date: string;
+  payment_proof_url: string;
+  rejection_reason?: string | null;
+  created_at?: string;
+  pickup_time?: string;
+  pickup_location?: string;
+  order_items?: OrderItem[];
+}
