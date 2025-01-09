@@ -8,6 +8,7 @@ export interface OrderItem {
   quantity: number;
   price: number;
   category_id?: string;
+  discount_percentage?: number;
   category?: {
     id: string;
     name: string;
