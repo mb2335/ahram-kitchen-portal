@@ -31,47 +31,70 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
     return item.price * discountMultiplier;
   };
 
+  const discountedPrice = getDiscountedPrice();
+
   return (
-    <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
-      <div className="aspect-w-16 aspect-h-9 relative overflow-hidden">
-        {item.image && (
+    <Card className="group relative flex flex-col h-full overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+        {item.image ? (
           <img
             src={item.image}
             alt={displayName}
-            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-accent/10">
+            <span className="text-muted-foreground">No image</span>
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        {item.discount_percentage && (
+          <Badge 
+            variant="destructive" 
+            className="absolute top-2 right-2 z-10"
+          >
+            {item.discount_percentage}% OFF
+          </Badge>
+        )}
       </div>
-      <div className="p-4">
-        <h3 className="text-lg font-medium mb-1">
-          {displayName}
-        </h3>
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-          {displayDescription}
-        </p>
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            {item.discount_percentage ? (
-              <div className="flex items-center gap-2">
-                <span className="text-lg line-through text-gray-400">${item.price.toFixed(2)}</span>
-                <span className="text-lg font-bold text-red-500">
-                  ${getDiscountedPrice()?.toFixed(2)}
+
+      <div className="flex flex-col flex-grow p-4 space-y-3">
+        <div>
+          <h3 className="font-medium text-lg leading-tight mb-1 line-clamp-2">
+            {displayName}
+          </h3>
+          {displayDescription && (
+            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+              {displayDescription}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 mt-auto pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              {discountedPrice ? (
+                <>
+                  <span className="text-sm line-through text-muted-foreground">
+                    ${item.price.toFixed(2)}
+                  </span>
+                  <span className="text-lg font-bold text-red-500">
+                    ${discountedPrice.toFixed(2)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-lg font-bold">
+                  ${item.price.toFixed(2)}
                 </span>
-                <Badge variant="destructive" className="text-xs">
-                  {item.discount_percentage}% OFF
-                </Badge>
-              </div>
-            ) : (
-              <span className="text-lg font-bold">${item.price.toFixed(2)}</span>
-            )}
+              )}
+            </div>
             <Badge 
-              variant="secondary" 
-              className="text-xs"
+              variant={item.remaining_quantity === 0 ? "destructive" : "secondary"}
+              className="text-xs whitespace-nowrap"
             >
               {getQuantityDisplay()}
             </Badge>
           </div>
+
           <Button 
             onClick={() => onAddToCart(item)}
             className="w-full bg-primary hover:bg-primary/90 text-white"
