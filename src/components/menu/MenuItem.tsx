@@ -25,6 +25,12 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
     return `${t('item.remainingStock')}: ${item.remaining_quantity}`;
   };
 
+  const getDiscountedPrice = () => {
+    if (!item.discount_percentage) return null;
+    const discountMultiplier = (100 - item.discount_percentage) / 100;
+    return item.price * discountMultiplier;
+  };
+
   return (
     <Card className="group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="aspect-w-16 aspect-h-9 relative overflow-hidden">
@@ -46,7 +52,19 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
         </p>
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-primary">${item.price}</span>
+            {item.discount_percentage ? (
+              <div className="flex items-center gap-2">
+                <span className="text-lg line-through text-gray-400">${item.price.toFixed(2)}</span>
+                <span className="text-lg font-bold text-red-500">
+                  ${getDiscountedPrice()?.toFixed(2)}
+                </span>
+                <Badge variant="destructive" className="text-xs">
+                  {item.discount_percentage}% OFF
+                </Badge>
+              </div>
+            ) : (
+              <span className="text-lg font-bold">${item.price.toFixed(2)}</span>
+            )}
             <Badge 
               variant="secondary" 
               className="text-xs"
