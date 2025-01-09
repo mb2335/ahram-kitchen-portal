@@ -7,6 +7,7 @@ interface OrderItem {
   menu_item: {
     name: string;
     name_ko: string;
+    discount_percentage?: number;
     category?: {
       name: string;
       name_ko: string;
@@ -20,6 +21,14 @@ interface OrderItemsListProps {
 
 export function OrderItemsList({ items }: OrderItemsListProps) {
   const { language } = useLanguage();
+
+  const calculateItemTotal = (item: OrderItem) => {
+    const originalPrice = item.quantity * item.unit_price;
+    const discountAmount = item.menu_item?.discount_percentage
+      ? (originalPrice * (item.menu_item.discount_percentage / 100))
+      : 0;
+    return originalPrice - discountAmount;
+  };
 
   return (
     <div className="space-y-2">
@@ -35,13 +44,27 @@ export function OrderItemsList({ items }: OrderItemsListProps) {
                 {language === 'en' ? item.menu_item.category.name : item.menu_item.category.name_ko}
               </p>
             )}
-            <p className="text-sm text-gray-600">
-              ${item.unit_price.toFixed(2)} each
-            </p>
+            <div className="text-sm space-y-1">
+              <p className="text-gray-600">
+                ${item.unit_price.toFixed(2)} each
+              </p>
+              {item.menu_item?.discount_percentage && (
+                <p className="text-red-500">
+                  {item.menu_item.discount_percentage}% off
+                </p>
+              )}
+            </div>
           </div>
-          <span className="font-medium">
-            ${(item.quantity * item.unit_price).toFixed(2)}
-          </span>
+          <div className="text-right">
+            <span className="font-medium">
+              ${calculateItemTotal(item).toFixed(2)}
+            </span>
+            {item.menu_item?.discount_percentage && (
+              <p className="text-sm text-red-500 line-through">
+                ${(item.quantity * item.unit_price).toFixed(2)}
+              </p>
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -13,7 +13,17 @@ interface OrderDetailsProps {
 }
 
 export function OrderDetails({ order }: OrderDetailsProps) {
-  const subtotal = order.total_amount - order.tax_amount;
+  // Calculate total discount
+  const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
+    const originalPrice = item.quantity * item.unit_price;
+    const discountAmount = item.menu_item?.discount_percentage
+      ? (originalPrice * (item.menu_item.discount_percentage / 100))
+      : 0;
+    return acc + discountAmount;
+  }, 0) || 0;
+
+  // Calculate subtotal before discounts
+  const subtotal = order.total_amount + totalDiscount - order.tax_amount;
 
   return (
     <Card className="p-6 space-y-6">
@@ -33,6 +43,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
         subtotal={subtotal}
         taxAmount={order.tax_amount}
         total={order.total_amount}
+        discountAmount={totalDiscount}
       />
 
       <div className="space-y-4">
