@@ -30,9 +30,7 @@ export const useMenuItems = () => {
         } : null
       })) || [];
     },
-    retry: false,
-    refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 30,
+    refetchInterval: 30000, // Refetch every 30 seconds as a fallback
+    staleTime: 1000 * 60, // Consider data stale after 1 minute
   });
 };
