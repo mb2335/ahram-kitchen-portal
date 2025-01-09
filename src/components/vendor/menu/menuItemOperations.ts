@@ -45,16 +45,22 @@ export async function saveMenuItem(
 
   if (!vendorData) throw new Error('Vendor not found');
 
+  // Format the discount percentage to ensure it's a number or null
+  const formattedData = {
+    ...menuItemData,
+    discount_percentage: menuItemData.discount_percentage || null
+  };
+
   if (editingItemId) {
     const { error } = await supabase
       .from('menu_items')
-      .update({ ...menuItemData, vendor_id: vendorData.id })
+      .update({ ...formattedData, vendor_id: vendorData.id })
       .eq('id', editingItemId);
     if (error) throw error;
   } else {
     const { error } = await supabase
       .from('menu_items')
-      .insert([{ ...menuItemData, vendor_id: vendorData.id }]);
+      .insert([{ ...formattedData, vendor_id: vendorData.id }]);
     if (error) throw error;
   }
 }

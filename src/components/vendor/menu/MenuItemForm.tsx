@@ -51,7 +51,14 @@ export function MenuItemForm({
     if (availabilityError && data.is_available) {
       return;
     }
-    await onSubmit({ ...data, image: selectedImage || undefined });
+
+    // Ensure discount_percentage is a number or null
+    const formattedData = {
+      ...data,
+      discount_percentage: data.discount_percentage ? parseInt(data.discount_percentage) : null
+    };
+
+    await onSubmit({ ...formattedData, image: selectedImage || undefined });
   };
 
   return (
@@ -64,6 +71,19 @@ export function MenuItemForm({
         />
         <BasicDetails register={register} errors={errors} />
         <PricingDetails register={register} errors={errors} />
+        
+        <div className="space-y-2">
+          <Label htmlFor="discount_percentage">Discount Percentage</Label>
+          <Input
+            id="discount_percentage"
+            type="number"
+            min="0"
+            max="100"
+            {...register('discount_percentage')}
+            placeholder="Enter discount percentage (0-100)"
+          />
+        </div>
+
         <CategorySelection
           watchCategoryId={watchCategoryId}
           setValue={setValue}
