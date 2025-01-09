@@ -49,8 +49,8 @@ export function OrderThankYou() {
   const taxableAmount = subtotal - discountAmount;
   const taxAmount = taxableAmount * 0.1;
 
-  // Calculate final total
-  const total = taxableAmount + taxAmount;
+  // Calculate final total (subtotal - discount + tax)
+  const total = subtotal - discountAmount + taxAmount;
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
