@@ -16,6 +16,7 @@ interface OrderDetails {
     nameKo: string;
     quantity: number;
     price: number;
+    discount_percentage?: number;
   }>;
   total: number;
   taxAmount: number;
@@ -33,6 +34,13 @@ export function OrderThankYou() {
   if (!orderDetails) {
     return <Navigate to="/" replace />;
   }
+
+  // Calculate total discount
+  const discountAmount = orderDetails.items.reduce((acc, item) => {
+    if (!item.discount_percentage) return acc;
+    const itemTotal = item.price * item.quantity;
+    return acc + (itemTotal * (item.discount_percentage / 100));
+  }, 0);
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
@@ -77,6 +85,7 @@ export function OrderThankYou() {
             subtotal={orderDetails.subtotal}
             taxAmount={orderDetails.taxAmount}
             total={orderDetails.total}
+            discountAmount={discountAmount}
           />
         </div>
 
