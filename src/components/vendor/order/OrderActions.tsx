@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 interface OrderActionsProps {
   onDelete?: (orderId: string) => void;
@@ -18,6 +19,26 @@ interface OrderActionsProps {
 }
 
 export function OrderActions({ onDelete, orderId, children }: OrderActionsProps) {
+  const { toast } = useToast();
+
+  const handleDelete = async () => {
+    if (onDelete) {
+      try {
+        await onDelete(orderId);
+        toast({
+          title: "Order deleted",
+          description: "The order has been successfully deleted.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete the order. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   return (
     <div className="flex justify-between items-center border-t pt-4">
       <div className="space-x-2">
@@ -40,7 +61,7 @@ export function OrderActions({ onDelete, orderId, children }: OrderActionsProps)
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => onDelete(orderId)}
+                onClick={handleDelete}
                 className="bg-red-500 hover:bg-red-600"
               >
                 Delete
