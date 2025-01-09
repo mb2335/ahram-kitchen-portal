@@ -32,7 +32,12 @@ export function PricingDetails({ register, errors, editingItem }: PricingDetails
           min="0"
           max="100"
           defaultValue={editingItem?.discount_percentage || ''}
-          {...register('discount_percentage')} 
+          {...register('discount_percentage', {
+            min: 0,
+            max: 100,
+            valueAsNumber: true,
+            setValueAs: (value: string) => value === '' ? null : parseInt(value, 10)
+          })} 
           placeholder="e.g., 20 for 20% off"
         />
       </div>
