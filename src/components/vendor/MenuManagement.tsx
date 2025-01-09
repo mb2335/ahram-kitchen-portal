@@ -74,7 +74,7 @@ export function MenuManagement() {
   }
 
   return (
-    <div className="space-y-6 h-[calc(100vh-8rem)] overflow-y-auto">
+    <div className="space-y-6 h-[calc(100vh-8rem)] overflow-y-auto pr-4">
       <MenuManagementHeader
         onAddClick={() => {
           setEditingItem(null);
