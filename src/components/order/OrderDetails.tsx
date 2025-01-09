@@ -14,6 +14,24 @@ interface OrderDetailsProps {
 }
 
 export function OrderDetails({ order }: OrderDetailsProps) {
+  // Calculate total discount from order items
+  const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
+    const originalPrice = item.unit_price * item.quantity;
+    const discountAmount = item.menu_item?.discount_percentage 
+      ? (originalPrice * (item.menu_item.discount_percentage / 100))
+      : 0;
+    return acc + discountAmount;
+  }, 0) || 0;
+
+  const formattedItems = order.order_items?.map((item: any) => ({
+    name: item.menu_item?.name,
+    nameKo: item.menu_item?.name_ko,
+    quantity: item.quantity,
+    price: item.unit_price,
+    discount_percentage: item.menu_item?.discount_percentage,
+    category: item.menu_item?.category
+  })) || [];
+
   return (
     <Card className="p-6 space-y-6">
       <OrderStatusSection
@@ -26,12 +44,12 @@ export function OrderDetails({ order }: OrderDetailsProps) {
         <CustomerSection customer={order.customer} />
       )}
       
-      <OrderItemsList items={order.order_items} />
-      
       <OrderSummary
-        subtotal={order.total_amount - order.tax_amount}
+        items={formattedItems}
+        subtotal={order.total_amount - order.tax_amount + totalDiscount}
         taxAmount={order.tax_amount}
         total={order.total_amount}
+        discountAmount={totalDiscount}
       />
 
       <div className="space-y-4">

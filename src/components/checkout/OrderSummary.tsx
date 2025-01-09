@@ -44,6 +44,7 @@ export function OrderSummary() {
     nameKo: item.name_ko,
     quantity: item.quantity,
     price: item.price,
+    discount_percentage: item.discount_percentage,
     category: categories.find(cat => cat.id === item.category_id)
   }));
 

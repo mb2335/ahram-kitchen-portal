@@ -1,7 +1,6 @@
 import { Order } from './types';
 import { OrderHeader } from './order/OrderHeader';
 import { CustomerDetails } from './order/CustomerDetails';
-import { OrderItems } from './order/OrderItems';
 import { OrderNotes } from './order/OrderNotes';
 import { OrderActions } from './order/OrderActions';
 import { PickupDetails } from './order/PickupDetails';
@@ -15,11 +14,21 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onDelete, children }: OrderCardProps) {
+  // Calculate total discount from order items
+  const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
+    const originalPrice = item.unit_price * item.quantity;
+    const discountAmount = item.menu_item?.discount_percentage 
+      ? (originalPrice * (item.menu_item.discount_percentage / 100))
+      : 0;
+    return acc + discountAmount;
+  }, 0) || 0;
+
   const orderItems = order.order_items?.map(item => ({
     name: item.menu_item?.name || '',
     nameKo: item.menu_item?.name_ko || '',
     quantity: item.quantity,
     price: item.unit_price,
+    discount_percentage: item.menu_item?.discount_percentage,
     category: item.menu_item?.category
   })) || [];
 
@@ -33,9 +42,10 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
 
       <OrderSummary 
         items={orderItems}
-        subtotal={order.total_amount - order.tax_amount}
+        subtotal={order.total_amount - order.tax_amount + totalDiscount}
         taxAmount={order.tax_amount}
         total={order.total_amount}
+        discountAmount={totalDiscount}
       />
       
       <PickupDetails 
