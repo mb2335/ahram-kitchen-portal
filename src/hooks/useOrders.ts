@@ -151,7 +151,7 @@ export const useVendorOrders = () => {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      console.log('Deleting order:', orderId);
+      console.log('Starting order deletion process for order:', orderId);
       
       // First delete all order items
       const { error: itemsError } = await supabase
@@ -164,6 +164,8 @@ export const useVendorOrders = () => {
         throw itemsError;
       }
 
+      console.log('Successfully deleted order items');
+
       // Then delete the order itself
       const { error: orderError } = await supabase
         .from('orders')
@@ -175,12 +177,14 @@ export const useVendorOrders = () => {
         throw orderError;
       }
 
-      console.log('Order deleted successfully');
-      
-      // Invalidate queries to refresh the data
-      await queryClient.invalidateQueries({ queryKey: orderKeys.all });
-      await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });
-      await refetch();
+      console.log('Successfully deleted order');
+
+      // Immediately refetch to update the UI
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: orderKeys.all }),
+        queryClient.invalidateQueries({ queryKey: orderKeys.vendor }),
+        refetch()
+      ]);
 
       return { success: true };
     } catch (error: any) {
