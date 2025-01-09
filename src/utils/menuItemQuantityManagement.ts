@@ -17,7 +17,9 @@ export async function updateMenuItemQuantities(items: OrderItem[]) {
     }
 
     if (menuItem.quantity_limit !== null) {
+      // Ensure we don't go below 0
       const newQuantity = Math.max(0, menuItem.quantity_limit - item.quantity);
+      
       const { error: updateError } = await supabase
         .from('menu_items')
         .update({ quantity_limit: newQuantity })
