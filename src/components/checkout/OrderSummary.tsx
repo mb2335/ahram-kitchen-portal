@@ -31,6 +31,24 @@ export function OrderSummary() {
     return acc;
   }, {} as Record<string, typeof items>);
 
+  // Calculate subtotal and total discount
+  const { subtotal, totalDiscount } = items.reduce((acc, item) => {
+    const originalPrice = item.price * item.quantity;
+    const discountAmount = item.discount_percentage 
+      ? (originalPrice * (item.discount_percentage / 100))
+      : 0;
+    
+    return {
+      subtotal: acc.subtotal + originalPrice,
+      totalDiscount: acc.totalDiscount + discountAmount
+    };
+  }, { subtotal: 0, totalDiscount: 0 });
+
+  // Calculate tax (10% of the discounted subtotal)
+  const taxRate = 0.1;
+  const taxableAmount = subtotal - totalDiscount;
+  const taxAmount = taxableAmount * taxRate;
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Order Summary</h2>
@@ -79,9 +97,24 @@ export function OrderSummary() {
         </div>
       )}
 
-      <div className="flex justify-between items-center font-semibold text-lg">
-        <span>Total</span>
-        <span>${total.toFixed(2)}</span>
+      <div className="space-y-3">
+        <div className="flex justify-between items-center text-gray-600">
+          <span>Subtotal</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-red-500">
+          <span>Discount</span>
+          <span>-${totalDiscount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-gray-600">
+          <span>Tax</span>
+          <span>${taxAmount.toFixed(2)}</span>
+        </div>
+        <Separator />
+        <div className="flex justify-between items-center font-semibold text-lg">
+          <span>Total</span>
+          <span>${(subtotal - totalDiscount + taxAmount).toFixed(2)}</span>
+        </div>
       </div>
     </div>
   );
