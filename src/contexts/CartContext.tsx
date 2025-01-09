@@ -15,6 +15,7 @@ export interface MenuItem {
   order_index: number;
   remaining_quantity: number | null;
   category_id: string | null;
+  discount_percentage: number | null;
 }
 
 interface CartItem extends MenuItem {
@@ -108,7 +109,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   };
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = items.reduce((sum, item) => {
+    const price = item.discount_percentage 
+      ? item.price * (1 - item.discount_percentage / 100) 
+      : item.price;
+    return sum + price * item.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total }}>
