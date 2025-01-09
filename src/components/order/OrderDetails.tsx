@@ -56,7 +56,9 @@ export function OrderDetails({ order }: OrderDetailsProps) {
             />
             <OrderNotes notes={order.notes} />
             <OrderStatusSection 
+              id={order.id}
               status={order.status}
+              createdAt={order.created_at}
               rejectionReason={order.rejection_reason}
             />
           </div>
