@@ -35,12 +35,24 @@ export function OrderThankYou() {
     return <Navigate to="/" replace />;
   }
 
+  // Calculate subtotal (sum of regular prices)
+  const subtotal = orderDetails.items.reduce((acc, item) => {
+    return acc + (item.price * item.quantity);
+  }, 0);
+
   // Calculate total discount
   const discountAmount = orderDetails.items.reduce((acc, item) => {
     if (!item.discount_percentage) return acc;
     const itemTotal = item.price * item.quantity;
     return acc + (itemTotal * (item.discount_percentage / 100));
   }, 0);
+
+  // Calculate tax (10% of the discounted subtotal)
+  const taxableAmount = subtotal - discountAmount;
+  const taxAmount = taxableAmount * 0.1;
+
+  // Calculate final total
+  const total = taxableAmount + taxAmount;
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
@@ -82,9 +94,9 @@ export function OrderThankYou() {
 
           <OrderSummary
             items={orderDetails.items}
-            subtotal={orderDetails.subtotal}
-            taxAmount={orderDetails.taxAmount}
-            total={orderDetails.total}
+            subtotal={subtotal}
+            taxAmount={taxAmount}
+            total={total}
             discountAmount={discountAmount}
           />
         </div>

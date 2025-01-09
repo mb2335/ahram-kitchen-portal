@@ -13,6 +13,7 @@ interface OrderDetails {
     nameKo: string;
     quantity: number;
     price: number;
+    discount_percentage?: number;
   }>;
   total: number;
   taxAmount: number;
@@ -31,6 +32,25 @@ export function OrderThankYou() {
   if (!orderDetails) {
     return <Navigate to="/" replace />;
   }
+
+  // Calculate subtotal (sum of regular prices)
+  const subtotal = orderDetails.items.reduce((acc, item) => {
+    return acc + (item.price * item.quantity);
+  }, 0);
+
+  // Calculate total discount
+  const discountAmount = orderDetails.items.reduce((acc, item) => {
+    if (!item.discount_percentage) return acc;
+    const itemTotal = item.price * item.quantity;
+    return acc + (itemTotal * (item.discount_percentage / 100));
+  }, 0);
+
+  // Calculate tax (10% of the discounted subtotal)
+  const taxableAmount = subtotal - discountAmount;
+  const taxAmount = taxableAmount * 0.1;
+
+  // Calculate final total
+  const total = taxableAmount + taxAmount;
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
@@ -67,7 +87,12 @@ export function OrderThankYou() {
             {orderDetails.items.map((item, index) => (
               <div key={index} className="flex justify-between">
                 <span>{item.quantity}x {language === 'en' ? item.name : item.nameKo}</span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
+                <div className="text-right">
+                  <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  {item.discount_percentage && (
+                    <p className="text-sm text-red-500">-${((item.price * item.quantity * item.discount_percentage) / 100).toFixed(2)}</p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -75,15 +100,21 @@ export function OrderThankYou() {
           <div className="border-t pt-4">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>${(orderDetails.total - orderDetails.taxAmount).toFixed(2)}</span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-red-500">
+                <span>Discount</span>
+                <span>-${discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Tax</span>
-              <span>${orderDetails.taxAmount.toFixed(2)}</span>
+              <span>${taxAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold mt-2">
               <span>Total</span>
-              <span>${orderDetails.total.toFixed(2)}</span>
+              <span>${total.toFixed(2)}</span>
             </div>
           </div>
         </div>
