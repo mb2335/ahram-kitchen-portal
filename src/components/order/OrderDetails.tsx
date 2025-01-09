@@ -1,76 +1,74 @@
-import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { OrderStatusBadge } from '@/components/shared/OrderStatusBadge';
-import { format } from 'date-fns';
-import { OrderSummary } from '@/components/shared/OrderSummary';
-import { CustomerSection } from './CustomerSection';
-import { DeliveryInfo } from './DeliveryInfo';
-import { OrderNotes } from './OrderNotes';
 import { OrderStatusSection } from './OrderStatusSection';
+import { CustomerSection } from './CustomerSection';
+import { OrderItemsList } from './OrderItemsList';
+import { OrderNotes } from './OrderNotes';
+import { DeliveryInfo } from './DeliveryInfo';
+import { MapPin, Clock } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { PaymentProof } from '@/components/vendor/order/PaymentProof';
+import { OrderSummary } from '@/components/shared/OrderSummary';
 
 interface OrderDetailsProps {
-  order: any; // Using any temporarily, should be properly typed
+  order: any; // Type should be properly defined based on your order structure
 }
 
 export function OrderDetails({ order }: OrderDetailsProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const orderItems = order.order_items?.map((item: any) => ({
-    name: item.menu_item?.name || '',
-    nameKo: item.menu_item?.name_ko || '',
-    quantity: item.quantity,
-    price: item.unit_price,
-    category: item.menu_item?.category
-  })) || [];
-
   return (
-    <Card className="p-6">
-      <div className="space-y-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-semibold">
-              Order #{order.id.slice(0, 8)}
-            </h3>
-            <p className="text-sm text-gray-500">
-              Placed on {format(new Date(order.created_at), 'PPP')}
-            </p>
-          </div>
-          <OrderStatusBadge status={order.status} />
-        </div>
+    <Card className="p-6 space-y-6">
+      <OrderStatusSection
+        id={order.id}
+        status={order.status}
+        createdAt={order.created_at}
+      />
 
-        <OrderSummary
-          items={orderItems}
-          subtotal={order.total_amount - order.tax_amount}
-          taxAmount={order.tax_amount}
-          total={order.total_amount}
-          showItems={isExpanded}
-        />
+      {order.customer && (
+        <CustomerSection customer={order.customer} />
+      )}
+      
+      <OrderItemsList items={order.order_items} />
+      
+      <OrderSummary
+        subtotal={order.total_amount - order.tax_amount}
+        taxAmount={order.tax_amount}
+        total={order.total_amount}
+      />
 
-        {isExpanded && (
-          <div className="space-y-6 mt-4">
-            <CustomerSection customer={order.customer} />
-            <DeliveryInfo 
-              deliveryDate={order.delivery_date}
-              pickupTime={order.pickup_time}
-              pickupLocation={order.pickup_location}
-            />
-            <OrderNotes notes={order.notes} />
-            <OrderStatusSection 
-              id={order.id}
-              status={order.status}
-              createdAt={order.created_at}
-              rejectionReason={order.rejection_reason}
-            />
-          </div>
+      <div className="space-y-4">
+        <DeliveryInfo deliveryDate={order.delivery_date} />
+
+        {(order.pickup_time || order.pickup_location) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h3 className="font-medium">Pickup Details</h3>
+              {order.pickup_time && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Clock className="h-4 w-4" />
+                  <span>{order.pickup_time}</span>
+                </div>
+              )}
+              {order.pickup_location && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span>{order.pickup_location}</span>
+                </div>
+              )}
+            </div>
+          </>
         )}
-
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-sm text-primary hover:text-primary/80 transition-colors"
-        >
-          {isExpanded ? 'Show less' : 'Show more'}
-        </button>
       </div>
+
+      {order.payment_proof_url && (
+        <PaymentProof paymentProofUrl={order.payment_proof_url} />
+      )}
+
+      {(order.notes || order.rejection_reason) && (
+        <OrderNotes
+          notes={order.notes}
+          rejectionReason={order.rejection_reason}
+        />
+      )}
     </Card>
   );
 }
