@@ -79,7 +79,7 @@ export function Checkout() {
           createdAt: new Date().toISOString(),
           pickupTime: formData.pickupDetail?.time || null,
           pickupLocation: formData.pickupDetail?.location || null,
-          paymentProofUrl: null // This will be updated after upload
+          paymentProofUrl: null
         }
       },
       replace: true
@@ -104,7 +104,8 @@ export function Checkout() {
     nameKo: item.name_ko,
     quantity: item.quantity,
     price: item.price,
-    category_id: item.category_id
+    category_id: item.category_id,
+    discount_percentage: item.discount_percentage // Add this line
   }));
 
   return (
