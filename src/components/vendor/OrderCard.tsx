@@ -27,7 +27,11 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
         <OrderItems items={order.order_items} />
       )}
 
-      <OrderSummary order={order} />
+      <OrderSummary 
+        subtotal={order.total_amount - order.tax_amount}
+        taxAmount={order.tax_amount}
+        total={order.total_amount}
+      />
       
       <PickupDetails 
         pickupDate={order.delivery_date}

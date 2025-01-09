@@ -68,7 +68,22 @@ export function Checkout() {
 
   const handleOrderSuccess = async (orderId: string) => {
     clearCart();
-    navigate('/orders');
+    navigate('/thank-you', {
+      state: {
+        orderDetails: {
+          id: orderId,
+          items: checkoutItems,
+          subtotal: total - taxAmount,
+          taxAmount: taxAmount,
+          total: total,
+          createdAt: new Date().toISOString(),
+          pickupTime: formData.pickupDetail?.time || null,
+          pickupLocation: formData.pickupDetail?.location || null,
+          paymentProofUrl: null // This will be updated after upload
+        }
+      },
+      replace: true
+    });
     toast({
       title: "Order Placed Successfully",
       description: "Your order has been confirmed. You can track its status in your order history.",

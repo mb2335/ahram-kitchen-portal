@@ -7,24 +7,13 @@ import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
 import { MapPin, Clock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { PaymentProof } from '@/components/vendor/order/PaymentProof';
 
 interface OrderDetailsProps {
   order: any; // Type should be properly defined based on your order structure
 }
 
 export function OrderDetails({ order }: OrderDetailsProps) {
-  // Calculate total discount
-  const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
-    const originalPrice = item.quantity * item.unit_price;
-    const discountAmount = item.menu_item?.discount_percentage
-      ? (originalPrice * (item.menu_item.discount_percentage / 100))
-      : 0;
-    return acc + discountAmount;
-  }, 0) || 0;
-
-  // Calculate subtotal before discounts
-  const subtotal = order.total_amount + totalDiscount - order.tax_amount;
-
   return (
     <Card className="p-6 space-y-6">
       <OrderStatusSection
@@ -40,10 +29,9 @@ export function OrderDetails({ order }: OrderDetailsProps) {
       <OrderItemsList items={order.order_items} />
       
       <OrderTotals
-        subtotal={subtotal}
+        subtotal={order.total_amount - order.tax_amount}
         taxAmount={order.tax_amount}
         total={order.total_amount}
-        discountAmount={totalDiscount}
       />
 
       <div className="space-y-4">
@@ -70,6 +58,10 @@ export function OrderDetails({ order }: OrderDetailsProps) {
           </>
         )}
       </div>
+
+      {order.payment_proof_url && (
+        <PaymentProof paymentProofUrl={order.payment_proof_url} />
+      )}
 
       {(order.notes || order.rejection_reason) && (
         <OrderNotes

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { MapPin, Clock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { PaymentProof } from '@/components/vendor/order/PaymentProof';
 
 interface OrderDetails {
   id: string;
@@ -17,9 +18,11 @@ interface OrderDetails {
   }>;
   total: number;
   taxAmount: number;
+  subtotal: number;
   createdAt: string;
   pickupTime: string | null;
   pickupLocation: string | null;
+  paymentProofUrl: string;
 }
 
 export function OrderThankYou() {
@@ -81,7 +84,7 @@ export function OrderThankYou() {
           <div className="border-t pt-4">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>${(orderDetails.total - orderDetails.taxAmount).toFixed(2)}</span>
+              <span>${orderDetails.subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Tax</span>
@@ -93,6 +96,10 @@ export function OrderThankYou() {
             </div>
           </div>
         </div>
+
+        {orderDetails.paymentProofUrl && (
+          <PaymentProof paymentProofUrl={orderDetails.paymentProofUrl} />
+        )}
 
         <div className="flex justify-center space-x-4">
           <Link to="/">
