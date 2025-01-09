@@ -50,7 +50,7 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
         {item.discount_percentage && (
           <Badge 
             variant="destructive" 
-            className="absolute top-2 right-2 z-10"
+            className="absolute top-2 right-2 z-10 bg-red-500 text-white whitespace-nowrap"
           >
             {item.discount_percentage}% OFF
           </Badge>
