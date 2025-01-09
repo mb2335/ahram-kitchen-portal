@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem } from "@/contexts/CartContext";
+import { Badge } from "@/components/ui/badge";
 
 interface CartItemProps {
   item: MenuItem & { quantity: number };
@@ -11,6 +12,12 @@ interface CartItemProps {
 
 export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   const { language } = useLanguage();
+
+  const getDiscountedPrice = () => {
+    if (!item.discount_percentage) return item.price;
+    const discountMultiplier = (100 - item.discount_percentage) / 100;
+    return item.price * discountMultiplier;
+  };
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in">
@@ -24,7 +31,17 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
           <h3 className="font-medium text-lg">
             {language === 'en' ? item.name : item.name_ko}
           </h3>
-          <p className="text-primary font-bold">${item.price}</p>
+          {item.discount_percentage ? (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400 line-through">${item.price.toFixed(2)}</span>
+              <span className="text-red-500 font-bold">${getDiscountedPrice().toFixed(2)}</span>
+              <Badge variant="destructive" className="text-xs">
+                {item.discount_percentage}% OFF
+              </Badge>
+            </div>
+          ) : (
+            <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
+          )}
         </div>
       </div>
       <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end mt-4 sm:mt-0">

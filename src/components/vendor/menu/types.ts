@@ -12,6 +12,7 @@ export interface MenuItem {
   order_index: number;
   quantity_limit: number | null;
   category_id?: string | null;
+  discount_percentage?: number | null;
 }
 
 export interface MenuFormData {
@@ -23,4 +24,5 @@ export interface MenuFormData {
   quantity_limit: string;
   is_available: boolean;
   category_id?: string;
+  discount_percentage?: string;
 }

@@ -136,6 +136,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           description_ko: string | null
+          discount_percentage: number | null
           id: string
           image: string | null
           is_available: boolean | null
@@ -151,6 +152,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_ko?: string | null
+          discount_percentage?: number | null
           id?: string
           image?: string | null
           is_available?: boolean | null
@@ -166,6 +168,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_ko?: string | null
+          discount_percentage?: number | null
           id?: string
           image?: string | null
           is_available?: boolean | null

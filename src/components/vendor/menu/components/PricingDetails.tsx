@@ -23,6 +23,18 @@ export function PricingDetails({ register, errors }: PricingDetailsProps) {
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="discount_percentage">Discount Percentage (optional)</Label>
+        <Input 
+          id="discount_percentage" 
+          type="number" 
+          min="0"
+          max="100"
+          {...register('discount_percentage')} 
+          placeholder="e.g., 20 for 20% off"
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="quantity_limit">Quantity Limit (optional)</Label>
         <Input 
           id="quantity_limit" 

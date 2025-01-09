@@ -57,6 +57,12 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
     return item.is_available ? 'Available' : 'Unavailable';
   };
 
+  const getDiscountedPrice = () => {
+    if (!item.discount_percentage) return null;
+    const discountMultiplier = (100 - item.discount_percentage) / 100;
+    return item.price * discountMultiplier;
+  };
+
   const handleDelete = () => {
     onDelete(item.id);
     setIsDeleteDialogOpen(false);
@@ -102,7 +108,21 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
                 </div>
               )}
               
-              <p className="text-lg font-medium">${item.price}</p>
+              <div className="space-y-1">
+                {item.discount_percentage ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg line-through text-gray-400">${item.price.toFixed(2)}</span>
+                    <span className="text-lg font-medium text-red-500">
+                      ${getDiscountedPrice()?.toFixed(2)}
+                    </span>
+                    <Badge variant="destructive">
+                      {item.discount_percentage}% OFF
+                    </Badge>
+                  </div>
+                ) : (
+                  <p className="text-lg font-medium">${item.price.toFixed(2)}</p>
+                )}
+              </div>
               
               <div className="flex flex-wrap gap-2">
                 <Badge variant={item.category_id && item.is_available ? 'default' : 'secondary'}>
