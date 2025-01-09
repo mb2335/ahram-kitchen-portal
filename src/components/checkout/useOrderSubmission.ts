@@ -26,6 +26,8 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
+      console.log('Starting order submission with items:', items);
+      
       const invalidItems = items.filter(item => 
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -53,12 +55,20 @@ export function useOrderSubmission() {
         
         if (categoryItems.length === 0) return null;
 
+        console.log('Processing category items:', categoryItems);
+
         // Calculate category total with discounts applied
         const categoryTotal = categoryItems.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
           const discountAmount = item.discount_percentage 
             ? (originalPrice * (item.discount_percentage / 100))
             : 0;
+          console.log('Item calculation:', {
+            item: item.name,
+            originalPrice,
+            discountAmount,
+            finalPrice: originalPrice - discountAmount
+          });
           return sum + (originalPrice - discountAmount);
         }, 0);
         
@@ -87,6 +97,8 @@ export function useOrderSubmission() {
           pickup_location: needsCustomPickup ? pickupDetail?.location : null,
         };
 
+        console.log('Creating order with data:', orderData);
+
         const { data: insertedOrder, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
@@ -102,12 +114,15 @@ export function useOrderSubmission() {
             ? item.price * (1 - item.discount_percentage / 100)
             : item.price;
 
-          return {
+          const orderItem = {
             order_id: insertedOrder.id,
             menu_item_id: item.id,
             quantity: item.quantity,
             unit_price: unitPrice, // Store the actual (potentially discounted) unit price
           };
+
+          console.log('Creating order item:', orderItem);
+          return orderItem;
         });
 
         const { error: orderItemsError } = await supabase
@@ -153,6 +168,7 @@ export function useOrderSubmission() {
       });
 
     } catch (error: any) {
+      console.error('Order submission error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
