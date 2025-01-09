@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OrderSummary as SharedOrderSummary } from "@/components/shared/OrderSummary";
 
 export function OrderSummary() {
-  const { items, total } = useCart();
+  const { items } = useCart();
   const { language } = useLanguage();
 
   const { data: categories = [] } = useQuery({
@@ -21,23 +21,25 @@ export function OrderSummary() {
     },
   });
 
-  // Calculate subtotal and total discount
-  const { subtotal, totalDiscount } = items.reduce((acc, item) => {
-    const originalPrice = item.price * item.quantity;
-    const discountAmount = item.discount_percentage 
-      ? (originalPrice * (item.discount_percentage / 100))
-      : 0;
-    
-    return {
-      subtotal: acc.subtotal + originalPrice,
-      totalDiscount: acc.totalDiscount + discountAmount
-    };
-  }, { subtotal: 0, totalDiscount: 0 });
+  // Calculate subtotal (before discounts)
+  const subtotal = items.reduce((acc, item) => {
+    return acc + (item.price * item.quantity);
+  }, 0);
+
+  // Calculate total discount
+  const totalDiscount = items.reduce((acc, item) => {
+    if (!item.discount_percentage) return acc;
+    const itemTotal = item.price * item.quantity;
+    return acc + (itemTotal * (item.discount_percentage / 100));
+  }, 0);
 
   // Calculate tax (10% of the discounted subtotal)
   const taxRate = 0.1;
   const taxableAmount = subtotal - totalDiscount;
   const taxAmount = taxableAmount * taxRate;
+
+  // Calculate final total
+  const total = taxableAmount + taxAmount;
 
   const formattedItems = items.map(item => ({
     name: item.name,
