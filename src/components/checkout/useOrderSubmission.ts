@@ -53,7 +53,14 @@ export function useOrderSubmission() {
         
         if (categoryItems.length === 0) return null;
 
-        const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const categoryTotal = categoryItems.reduce((sum, item) => {
+          const originalPrice = item.price * item.quantity;
+          const discountAmount = item.discount_percentage 
+            ? (originalPrice * (item.discount_percentage / 100))
+            : 0;
+          return sum + (originalPrice - discountAmount);
+        }, 0);
+        
         const categoryTaxAmount = categoryTotal * (taxAmount / total);
 
         const { data: categoryData, error: categoryError } = await supabase
@@ -87,12 +94,20 @@ export function useOrderSubmission() {
 
         if (orderError) throw orderError;
 
-        const orderItems = categoryItems.map((item) => ({
-          order_id: insertedOrder.id,
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          unit_price: item.price,
-        }));
+        const orderItems = categoryItems.map((item) => {
+          // Calculate the discounted unit price
+          const discountMultiplier = item.discount_percentage 
+            ? (100 - item.discount_percentage) / 100
+            : 1;
+          const discountedUnitPrice = item.price * discountMultiplier;
+
+          return {
+            order_id: insertedOrder.id,
+            menu_item_id: item.id,
+            quantity: item.quantity,
+            unit_price: discountedUnitPrice,
+          };
+        });
 
         const { error: orderItemsError } = await supabase
           .from('order_items')
@@ -123,7 +138,8 @@ export function useOrderSubmission() {
               name: item.name,
               nameKo: item.nameKo,
               quantity: item.quantity,
-              price: item.price
+              price: item.price,
+              discount_percentage: item.discount_percentage
             })),
             total: total + taxAmount,
             taxAmount: taxAmount,
