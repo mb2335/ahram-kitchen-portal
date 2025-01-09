@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Clock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { PaymentProof } from '@/components/vendor/order/PaymentProof';
+import { OrderSummary } from '@/components/shared/OrderSummary';
 
 interface OrderDetails {
   id: string;
@@ -81,20 +82,11 @@ export function OrderThankYou() {
             ))}
           </div>
 
-          <div className="border-t pt-4">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${orderDetails.subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>${orderDetails.taxAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold mt-2">
-              <span>Total</span>
-              <span>${orderDetails.total.toFixed(2)}</span>
-            </div>
-          </div>
+          <OrderSummary
+            subtotal={orderDetails.subtotal}
+            taxAmount={orderDetails.taxAmount}
+            total={orderDetails.total}
+          />
         </div>
 
         {orderDetails.paymentProofUrl && (

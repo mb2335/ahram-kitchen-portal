@@ -2,12 +2,12 @@ import { Card } from '@/components/ui/card';
 import { OrderStatusSection } from './OrderStatusSection';
 import { CustomerSection } from './CustomerSection';
 import { OrderItemsList } from './OrderItemsList';
-import { OrderTotals } from './OrderTotals';
 import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
 import { MapPin, Clock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { PaymentProof } from '@/components/vendor/order/PaymentProof';
+import { OrderSummary } from '@/components/shared/OrderSummary';
 
 interface OrderDetailsProps {
   order: any; // Type should be properly defined based on your order structure
@@ -28,7 +28,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
       
       <OrderItemsList items={order.order_items} />
       
-      <OrderTotals
+      <OrderSummary
         subtotal={order.total_amount - order.tax_amount}
         taxAmount={order.tax_amount}
         total={order.total_amount}

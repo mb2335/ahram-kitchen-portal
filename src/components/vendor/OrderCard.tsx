@@ -2,11 +2,11 @@ import { Order } from './types';
 import { OrderHeader } from './order/OrderHeader';
 import { CustomerDetails } from './order/CustomerDetails';
 import { OrderItems } from './order/OrderItems';
-import { OrderSummary } from './order/OrderSummary';
-import { PaymentProof } from './order/PaymentProof';
 import { OrderNotes } from './order/OrderNotes';
 import { OrderActions } from './order/OrderActions';
 import { PickupDetails } from './order/PickupDetails';
+import { PaymentProof } from './order/PaymentProof';
+import { OrderSummary } from '@/components/shared/OrderSummary';
 
 interface OrderCardProps {
   order: Order;
