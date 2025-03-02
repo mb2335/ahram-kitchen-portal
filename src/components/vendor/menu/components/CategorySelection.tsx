@@ -26,7 +26,10 @@ export function CategorySelection({
         .order('order_index');
       
       if (error) throw error;
-      return data;
+      return data.map(category => ({
+        ...category,
+        allow_joint_pickup: category.allow_joint_pickup ?? false
+      }));
     },
   });
 
