@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -130,14 +131,18 @@ export function CheckoutForm({
       return;
     }
     
+    // Create a copy of the existing dates to avoid mutation issues
+    const updatedDates = {
+      ...formData.deliveryDates,
+      [categoryId]: date
+    };
+    
     setFormData(prev => ({
       ...prev,
-      deliveryDates: {
-        ...prev.deliveryDates,
-        [categoryId]: date
-      }
+      deliveryDates: updatedDates
     }));
     
+    // Log for debugging
     setTimeout(() => {
       console.log(`Verified date for category ${categoryId}:`, formData.deliveryDates[categoryId]);
     }, 0);
@@ -183,9 +188,7 @@ export function CheckoutForm({
     const uniqueCategoryIds = [...new Set(itemCategoryIds)];
     
     for (const categoryId of uniqueCategoryIds) {
-      const hasDate = Object.keys(formData.deliveryDates).some(key => 
-        key === categoryId || key.startsWith(categoryId) || categoryId.startsWith(key)
-      );
+      const hasDate = Object.prototype.hasOwnProperty.call(formData.deliveryDates, categoryId);
       
       if (!hasDate) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
@@ -197,13 +200,7 @@ export function CheckoutForm({
         return false;
       }
       
-      const dateKey = Object.keys(formData.deliveryDates).find(key => 
-        key === categoryId || key.startsWith(categoryId) || categoryId.startsWith(key)
-      );
-      
-      if (!dateKey) continue;
-      
-      const date = formData.deliveryDates[dateKey];
+      const date = formData.deliveryDates[categoryId];
       if (!(date instanceof Date) || isNaN(date.getTime())) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
         toast({
@@ -310,6 +307,7 @@ export function CheckoutForm({
       const uniqueCategoryIds = [...new Set(itemCategoryIds)];
       console.log("Category IDs in cart:", uniqueCategoryIds);
       
+      // Log date objects for debugging
       Object.entries(formData.deliveryDates).forEach(([catId, dateObj]) => {
         console.log(`Category ${catId} date type:`, typeof dateObj);
         console.log(`Category ${catId} date value:`, dateObj);

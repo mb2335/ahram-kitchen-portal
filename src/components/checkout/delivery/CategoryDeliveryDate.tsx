@@ -78,7 +78,13 @@ export function CategoryDeliveryDate({
     
     setErrorMessage(null);
     setDate(date);
+    
+    // Ensure we pass the full Date object to the parent component
     onDateChange(date);
+    
+    // Log for debugging
+    console.log(`Date selected for category ${category.id}:`, date);
+    console.log(`Date is Date instance:`, date instanceof Date);
   };
 
   const isDateDisabled = (date: Date) => {

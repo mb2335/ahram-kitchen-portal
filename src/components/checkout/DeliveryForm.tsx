@@ -187,6 +187,25 @@ export function DeliveryForm({
     });
   };
 
+  // Function to handle delivery date changes and ensure we log them
+  const handleDeliveryDateChange = (categoryId: string, date: Date) => {
+    console.log(`DeliveryForm received date change for ${categoryId}:`, date);
+    
+    // Ensure that we are passing a valid Date object
+    if (!(date instanceof Date)) {
+      console.error("Invalid date object passed to handleDeliveryDateChange");
+      return;
+    }
+    
+    // Pass the date to the parent component
+    onDateChange(categoryId, date);
+    
+    // Log the date in deliveryDates to confirm it was updated
+    setTimeout(() => {
+      console.log(`DeliveryDates after update for ${categoryId}:`, deliveryDates[categoryId]);
+    }, 0);
+  };
+
   return (
     <div className="space-y-6">
       {!showMixedCategoryOptions && availableFulfillmentTypes.length > 1 && (
@@ -298,7 +317,7 @@ export function DeliveryForm({
             <CategoryDeliveryDate
               category={category}
               selectedDate={deliveryDates[category.id]}
-              onDateChange={(date) => onDateChange(category.id, date)}
+              onDateChange={(date) => handleDeliveryDateChange(category.id, date)}
               selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}

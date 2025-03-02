@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -91,6 +92,7 @@ export function useOrderSubmission() {
       
       // Check we have a date for each category
       for (const categoryId of uniqueCategoryIds) {
+        // Modified: Check for exact match with the full category ID
         if (!deliveryDates[categoryId]) {
           const { data: categoryData } = await supabase
             .from('menu_categories')
@@ -343,8 +345,11 @@ export function useOrderSubmission() {
           throw new Error(`Invalid category grouping`);
         }
         
-        // Find the delivery date for this category
+        // Find the delivery date for this category - use exact match with full category ID
         const deliveryDate = deliveryDates[groupCategoryId];
+        
+        // Debug the delivery date for troubleshooting
+        console.log(`Processing category ${groupCategoryId} with date:`, deliveryDate);
         
         if (!deliveryDate || !(deliveryDate instanceof Date)) {
           console.error(`Missing or invalid delivery date for category ${groupCategoryId}`);
