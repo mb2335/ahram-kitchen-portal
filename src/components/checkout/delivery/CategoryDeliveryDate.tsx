@@ -92,7 +92,7 @@ export function CategoryDeliveryDate({
   const generatePickupHeading = () => {
     if (allPickupCategories && allPickupCategories.length > 0) {
       const categoryNames = allPickupCategories.join(' & ');
-      return `${categoryNames} Pickup Details;
+      return `${categoryNames} Pickup Details`;
     }
     return `${category.name} Pickup Options`;
   };
