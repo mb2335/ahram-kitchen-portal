@@ -126,7 +126,13 @@ export function CheckoutForm({
       return;
     }
 
-    // Check for pickup requirements
+    // Identify if all categories are set to pickup
+    const isAllPickup = Array.from(categoriesWithItems).every(categoryId => {
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
+      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP;
+    });
+
+    // Check for pickup requirements only if we have pickup items that need custom pickup details
     const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
@@ -147,9 +153,11 @@ export function CheckoutForm({
       return;
     }
 
-    // Check for delivery address
-    const hasDeliveryItems = Object.values(categoryFulfillmentTypes).includes(FULFILLMENT_TYPE_DELIVERY) || 
-      (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && Object.keys(categoryFulfillmentTypes).length === 0);
+    // Check for delivery address only if we have delivery items
+    const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
+      return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
+    });
     
     if (hasDeliveryItems && !deliveryAddress.trim()) {
       toast({

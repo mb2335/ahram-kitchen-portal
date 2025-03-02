@@ -76,6 +76,11 @@ export function useOrderSubmission() {
         });
       }
 
+      // For all-pickup orders with the same pickup time/location, ensure we check dates correctly
+      const isAllPickup = Object.values(categoryFulfillmentTypes).every(type => 
+        type === FULFILLMENT_TYPE_PICKUP) || 
+        (fulfillmentType === FULFILLMENT_TYPE_PICKUP && Object.keys(categoryFulfillmentTypes).length === 0);
+
       // Validate each date against fulfillment type and pickup days
       Object.entries(deliveryDates).forEach(([categoryId, date]) => {
         const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
@@ -111,7 +116,92 @@ export function useOrderSubmission() {
         groupedItems[groupKey].push(item);
       });
 
-      // Create orders for each group
+      // For all-pickup orders with the same pickup time, merge into a single order
+      if (isAllPickup && pickupDetail) {
+        // Calculate total for all items
+        const orderTotal = items.reduce((sum, item) => {
+          const originalPrice = item.price * item.quantity;
+          const discountAmount = item.discount_percentage 
+            ? (originalPrice * (item.discount_percentage / 100))
+            : 0;
+          return sum + (originalPrice - discountAmount);
+        }, 0);
+        
+        // Use the first category's delivery date for the combined order
+        const firstCategoryId = Object.keys(deliveryDates)[0];
+        if (!firstCategoryId || !deliveryDates[firstCategoryId]) {
+          throw new Error('Missing delivery date');
+        }
+
+        const orderData = {
+          customer_id: customerId,
+          total_amount: orderTotal + taxAmount,
+          tax_amount: taxAmount,
+          notes: notes,
+          status: 'pending',
+          delivery_date: deliveryDates[firstCategoryId].toISOString(),
+          payment_proof_url: uploadData.path,
+          pickup_time: pickupDetail.time,
+          pickup_location: pickupDetail.location,
+          fulfillment_type: FULFILLMENT_TYPE_PICKUP,
+          delivery_address: null,
+        };
+
+        const { data: insertedOrder, error: orderError } = await supabase
+          .from('orders')
+          .insert([orderData])
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+
+        const orderItems = items.map((item) => {
+          const unitPrice = item.price * (1 - (item.discount_percentage || 0) / 100);
+          return {
+            order_id: insertedOrder.id,
+            menu_item_id: item.id,
+            quantity: item.quantity,
+            unit_price: unitPrice,
+          };
+        });
+
+        const { error: orderItemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (orderItemsError) throw orderItemsError;
+
+        await updateMenuItemQuantities(items);
+        onOrderSuccess(insertedOrder.id);
+
+        navigate('/thank-you', {
+          state: {
+            orderDetails: {
+              id: insertedOrder.id,
+              items: items.map(item => ({
+                name: item.name,
+                nameKo: item.nameKo,
+                quantity: item.quantity,
+                price: item.price,
+                discount_percentage: item.discount_percentage
+              })),
+              total: orderTotal + taxAmount,
+              taxAmount: taxAmount,
+              createdAt: insertedOrder.created_at,
+              pickupTime: insertedOrder.pickup_time,
+              pickupLocation: insertedOrder.pickup_location,
+              fulfillmentType: FULFILLMENT_TYPE_PICKUP,
+              deliveryAddress: null,
+              relatedOrderIds: []
+            }
+          },
+          replace: true
+        });
+        
+        return;
+      }
+
+      // Create orders for each group (handles mixed fulfillment types)
       const orderPromises = Object.entries(groupedItems).map(async ([groupKey, groupItems]) => {
         const [groupFulfillmentType, categoryId] = groupKey.split('-', 2);
         const deliveryDate = deliveryDates[categoryId];
