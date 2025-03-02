@@ -412,17 +412,6 @@ export function useOrderSubmission() {
           throw new Error(`Invalid category grouping`);
         }
         
-        // Find the delivery date for this category
-        const deliveryDate = processedDates[groupCategoryId];
-        
-        // Debug the delivery date for troubleshooting
-        console.log(`Processing category ${groupCategoryId} with date:`, deliveryDate);
-        
-        if (!deliveryDate || !(deliveryDate instanceof Date)) {
-          console.error(`Missing or invalid delivery date for category ${groupCategoryId}`);
-          throw new Error(`Please select a valid date for all items in your order`);
-        }
-        
         const groupTotal = groupItems.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
           const discountAmount = item.discount_percentage 
