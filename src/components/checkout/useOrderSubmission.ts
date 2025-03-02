@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -81,9 +82,9 @@ export function useOrderSubmission() {
         throw new Error('Delivery address is required for delivery orders');
       }
 
-      // Validate we have dates for all items
+      // Validate we have dates for all categories in the cart
       const missingDates = uniqueCategoryIds.filter(categoryId => 
-        deliveryDates[categoryId] === undefined
+        !deliveryDates[categoryId]
       );
       
       if (missingDates.length > 0) {
@@ -98,6 +99,13 @@ export function useOrderSubmission() {
           : missingDates.join(', ');
           
         throw new Error(`Please select dates for all items in your order (Missing for: ${categoryNames})`);
+      }
+
+      // Console logs for debugging
+      console.log("Delivery dates:", deliveryDates);
+      console.log("Unique category IDs:", uniqueCategoryIds);
+      for (const catId of uniqueCategoryIds) {
+        console.log(`Category ${catId} date:`, deliveryDates[catId]);
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -331,6 +339,7 @@ export function useOrderSubmission() {
         const deliveryDate = deliveryDates[categoryId];
         
         if (!deliveryDate) {
+          console.error(`Missing delivery date for category ${categoryId}`, deliveryDates);
           throw new Error(`Missing delivery date for category ${categoryId}`);
         }
         

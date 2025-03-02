@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -237,9 +238,11 @@ export function CheckoutForm({
       return;
     }
 
+    // Check if we have any delivery items
     const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       
+      // Skip categories that only support pickup
       if (category?.fulfillment_types.length === 1 && 
           category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
         return false;
@@ -249,6 +252,7 @@ export function CheckoutForm({
       return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
     });
     
+    // Only validate delivery address if there are delivery items
     if (hasDeliveryItems && !deliveryAddress.trim()) {
       toast({
         title: 'Error',
@@ -325,6 +329,10 @@ export function CheckoutForm({
     }
 
     try {
+      // Log the delivery dates for debugging
+      console.log("Submitting with delivery dates:", formData.deliveryDates);
+      console.log("Category IDs in cart:", Array.from(categoriesWithItems));
+      
       await submitOrder({
         items,
         total,
