@@ -47,6 +47,7 @@ export function DeliveryForm({
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
+  const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -77,23 +78,48 @@ export function DeliveryForm({
     
     const fulfillmentTypes = new Set<string>();
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
+    let hasPickupOnly = false;
+    let allCategoriesPickupOnly = true;
     
+    // Check each category with items in the cart
     categories.forEach(category => {
       if (itemCategoryIds.includes(category.id)) {
+        // Add all available fulfillment types
         category.fulfillment_types?.forEach(type => fulfillmentTypes.add(type));
+        
+        // Check if this is a pickup-only category
+        const isPickupOnly = category.fulfillment_types?.length === 1 && 
+                             category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP;
+        
+        if (isPickupOnly) {
+          hasPickupOnly = true;
+        } else {
+          allCategoriesPickupOnly = false;
+        }
       }
     });
     
-    // Check if we should allow mixed delivery types
-    const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
-    setHasMixedDelivery(hasMultipleTypes);
+    // Set pickup-only state
+    setHasPickupOnlyCategories(hasPickupOnly);
     
+    // If all categories are pickup-only, only show pickup option
     const availableTypes = Array.from(fulfillmentTypes);
     setAvailableFulfillmentTypes(availableTypes);
     
+    // Check if we should allow mixed delivery types
+    const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
+    setHasMixedDelivery(hasMultipleTypes && !allCategoriesPickupOnly);
+    
     // Set default fulfillment type if none selected and options available
     if (!fulfillmentType && availableTypes.length > 0) {
-      onFulfillmentTypeChange(availableTypes[0]);
+      // If we have pickup-only categories, default to pickup
+      if (hasPickupOnly && availableTypes.includes(FULFILLMENT_TYPE_PICKUP)) {
+        onFulfillmentTypeChange(FULFILLMENT_TYPE_PICKUP);
+      } else if (availableTypes.includes(FULFILLMENT_TYPE_DELIVERY)) {
+        onFulfillmentTypeChange(FULFILLMENT_TYPE_DELIVERY);
+      } else {
+        onFulfillmentTypeChange(availableTypes[0]);
+      }
     }
   }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
 
@@ -135,7 +161,7 @@ export function DeliveryForm({
     }
   }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery]);
 
-  // Show mixed category fulfillment options if we have multiple categories
+  // Show mixed category fulfillment options if we have multiple categories with different options
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
   // Get all pickup category names
@@ -192,8 +218,14 @@ export function DeliveryForm({
             const category = categories.find(c => c.id === categoryId);
             if (!category) return null;
             
-            // Skip if category doesn't support multiple fulfillment types
-            if (category.fulfillment_types.length <= 1) return null;
+            // Skip if category only supports one fulfillment type
+            if (category.fulfillment_types.length <= 1) {
+              if (category.fulfillment_types.length === 1 && 
+                  category.fulfillment_types[0] !== categoryFulfillmentTypes[categoryId]) {
+                onCategoryFulfillmentTypeChange(categoryId, category.fulfillment_types[0]);
+              }
+              return null;
+            }
             
             return (
               <div key={`fulfillment-${categoryId}`} className="border p-3 rounded space-y-3">
@@ -232,7 +264,11 @@ export function DeliveryForm({
         // For mixed delivery, use the category-specific fulfillment type
         const effectiveFulfillmentType = showMixedCategoryOptions 
           ? categoryFulfillmentTypes[category.id] || fulfillmentType
-          : fulfillmentType;
+          : (
+            // Handle pickup-only categories
+            category.fulfillment_types.length === 1 && 
+            category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP
+          ) ? FULFILLMENT_TYPE_PICKUP : fulfillmentType;
         
         // Skip categories that don't match the selected fulfillment type
         if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -38,15 +37,46 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
+      // Check which categories require a delivery address
+      const itemCategoryIds = items
+        .map(item => item.category_id)
+        .filter(Boolean) as string[];
+      
+      const uniqueCategoryIds = [...new Set(itemCategoryIds)];
+      
+      // Get categories requiring delivery address
+      const { data: categoriesData } = await supabase
+        .from('menu_categories')
+        .select('id, fulfillment_types')
+        .in('id', uniqueCategoryIds);
+
+      // Create a map of which categories require delivery
+      const requiresDeliveryMap = new Map<string, boolean>();
+      
+      if (categoriesData) {
+        categoriesData.forEach(category => {
+          // Check if this category is being delivered (either by global setting or category-specific)
+          const categoryFulfillment = categoryFulfillmentTypes[category.id] || fulfillmentType;
+          
+          // If category only supports pickup, never require delivery address
+          if (category.fulfillment_types.length === 1 && 
+              category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+            requiresDeliveryMap.set(category.id, false);
+          } else {
+            requiresDeliveryMap.set(category.id, categoryFulfillment === FULFILLMENT_TYPE_DELIVERY);
+          }
+        });
+      }
+
+      // Check if ANY categories require delivery address
+      const hasDeliveryItems = Array.from(requiresDeliveryMap.values()).some(Boolean);
+      
       // Validate customer data
       if (!customerData.fullName || !customerData.email) {
         throw new Error('Please provide your full name and email address');
       }
 
-      // Validate delivery address for delivery orders
-      const hasDeliveryItems = Object.values(categoryFulfillmentTypes).includes(FULFILLMENT_TYPE_DELIVERY) || 
-        (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && Object.keys(categoryFulfillmentTypes).length === 0);
-        
+      // Validate delivery address ONLY if we have delivery items
       if (hasDeliveryItems && !customerData.address) {
         throw new Error('Delivery address is required for delivery orders');
       }
@@ -96,36 +126,61 @@ export function useOrderSubmission() {
       }
 
       // Get all categories and their pickup days
-      const { data: categoriesData, error: categoriesError } = await supabase
+      const { data: categories, error: categoriesError } = await supabase
         .from('menu_categories')
-        .select('id, pickup_days, has_custom_pickup');
+        .select('id, pickup_days, has_custom_pickup, fulfillment_types');
       
       if (categoriesError) throw categoriesError;
       
       // Create a map of category IDs to their pickup days
       const categoryPickupDays = new Map();
       const categoryCustomPickup = new Map();
+      const categoryFulfillmentOptionsMap = new Map();
       
-      if (categoriesData) {
-        categoriesData.forEach(category => {
+      if (categories) {
+        categories.forEach(category => {
           if (category && category.id) {
             if (category.pickup_days) {
               categoryPickupDays.set(category.id, new Set(category.pickup_days));
             }
             categoryCustomPickup.set(category.id, category.has_custom_pickup);
+            categoryFulfillmentOptionsMap.set(category.id, category.fulfillment_types || []);
           }
         });
       }
 
+      // Identify pickup-only categories
+      const pickupOnlyCategories = new Set<string>();
+      
+      for (const categoryId of uniqueCategoryIds) {
+        const fulfillmentOptions = categoryFulfillmentOptionsMap.get(categoryId) || [];
+        if (fulfillmentOptions.length === 1 && fulfillmentOptions[0] === FULFILLMENT_TYPE_PICKUP) {
+          pickupOnlyCategories.add(categoryId);
+        }
+      }
+
       // For all-pickup orders with the same pickup time/location, ensure we check dates correctly
-      const isAllPickup = Object.values(categoryFulfillmentTypes).every(type => 
-        type === FULFILLMENT_TYPE_PICKUP) || 
-        (fulfillmentType === FULFILLMENT_TYPE_PICKUP && Object.keys(categoryFulfillmentTypes).length === 0);
+      const isAllPickup = uniqueCategoryIds.every(categoryId => {
+        // Categories that only support pickup are always pickup
+        if (pickupOnlyCategories.has(categoryId)) return true;
+        
+        // Otherwise, check the selected fulfillment type
+        const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+        return categoryFulfillment === FULFILLMENT_TYPE_PICKUP;
+      });
 
       // Check if custom pickup is required for pickup items
-      const needsCustomPickup = isAllPickup && uniqueCategoryIds.some(categoryId => 
-        categoryCustomPickup.get(categoryId)
-      );
+      const needsCustomPickup = uniqueCategoryIds.some(categoryId => {
+        // Skip categories not being picked up
+        const categoryFulfillment = pickupOnlyCategories.has(categoryId) ? 
+          FULFILLMENT_TYPE_PICKUP : 
+          (categoryFulfillmentTypes[categoryId] || fulfillmentType);
+          
+        if (categoryFulfillment !== FULFILLMENT_TYPE_PICKUP) return false;
+        
+        // Check if this category requires custom pickup
+        return categoryCustomPickup.get(categoryId);
+      });
       
       // If pickup needs custom pickup details but none provided
       if (needsCustomPickup && !pickupDetail) {
@@ -164,7 +219,14 @@ export function useOrderSubmission() {
       items.forEach(item => {
         if (!item.category_id) return;
         
-        const categoryFulfillment = categoryFulfillmentTypes[item.category_id] || fulfillmentType;
+        // Handle pickup-only categories
+        let categoryFulfillment = categoryFulfillmentTypes[item.category_id] || fulfillmentType;
+        
+        // Override for pickup-only categories
+        if (pickupOnlyCategories.has(item.category_id)) {
+          categoryFulfillment = FULFILLMENT_TYPE_PICKUP;
+        }
+        
         const groupKey = `${categoryFulfillment}-${item.category_id}`;
         
         if (!groupedItems[groupKey]) {
