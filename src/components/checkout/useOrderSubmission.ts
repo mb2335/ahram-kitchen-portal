@@ -8,11 +8,67 @@ import { OrderSubmissionProps, FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKU
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
 
+// Define types for our possible date formats
+interface DateWithIso {
+  iso: string;
+  [key: string]: any;
+}
+
+interface DateWithNestedIso {
+  value: {
+    iso: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+type SerializedDateObject = Date | DateWithIso | DateWithNestedIso | any;
+
 export function useOrderSubmission() {
   const session = useSession();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
+
+  /**
+   * Safely converts various date formats to a Date object
+   */
+  const safelyParseDate = (rawDate: any, categoryId: string): Date => {
+    let dateObj: Date;
+    
+    if (rawDate instanceof Date) {
+      return rawDate;
+    } else if (typeof rawDate === 'string') {
+      return new Date(rawDate);
+    } else if (rawDate && typeof rawDate === 'object') {
+      // Try different known date serialization formats
+      try {
+        if (rawDate.toISOString && typeof rawDate.toISOString === 'function') {
+          return new Date(rawDate.toISOString());
+        } else if (rawDate.iso && typeof rawDate.iso === 'string') {
+          return new Date(rawDate.iso);
+        } else if (
+          rawDate.value && 
+          typeof rawDate.value === 'object' && 
+          rawDate.value.iso && 
+          typeof rawDate.value.iso === 'string'
+        ) {
+          return new Date(rawDate.value.iso);
+        } else {
+          // Last resort - convert to string
+          console.warn(`Using fallback date conversion for ${categoryId}:`, rawDate);
+          return new Date(String(rawDate));
+        }
+      } catch (err) {
+        console.error(`Error parsing date for category ${categoryId}:`, err);
+        throw new Error(`Invalid date format for ${categoryId}`);
+      }
+    }
+    
+    // If we get here, we couldn't parse the date
+    console.error(`Couldn't parse date for category ${categoryId}:`, rawDate);
+    throw new Error(`Couldn't parse date for ${categoryId}`);
+  };
 
   const submitOrder = async ({
     items,
@@ -105,33 +161,22 @@ export function useOrderSubmission() {
           throw new Error(`Please select a date for ${categoryData?.name || 'items in your order'}`);
         }
         
-        const rawDate = deliveryDates[categoryId];
-        let dateObj: Date;
-        
-        // Handle different date formats
-        if (rawDate instanceof Date) {
-          dateObj = rawDate;
-        } else if (typeof rawDate === 'string') {
-          dateObj = new Date(rawDate);
-        } else if (typeof rawDate === 'object' && rawDate !== null && '_type' === 'Date' && rawDate.value?.iso) {
-          // Handle serialized date object
-          dateObj = new Date(rawDate.value.iso);
-        } else if (typeof rawDate === 'object' && rawDate !== null && rawDate.value?.iso) {
-          // Handle serialized date object without _type
-          dateObj = new Date(rawDate.value.iso);
-        } else {
-          console.error(`Invalid date for category ${categoryId}:`, rawDate);
-          throw new Error('Please select a valid date for all items in your order');
-        }
-        
-        // Validate the date
-        if (isNaN(dateObj.getTime())) {
-          console.error(`Invalid date for category ${categoryId}:`, dateObj);
+        try {
+          // Use our safe date parser
+          const dateObj = safelyParseDate(deliveryDates[categoryId], categoryId);
+          
+          // Validate the date
+          if (isNaN(dateObj.getTime())) {
+            console.error(`Invalid date for category ${categoryId}:`, dateObj);
+            throw new Error(`Please select a valid date for all items in your order`);
+          }
+          
+          console.log(`Processed date for category ${categoryId}:`, dateObj.toISOString());
+          processedDates[categoryId] = dateObj;
+        } catch (error) {
+          console.error(`Error processing date for category ${categoryId}:`, error);
           throw new Error(`Please select a valid date for all items in your order`);
         }
-        
-        console.log(`Processed date for category ${categoryId}:`, dateObj.toISOString());
-        processedDates[categoryId] = dateObj;
       }
       
       console.log("Sanitized delivery dates:", processedDates);
@@ -365,6 +410,17 @@ export function useOrderSubmission() {
         if (!groupCategoryId) {
           console.error("Invalid group key:", groupKey);
           throw new Error(`Invalid category grouping`);
+        }
+        
+        // Find the delivery date for this category
+        const deliveryDate = processedDates[groupCategoryId];
+        
+        // Debug the delivery date for troubleshooting
+        console.log(`Processing category ${groupCategoryId} with date:`, deliveryDate);
+        
+        if (!deliveryDate || !(deliveryDate instanceof Date)) {
+          console.error(`Missing or invalid delivery date for category ${groupCategoryId}`);
+          throw new Error(`Please select a valid date for all items in your order`);
         }
         
         const groupTotal = groupItems.reduce((sum, item) => {
