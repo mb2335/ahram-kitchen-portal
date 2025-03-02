@@ -1,5 +1,4 @@
 
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, MapPin, Truck } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -35,9 +34,9 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
                 </Badge>
               )}
             </div>
-            {category.fulfillment_types?.includes('delivery') && category.delivery_available_from && category.delivery_available_until && (
+            {category.blocked_dates && category.blocked_dates.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                Delivery: {format(new Date(category.delivery_available_from), "PPP")} - {format(new Date(category.delivery_available_until), "PPP")}
+                Blocked pickup dates: {category.blocked_dates.length}
               </p>
             )}
             {category.fulfillment_types?.includes('pickup') && category.has_custom_pickup && category.pickup_details && category.pickup_details.length > 0 && (

@@ -55,14 +55,13 @@ export function DeliveryForm({
       return data.map(category => ({
         id: category.id,
         name: category.name,
-        delivery_available_from: category.delivery_available_from,
-        delivery_available_until: category.delivery_available_until,
         has_custom_pickup: category.has_custom_pickup,
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
           time: detail.time,
           location: detail.location
         })),
-        fulfillment_types: category.fulfillment_types || []
+        fulfillment_types: category.fulfillment_types || [],
+        blocked_dates: category.blocked_dates || []
       }));
     },
   });
@@ -126,13 +125,13 @@ export function DeliveryForm({
             {availableFulfillmentTypes.includes(FULFILLMENT_TYPE_DELIVERY) && (
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value={FULFILLMENT_TYPE_DELIVERY} id={FULFILLMENT_TYPE_DELIVERY} />
-                <Label htmlFor={FULFILLMENT_TYPE_DELIVERY}>Delivery (Monday-Wednesday, Saturday-Sunday)</Label>
+                <Label htmlFor={FULFILLMENT_TYPE_DELIVERY}>Delivery</Label>
               </div>
             )}
             {availableFulfillmentTypes.includes(FULFILLMENT_TYPE_PICKUP) && (
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value={FULFILLMENT_TYPE_PICKUP} id={FULFILLMENT_TYPE_PICKUP} />
-                <Label htmlFor={FULFILLMENT_TYPE_PICKUP}>Pickup (Thursday-Friday only)</Label>
+                <Label htmlFor={FULFILLMENT_TYPE_PICKUP}>Pickup</Label>
               </div>
             )}
           </RadioGroup>

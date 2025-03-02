@@ -38,9 +38,8 @@ export type Database = {
       }
       menu_categories: {
         Row: {
+          blocked_dates: string[] | null
           created_at: string | null
-          delivery_available_from: string | null
-          delivery_available_until: string | null
           fulfillment_types: string[] | null
           has_custom_pickup: boolean | null
           id: string
@@ -51,9 +50,8 @@ export type Database = {
           vendor_id: string | null
         }
         Insert: {
+          blocked_dates?: string[] | null
           created_at?: string | null
-          delivery_available_from?: string | null
-          delivery_available_until?: string | null
           fulfillment_types?: string[] | null
           has_custom_pickup?: boolean | null
           id?: string
@@ -64,9 +62,8 @@ export type Database = {
           vendor_id?: string | null
         }
         Update: {
+          blocked_dates?: string[] | null
           created_at?: string | null
-          delivery_available_from?: string | null
-          delivery_available_until?: string | null
           fulfillment_types?: string[] | null
           has_custom_pickup?: boolean | null
           id?: string
@@ -198,6 +195,7 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_id: string
+          delivery_address: string | null
           delivery_date: string
           fulfillment_type: string | null
           id: string
@@ -213,6 +211,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           customer_id: string
+          delivery_address?: string | null
           delivery_date: string
           fulfillment_type?: string | null
           id?: string
@@ -228,6 +227,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           customer_id?: string
+          delivery_address?: string | null
           delivery_date?: string
           fulfillment_type?: string | null
           id?: string

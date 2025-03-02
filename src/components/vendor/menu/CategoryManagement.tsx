@@ -48,7 +48,8 @@ export function CategoryManagement() {
           time: detail.time || '',
           location: detail.location || ''
         })) as PickupDetail[],
-        fulfillment_types: category.fulfillment_types || []
+        fulfillment_types: category.fulfillment_types || [],
+        blocked_dates: category.blocked_dates || []
       })) as Category[];
     },
   });
@@ -153,11 +154,10 @@ export function CategoryManagement() {
           setFormData({
             name: category.name,
             name_ko: category.name_ko,
-            deliveryAvailableFrom: category.delivery_available_from ? new Date(category.delivery_available_from) : undefined,
-            deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
             has_custom_pickup: category.has_custom_pickup || false,
             pickup_details: category.pickup_details || [],
             fulfillment_types: category.fulfillment_types || [],
+            blocked_dates: category.blocked_dates || [],
           });
           setIsDialogOpen(true);
         }}
