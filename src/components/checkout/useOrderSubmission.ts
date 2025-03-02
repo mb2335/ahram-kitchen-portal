@@ -92,8 +92,8 @@ export function useOrderSubmission() {
       
       // Check we have a date for each category
       for (const categoryId of uniqueCategoryIds) {
-        // Modified: Check for exact match with the full category ID
         if (!deliveryDates[categoryId]) {
+          console.error(`Missing delivery date for category ${categoryId}`);
           const { data: categoryData } = await supabase
             .from('menu_categories')
             .select('name')
@@ -103,10 +103,13 @@ export function useOrderSubmission() {
           throw new Error(`Please select a date for ${categoryData?.name || 'items in your order'}`);
         }
         
-        // Verify it's a valid date
+        // Extra validation to ensure we have valid Date objects
         const date = deliveryDates[categoryId];
+        console.log(`Validating date for ${categoryId}:`, date);
+        
         if (!(date instanceof Date) || isNaN(date.getTime())) {
-          throw new Error(`Invalid date selected. Please try selecting a date again.`);
+          console.error(`Invalid date for category ${categoryId}:`, date);
+          throw new Error(`Please select a valid date for all items in your order`);
         }
       }
 

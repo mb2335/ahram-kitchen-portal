@@ -61,10 +61,10 @@ export function CategoryDeliveryDate({
     }
   }, [fulfillmentType, category, selectedPickupDetail, date, onPickupDetailChange]);
 
-  const handleSelect = (date: Date | undefined) => {
-    if (!date) return;
+  const handleSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) return;
     
-    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+    const dayOfWeek = selectedDate.getDay(); // 0=Sunday, 1=Monday, etc.
     const isPickupDay = Array.isArray(category.pickup_days) && category.pickup_days.includes(dayOfWeek);
     
     // Check if date is valid based on fulfillment type
@@ -77,14 +77,14 @@ export function CategoryDeliveryDate({
     }
     
     setErrorMessage(null);
-    setDate(date);
+    setDate(selectedDate);
     
-    // Ensure we pass the full Date object to the parent component
-    onDateChange(date);
+    // Ensure we pass a valid Date object to the parent
+    onDateChange(selectedDate);
     
     // Log for debugging
-    console.log(`Date selected for category ${category.id}:`, date);
-    console.log(`Date is Date instance:`, date instanceof Date);
+    console.log(`Selected date for category ${category.id}:`, selectedDate);
+    console.log(`Selected date is Date instance:`, selectedDate instanceof Date);
   };
 
   const isDateDisabled = (date: Date) => {

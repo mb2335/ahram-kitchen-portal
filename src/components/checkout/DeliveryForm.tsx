@@ -200,10 +200,8 @@ export function DeliveryForm({
     // Pass the date to the parent component
     onDateChange(categoryId, date);
     
-    // Log the date in deliveryDates to confirm it was updated
-    setTimeout(() => {
-      console.log(`DeliveryDates after update for ${categoryId}:`, deliveryDates[categoryId]);
-    }, 0);
+    // Debug logging
+    console.log(`Date for ${categoryId} after handleDateChange:`, date);
   };
 
   return (
