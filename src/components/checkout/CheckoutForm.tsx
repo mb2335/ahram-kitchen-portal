@@ -9,7 +9,8 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { OrderItem, FULFILLMENT_TYPE_DELIVERY, ERROR_MESSAGES } from '@/types/order';
+import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP, ERROR_MESSAGES } from '@/types/order';
+import type { OrderItem } from '@/types/order';
 import { PickupDetail } from '@/types/pickup';
 
 interface CheckoutFormProps {
@@ -45,8 +46,9 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
-  const [fulfillmentType, setFulfillmentType] = useState<string>('delivery');
+  const [fulfillmentType, setFulfillmentType] = useState<string>(FULFILLMENT_TYPE_DELIVERY);
   const [deliveryAddress, setDeliveryAddress] = useState<string>('');
+  const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const handleDateChange = (categoryId: string, date: Date) => {
@@ -84,6 +86,10 @@ export function CheckoutForm({
     },
   });
 
+  const handleFulfillmentTypeChange = (type: string) => {
+    setFulfillmentType(type);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setPaymentProof(e.target.files[0]);
@@ -102,8 +108,11 @@ export function CheckoutForm({
       return;
     }
 
-    const categoriesWithItems = new Set(items.map(item => item.category_id).filter(Boolean));
+    // Get categories with items
+    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
+    const categoriesWithItems = new Set(itemCategoryIds);
     
+    // Check for missing dates
     const missingDates = Array.from(categoriesWithItems).filter(
       categoryId => !formData.deliveryDates[categoryId as string]
     );
@@ -117,49 +126,60 @@ export function CheckoutForm({
       return;
     }
 
-    if (fulfillmentType === 'pickup') {
-      const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
-        const category = categories.find(cat => cat.id === categoryId);
-        return category?.has_custom_pickup && !formData.pickupDetail;
-      });
+    // Check for pickup requirements
+    const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
+      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP && category?.has_custom_pickup;
+    });
 
-      if (missingPickupDetails.length > 0) {
-        const categoryNames = missingPickupDetails
-          .map(id => categories.find(cat => cat.id === id)?.name)
-          .filter(Boolean)
-          .join(', ');
-        
-        toast({
-          title: 'Error',
-          description: `Please select pickup time and location for: ${categoryNames}`,
-          variant: 'destructive',
-        });
-        return;
-      }
-    } else if (fulfillmentType === 'delivery' && !deliveryAddress.trim()) {
+    if (pickupCategories.length > 0 && !formData.pickupDetail) {
+      const categoryNames = pickupCategories
+        .map(id => categories.find(cat => cat.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      
       toast({
         title: 'Error',
-        description: 'Please enter a delivery address',
+        description: `Please select pickup time and location for: ${categoryNames}`,
         variant: 'destructive',
       });
       return;
     }
 
-    // Validate the dates again before submission
+    // Check for delivery address
+    const hasDeliveryItems = Object.values(categoryFulfillmentTypes).includes(FULFILLMENT_TYPE_DELIVERY) || 
+      (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && Object.keys(categoryFulfillmentTypes).length === 0);
+    
+    if (hasDeliveryItems && !deliveryAddress.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a delivery address for delivery items',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate dates against pickup days
     for (const [categoryId, date] of Object.entries(formData.deliveryDates)) {
-      const dayOfWeek = date.getDay();
+      const category = categories.find(cat => cat.id === categoryId);
+      if (!category) continue;
       
-      if (fulfillmentType === 'pickup' && ![4, 5].includes(dayOfWeek)) { // Not Thursday or Friday
+      const dayOfWeek = date.getDay();
+      const isPickupDay = category.pickup_days?.includes(dayOfWeek);
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      
+      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
         toast({
           title: 'Invalid Pickup Date',
-          description: 'Pickup is only available on Thursdays and Fridays.',
+          description: `Pickup for ${category.name} is only available on designated pickup days.`,
           variant: 'destructive',
         });
         return;
-      } else if (fulfillmentType === 'delivery' && [4, 5].includes(dayOfWeek)) { // Thursday or Friday
+      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
         toast({
           title: 'Invalid Delivery Date',
-          description: 'Delivery is not available on Thursdays and Fridays.',
+          description: `Delivery for ${category.name} is not available on pickup days.`,
           variant: 'destructive',
         });
         return;
@@ -174,10 +194,11 @@ export function CheckoutForm({
       deliveryDates: formData.deliveryDates,
       customerData: {
         ...customerData,
-        address: fulfillmentType === 'delivery' ? deliveryAddress : undefined
+        address: deliveryAddress
       },
       pickupDetail: formData.pickupDetail,
       fulfillmentType,
+      categoryFulfillmentTypes,
       onOrderSuccess
     }, paymentProof);
   };
@@ -192,7 +213,7 @@ export function CheckoutForm({
         pickupDetail={formData.pickupDetail}
         onPickupDetailChange={handlePickupDetailChange}
         fulfillmentType={fulfillmentType}
-        onFulfillmentTypeChange={setFulfillmentType}
+        onFulfillmentTypeChange={handleFulfillmentTypeChange}
         deliveryAddress={deliveryAddress}
         onDeliveryAddressChange={setDeliveryAddress}
       />

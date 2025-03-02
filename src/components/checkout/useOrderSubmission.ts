@@ -23,6 +23,7 @@ export function useOrderSubmission() {
     customerData,
     pickupDetail,
     fulfillmentType,
+    categoryFulfillmentTypes = {},
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
@@ -37,7 +38,10 @@ export function useOrderSubmission() {
       }
 
       // Validate delivery address for delivery orders
-      if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !customerData.address) {
+      const hasDeliveryItems = Object.values(categoryFulfillmentTypes).includes(FULFILLMENT_TYPE_DELIVERY) || 
+        (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && Object.keys(categoryFulfillmentTypes).length === 0);
+        
+      if (hasDeliveryItems && !customerData.address) {
         throw new Error('Delivery address is required for delivery orders');
       }
 
@@ -80,22 +84,43 @@ export function useOrderSubmission() {
         if (!pickupDays) return; // Skip if category not found
         
         const isPickupDay = pickupDays.has(dayOfWeek);
+        const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
         
-        if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
-          throw new Error('Pickup is only available on designated pickup days for one or more items');
+        if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
+          throw new Error(`Pickup is only available on designated pickup days for ${categoryId}`);
         }
         
-        if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
-          throw new Error('Delivery is not available on pickup days for one or more items');
+        if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
+          throw new Error(`Delivery is not available on pickup days for ${categoryId}`);
         }
       });
 
-      const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
-        const categoryItems = items.filter(item => item.category_id === categoryId);
+      // Group items by category and fulfillment type
+      const groupedItems: Record<string, typeof items> = {};
+      
+      items.forEach(item => {
+        if (!item.category_id) return;
         
-        if (categoryItems.length === 0) return null;
+        const categoryFulfillment = categoryFulfillmentTypes[item.category_id] || fulfillmentType;
+        const groupKey = `${categoryFulfillment}-${item.category_id}`;
+        
+        if (!groupedItems[groupKey]) {
+          groupedItems[groupKey] = [];
+        }
+        
+        groupedItems[groupKey].push(item);
+      });
 
-        const categoryTotal = categoryItems.reduce((sum, item) => {
+      // Create orders for each group
+      const orderPromises = Object.entries(groupedItems).map(async ([groupKey, groupItems]) => {
+        const [groupFulfillmentType, categoryId] = groupKey.split('-', 2);
+        const deliveryDate = deliveryDates[categoryId];
+        
+        if (!deliveryDate) {
+          throw new Error(`Missing delivery date for category ${categoryId}`);
+        }
+        
+        const groupTotal = groupItems.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
           const discountAmount = item.discount_percentage 
             ? (originalPrice * (item.discount_percentage / 100))
@@ -103,7 +128,7 @@ export function useOrderSubmission() {
           return sum + (originalPrice - discountAmount);
         }, 0);
         
-        const categoryTaxAmount = categoryTotal * (taxAmount / total);
+        const groupTaxAmount = groupTotal * (taxAmount / total);
 
         const { data: categoryData, error: categoryError } = await supabase
           .from('menu_categories')
@@ -114,20 +139,20 @@ export function useOrderSubmission() {
         if (categoryError) throw categoryError;
 
         const category = categoryData;
-        const needsCustomPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
+        const needsCustomPickup = groupFulfillmentType === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
 
         const orderData = {
           customer_id: customerId,
-          total_amount: categoryTotal + categoryTaxAmount,
-          tax_amount: categoryTaxAmount,
+          total_amount: groupTotal + groupTaxAmount,
+          tax_amount: groupTaxAmount,
           notes: notes,
           status: 'pending',
           delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
           pickup_time: needsCustomPickup ? pickupDetail?.time : null,
           pickup_location: needsCustomPickup ? pickupDetail?.location : null,
-          fulfillment_type: fulfillmentType,
-          delivery_address: fulfillmentType === FULFILLMENT_TYPE_DELIVERY ? customerData.address : null,
+          fulfillment_type: groupFulfillmentType,
+          delivery_address: groupFulfillmentType === FULFILLMENT_TYPE_DELIVERY ? customerData.address : null,
         };
 
         const { data: insertedOrder, error: orderError } = await supabase
@@ -138,7 +163,7 @@ export function useOrderSubmission() {
 
         if (orderError) throw orderError;
 
-        const orderItems = categoryItems.map((item) => {
+        const orderItems = groupItems.map((item) => {
           const unitPrice = item.price * (1 - (item.discount_percentage || 0) / 100);
           return {
             order_id: insertedOrder.id,
@@ -186,7 +211,8 @@ export function useOrderSubmission() {
             pickupTime: firstOrder.pickup_time,
             pickupLocation: firstOrder.pickup_location,
             fulfillmentType: fulfillmentType,
-            deliveryAddress: firstOrder.delivery_address
+            deliveryAddress: firstOrder.delivery_address,
+            relatedOrderIds: validOrders.length > 1 ? validOrders.slice(1).map(o => o.id) : []
           }
         },
         replace: true

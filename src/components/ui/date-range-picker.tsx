@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -19,6 +20,7 @@ interface DatePickerWithRangeProps {
   className?: string;
   mode?: "single" | "range";
   disabled?: boolean;
+  disabledDays?: (date: Date) => boolean;
 }
 
 export function DatePickerWithRange({
@@ -27,6 +29,7 @@ export function DatePickerWithRange({
   className,
   mode = "range",
   disabled = false,
+  disabledDays,
 }: DatePickerWithRangeProps) {
   return (
     <div className={cn("grid gap-2", className)}>
@@ -75,6 +78,7 @@ export function DatePickerWithRange({
               }}
               numberOfMonths={1}
               className="p-3"
+              disabled={disabledDays}
             />
           ) : (
             <Calendar
@@ -85,6 +89,7 @@ export function DatePickerWithRange({
               onSelect={onSelect}
               numberOfMonths={1}
               className="p-3"
+              disabled={disabledDays}
             />
           )}
         </PopoverContent>
