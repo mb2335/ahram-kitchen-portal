@@ -1,7 +1,8 @@
+
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
-interface PaymentInstructionsProps {
+export interface PaymentInstructionsProps {
   paymentProof: File | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
