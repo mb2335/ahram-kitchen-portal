@@ -91,12 +91,8 @@ export function CategoryDeliveryDate({
   // Generate the dynamic heading text for pickup
   const generatePickupHeading = () => {
     if (allPickupCategories && allPickupCategories.length > 0) {
-      if (allPickupCategories.length === 1) {
-        return `${category.name} Pickup Details (All items will be included in this pickup)`;
-      } else {
-        const categoryNames = allPickupCategories.join(' & ');
-        return `${category.name} Pickup Details (${categoryNames} will be included in this pickup)`;
-      }
+      const categoryNames = allPickupCategories.join(' & ');
+      return `${categoryNames} Pickup Details;
     }
     return `${category.name} Pickup Options`;
   };
