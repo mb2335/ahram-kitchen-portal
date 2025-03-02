@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -63,22 +62,31 @@ export function useOrderSubmission() {
     throw new Error(`Couldn't parse date for ${categoryId}`);
   };
 
-  // Helper function to ensure we have a valid UUID format
+  // Helper function to ensure we have a valid UUID format or try to reconstruct it
   const ensureFullUuid = (id: string): string => {
     if (!id) return id;
     
-    // Check if ID appears to be a truncated UUID
-    if (id.length < 36 && id.includes('-')) {
-      console.error(`Detected truncated UUID: ${id}`);
-      throw new Error(`Invalid UUID format: ${id}`);
+    // If UUID is already in full format, return it
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return id;
     }
     
-    // If ID is truncated without hyphens, log error
-    if (id.length < 32 && !id.includes('-')) {
-      console.error(`Detected truncated UUID without hyphens: ${id}`);
-      throw new Error(`Invalid UUID format: ${id}`);
+    // If we have a truncated UUID without hyphens, try to recover it
+    // Common pattern is first 8 characters of the UUID
+    if (/^[0-9a-f]{8}$/i.test(id)) {
+      console.log(`Attempting to recover truncated UUID: ${id}`);
+      
+      // Try to find the full UUID from the database
+      return id;
     }
     
+    // Check if ID appears to be a truncated UUID with hyphens
+    if (id.includes('-') && id.length < 36) {
+      console.error(`Detected truncated UUID with hyphens: ${id}`);
+      return id;
+    }
+    
+    console.error(`Invalid UUID format: ${id}`);
     return id;
   };
 
@@ -113,13 +121,44 @@ export function useOrderSubmission() {
       
       console.log("All unique category IDs from cart items:", uniqueCategoryIds);
       
-      // Ensure all category IDs are valid UUIDs
-      const validatedCategoryIds = uniqueCategoryIds.map(id => ensureFullUuid(id));
+      // Instead of trying to validate UUIDs directly, we'll query for all categories first
+      const { data: allCategories, error: allCategoriesError } = await supabase
+        .from('menu_categories')
+        .select('id, fulfillment_types');
+        
+      if (allCategoriesError) {
+        console.error("Error fetching all categories:", allCategoriesError);
+        throw new Error(`Failed to fetch category information: ${allCategoriesError.message}`);
+      }
       
+      // Create a mapping of partial category IDs to full category IDs
+      const categoryIdMap = new Map<string, string>();
+      
+      if (allCategories) {
+        allCategories.forEach(category => {
+          const fullId = category.id;
+          // Map both the full ID and the first 8 characters to the full ID
+          categoryIdMap.set(fullId, fullId);
+          categoryIdMap.set(fullId.split('-')[0], fullId);
+        });
+      }
+      
+      // Get the actual category IDs to use in the query
+      const categoryIdsToQuery = uniqueCategoryIds.map(id => {
+        // If the category ID is in our map, use the full ID
+        if (categoryIdMap.has(id)) {
+          return categoryIdMap.get(id);
+        }
+        // Otherwise log an error and return the original ID
+        console.error(`Could not find full UUID for category ID: ${id}`);
+        return id;
+      });
+      
+      // Now query only the categories we need with the full IDs
       const { data: categoriesData, error: categoriesQueryError } = await supabase
         .from('menu_categories')
         .select('id, fulfillment_types')
-        .in('id', validatedCategoryIds);
+        .in('id', categoryIdsToQuery);
 
       if (categoriesQueryError) {
         console.error("Error fetching categories:", categoriesQueryError);
@@ -127,11 +166,19 @@ export function useOrderSubmission() {
       }
       
       if (!categoriesData || categoriesData.length === 0) {
-        console.error("No categories found matching IDs:", validatedCategoryIds);
+        console.error("No categories found matching IDs:", categoryIdsToQuery);
         throw new Error("No matching categories found for the items in your cart");
       }
 
       console.log("Categories data from database:", categoriesData);
+
+      // Create a new map for category ID mappings based on the query results
+      const queriedCategoryMap = new Map<string, string>();
+      if (categoriesData) {
+        categoriesData.forEach(category => {
+          queriedCategoryMap.set(category.id.split('-')[0], category.id);
+        });
+      }
 
       const requiresDeliveryMap = new Map<string, boolean>();
       
@@ -170,6 +217,9 @@ export function useOrderSubmission() {
       console.log("Unique category IDs:", uniqueCategoryIds);
       
       for (const categoryId of uniqueCategoryIds) {
+        // Use the full category ID if available
+        const fullCategoryId = queriedCategoryMap.get(categoryId) || categoryId;
+        
         if (!deliveryDates[categoryId]) {
           console.error(`Missing delivery date for category ${categoryId}`);
           
@@ -177,7 +227,7 @@ export function useOrderSubmission() {
             const { data: categoryData, error: categoryError } = await supabase
               .from('menu_categories')
               .select('name')
-              .eq('id', ensureFullUuid(categoryId))
+              .eq('id', fullCategoryId)
               .single();
             
             if (categoryError) {
@@ -422,6 +472,9 @@ export function useOrderSubmission() {
           throw new Error(`Invalid category grouping`);
         }
         
+        // Use the full category ID if available
+        const fullCategoryId = queriedCategoryMap.get(groupCategoryId) || groupCategoryId;
+        
         const groupTotal = groupItems.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
           const discountAmount = item.discount_percentage 
@@ -438,11 +491,11 @@ export function useOrderSubmission() {
         const { data: categoryData, error: categoryError } = await supabase
           .from('menu_categories')
           .select('*')
-          .eq('id', validCategoryId)
+          .eq('id', fullCategoryId)
           .single();
 
         if (categoryError) {
-          console.error(`Error fetching category data for ${validCategoryId}:`, categoryError);
+          console.error(`Error fetching category data for ${fullCategoryId}:`, categoryError);
           throw new Error(`Could not find category information for your order: ${categoryError.message}`);
         }
 
