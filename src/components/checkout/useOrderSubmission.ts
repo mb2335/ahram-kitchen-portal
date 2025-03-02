@@ -88,15 +88,33 @@ export function useOrderSubmission() {
         if (!dateValue) continue;
         
         // Handle date objects that might be serialized from JSON
-        if (typeof dateValue === 'object' && '_type' in dateValue && dateValue._type === 'Date') {
-          // For serialized date objects from the form
-          sanitizedDeliveryDates[categoryId] = new Date(dateValue.value.iso || dateValue.value.value);
-        } else if (dateValue instanceof Date) {
-          // For regular Date objects
-          sanitizedDeliveryDates[categoryId] = dateValue;
+        if (typeof dateValue === 'object' && dateValue !== null) {
+          if ('_type' in dateValue && dateValue._type === 'Date') {
+            // For serialized date objects from the form
+            if ('iso' in dateValue) {
+              sanitizedDeliveryDates[categoryId] = new Date(dateValue.iso as string);
+            } else if (typeof dateValue.valueOf === 'function') {
+              sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf());
+            } else {
+              console.log("Unusual date format:", dateValue);
+              sanitizedDeliveryDates[categoryId] = new Date();
+            }
+          } else if (dateValue instanceof Date) {
+            // For regular Date objects
+            sanitizedDeliveryDates[categoryId] = dateValue;
+          } else {
+            // Try to convert unknown object to date
+            console.log("Converting unknown object to date:", dateValue);
+            sanitizedDeliveryDates[categoryId] = new Date();
+          }
         } else if (typeof dateValue === 'string') {
           // For ISO string dates
           sanitizedDeliveryDates[categoryId] = new Date(dateValue);
+        } else if (typeof dateValue === 'number') {
+          // For timestamp dates
+          sanitizedDeliveryDates[categoryId] = new Date(dateValue);
+        } else {
+          console.log(`Unhandled date type for ${categoryId}:`, typeof dateValue, dateValue);
         }
       }
 
@@ -124,6 +142,7 @@ export function useOrderSubmission() {
       console.log("Unique category IDs:", uniqueCategoryIds);
       for (const catId of uniqueCategoryIds) {
         console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId]);
+        console.log(`Original date value:`, deliveryDates[catId]);
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -358,6 +377,7 @@ export function useOrderSubmission() {
         
         if (!deliveryDate) {
           console.error(`Missing delivery date for category ${categoryId}`, sanitizedDeliveryDates);
+          console.error(`Original delivery dates:`, deliveryDates);
           throw new Error(`Missing delivery date for category ${categoryId}`);
         }
         

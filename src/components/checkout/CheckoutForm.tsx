@@ -334,6 +334,20 @@ export function CheckoutForm({
       console.log("Submitting with delivery dates:", formData.deliveryDates);
       console.log("Category IDs in cart:", Array.from(categoriesWithItems));
       
+      // DEBUG: Log the structure of each date object
+      Object.entries(formData.deliveryDates).forEach(([catId, dateObj]) => {
+        console.log(`Category ${catId} date type:`, typeof dateObj);
+        console.log(`Category ${catId} date value:`, dateObj);
+        console.log(`Category ${catId} date constructor:`, dateObj?.constructor?.name);
+        
+        // Try to extract date components for verification
+        if (dateObj instanceof Date) {
+          console.log(`Category ${catId} valid Date:`, dateObj.toISOString());
+        } else if (dateObj && typeof dateObj === 'object') {
+          console.log(`Category ${catId} object properties:`, Object.keys(dateObj));
+        }
+      });
+      
       await submitOrder({
         items,
         total,
