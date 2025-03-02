@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -8,7 +7,6 @@ import { OrderSubmissionProps, FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKU
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
 
-// Define types for our possible date formats
 interface DateWithIso {
   iso: string;
   [key: string]: any;
@@ -30,9 +28,6 @@ export function useOrderSubmission() {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
 
-  /**
-   * Safely converts various date formats to a Date object
-   */
   const safelyParseDate = (rawDate: any, categoryId: string): Date => {
     let dateObj: Date;
     
@@ -41,7 +36,6 @@ export function useOrderSubmission() {
     } else if (typeof rawDate === 'string') {
       return new Date(rawDate);
     } else if (rawDate && typeof rawDate === 'object') {
-      // Try different known date serialization formats
       try {
         if (rawDate.toISOString && typeof rawDate.toISOString === 'function') {
           return new Date(rawDate.toISOString());
@@ -55,7 +49,6 @@ export function useOrderSubmission() {
         ) {
           return new Date(rawDate.value.iso);
         } else {
-          // Last resort - convert to string
           console.warn(`Using fallback date conversion for ${categoryId}:`, rawDate);
           return new Date(String(rawDate));
         }
@@ -65,7 +58,6 @@ export function useOrderSubmission() {
       }
     }
     
-    // If we get here, we couldn't parse the date
     console.error(`Couldn't parse date for category ${categoryId}:`, rawDate);
     throw new Error(`Couldn't parse date for ${categoryId}`);
   };
@@ -85,7 +77,6 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
-      // Validate item IDs
       const invalidItems = items.filter(item => 
         item.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
@@ -94,7 +85,6 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      // Get all unique category IDs from items
       const itemCategoryIds = items
         .map(item => item.category_id)
         .filter(Boolean) as string[];
@@ -103,7 +93,6 @@ export function useOrderSubmission() {
       
       console.log("All unique category IDs from cart items:", uniqueCategoryIds);
       
-      // Get categories requiring delivery address
       const { data: categoriesData, error: categoriesQueryError } = await supabase
         .from('menu_categories')
         .select('id, fulfillment_types')
@@ -116,15 +105,12 @@ export function useOrderSubmission() {
 
       console.log("Categories data from database:", categoriesData);
 
-      // Create a map of which categories require delivery
       const requiresDeliveryMap = new Map<string, boolean>();
       
       if (categoriesData) {
         categoriesData.forEach(category => {
-          // Check if this category is being delivered (either by global setting or category-specific)
           const categoryFulfillment = categoryFulfillmentTypes[category.id] || fulfillmentType;
           
-          // If category only supports pickup, never require delivery address
           if (category.fulfillment_types.length === 1 && 
               category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
             requiresDeliveryMap.set(category.id, false);
@@ -134,31 +120,25 @@ export function useOrderSubmission() {
         });
       }
 
-      // Check if ANY categories require delivery address
       const hasDeliveryItems = Array.from(requiresDeliveryMap.values()).some(Boolean);
       
-      // Validate customer data
       if (!customerData.fullName || !customerData.email) {
         throw new Error('Please provide your full name and email address');
       }
 
-      // Validate delivery address ONLY if we have delivery items
       if (hasDeliveryItems && !customerData.address) {
         throw new Error('Delivery address is required for delivery orders');
       }
 
-      // Process and validate delivery dates
       const processedDates: Record<string, Date> = {};
       
       console.log("Processing delivery dates:", deliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
       
-      // Ensure we have a date for each category and convert any serialized dates to Date objects
       for (const categoryId of uniqueCategoryIds) {
         if (!deliveryDates[categoryId]) {
           console.error(`Missing delivery date for category ${categoryId}`);
           
-          // Use the complete category ID for this query
           const { data: categoryData, error: categoryError } = await supabase
             .from('menu_categories')
             .select('name')
@@ -173,10 +153,8 @@ export function useOrderSubmission() {
         }
         
         try {
-          // Use our safe date parser
           const dateObj = safelyParseDate(deliveryDates[categoryId], categoryId);
           
-          // Validate the date
           if (isNaN(dateObj.getTime())) {
             console.error(`Invalid date for category ${categoryId}:`, dateObj);
             throw new Error(`Please select a valid date for all items in your order`);
@@ -192,10 +170,8 @@ export function useOrderSubmission() {
       
       console.log("Sanitized delivery dates:", processedDates);
 
-      // Get customer ID or create a new customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
-      // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -212,14 +188,12 @@ export function useOrderSubmission() {
         throw new Error('Failed to upload payment proof');
       }
 
-      // Get all categories and their pickup days
       const { data: categories, error: categoriesError } = await supabase
         .from('menu_categories')
         .select('id, pickup_days, has_custom_pickup, fulfillment_types');
       
       if (categoriesError) throw categoriesError;
       
-      // Create a map of category IDs to their pickup days
       const categoryPickupDays = new Map();
       const categoryCustomPickup = new Map();
       const categoryFulfillmentOptionsMap = new Map();
@@ -236,7 +210,6 @@ export function useOrderSubmission() {
         });
       }
 
-      // Identify pickup-only categories
       const pickupOnlyCategories = new Set<string>();
       
       for (const categoryId of uniqueCategoryIds) {
@@ -246,45 +219,35 @@ export function useOrderSubmission() {
         }
       }
 
-      // For all-pickup orders with the same pickup time/location, ensure we check dates correctly
       const isAllPickup = uniqueCategoryIds.every(categoryId => {
-        // Categories that only support pickup are always pickup
         if (pickupOnlyCategories.has(categoryId)) return true;
         
-        // Otherwise, check the selected fulfillment type
         const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
         return categoryFulfillment === FULFILLMENT_TYPE_PICKUP;
       });
 
-      // Check if custom pickup is required for pickup items
       const needsCustomPickup = uniqueCategoryIds.some(categoryId => {
-        // Skip categories not being picked up
         const categoryFulfillment = pickupOnlyCategories.has(categoryId) ? 
           FULFILLMENT_TYPE_PICKUP : 
           (categoryFulfillmentTypes[categoryId] || fulfillmentType);
           
         if (categoryFulfillment !== FULFILLMENT_TYPE_PICKUP) return false;
         
-        // Check if this category requires custom pickup
         return categoryCustomPickup.get(categoryId);
       });
       
-      // If pickup needs custom pickup details but none provided
       if (needsCustomPickup && !pickupDetail) {
         throw new Error('Please select pickup time and location');
       }
 
-      // Skip date validation for pickup orders or if specific categories have pickup fulfillment type
       if (!isAllPickup) {
-        // Validate each date against fulfillment type and pickup days
         Object.entries(processedDates).forEach(([categoryId, date]) => {
-          // Skip if not a real category ID from our items
           if (!uniqueCategoryIds.includes(categoryId)) return;
           
-          const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+          const dayOfWeek = date.getDay();
           const pickupDays = categoryPickupDays.get(categoryId);
           
-          if (!pickupDays || pickupDays.size === 0) return; // Skip if category not found or no pickup days
+          if (!pickupDays || pickupDays.size === 0) return;
           
           const isPickupDay = pickupDays.has(dayOfWeek);
           const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
@@ -299,16 +262,13 @@ export function useOrderSubmission() {
         });
       }
 
-      // Group items by category and fulfillment type
       const groupedItems: Record<string, typeof items> = {};
       
       items.forEach(item => {
         if (!item.category_id) return;
         
-        // Handle pickup-only categories
         let categoryFulfillment = categoryFulfillmentTypes[item.category_id] || fulfillmentType;
         
-        // Override for pickup-only categories
         if (pickupOnlyCategories.has(item.category_id)) {
           categoryFulfillment = FULFILLMENT_TYPE_PICKUP;
         }
@@ -322,9 +282,7 @@ export function useOrderSubmission() {
         groupedItems[groupKey].push(item);
       });
 
-      // For all-pickup orders with the same pickup time, merge into a single order
       if (isAllPickup && pickupDetail) {
-        // Calculate total for all items
         const orderTotal = items.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
           const discountAmount = item.discount_percentage 
@@ -333,11 +291,9 @@ export function useOrderSubmission() {
           return sum + (originalPrice - discountAmount);
         }, 0);
         
-        // Use the first category's delivery date for the combined order
         const firstCategoryId = uniqueCategoryIds[0];
         const orderDate = processedDates[firstCategoryId];
         
-        // Validate that we have a date
         if (!orderDate || !(orderDate instanceof Date)) {
           throw new Error('Please select a valid date for your order');
         }
@@ -393,7 +349,7 @@ export function useOrderSubmission() {
               id: insertedOrder.id,
               items: items.map(item => ({
                 name: item.name,
-                nameKo: item.name_ko,
+                nameKo: item.nameKo,
                 quantity: item.quantity,
                 price: item.price,
                 discount_percentage: item.discount_percentage
@@ -414,7 +370,6 @@ export function useOrderSubmission() {
         return;
       }
 
-      // Create orders for each group (handles mixed fulfillment types)
       const orderPromises = Object.entries(groupedItems).map(async ([groupKey, groupItems]) => {
         const [groupFulfillmentType, groupCategoryId] = groupKey.split('-', 2);
         
@@ -433,7 +388,6 @@ export function useOrderSubmission() {
         
         const groupTaxAmount = groupTotal * (taxAmount / total);
 
-        // Use the complete category ID for this query
         const { data: categoryData, error: categoryError } = await supabase
           .from('menu_categories')
           .select('*')
@@ -445,7 +399,6 @@ export function useOrderSubmission() {
         const category = categoryData;
         const needsCustomPickup = groupFulfillmentType === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
         
-        // Fix: Ensure we use the correct date for this category
         const deliveryDate = processedDates[groupCategoryId];
         if (!deliveryDate) {
           throw new Error(`Missing delivery date for category ${category?.name || groupCategoryId}`);
@@ -514,7 +467,7 @@ export function useOrderSubmission() {
             id: firstOrder.id,
             items: items.map(item => ({
               name: item.name,
-              nameKo: item.name_ko,
+              nameKo: item.nameKo,
               quantity: item.quantity,
               price: item.price,
               discount_percentage: item.discount_percentage
@@ -539,7 +492,7 @@ export function useOrderSubmission() {
         description: error.message || 'Failed to submit order',
         variant: 'destructive',
       });
-      throw error; // Re-throw to let the calling component handle it
+      throw error;
     } finally {
       setIsUploading(false);
     }
