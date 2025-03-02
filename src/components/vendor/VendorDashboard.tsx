@@ -1,13 +1,10 @@
-
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { MenuManagement } from './MenuManagement';
 import { OrderManagement } from './OrderManagement';
 import { VendorProfile } from './VendorProfile';
 import { DashboardSummary } from './DashboardSummary';
 import { PopularItemsChart } from './analytics/PopularItemsChart';
-import { VendorNotifications } from './notifications/VendorNotifications';
 import { cn } from "@/lib/utils";
-import { BellIcon } from 'lucide-react';
 
 export function VendorDashboard() {
   const location = useLocation();
@@ -67,18 +64,6 @@ export function VendorDashboard() {
               Orders
             </Link>
             <Link
-              to="/vendor/notifications"
-              className={cn(
-                "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                isActiveRoute('/notifications') 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-muted"
-              )}
-            >
-              <BellIcon className="h-4 w-4 mr-2" />
-              Notifications
-            </Link>
-            <Link
               to="/vendor/profile"
               className={cn(
                 "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
@@ -97,7 +82,6 @@ export function VendorDashboard() {
             <Route path="analytics" element={<PopularItemsChart />} />
             <Route path="menu" element={<MenuManagement />} />
             <Route path="orders" element={<OrderManagement />} />
-            <Route path="notifications" element={<VendorNotifications />} />
             <Route path="profile" element={<VendorProfile />} />
           </Routes>
         </main>
