@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -93,156 +92,128 @@ export function useOrderSubmission() {
       console.log("Processing delivery dates:", deliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
 
-      // Add more detailed logging about each categoryId
-      uniqueCategoryIds.forEach(categoryId => {
-        const fullCategoryId = categoryId;
-        console.log(`Checking date for category ID: ${fullCategoryId}`);
-        console.log(`Short category ID (first 8 chars): ${fullCategoryId.split('-')[0]}`);
+      // Mapping function to handle different ID formats and partial matches
+      const findMatchingCategoryId = (categoryIdInput: string): string | null => {
+        // Try exact match first
+        if (uniqueCategoryIds.includes(categoryIdInput)) {
+          return categoryIdInput;
+        }
         
-        // Check if we have a date for this specific categoryId using both full id and short id
-        const hasFullId = deliveryDates.hasOwnProperty(fullCategoryId);
-        
-        console.log(`Has date for full category ID ${fullCategoryId}: ${hasFullId}`);
-        
-        if (!hasFullId) {
-          // Look for any keys that match the start of this ID (in case of truncation)
-          const matchingKey = Object.keys(deliveryDates).find(key => 
-            fullCategoryId.startsWith(key) || key.startsWith(fullCategoryId)
-          );
+        // Try to find if the input is a prefix of any categoryId
+        for (const fullId of uniqueCategoryIds) {
+          // If the category ID starts with the input (handles truncated UUIDs)
+          if (fullId.startsWith(categoryIdInput)) {
+            console.log(`Found match: ${categoryIdInput} is a prefix of ${fullId}`);
+            return fullId;
+          }
           
-          if (matchingKey) {
-            console.log(`Found matching key ${matchingKey} for category ${fullCategoryId}`);
-          } else {
-            console.log(`No matching key found for category ${fullCategoryId}`);
+          // If the input starts with the category ID (reverse case)
+          if (categoryIdInput.startsWith(fullId)) {
+            console.log(`Found match: ${fullId} is a prefix of ${categoryIdInput}`);
+            return fullId;
           }
         }
-      });
+        
+        return null;
+      };
 
+      // Process all date entries, attempting to match with valid category IDs
       for (const [categoryIdKey, dateValue] of Object.entries(deliveryDates)) {
         if (!dateValue) continue;
         
-        // Try to match full ID or partial ID
-        const matchedCategoryId = uniqueCategoryIds.find(id => 
-          id === categoryIdKey || // exact match
-          id.startsWith(categoryIdKey) || // partial match - beginning
-          categoryIdKey.startsWith(id) || // partial match - beginning (reverse)
-          id.includes(categoryIdKey) || // contains
-          categoryIdKey.includes(id) // contains (reverse)
-        );
+        // Find matching full category ID
+        const matchedCategoryId = findMatchingCategoryId(categoryIdKey);
         
         if (matchedCategoryId) {
-          console.log(`Found matching category ID ${matchedCategoryId} for key ${categoryIdKey}`);
-        } else {
-          console.log(`No matching category ID found for key ${categoryIdKey}`);
-        }
-        
-        const categoryId = matchedCategoryId || categoryIdKey;
-        
-        try {
-          let finalDate: Date;
+          console.log(`Matched key ${categoryIdKey} to category ID ${matchedCategoryId}`);
           
-          // Handle different date formats
-          if (dateValue instanceof Date) {
-            finalDate = dateValue;
-          } else if (typeof dateValue === 'string') {
-            finalDate = new Date(dateValue);
-          } else if (typeof dateValue === 'number') {
-            finalDate = new Date(dateValue);
-          } else if (typeof dateValue === 'object') {
-            // Try to extract date from complex object
-            const dateObj = dateValue as any;
+          try {
+            let finalDate: Date;
             
-            if (dateObj._type === 'Date' && dateObj.value) {
-              if (typeof dateObj.value === 'string') {
-                finalDate = new Date(dateObj.value);
-              } else if (typeof dateObj.value === 'number') {
-                finalDate = new Date(dateObj.value);
-              } else if (typeof dateObj.value === 'object') {
-                if (dateObj.value.iso) {
-                  finalDate = new Date(dateObj.value.iso);
-                } else if (dateObj.value.value) {
-                  finalDate = new Date(dateObj.value.value);
+            // Handle different date formats
+            if (dateValue instanceof Date) {
+              finalDate = dateValue;
+            } else if (typeof dateValue === 'string') {
+              finalDate = new Date(dateValue);
+            } else if (typeof dateValue === 'number') {
+              finalDate = new Date(dateValue);
+            } else if (typeof dateValue === 'object') {
+              // Try to extract date from complex object
+              const dateObj = dateValue as any;
+              
+              if (dateObj._type === 'Date' && dateObj.value) {
+                if (typeof dateObj.value === 'string') {
+                  finalDate = new Date(dateObj.value);
+                } else if (typeof dateObj.value === 'number') {
+                  finalDate = new Date(dateObj.value);
+                } else if (typeof dateObj.value === 'object') {
+                  if (dateObj.value.iso) {
+                    finalDate = new Date(dateObj.value.iso);
+                  } else if (dateObj.value.value) {
+                    finalDate = new Date(dateObj.value.value);
+                  } else {
+                    // Fallback to current date
+                    console.warn(`Could not extract date from object for category ${matchedCategoryId}:`, dateObj);
+                    finalDate = new Date();
+                  }
                 } else {
-                  // Fallback to current date
-                  console.warn(`Could not extract date from object for category ${categoryId}:`, dateObj);
                   finalDate = new Date();
                 }
+              } else if (dateObj.iso) {
+                finalDate = new Date(dateObj.iso);
+              } else if (dateObj.timestamp) {
+                finalDate = new Date(dateObj.timestamp);
+              } else if (dateObj.time) {
+                finalDate = new Date(dateObj.time);
+              } else if (dateObj.valueOf && typeof dateObj.valueOf === 'function') {
+                finalDate = new Date(dateObj.valueOf());
+              } else if (dateObj.toISOString && typeof dateObj.toISOString === 'function') {
+                finalDate = new Date(dateObj.toISOString());
               } else {
+                // Last resort - use current date as fallback
+                console.warn(`Could not extract date from object for category ${matchedCategoryId}:`, dateObj);
                 finalDate = new Date();
               }
-            } else if (dateObj.iso) {
-              finalDate = new Date(dateObj.iso);
-            } else if (dateObj.timestamp) {
-              finalDate = new Date(dateObj.timestamp);
-            } else if (dateObj.time) {
-              finalDate = new Date(dateObj.time);
-            } else if (dateObj.valueOf && typeof dateObj.valueOf === 'function') {
-              finalDate = new Date(dateObj.valueOf());
-            } else if (dateObj.toISOString && typeof dateObj.toISOString === 'function') {
-              finalDate = new Date(dateObj.toISOString());
             } else {
-              // Last resort - use current date as fallback
-              console.warn(`Could not extract date from object for category ${categoryId}:`, dateObj);
+              // Default to current date if all else fails
+              console.warn(`Unhandled date type for ${matchedCategoryId}:`, typeof dateValue, dateValue);
               finalDate = new Date();
             }
-          } else {
-            // Default to current date if all else fails
-            console.warn(`Unhandled date type for ${categoryId}:`, typeof dateValue, dateValue);
-            finalDate = new Date();
+            
+            // Verify the date is valid
+            if (isNaN(finalDate.getTime())) {
+              console.error(`Generated an invalid date for category ${matchedCategoryId}:`, finalDate);
+              finalDate = new Date(); // Use current date as fallback
+            }
+            
+            // Store date for the matched category ID
+            sanitizedDeliveryDates[matchedCategoryId] = finalDate;
+            
+            console.log(`Processed date for category ${matchedCategoryId}:`, sanitizedDeliveryDates[matchedCategoryId].toISOString());
+          } catch (error) {
+            console.error(`Error processing date for category ${matchedCategoryId}:`, error);
+            console.error("Date value:", dateValue);
+            // Fallback to current date
+            sanitizedDeliveryDates[matchedCategoryId] = new Date();
           }
-          
-          // Verify the date is valid
-          if (isNaN(finalDate.getTime())) {
-            console.error(`Generated an invalid date for category ${categoryId}:`, finalDate);
-            finalDate = new Date(); // Use current date as fallback
-          }
-          
-          // Store date for both the original key and possibly matched category ID
-          sanitizedDeliveryDates[categoryId] = finalDate;
-          
-          // Also store with the original key if different
-          if (categoryId !== categoryIdKey) {
-            sanitizedDeliveryDates[categoryIdKey] = finalDate;
-          }
-          
-          console.log(`Processed date for category ${categoryId}:`, sanitizedDeliveryDates[categoryId].toISOString());
-        } catch (error) {
-          console.error(`Error processing date for category ${categoryId}:`, error);
-          console.error("Date value:", dateValue);
-          // Fallback to current date
-          sanitizedDeliveryDates[categoryId] = new Date();
+        } else {
+          console.warn(`No matching category ID found for key ${categoryIdKey}`);
         }
       }
 
       // Debug log for sanitized dates
       console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
       
-      // Cross-check and ensure all unique category IDs have dates
+      // Add additional safety - ensure all category IDs have dates
       for (const categoryId of uniqueCategoryIds) {
         if (!sanitizedDeliveryDates[categoryId]) {
-          // Try a fallback approach - see if there's a partial match we can use
-          const possibleMatchKey = Object.keys(sanitizedDeliveryDates).find(key => 
-            categoryId.includes(key) || key.includes(categoryId)
-          );
-          
-          if (possibleMatchKey) {
-            console.log(`Using ${possibleMatchKey} as fallback for missing date for ${categoryId}`);
-            sanitizedDeliveryDates[categoryId] = sanitizedDeliveryDates[possibleMatchKey];
-          } else {
-            console.log(`No fallback found for missing date for category ${categoryId}, using current date`);
-            sanitizedDeliveryDates[categoryId] = new Date();
-          }
+          console.log(`No date found for category ${categoryId}, setting to current date`);
+          sanitizedDeliveryDates[categoryId] = new Date();
         }
       }
       
       // Final validation - ensure we have dates for all categories
-      const missingDates = uniqueCategoryIds.filter(categoryId => {
-        if (!sanitizedDeliveryDates[categoryId]) {
-          console.warn(`Still missing date for category ${categoryId} after all processing`);
-          return true;
-        }
-        return false;
-      });
+      const missingDates = uniqueCategoryIds.filter(categoryId => !sanitizedDeliveryDates[categoryId]);
       
       if (missingDates.length > 0) {
         // Try to get category names

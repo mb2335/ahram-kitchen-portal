@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -115,7 +114,6 @@ export function CheckoutForm({
       }
     }
 
-    // Set default delivery dates for categories if none exist
     const updatedDates = { ...formData.deliveryDates };
     let datesWereAdded = false;
     
@@ -171,7 +169,6 @@ export function CheckoutForm({
           
           datesWereAdded = true;
           
-          // Log the structure of the date for debugging
           console.log(`Setting date for category ${categoryId}:`, updatedDates[categoryId]);
           console.log(`Date type: ${typeof updatedDates[categoryId]}`);
           console.log(`Is Date instance: ${updatedDates[categoryId] instanceof Date}`);
@@ -185,7 +182,6 @@ export function CheckoutForm({
         deliveryDates: updatedDates
       }));
       
-      // Debug log all dates after setting
       console.log("All delivery dates after setting defaults:", updatedDates);
       Object.entries(updatedDates).forEach(([catId, dateObj]) => {
         console.log(`Category ${catId} date:`, dateObj);
@@ -197,10 +193,19 @@ export function CheckoutForm({
   }, [categories, items, fulfillmentType, categoryFulfillmentTypes, formData.deliveryDates, setFormData]);
 
   const handleDateChange = (categoryId: string, date: Date) => {
-    // Log the date object received from the date picker
     console.log(`Date change for category ${categoryId}:`, date);
     console.log(`Date type: ${typeof date}`);
     console.log(`Is Date instance: ${date instanceof Date}`);
+    
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      console.error(`Invalid date provided for category ${categoryId}`, date);
+      toast({
+        title: 'Invalid Date',
+        description: `Please select a valid date for this category`,
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setFormData(prev => ({
       ...prev,
@@ -210,7 +215,6 @@ export function CheckoutForm({
       }
     }));
     
-    // Verify the date was set correctly
     setTimeout(() => {
       console.log(`Verified date for category ${categoryId}:`, formData.deliveryDates[categoryId]);
     }, 0);
@@ -252,9 +256,15 @@ export function CheckoutForm({
   };
 
   const validateDates = (): boolean => {
-    // Check if we have valid dates for all categories
-    for (const categoryId of categoriesWithItems) {
-      if (!formData.deliveryDates[categoryId]) {
+    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
+    const uniqueCategoryIds = [...new Set(itemCategoryIds)];
+    
+    for (const categoryId of uniqueCategoryIds) {
+      const hasDate = Object.keys(formData.deliveryDates).some(key => 
+        key === categoryId || key.startsWith(categoryId) || categoryId.startsWith(key)
+      );
+      
+      if (!hasDate) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
         toast({
           title: 'Missing Date',
@@ -264,8 +274,13 @@ export function CheckoutForm({
         return false;
       }
       
-      // Make sure date is valid
-      const date = formData.deliveryDates[categoryId];
+      const dateKey = Object.keys(formData.deliveryDates).find(key => 
+        key === categoryId || key.startsWith(categoryId) || categoryId.startsWith(key)
+      );
+      
+      if (!dateKey) continue;
+      
+      const date = formData.deliveryDates[dateKey];
       if (!(date instanceof Date) || isNaN(date.getTime())) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
         toast({
@@ -292,16 +307,13 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate dates first
     if (!validateDates()) {
       return;
     }
 
-    // Check if we have any delivery items
     const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       
-      // Skip categories that only support pickup
       if (category?.fulfillment_types.length === 1 && 
           category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
         return false;
@@ -311,7 +323,6 @@ export function CheckoutForm({
       return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
     });
     
-    // Only validate delivery address if there are delivery items
     if (hasDeliveryItems && !deliveryAddress.trim()) {
       toast({
         title: 'Error',
@@ -370,17 +381,17 @@ export function CheckoutForm({
     }
 
     try {
-      // Log the delivery dates for debugging
       console.log("Submitting with delivery dates:", formData.deliveryDates);
-      console.log("Category IDs in cart:", Array.from(categoriesWithItems));
       
-      // DEBUG: Log the structure of each date object
+      const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
+      const uniqueCategoryIds = [...new Set(itemCategoryIds)];
+      console.log("Category IDs in cart:", uniqueCategoryIds);
+      
       Object.entries(formData.deliveryDates).forEach(([catId, dateObj]) => {
         console.log(`Category ${catId} date type:`, typeof dateObj);
         console.log(`Category ${catId} date value:`, dateObj);
         console.log(`Category ${catId} date constructor:`, dateObj?.constructor?.name);
         
-        // Try to extract date components for verification
         if (dateObj instanceof Date) {
           console.log(`Category ${catId} valid Date:`, dateObj.toISOString());
         } else if (dateObj && typeof dateObj === 'object') {
