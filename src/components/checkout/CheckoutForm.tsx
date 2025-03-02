@@ -193,18 +193,11 @@ export function CheckoutForm({
   };
 
   if (isSubmitting || isUploading) {
-    // Fix #1: LoadingState doesn't accept a message prop directly
-    return (
-      <div className="text-center py-12">
-        <LoadingState />
-        <p className="mt-4 text-gray-600">Processing your order...</p>
-      </div>
-    );
+    return <LoadingState message="Processing your order..." />;
   }
 
   return (
-    // Fix #2: Form from shadcn/ui doesn't accept onSubmit prop directly
-    <form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       {step === 1 && (
         <DeliveryForm
           deliveryDates={formData.deliveryDates}
@@ -224,44 +217,24 @@ export function CheckoutForm({
       
       {step === 2 && (
         <div className="space-y-6">
-          {/* Fix #3: Update PaymentInstructions props to match its interface */}
           <PaymentInstructions 
-            paymentProof={paymentFile} 
-            onFileChange={onFileChange}
+            total={total} 
+            onFileChange={onFileChange} 
+            file={paymentFile}
           />
           <Separator />
-          {/* Fix #4: Update OrderConfirmation props to match its interface */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-4">Order Summary</h3>
-            {items.map((item, index) => (
-              <div key={index} className="flex justify-between mb-2">
-                <span>{item.quantity}x {item.name}</span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
-            <Separator className="my-2" />
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${total.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>${taxAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold mt-2">
-              <span>Total</span>
-              <span>${(total + taxAmount).toFixed(2)}</span>
-            </div>
-            
-            <div className="mt-4">
-              <h4 className="font-medium mb-2">Customer Information</h4>
-              <p>Name: {customerData.fullName}</p>
-              <p>Email: {customerData.email}</p>
-              <p>Phone: {customerData.phone}</p>
-              {deliveryAddress && <p>Delivery Address: {deliveryAddress}</p>}
-              {formData.notes && <p>Special Instructions: {formData.notes}</p>}
-            </div>
-          </div>
+          <OrderConfirmation 
+            items={items}
+            total={total}
+            taxAmount={taxAmount}
+            customer={customerData}
+            notes={formData.notes}
+            pickupDetail={formData.pickupDetail}
+            deliveryDates={formData.deliveryDates}
+            fulfillmentType={fulfillmentType}
+            deliveryAddress={deliveryAddress}
+            categoryFulfillmentTypes={categoryFulfillmentTypes}
+          />
         </div>
       )}
       
@@ -294,6 +267,6 @@ export function CheckoutForm({
           )}
         </div>
       </div>
-    </form>
+    </Form>
   );
 }
