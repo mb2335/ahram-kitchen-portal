@@ -1,3 +1,4 @@
+
 import { MenuItem } from "@/contexts/CartContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,12 @@ export function useMenuCategories(menuItems: MenuItem[]) {
         .order('order_index');
       
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to include allow_joint_pickup with a default value
+      return (data || []).map(category => ({
+        ...category,
+        allow_joint_pickup: category.allow_joint_pickup || false
+      }));
     },
     retry: false,
     refetchOnWindowFocus: false,

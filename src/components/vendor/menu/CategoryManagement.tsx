@@ -42,6 +42,7 @@ export function CategoryManagement() {
         throw error;
       }
       
+      // Make sure to include allow_joint_pickup in the mapping, with a default value
       return data.map(category => ({
         ...category,
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
@@ -50,6 +51,7 @@ export function CategoryManagement() {
         })) as PickupDetail[],
         fulfillment_types: category.fulfillment_types || [],
         pickup_days: category.pickup_days || [],
+        allow_joint_pickup: category.allow_joint_pickup || false,
       })) as Category[];
     },
   });
