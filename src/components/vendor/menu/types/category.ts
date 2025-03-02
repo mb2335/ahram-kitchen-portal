@@ -14,7 +14,7 @@ export interface Category {
   pickup_details: PickupDetail[];
   has_custom_pickup: boolean;
   fulfillment_types: string[];
-  blocked_dates: string[]; // Array of blocked dates for pickup
+  pickup_days: number[]; // 0-6 representing days of week for pickup (Sunday=0, Monday=1, etc.)
 }
 
 export interface CategoryFormData {
@@ -23,5 +23,5 @@ export interface CategoryFormData {
   has_custom_pickup: boolean;
   pickup_details: PickupDetail[];
   fulfillment_types: string[];
-  blocked_dates: string[]; // Array of blocked dates for pickup
+  pickup_days: number[]; // Days of week available for pickup
 }

@@ -4,13 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, CalendarIcon } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { CategoryFormData, PickupDetail } from "./types/category";
-import { format, parseISO } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -64,25 +60,29 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     });
   };
 
-  const handleAddBlockedDate = (date: Date | undefined) => {
-    if (!date) return;
+  const handlePickupDayChange = (day: number, checked: boolean) => {
+    const newPickupDays = [...formData.pickup_days];
     
-    const dateString = format(date, 'yyyy-MM-dd');
-    
-    // Only add if the date isn't already in the array
-    if (!formData.blocked_dates.includes(dateString)) {
-      setFormData({
-        ...formData,
-        blocked_dates: [...formData.blocked_dates, dateString]
-      });
+    if (checked) {
+      if (!newPickupDays.includes(day)) {
+        newPickupDays.push(day);
+      }
+    } else {
+      const index = newPickupDays.indexOf(day);
+      if (index !== -1) {
+        newPickupDays.splice(index, 1);
+      }
     }
-  };
-
-  const handleRemoveBlockedDate = (dateToRemove: string) => {
+    
     setFormData({
       ...formData,
-      blocked_dates: formData.blocked_dates.filter(date => date !== dateToRemove)
+      pickup_days: newPickupDays
     });
+  };
+
+  const getDayName = (day: number): string => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[day];
   };
 
   return (
@@ -142,36 +142,23 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               <Label className="text-base font-semibold">Pickup Settings</Label>
               
               <div className="space-y-2">
-                <Label>Blocked Dates (Pickup Not Available)</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {formData.blocked_dates.map((date) => (
-                    <Badge key={date} variant="secondary" className="flex items-center gap-1">
-                      {format(parseISO(date), 'MMM d, yyyy')}
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-4 w-4 p-0 ml-1"
-                        onClick={() => handleRemoveBlockedDate(date)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
+                <Label>Select Days Available for Pickup</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                    <div key={day} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`day-${day}`}
+                        checked={formData.pickup_days.includes(day)}
+                        onCheckedChange={(checked) => 
+                          handlePickupDayChange(day, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`day-${day}`}>{getDayName(day)}</Label>
+                    </div>
                   ))}
                 </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full flex justify-between items-center">
-                      <span>Add Blocked Date</span>
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" onSelect={handleAddBlockedDate} initialFocus />
-                  </PopoverContent>
-                </Popover>
-                <p className="text-sm text-muted-foreground mt-1">
-                  All days not blocked are available for pickup (previously only Thu/Fri).
+                <p className="text-sm text-muted-foreground mt-2">
+                  These days will be available for pickup and blocked for delivery.
                 </p>
               </div>
 

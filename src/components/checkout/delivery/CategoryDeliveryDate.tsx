@@ -5,7 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, AlertCircle } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PickupDetail } from '@/types/pickup';
@@ -23,7 +23,7 @@ export interface CategoryDeliveryDateProps {
     has_custom_pickup: boolean;
     pickup_details: PickupDetail[];
     fulfillment_types: string[];
-    blocked_dates: string[];
+    pickup_days: number[]; // Days of week for pickup (0=Sunday, 1=Monday, etc.)
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
@@ -43,9 +43,6 @@ export function CategoryDeliveryDate({
   const [date, setDate] = useState<Date | undefined>(selectedDate);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Create a set of blocked dates for efficient lookup
-  const blockedDatesSet = new Set(category.blocked_dates || []);
-
   useEffect(() => {
     if (selectedDate) {
       setDate(selectedDate);
@@ -55,13 +52,14 @@ export function CategoryDeliveryDate({
   const handleSelect = (date: Date | undefined) => {
     if (!date) return;
     
-    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+    const isPickupDay = category.pickup_days?.includes(dayOfWeek);
     
     // Check if date is valid based on fulfillment type
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && blockedDatesSet.has(dateStr)) {
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
       setErrorMessage(ERROR_MESSAGES.PICKUP_INVALID_DAY);
       return;
-    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !blockedDatesSet.has(dateStr)) {
+    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
       setErrorMessage(ERROR_MESSAGES.DELIVERY_INVALID_DAY);
       return;
     }
@@ -72,15 +70,16 @@ export function CategoryDeliveryDate({
   };
 
   const isDateDisabled = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = date.getDay();
+    const isPickupDay = category.pickup_days?.includes(dayOfWeek);
     
-    // For pickup: disable blocked dates
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && blockedDatesSet.has(dateStr)) {
+    // For pickup: disable non-pickup days
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
       return true;
     }
     
-    // For delivery: disable non-blocked dates (pickup dates)
-    if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !blockedDatesSet.has(dateStr)) {
+    // For delivery: disable pickup days
+    if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
       return true;
     }
     

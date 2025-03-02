@@ -17,7 +17,7 @@ export function useCategoryManagement() {
     has_custom_pickup: false,
     pickup_details: [],
     fulfillment_types: [],
-    blocked_dates: [],
+    pickup_days: [],
   });
 
   const resetForm = () => {
@@ -27,7 +27,7 @@ export function useCategoryManagement() {
       has_custom_pickup: false,
       pickup_details: [],
       fulfillment_types: [],
-      blocked_dates: [],
+      pickup_days: [],
     });
     setEditingCategory(null);
   };
@@ -69,7 +69,7 @@ export function useCategoryManagement() {
         has_custom_pickup: formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup,
         pickup_details: pickupDetails,
         fulfillment_types: formData.fulfillment_types,
-        blocked_dates: formData.blocked_dates,
+        pickup_days: formData.pickup_days,
       };
 
       if (editingCategory) {

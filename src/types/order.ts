@@ -64,8 +64,8 @@ export const FULFILLMENT_TYPE_DELIVERY = 'delivery';
 
 // Error messages for invalid selections
 export const ERROR_MESSAGES = {
-  PICKUP_INVALID_DAY: 'Pickup is only available on selected days.',
-  DELIVERY_INVALID_DAY: 'Delivery is not available on selected pickup days.',
+  PICKUP_INVALID_DAY: 'Pickup is only available on selected pickup days.',
+  DELIVERY_INVALID_DAY: 'Delivery is not available on pickup days.',
   PICKUP_LOCATION_REQUIRED: 'Please select a pickup location and time.',
   DELIVERY_ADDRESS_REQUIRED: 'Please provide a delivery address.'
 };

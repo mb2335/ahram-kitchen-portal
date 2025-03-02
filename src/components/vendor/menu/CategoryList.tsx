@@ -12,6 +12,12 @@ interface CategoryListProps {
 }
 
 export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps) {
+  // Helper function to get day name
+  const getDayName = (day: number): string => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[day];
+  };
+
   return (
     <div className="space-y-2">
       {categories.map((category) => (
@@ -34,9 +40,9 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
                 </Badge>
               )}
             </div>
-            {category.blocked_dates && category.blocked_dates.length > 0 && (
+            {category.pickup_days && category.pickup_days.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                Blocked pickup dates: {category.blocked_dates.length}
+                Pickup days: {category.pickup_days.map(day => getDayName(day)).join(', ')}
               </p>
             )}
             {category.fulfillment_types?.includes('pickup') && category.has_custom_pickup && category.pickup_details && category.pickup_details.length > 0 && (
