@@ -91,10 +91,6 @@ export function CategoryDeliveryDate({
     
     setErrorMessage(null);
     
-    // Log for debugging
-    console.log(`Selected date for category ${category.id}:`, cleanDate);
-    console.log(`Selected date is Date instance:`, cleanDate instanceof Date);
-    
     // Ensure we pass a valid Date object to the parent
     onDateChange(cleanDate);
   };
@@ -143,8 +139,8 @@ export function CategoryDeliveryDate({
           </Alert>
         )}
         {jointPickupMessage && (
-          <Alert className="mb-4">
-            <AlertDescription>{jointPickupMessage}</AlertDescription>
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <AlertDescription className="text-blue-700">{jointPickupMessage}</AlertDescription>
           </Alert>
         )}
         <div className="space-y-2">

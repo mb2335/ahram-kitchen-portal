@@ -49,7 +49,6 @@ export function DeliveryForm({
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
   const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
   
-  // Joint pickup state
   const [useJointPickup, setUseJointPickup] = useState(true);
   const [sharedPickupDate, setSharedPickupDate] = useState<Date | undefined>(undefined);
   const [sharedPickupDetail, setSharedPickupDetail] = useState<PickupDetail | null>(null);
@@ -84,7 +83,7 @@ export function DeliveryForm({
         })),
         fulfillment_types: category.fulfillment_types || [],
         pickup_days: category.pickup_days || [],
-        allow_joint_pickup: category.allow_joint_pickup ?? false // Add default value
+        allow_joint_pickup: category.allow_joint_pickup ?? false
       }));
     },
   });
@@ -107,6 +106,16 @@ export function DeliveryForm({
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
     let hasPickupOnly = false;
     let allCategoriesPickupOnly = true;
+    
+    const jointPickupCategories = categories.filter(category => 
+      category.allow_joint_pickup === true && 
+      itemCategoryIds.includes(category.id) &&
+      (category.fulfillment_types?.includes(FULFILLMENT_TYPE_PICKUP) || []).length > 0
+    );
+
+    setHasJointPickupCategories(jointPickupCategories.length > 1);
+    
+    console.log('Joint pickup categories:', jointPickupCategories);
     
     categories.forEach(category => {
       if (itemCategoryIds.includes(category.id)) {
@@ -142,14 +151,6 @@ export function DeliveryForm({
     }
     
     setPickupCategoryNames(getPickupCategories());
-    
-    const jointPickupSupported = categories.some(category => 
-      category.allow_joint_pickup && 
-      itemsByCategory[category.id]?.length > 0 &&
-      category.fulfillment_types?.includes(FULFILLMENT_TYPE_PICKUP)
-    );
-    
-    setHasJointPickupCategories(jointPickupSupported);
   }, [categories, items, fulfillmentType, onFulfillmentTypeChange, categoryFulfillmentTypes]);
 
   const hasCustomPickupItems = categories.some(category => 
@@ -252,7 +253,7 @@ export function DeliveryForm({
           )}
           
           {fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasJointPickupCategories && (
-            <div className="border p-3 rounded">
+            <div className="border p-3 rounded bg-slate-50">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">Synchronized Pickup</h4>
@@ -320,7 +321,7 @@ export function DeliveryForm({
           })}
           
           {hasJointPickupCategories && (
-            <div className="border p-3 rounded">
+            <div className="border p-3 rounded bg-slate-50">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">Synchronized Pickup</h4>
