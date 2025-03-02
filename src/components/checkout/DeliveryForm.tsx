@@ -9,6 +9,10 @@ import { PickupDetail } from '@/types/pickup';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -19,6 +23,8 @@ interface DeliveryFormProps {
   onPickupDetailChange: (pickupDetail: PickupDetail) => void;
   fulfillmentType: string;
   onFulfillmentTypeChange: (type: string) => void;
+  deliveryAddress: string;
+  onDeliveryAddressChange: (address: string) => void;
 }
 
 export function DeliveryForm({ 
@@ -29,10 +35,13 @@ export function DeliveryForm({
   pickupDetail,
   onPickupDetailChange,
   fulfillmentType,
-  onFulfillmentTypeChange
+  onFulfillmentTypeChange,
+  deliveryAddress,
+  onDeliveryAddressChange
 }: DeliveryFormProps) {
   const { items } = useCart();
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -89,6 +98,21 @@ export function DeliveryForm({
     return acc;
   }, {} as Record<string, typeof items>);
 
+  // Check if there are items that need custom fulfillment
+  const hasCustomPickupItems = categories.some(category => 
+    category.has_custom_pickup && 
+    itemsByCategory[category.id]?.length > 0
+  );
+
+  useEffect(() => {
+    // Display warnings if mixing fulfillment types
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
+      setWarning("Your order contains items with specific pickup requirements. Please select valid pickup times and locations where requested.");
+    } else {
+      setWarning(null);
+    }
+  }, [fulfillmentType, hasCustomPickupItems]);
+
   return (
     <div className="space-y-6">
       {availableFulfillmentTypes.length > 1 && (
@@ -99,19 +123,27 @@ export function DeliveryForm({
             onValueChange={onFulfillmentTypeChange}
             className="flex flex-col space-y-2"
           >
-            {availableFulfillmentTypes.includes('delivery') && (
+            {availableFulfillmentTypes.includes(FULFILLMENT_TYPE_DELIVERY) && (
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="delivery" id="delivery" />
-                <Label htmlFor="delivery">Delivery</Label>
+                <RadioGroupItem value={FULFILLMENT_TYPE_DELIVERY} id={FULFILLMENT_TYPE_DELIVERY} />
+                <Label htmlFor={FULFILLMENT_TYPE_DELIVERY}>Delivery (Monday-Wednesday, Saturday-Sunday)</Label>
               </div>
             )}
-            {availableFulfillmentTypes.includes('pickup') && (
+            {availableFulfillmentTypes.includes(FULFILLMENT_TYPE_PICKUP) && (
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pickup" id="pickup" />
-                <Label htmlFor="pickup">Pickup</Label>
+                <RadioGroupItem value={FULFILLMENT_TYPE_PICKUP} id={FULFILLMENT_TYPE_PICKUP} />
+                <Label htmlFor={FULFILLMENT_TYPE_PICKUP}>Pickup (Thursday-Friday only)</Label>
               </div>
             )}
           </RadioGroup>
+          
+          {warning && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{warning}</AlertDescription>
+            </Alert>
+          )}
+          
           <Separator />
         </div>
       )}
@@ -130,7 +162,7 @@ export function DeliveryForm({
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickupDetail={fulfillmentType === 'pickup' ? pickupDetail : null}
+              selectedPickupDetail={fulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={fulfillmentType}
             />
@@ -138,6 +170,22 @@ export function DeliveryForm({
           </div>
         );
       })}
+
+      {/* Delivery address is required for delivery orders */}
+      {fulfillmentType === FULFILLMENT_TYPE_DELIVERY && (
+        <div className="space-y-2">
+          <Label htmlFor="delivery-address">Delivery Address (Required)</Label>
+          <Input 
+            id="delivery-address"
+            value={deliveryAddress}
+            onChange={(e) => onDeliveryAddressChange(e.target.value)}
+            placeholder="Enter your complete delivery address"
+            className="w-full"
+            required
+          />
+          <Separator className="mt-4" />
+        </div>
+      )}
 
       <DeliveryNotes
         notes={notes}

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -5,6 +6,7 @@ import { X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
+import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 
 interface OrderFiltersProps {
   onFilterChange: (filters: OrderFilters) => void;
@@ -16,6 +18,7 @@ export interface OrderFilters {
   date?: Date;
   categoryId?: string;
   pickupLocation?: string;
+  fulfillmentType?: string;
 }
 
 export function OrderFilters({ onFilterChange, categories, pickupLocations }: OrderFiltersProps) {
@@ -51,9 +54,9 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label>Pickup Date</Label>
+          <Label>Date</Label>
           <DatePickerWithRange
             date={dateRange}
             onSelect={(newDateRange: DateRange | undefined) => {
@@ -81,6 +84,23 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
                   {category.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Fulfillment Type</Label>
+          <Select
+            value={filters.fulfillmentType || "all"}
+            onValueChange={(value) => handleFilterChange('fulfillmentType', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value={FULFILLMENT_TYPE_PICKUP}>Pickup (Thu-Fri)</SelectItem>
+              <SelectItem value={FULFILLMENT_TYPE_DELIVERY}>Delivery (Mon-Wed, Sat-Sun)</SelectItem>
             </SelectContent>
           </Select>
         </div>

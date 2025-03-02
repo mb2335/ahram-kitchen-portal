@@ -21,6 +21,7 @@ export interface OrderSubmissionProps {
     fullName: string;
     email: string;
     phone: string;
+    address?: string; // Added for delivery orders
   };
   pickupDetail: PickupDetail | null;
   fulfillmentType: string;
@@ -41,6 +42,7 @@ export interface OrderData {
   fulfillment_type?: string;
   created_at: string;
   rejection_reason?: string;
+  delivery_address?: string; // Added for delivery orders
 }
 
 export interface OrderHistoryItem {
@@ -53,4 +55,21 @@ export interface OrderHistoryItem {
   pickup_time?: string;
   pickup_location?: string;
   fulfillment_type?: string;
+  delivery_address?: string; // Added for delivery orders
 }
+
+// Fulfillment types
+export const FULFILLMENT_TYPE_PICKUP = 'pickup';
+export const FULFILLMENT_TYPE_DELIVERY = 'delivery';
+
+// Day restrictions for fulfillment types
+export const PICKUP_ALLOWED_DAYS = [4, 5]; // Thursday (4) and Friday (5)
+export const DELIVERY_ALLOWED_DAYS = [1, 2, 3, 6, 0]; // Monday-Wednesday, Saturday-Sunday
+
+// Error messages for invalid selections
+export const ERROR_MESSAGES = {
+  PICKUP_INVALID_DAY: 'Pickup is only available on Thursdays and Fridays.',
+  DELIVERY_INVALID_DAY: 'Delivery is not available on Thursdays and Fridays.',
+  PICKUP_LOCATION_REQUIRED: 'Please select a pickup location and time.',
+  DELIVERY_ADDRESS_REQUIRED: 'Please provide a delivery address.'
+};

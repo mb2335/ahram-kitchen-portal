@@ -9,7 +9,7 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { OrderItem } from '@/types/order';
+import type { OrderItem, FULFILLMENT_TYPE_DELIVERY, ERROR_MESSAGES } from '@/types/order';
 import { PickupDetail } from '@/types/pickup';
 
 interface CheckoutFormProps {
@@ -46,6 +46,7 @@ export function CheckoutForm({
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<string>('delivery');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const handleDateChange = (categoryId: string, date: Date) => {
@@ -107,10 +108,10 @@ export function CheckoutForm({
       categoryId => !formData.deliveryDates[categoryId as string]
     );
 
-    if (fulfillmentType === 'delivery' && missingDates.length > 0) {
+    if (missingDates.length > 0) {
       toast({
         title: 'Error',
-        description: 'Please select delivery dates for all categories',
+        description: 'Please select dates for all items in your order',
         variant: 'destructive',
       });
       return;
@@ -135,6 +136,34 @@ export function CheckoutForm({
         });
         return;
       }
+    } else if (fulfillmentType === 'delivery' && !deliveryAddress.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a delivery address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate the dates again before submission
+    for (const [categoryId, date] of Object.entries(formData.deliveryDates)) {
+      const dayOfWeek = date.getDay();
+      
+      if (fulfillmentType === 'pickup' && ![4, 5].includes(dayOfWeek)) { // Not Thursday or Friday
+        toast({
+          title: 'Invalid Pickup Date',
+          description: 'Pickup is only available on Thursdays and Fridays.',
+          variant: 'destructive',
+        });
+        return;
+      } else if (fulfillmentType === 'delivery' && [4, 5].includes(dayOfWeek)) { // Thursday or Friday
+        toast({
+          title: 'Invalid Delivery Date',
+          description: 'Delivery is not available on Thursdays and Fridays.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     await submitOrder({
@@ -143,7 +172,10 @@ export function CheckoutForm({
       taxAmount,
       notes: formData.notes,
       deliveryDates: formData.deliveryDates,
-      customerData,
+      customerData: {
+        ...customerData,
+        address: fulfillmentType === 'delivery' ? deliveryAddress : undefined
+      },
       pickupDetail: formData.pickupDetail,
       fulfillmentType,
       onOrderSuccess
@@ -161,6 +193,8 @@ export function CheckoutForm({
         onPickupDetailChange={handlePickupDetailChange}
         fulfillmentType={fulfillmentType}
         onFulfillmentTypeChange={setFulfillmentType}
+        deliveryAddress={deliveryAddress}
+        onDeliveryAddressChange={setDeliveryAddress}
       />
 
       <PaymentInstructions

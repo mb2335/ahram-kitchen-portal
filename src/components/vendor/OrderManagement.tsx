@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useVendorOrders } from '@/hooks/useOrders';
 import { OrderFilters } from './order/OrderFilters';
 import type { OrderFilters as OrderFiltersType } from './order/OrderFilters';
+import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 
 export function OrderManagement() {
   const [rejectionReason, setRejectionReason] = useState('');
@@ -78,6 +80,11 @@ export function OrderManagement() {
         if (!hasCategory) return false;
       }
 
+      // Fulfillment type filter
+      if (filters.fulfillmentType && order.fulfillment_type !== filters.fulfillmentType) {
+        return false;
+      }
+
       // Pickup location filter
       if (filters.pickupLocation && order.pickup_location !== filters.pickupLocation) {
         return false;
@@ -116,6 +123,10 @@ export function OrderManagement() {
     orders?.map(order => order.pickup_location).filter(Boolean) || []
   ));
 
+  // Count orders by fulfillment type
+  const pickupCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length || 0;
+  const deliveryCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length || 0;
+
   const renderOrdersList = (filteredOrders: Order[]) => {
     if (filteredOrders.length === 0) {
       return <p className="text-center text-gray-500">No orders found</p>;
@@ -140,6 +151,21 @@ export function OrderManagement() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Orders</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-muted/30 rounded-lg p-4 text-center">
+          <h3 className="text-lg font-medium mb-2">Pickup Orders (Thu-Fri)</h3>
+          <p className="text-3xl font-bold">{pickupCount}</p>
+        </div>
+        <div className="bg-muted/30 rounded-lg p-4 text-center">
+          <h3 className="text-lg font-medium mb-2">Delivery Orders</h3>
+          <p className="text-3xl font-bold">{deliveryCount}</p>
+        </div>
+        <div className="bg-muted/30 rounded-lg p-4 text-center">
+          <h3 className="text-lg font-medium mb-2">Total Orders</h3>
+          <p className="text-3xl font-bold">{orders?.length || 0}</p>
+        </div>
+      </div>
       
       <OrderFilters 
         onFilterChange={setFilters}

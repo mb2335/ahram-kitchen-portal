@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { OrderSubmissionProps } from '@/types/order';
+import { OrderSubmissionProps, FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
 
@@ -36,6 +36,11 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
+      // Validate delivery address for delivery orders
+      if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !customerData.address) {
+        throw new Error('Delivery address is required for delivery orders');
+      }
+
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
       const fileExt = paymentProof.name.split('.').pop();
@@ -49,6 +54,19 @@ export function useOrderSubmission() {
         });
 
       if (uploadError) throw uploadError;
+
+      // Validate each date against fulfillment type
+      Object.entries(deliveryDates).forEach(([categoryId, date]) => {
+        const dayOfWeek = date.getDay();
+        
+        if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && ![4, 5].includes(dayOfWeek)) {
+          throw new Error('Pickup is only available on Thursdays and Fridays');
+        }
+        
+        if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && [4, 5].includes(dayOfWeek)) {
+          throw new Error('Delivery is not available on Thursdays and Fridays');
+        }
+      });
 
       const orderPromises = Object.entries(deliveryDates).map(async ([categoryId, deliveryDate]) => {
         const categoryItems = items.filter(item => item.category_id === categoryId);
@@ -74,7 +92,7 @@ export function useOrderSubmission() {
         if (categoryError) throw categoryError;
 
         const category = categoryData;
-        const needsCustomPickup = fulfillmentType === 'pickup' && (category?.has_custom_pickup ?? false);
+        const needsCustomPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
 
         const orderData = {
           customer_id: customerId,
@@ -87,6 +105,7 @@ export function useOrderSubmission() {
           pickup_time: needsCustomPickup ? pickupDetail?.time : null,
           pickup_location: needsCustomPickup ? pickupDetail?.location : null,
           fulfillment_type: fulfillmentType,
+          delivery_address: fulfillmentType === FULFILLMENT_TYPE_DELIVERY ? customerData.address : null,
         };
 
         const { data: insertedOrder, error: orderError } = await supabase
@@ -144,7 +163,8 @@ export function useOrderSubmission() {
             createdAt: firstOrder.created_at,
             pickupTime: firstOrder.pickup_time,
             pickupLocation: firstOrder.pickup_location,
-            fulfillmentType: fulfillmentType
+            fulfillmentType: fulfillmentType,
+            deliveryAddress: firstOrder.delivery_address
           }
         },
         replace: true
