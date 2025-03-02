@@ -1,4 +1,3 @@
-
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -25,8 +24,6 @@ interface DeliveryFormProps {
   onFulfillmentTypeChange: (type: string) => void;
   deliveryAddress: string;
   onDeliveryAddressChange: (address: string) => void;
-  categoryFulfillmentTypes: Record<string, string>;
-  setCategoryFulfillmentTypes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
 export function DeliveryForm({ 
@@ -39,11 +36,10 @@ export function DeliveryForm({
   fulfillmentType,
   onFulfillmentTypeChange,
   deliveryAddress,
-  onDeliveryAddressChange,
-  categoryFulfillmentTypes,
-  setCategoryFulfillmentTypes
+  onDeliveryAddressChange
 }: DeliveryFormProps) {
   const { items } = useCart();
+  const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
@@ -108,10 +104,10 @@ export function DeliveryForm({
     setAvailableFulfillmentTypes(availableTypes);
     
     // Set default fulfillment type if none selected and options available
-    if ((!fulfillmentType || !availableTypes.includes(fulfillmentType)) && availableTypes.length > 0) {
+    if (!fulfillmentType && availableTypes.length > 0) {
       onFulfillmentTypeChange(availableTypes[0]);
     }
-  }, [categories, items, fulfillmentType, onFulfillmentTypeChange, categoryFulfillmentTypes, setCategoryFulfillmentTypes]);
+  }, [categories, items, fulfillmentType, onFulfillmentTypeChange, categoryFulfillmentTypes]);
 
   const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';

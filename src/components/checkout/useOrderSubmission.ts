@@ -50,18 +50,6 @@ export function useOrderSubmission() {
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
-      // Check if payment_proofs storage bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === 'payment_proofs');
-
-      // Create bucket if it doesn't exist
-      if (!bucketExists) {
-        await supabase.storage.createBucket('payment_proofs', {
-          public: false,
-          fileSizeLimit: 5242880, // 5MB
-        });
-      }
-
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('payment_proofs')
         .upload(fileName, paymentProof, {
@@ -69,14 +57,7 @@ export function useOrderSubmission() {
           upsert: false
         });
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error('Failed to upload payment proof: ' + uploadError.message);
-      }
-
-      if (!uploadData || !uploadData.path) {
-        throw new Error('Failed to upload payment proof: No path returned');
-      }
+      if (uploadError) throw uploadError;
 
       // Get all categories and their pickup days
       const { data: categoriesData, error: categoriesError } = await supabase
@@ -328,13 +309,11 @@ export function useOrderSubmission() {
       });
 
     } catch (error: any) {
-      console.error('Order submission error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
         variant: 'destructive',
       });
-      throw error; // Re-throw to be caught by the form submit handler
     } finally {
       setIsUploading(false);
     }
