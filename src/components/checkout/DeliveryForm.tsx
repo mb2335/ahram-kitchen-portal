@@ -61,7 +61,7 @@ export function DeliveryForm({
           location: detail.location
         })),
         fulfillment_types: category.fulfillment_types || [],
-        blocked_dates: category.blocked_dates || []
+        pickup_days: category.pickup_days || []
       }));
     },
   });

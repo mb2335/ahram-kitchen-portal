@@ -49,7 +49,7 @@ export function CategoryManagement() {
           location: detail.location || ''
         })) as PickupDetail[],
         fulfillment_types: category.fulfillment_types || [],
-        blocked_dates: category.blocked_dates || []
+        pickup_days: category.pickup_days || [],
       })) as Category[];
     },
   });
@@ -157,7 +157,7 @@ export function CategoryManagement() {
             has_custom_pickup: category.has_custom_pickup || false,
             pickup_details: category.pickup_details || [],
             fulfillment_types: category.fulfillment_types || [],
-            blocked_dates: category.blocked_dates || [],
+            pickup_days: category.pickup_days || [],
           });
           setIsDialogOpen(true);
         }}

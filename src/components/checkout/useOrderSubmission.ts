@@ -64,9 +64,13 @@ export function useOrderSubmission() {
       
       // Create a map of category IDs to their pickup days
       const categoryPickupDays = new Map();
-      categoriesData.forEach(category => {
-        categoryPickupDays.set(category.id, new Set(category.pickup_days || []));
-      });
+      if (categoriesData) {
+        categoriesData.forEach(category => {
+          if (category && category.id && category.pickup_days) {
+            categoryPickupDays.set(category.id, new Set(category.pickup_days));
+          }
+        });
+      }
 
       // Validate each date against fulfillment type and pickup days
       Object.entries(deliveryDates).forEach(([categoryId, date]) => {
