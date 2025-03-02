@@ -47,7 +47,6 @@ export function DeliveryForm({
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
-  const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -78,48 +77,23 @@ export function DeliveryForm({
     
     const fulfillmentTypes = new Set<string>();
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
-    let hasPickupOnly = false;
-    let allCategoriesPickupOnly = true;
     
-    // Check each category with items in the cart
     categories.forEach(category => {
       if (itemCategoryIds.includes(category.id)) {
-        // Add all available fulfillment types
         category.fulfillment_types?.forEach(type => fulfillmentTypes.add(type));
-        
-        // Check if this is a pickup-only category
-        const isPickupOnly = category.fulfillment_types?.length === 1 && 
-                             category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP;
-        
-        if (isPickupOnly) {
-          hasPickupOnly = true;
-        } else {
-          allCategoriesPickupOnly = false;
-        }
       }
     });
     
-    // Set pickup-only state
-    setHasPickupOnlyCategories(hasPickupOnly);
+    // Check if we should allow mixed delivery types
+    const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
+    setHasMixedDelivery(hasMultipleTypes);
     
-    // If all categories are pickup-only, only show pickup option
     const availableTypes = Array.from(fulfillmentTypes);
     setAvailableFulfillmentTypes(availableTypes);
     
-    // Check if we should allow mixed delivery types
-    const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
-    setHasMixedDelivery(hasMultipleTypes && !allCategoriesPickupOnly);
-    
     // Set default fulfillment type if none selected and options available
     if (!fulfillmentType && availableTypes.length > 0) {
-      // If we have pickup-only categories, default to pickup
-      if (hasPickupOnly && availableTypes.includes(FULFILLMENT_TYPE_PICKUP)) {
-        onFulfillmentTypeChange(FULFILLMENT_TYPE_PICKUP);
-      } else if (availableTypes.includes(FULFILLMENT_TYPE_DELIVERY)) {
-        onFulfillmentTypeChange(FULFILLMENT_TYPE_DELIVERY);
-      } else {
-        onFulfillmentTypeChange(availableTypes[0]);
-      }
+      onFulfillmentTypeChange(availableTypes[0]);
     }
   }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
 
@@ -161,45 +135,11 @@ export function DeliveryForm({
     }
   }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery]);
 
-  // Show mixed category fulfillment options if we have multiple categories with different options
+  // Show mixed category fulfillment options if we have multiple categories
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
   // Get all pickup category names
   const pickupCategoryNames = getPickupCategories();
-
-  // Check if any categories require delivery address
-  const needsDeliveryAddress = () => {
-    // If there's no mixed delivery, use the global fulfillment type
-    if (!showMixedCategoryOptions) {
-      return fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
-    }
-
-    // For mixed delivery, check if any category has delivery selected
-    return Object.entries(categoryFulfillmentTypes).some(([categoryId, type]) => {
-      // If this category only supports pickup, never need delivery address
-      const category = categories.find(c => c.id === categoryId);
-      if (category?.fulfillment_types.length === 1 && 
-          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
-        return false;
-      }
-      
-      return type === FULFILLMENT_TYPE_DELIVERY;
-    });
-  };
-
-  // Function to handle delivery date changes and ensure we use proper Date objects
-  const handleDeliveryDateChange = (categoryId: string, date: Date) => {
-    console.log(`DeliveryForm handling date change for ${categoryId}:`, date);
-    
-    // Verify we have a valid Date object
-    if (!(date instanceof Date)) {
-      console.error("Invalid date object in handleDeliveryDateChange", date);
-      return;
-    }
-    
-    // Send the valid Date object to parent
-    onDateChange(categoryId, date);
-  };
 
   return (
     <div className="space-y-6">
@@ -252,14 +192,8 @@ export function DeliveryForm({
             const category = categories.find(c => c.id === categoryId);
             if (!category) return null;
             
-            // Skip if category only supports one fulfillment type
-            if (category.fulfillment_types.length <= 1) {
-              if (category.fulfillment_types.length === 1 && 
-                  category.fulfillment_types[0] !== categoryFulfillmentTypes[categoryId]) {
-                onCategoryFulfillmentTypeChange(categoryId, category.fulfillment_types[0]);
-              }
-              return null;
-            }
+            // Skip if category doesn't support multiple fulfillment types
+            if (category.fulfillment_types.length <= 1) return null;
             
             return (
               <div key={`fulfillment-${categoryId}`} className="border p-3 rounded space-y-3">
@@ -298,11 +232,7 @@ export function DeliveryForm({
         // For mixed delivery, use the category-specific fulfillment type
         const effectiveFulfillmentType = showMixedCategoryOptions 
           ? categoryFulfillmentTypes[category.id] || fulfillmentType
-          : (
-            // Handle pickup-only categories
-            category.fulfillment_types.length === 1 && 
-            category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP
-          ) ? FULFILLMENT_TYPE_PICKUP : fulfillmentType;
+          : fulfillmentType;
         
         // Skip categories that don't match the selected fulfillment type
         if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;
@@ -312,7 +242,7 @@ export function DeliveryForm({
             <CategoryDeliveryDate
               category={category}
               selectedDate={deliveryDates[category.id]}
-              onDateChange={(date) => handleDeliveryDateChange(category.id, date)}
+              onDateChange={(date) => onDateChange(category.id, date)}
               selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}
@@ -324,7 +254,7 @@ export function DeliveryForm({
       })}
 
       {/* Delivery address is required for delivery orders */}
-      {needsDeliveryAddress() && (
+      {(fulfillmentType === FULFILLMENT_TYPE_DELIVERY || Object.values(categoryFulfillmentTypes).includes(FULFILLMENT_TYPE_DELIVERY)) && (
         <div className="space-y-2">
           <Label htmlFor="delivery-address">Delivery Address (Required)</Label>
           <Input 

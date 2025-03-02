@@ -1,4 +1,3 @@
-
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
@@ -24,11 +23,6 @@ export function PaymentInstructions({ paymentProof, onFileChange }: PaymentInstr
           required
           className="mt-1"
         />
-        {paymentProof && (
-          <p className="text-xs text-green-600 mt-1">
-            File selected: {paymentProof.name}
-          </p>
-        )}
       </div>
     </div>
   );

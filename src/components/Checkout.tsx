@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useSession } from '@supabase/auth-helpers-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
@@ -34,14 +34,104 @@ export function Checkout() {
 
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
 
-  // Check if cart is empty and redirect if needed
+  // Fetch categories and set default dates
   useEffect(() => {
     if (items.length === 0) {
       navigate('/cart');
       return;
     }
     
-    // If user is logged in, load their data
+    // Set default delivery dates for all categories
+    const setDefaultDates = async () => {
+      const { data: categories } = await supabase
+        .from('menu_categories')
+        .select('*');
+      
+      if (!categories) return;
+      
+      const defaultDates: Record<string, Date> = {};
+      const today = new Date();
+      
+      // Get all unique category IDs from items
+      const categoryIds = items
+        .map(item => item.category_id)
+        .filter((id, index, self) => id && self.indexOf(id) === index) as string[];
+      
+      // Set a default date for each category
+      categoryIds.forEach(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (category) {
+          // Check if it has pickup days
+          if (category.pickup_days && category.pickup_days.length > 0) {
+            const dayOfWeek = today.getDay();
+            const isPickupDay = category.pickup_days.includes(dayOfWeek);
+            
+            // If today is a pickup day and we want a delivery date, 
+            // find the next non-pickup day
+            if (isPickupDay && category.fulfillment_types?.includes('delivery')) {
+              let nextDeliveryDate = new Date(today);
+              
+              // Find the next day that isn't a pickup day
+              for (let i = 1; i <= 7; i++) {
+                const nextDate = new Date(today);
+                nextDate.setDate(today.getDate() + i);
+                const nextDayOfWeek = nextDate.getDay();
+                
+                if (!category.pickup_days.includes(nextDayOfWeek)) {
+                  nextDeliveryDate = nextDate;
+                  break;
+                }
+              }
+              
+              defaultDates[categoryId] = nextDeliveryDate;
+            } 
+            // For pickup, use today if it's a pickup day, otherwise next pickup day
+            else if (category.fulfillment_types?.includes('pickup')) {
+              let nextPickupDate = new Date(today);
+              
+              if (!isPickupDay) {
+                // Find the next pickup day
+                const sortedPickupDays = [...category.pickup_days].sort((a, b) => {
+                  const daysUntilA = (a - dayOfWeek + 7) % 7;
+                  const daysUntilB = (b - dayOfWeek + 7) % 7;
+                  return daysUntilA - daysUntilB;
+                });
+                
+                const nextDay = sortedPickupDays[0];
+                const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
+                
+                if (daysToAdd > 0) {
+                  nextPickupDate = new Date(today);
+                  nextPickupDate.setDate(today.getDate() + daysToAdd);
+                }
+              }
+              
+              defaultDates[categoryId] = nextPickupDate;
+            }
+            // Default case - use today's date
+            else {
+              defaultDates[categoryId] = today;
+            }
+          } else {
+            // No pickup days defined, just use today
+            defaultDates[categoryId] = today;
+          }
+        }
+      });
+      
+      if (Object.keys(defaultDates).length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          deliveryDates: {
+            ...prev.deliveryDates,
+            ...defaultDates
+          }
+        }));
+      }
+    };
+    
+    setDefaultDates();
+    
     if (session?.user) {
       loadUserData();
     }
