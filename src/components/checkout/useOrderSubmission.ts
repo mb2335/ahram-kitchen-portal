@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -93,27 +92,28 @@ export function useOrderSubmission() {
           if (typeof dateValue === 'object' && dateValue !== null) {
             if ('_type' in dateValue && dateValue._type === 'Date') {
               // Handle the nested value structure from serialized date
-              if ('value' in dateValue && typeof dateValue.value === 'object') {
+              if ('value' in dateValue) {
                 const valueObj = dateValue.value;
                 
-                if ('iso' in valueObj && typeof valueObj.iso === 'string') {
+                if (valueObj && typeof valueObj === 'object' && 'iso' in valueObj && typeof valueObj.iso === 'string') {
                   sanitizedDeliveryDates[categoryId] = new Date(valueObj.iso);
-                } else if ('value' in valueObj && typeof valueObj.value === 'number') {
-                  sanitizedDeliveryDates[categoryId] = new Date(valueObj.value);
+                } else if (valueObj && typeof valueObj === 'object' && 'valueOf' in valueObj) {
+                  // Use valueOf method if available
+                  sanitizedDeliveryDates[categoryId] = new Date(valueObj.valueOf());
+                } else if (valueObj && typeof valueObj === 'number') {
+                  sanitizedDeliveryDates[categoryId] = new Date(valueObj);
                 } else {
                   console.log("Complex date format - trying to convert:", valueObj);
-                  const timestamp = valueObj.value || Date.now();
-                  sanitizedDeliveryDates[categoryId] = new Date(timestamp);
+                  // Last fallback, try to use the dateValue directly
+                  sanitizedDeliveryDates[categoryId] = new Date();
                 }
               } else if ('iso' in dateValue && typeof dateValue.iso === 'string') {
                 sanitizedDeliveryDates[categoryId] = new Date(dateValue.iso);
               } else if (typeof dateValue.valueOf === 'function') {
                 sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf());
               } else {
-                // Last resort - try to extract timestamp from the date object
                 console.log("Unusual date format:", dateValue);
-                const timestamp = dateValue.value?.value || dateValue.value || Date.now();
-                sanitizedDeliveryDates[categoryId] = new Date(timestamp);
+                sanitizedDeliveryDates[categoryId] = new Date();
               }
             } else if (dateValue instanceof Date) {
               // For regular Date objects
@@ -121,14 +121,21 @@ export function useOrderSubmission() {
             } else {
               // Try to convert unknown object to date
               console.log("Converting unknown object to date:", dateValue);
-              // Look for any timestamp-like property in the object
-              const timestamp = 
-                (dateValue as any).value?.value || 
-                (dateValue as any).value || 
-                (dateValue as any).timestamp || 
-                (dateValue as any).time || 
-                Date.now();
-              sanitizedDeliveryDates[categoryId] = new Date(timestamp);
+              
+              // Try various approaches to get a valid timestamp
+              if ('timestamp' in dateValue && typeof dateValue.timestamp === 'number') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateValue.timestamp);
+              } else if ('time' in dateValue && typeof dateValue.time === 'number') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateValue.time);
+              } else if ('valueOf' in dateValue && typeof dateValue.valueOf === 'function') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf());
+              } else if ('toISOString' in dateValue && typeof dateValue.toISOString === 'function') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateValue.toISOString());
+              } else {
+                // Last resort - use current date as fallback
+                console.warn(`Could not extract date from object for category ${categoryId}:`, dateValue);
+                sanitizedDeliveryDates[categoryId] = new Date();
+              }
             }
           } else if (typeof dateValue === 'string') {
             // For ISO string dates
@@ -180,7 +187,6 @@ export function useOrderSubmission() {
       console.log("Unique category IDs:", uniqueCategoryIds);
       for (const catId of uniqueCategoryIds) {
         console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId].toISOString());
-        console.log(`Original date value:`, deliveryDates[catId]);
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
