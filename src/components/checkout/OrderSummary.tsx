@@ -42,9 +42,10 @@ export function OrderSummary({
       {Object.entries(itemsByCategory).map(([categoryId, categoryItems]) => (
         <div key={categoryId} className="space-y-4 mb-4">
           {/* Show category name if it's not 'uncategorized' */}
-          {categoryId !== 'uncategorized' && categoryItems[0].category_name && (
+          {categoryId !== 'uncategorized' && (
             <h3 className="font-medium text-gray-700">
-              {language === 'en' ? categoryItems[0].category_name : categoryItems[0].category_name_ko}
+              {/* Since we don't have category_name directly in the item, we'll just show "Category" */}
+              {language === 'en' ? "Category" : "카테고리"}
             </h3>
           )}
           
@@ -52,7 +53,7 @@ export function OrderSummary({
             <div key={index} className="flex justify-between items-start">
               <div className="space-y-1">
                 <p className="font-medium">
-                  {language === 'en' ? item.name : item.nameKo}
+                  {language === 'en' ? item.name : item.name_ko}
                 </p>
                 <p className="text-sm text-gray-500">
                   Quantity: {item.quantity}
