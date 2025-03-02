@@ -18,6 +18,7 @@ export function useCategoryManagement() {
     pickup_details: [],
     fulfillment_types: [],
     pickup_days: [],
+    allow_joint_pickup: false,
   });
 
   const resetForm = () => {
@@ -28,6 +29,7 @@ export function useCategoryManagement() {
       pickup_details: [],
       fulfillment_types: [],
       pickup_days: [],
+      allow_joint_pickup: false,
     });
     setEditingCategory(null);
   };
@@ -70,6 +72,7 @@ export function useCategoryManagement() {
         pickup_details: pickupDetails,
         fulfillment_types: formData.fulfillment_types,
         pickup_days: formData.pickup_days,
+        allow_joint_pickup: formData.allow_joint_pickup,
       };
 
       if (editingCategory) {
