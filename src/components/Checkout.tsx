@@ -23,8 +23,7 @@ export function Checkout() {
   const [formData, setFormData] = useState({
     notes: '',
     deliveryDates: {} as Record<string, Date>,
-    pickupDetail: null as PickupDetail | null,
-    fulfillmentType: '' as string,
+    pickupDetail: null as PickupDetail | null
   });
 
   const [customerData, setCustomerData] = useState({
@@ -174,8 +173,7 @@ export function Checkout() {
           createdAt: new Date().toISOString(),
           pickupTime: formData.pickupDetail?.time || null,
           pickupLocation: formData.pickupDetail?.location || null,
-          paymentProofUrl: null,
-          fulfillmentType: formData.fulfillmentType
+          paymentProofUrl: null
         }
       },
       replace: true
@@ -204,27 +202,10 @@ export function Checkout() {
     discount_percentage: item.discount_percentage
   }));
 
-  // Find the unified pickup date (using the first category's date as reference)
-  const getUnifiedPickupDate = () => {
-    if (formData.fulfillmentType !== FULFILLMENT_TYPE_PICKUP || Object.keys(formData.deliveryDates).length === 0) {
-      return undefined;
-    }
-    
-    // Just take the first date from the deliveryDates object
-    const firstCategoryId = Object.keys(formData.deliveryDates)[0];
-    return formData.deliveryDates[firstCategoryId];
-  };
-
   return (
     <div className="container mx-auto max-w-2xl p-6">
       <div className="space-y-6">
-        <OrderSummary 
-          taxAmount={taxAmount}
-          pickupDate={getUnifiedPickupDate()}
-          pickupDetail={formData.pickupDetail}
-          fulfillmentType={formData.fulfillmentType}
-        />
-        
+        <OrderSummary />
         {!session && (
           <CustomerForm
             fullName={customerData.fullName}
@@ -235,7 +216,6 @@ export function Checkout() {
             onPhoneChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
           />
         )}
-        
         <CheckoutForm
           formData={formData}
           setFormData={setFormData}

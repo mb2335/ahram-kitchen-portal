@@ -13,14 +13,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
-import { getCommonPickupDays, getCommonPickupLocations, getNextValidPickupDate } from '@/utils/pickupUnification';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -55,9 +47,6 @@ export function DeliveryForm({
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
-  const [commonPickupDays, setCommonPickupDays] = useState<number[]>([]);
-  const [commonPickupLocations, setCommonPickupLocations] = useState<PickupDetail[]>([]);
-  const [unifiedPickupDate, setUnifiedPickupDate] = useState<Date | undefined>(undefined);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -81,49 +70,6 @@ export function DeliveryForm({
       }));
     },
   });
-
-  // Calculate common pickup days and locations across all categories with items
-  useEffect(() => {
-    if (!categories.length || !items.length) return;
-    
-    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
-    const categoriesWithItems = categories.filter(cat => 
-      itemCategoryIds.includes(cat.id)
-    );
-    
-    // Get common pickup days across all categories with items
-    const commonDays = getCommonPickupDays(categoriesWithItems);
-    setCommonPickupDays(commonDays);
-    
-    // Get common pickup locations across all categories with items
-    const commonLocations = getCommonPickupLocations(categoriesWithItems);
-    setCommonPickupLocations(commonLocations);
-    
-    // If we have common pickup days, set a default pickup date
-    if (commonDays.length > 0) {
-      const today = new Date();
-      const nextValidDate = getNextValidPickupDate(today, commonDays);
-      setUnifiedPickupDate(nextValidDate);
-      
-      // Update all category delivery dates to this unified date
-      if (fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
-        const categoryIds = Object.keys(itemsByCategory);
-        categoryIds.forEach(categoryId => {
-          onDateChange(categoryId, nextValidDate);
-        });
-      }
-    }
-  }, [categories, items, fulfillmentType]);
-
-  // When unified pickup date changes, update all category dates
-  useEffect(() => {
-    if (fulfillmentType !== FULFILLMENT_TYPE_PICKUP || !unifiedPickupDate) return;
-    
-    const categoryIds = Object.keys(itemsByCategory);
-    categoryIds.forEach(categoryId => {
-      onDateChange(categoryId, unifiedPickupDate);
-    });
-  }, [unifiedPickupDate, fulfillmentType]);
 
   // Calculate available fulfillment types across all categories
   useEffect(() => {
@@ -178,61 +124,22 @@ export function DeliveryForm({
     }).filter(Boolean);
   };
 
-  // Handle unified pickup date selection
-  const handleUnifiedPickupDateChange = (date: Date | undefined) => {
-    if (!date) return;
-    
-    setUnifiedPickupDate(date);
-    
-    // Update all category delivery dates
-    const categoryIds = Object.keys(itemsByCategory);
-    categoryIds.forEach(categoryId => {
-      onDateChange(categoryId, date);
-    });
-  };
-
-  // Handle unified pickup detail selection
-  const handleUnifiedPickupDetailChange = (value: string) => {
-    if (!value) return;
-    
-    const [location, time] = value.split('|');
-    
-    if (!location || !time) return;
-    
-    const detail: PickupDetail = { location, time };
-    onPickupDetailChange(detail);
-  };
-
   useEffect(() => {
     // Display warnings if mixing fulfillment types
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
-      if (commonPickupDays.length === 0) {
-        setWarning("No common pickup days found across all items. Please consider choosing delivery or removing some items.");
-      } else if (hasCustomPickupItems && (!pickupDetail || !unifiedPickupDate)) {
-        setWarning("Please select a pickup date and location that will apply to all items in your order.");
-      } else {
-        setWarning(null);
-      }
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
+      setWarning("Your order contains items with specific pickup requirements. Please select valid pickup times and locations where requested.");
     } else if (hasMixedDelivery) {
       setWarning("Your order contains items with different fulfillment requirements. You'll need to select appropriate dates for each category.");
     } else {
       setWarning(null);
     }
-  }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery, commonPickupDays, pickupDetail, unifiedPickupDate]);
+  }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery]);
 
   // Show mixed category fulfillment options if we have multiple categories
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
   // Get all pickup category names
   const pickupCategoryNames = getPickupCategories();
-
-  // Filter calendar days to only allow pickup on valid days
-  const isDateDisabled = (date: Date) => {
-    if (fulfillmentType !== FULFILLMENT_TYPE_PICKUP) return false;
-    
-    const dayOfWeek = date.getDay();
-    return !commonPickupDays.includes(dayOfWeek);
-  };
 
   return (
     <div className="space-y-6">
@@ -317,83 +224,8 @@ export function DeliveryForm({
         </div>
       )}
 
-      {/* Unified Pickup Selection for Pickup Orders */}
-      {fulfillmentType === FULFILLMENT_TYPE_PICKUP && (
-        <div className="space-y-4">
-          <h3 className="font-medium">Pickup Details</h3>
-          
-          {/* Pickup Date Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="pickup-date">Pickup Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !unifiedPickupDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {unifiedPickupDate ? (
-                    format(unifiedPickupDate, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={unifiedPickupDate}
-                  onSelect={handleUnifiedPickupDateChange}
-                  disabled={isDateDisabled}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            
-            {commonPickupDays.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Available pickup days: {commonPickupDays.map(day => {
-                  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                  return dayNames[day];
-                }).join(', ')}
-              </p>
-            )}
-          </div>
-
-          {/* Pickup Location and Time Selection */}
-          {commonPickupLocations.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="pickup-detail">Pickup Location & Time</Label>
-              <Select 
-                onValueChange={handleUnifiedPickupDetailChange}
-                value={pickupDetail ? `${pickupDetail.location}|${pickupDetail.time}` : undefined}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select pickup location and time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {commonPickupLocations.map((detail, index) => (
-                    <SelectItem 
-                      key={`pickup-${index}`} 
-                      value={`${detail.location}|${detail.time}`}
-                    >
-                      {detail.location} - {detail.time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          
-          <Separator />
-        </div>
-      )}
-
-      {/* Only show individual category selections for delivery orders */}
-      {fulfillmentType === FULFILLMENT_TYPE_DELIVERY && categories.map((category) => {
+      {/* Only show relevant categories based on selected fulfillment type */}
+      {categories.map((category) => {
         // Skip categories with no items
         if (!itemsByCategory[category.id]) return null;
         
@@ -405,16 +237,13 @@ export function DeliveryForm({
         // Skip categories that don't match the selected fulfillment type
         if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;
         
-        // Skip individual category displays for pickup items - we handle those in the unified section above
-        if (effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP) return null;
-        
         return (
           <div key={category.id} className="space-y-4">
             <CategoryDeliveryDate
               category={category}
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => onDateChange(category.id, date)}
-              selectedPickupDetail={null} // No pickup details for delivery items
+              selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}
               allPickupCategories={pickupCategoryNames}
