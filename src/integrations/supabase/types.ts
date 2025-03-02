@@ -46,6 +46,7 @@ export type Database = {
           name: string
           name_ko: string
           order_index: number
+          pickup_days: number[] | null
           pickup_details: Json[] | null
           vendor_id: string | null
         }
@@ -58,6 +59,7 @@ export type Database = {
           name: string
           name_ko: string
           order_index: number
+          pickup_days?: number[] | null
           pickup_details?: Json[] | null
           vendor_id?: string | null
         }
@@ -70,6 +72,7 @@ export type Database = {
           name?: string
           name_ko?: string
           order_index?: number
+          pickup_days?: number[] | null
           pickup_details?: Json[] | null
           vendor_id?: string | null
         }
