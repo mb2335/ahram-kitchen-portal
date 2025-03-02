@@ -52,6 +52,17 @@ export function DeliveryForm({
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
   const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
+  const [pickupCategoryNames, setPickupCategoryNames] = useState<string[]>([]);
+
+  // Calculate items by category - define this before using it
+  const itemsByCategory = items.reduce((acc, item) => {
+    const categoryId = item.category_id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = [];
+    }
+    acc[categoryId].push(item);
+    return acc;
+  }, {} as Record<string, typeof items>);
 
   // Show mixed category fulfillment options if we have multiple categories with different options
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
@@ -129,16 +140,10 @@ export function DeliveryForm({
         onFulfillmentTypeChange(availableTypes[0]);
       }
     }
-  }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
 
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
+    // Update pickup category names
+    updatePickupCategoryNames();
+  }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
 
   // Check if there are items that need custom fulfillment
   const hasCustomPickupItems = categories.some(category => 
@@ -157,6 +162,16 @@ export function DeliveryForm({
       return category ? category.name : '';
     }).filter(Boolean);
   };
+
+  // Update pickup category names whenever relevant state changes
+  const updatePickupCategoryNames = () => {
+    setPickupCategoryNames(getPickupCategories());
+  };
+
+  // Call updatePickupCategoryNames when relevant state changes
+  useEffect(() => {
+    updatePickupCategoryNames();
+  }, [fulfillmentType, categoryFulfillmentTypes, categories, itemsByCategory]);
 
   // Find categories with pickup items (for joint pickup)
   const findPickupCategories = () => {

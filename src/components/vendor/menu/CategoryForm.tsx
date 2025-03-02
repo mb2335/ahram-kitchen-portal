@@ -28,8 +28,12 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
         .filter('has_custom_pickup', 'eq', true)
         .filter('fulfillment_types', 'cs', '{"pickup"}');
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return [];
+      }
+      
+      return data || [];
     },
   });
 
@@ -104,8 +108,8 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     
     setFormData({
       ...formData,
-      has_custom_pickup: selectedCategory.has_custom_pickup,
-      pickup_details: selectedCategory.pickup_details.map((detail: any) => ({
+      has_custom_pickup: selectedCategory.has_custom_pickup || false,
+      pickup_details: (selectedCategory.pickup_details || []).map((detail: any) => ({
         time: detail.time || '',
         location: detail.location || ''
       })),

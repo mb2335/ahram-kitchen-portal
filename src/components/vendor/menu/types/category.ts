@@ -15,7 +15,7 @@ export interface Category {
   has_custom_pickup: boolean;
   fulfillment_types: string[];
   pickup_days: number[]; // 0-6 representing days of week for pickup (Sunday=0, Monday=1, etc.)
-  allow_joint_pickup?: boolean; // Whether this category can be picked up with other items
+  allow_joint_pickup: boolean; // Whether this category can be picked up with other items
 }
 
 export interface CategoryFormData {
