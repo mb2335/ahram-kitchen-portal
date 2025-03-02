@@ -50,7 +50,6 @@ export function CategoryManagement() {
         })) as PickupDetail[],
         fulfillment_types: category.fulfillment_types || [],
         pickup_days: category.pickup_days || [],
-        allow_joint_pickup: category.allow_joint_pickup ?? false, // Default to false if not present
       })) as Category[];
     },
   });
@@ -159,7 +158,6 @@ export function CategoryManagement() {
             pickup_details: category.pickup_details || [],
             fulfillment_types: category.fulfillment_types || [],
             pickup_days: category.pickup_days || [],
-            allow_joint_pickup: category.allow_joint_pickup || false,
           });
           setIsDialogOpen(true);
         }}

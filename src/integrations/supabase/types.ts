@@ -38,7 +38,6 @@ export type Database = {
       }
       menu_categories: {
         Row: {
-          allow_joint_pickup: boolean | null
           blocked_dates: string[] | null
           created_at: string | null
           fulfillment_types: string[] | null
@@ -52,7 +51,6 @@ export type Database = {
           vendor_id: string | null
         }
         Insert: {
-          allow_joint_pickup?: boolean | null
           blocked_dates?: string[] | null
           created_at?: string | null
           fulfillment_types?: string[] | null
@@ -66,7 +64,6 @@ export type Database = {
           vendor_id?: string | null
         }
         Update: {
-          allow_joint_pickup?: boolean | null
           blocked_dates?: string[] | null
           created_at?: string | null
           fulfillment_types?: string[] | null

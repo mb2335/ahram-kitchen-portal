@@ -1,3 +1,4 @@
+
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +13,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
-import { Switch } from '@/components/ui/switch';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -48,21 +48,6 @@ export function DeliveryForm({
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
   const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
-  
-  const [useJointPickup, setUseJointPickup] = useState(true);
-  const [sharedPickupDate, setSharedPickupDate] = useState<Date | undefined>(undefined);
-  const [sharedPickupDetail, setSharedPickupDetail] = useState<PickupDetail | null>(null);
-  const [pickupCategoryNames, setPickupCategoryNames] = useState<string[]>([]);
-  const [hasJointPickupCategories, setHasJointPickupCategories] = useState(false);
-
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -82,12 +67,78 @@ export function DeliveryForm({
           location: detail.location
         })),
         fulfillment_types: category.fulfillment_types || [],
-        pickup_days: category.pickup_days || [],
-        allow_joint_pickup: category.allow_joint_pickup ?? false
+        pickup_days: category.pickup_days || []
       }));
     },
   });
 
+  // Calculate available fulfillment types across all categories
+  useEffect(() => {
+    if (!categories.length) return;
+    
+    const fulfillmentTypes = new Set<string>();
+    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
+    let hasPickupOnly = false;
+    let allCategoriesPickupOnly = true;
+    
+    // Check each category with items in the cart
+    categories.forEach(category => {
+      if (itemCategoryIds.includes(category.id)) {
+        // Add all available fulfillment types
+        category.fulfillment_types?.forEach(type => fulfillmentTypes.add(type));
+        
+        // Check if this is a pickup-only category
+        const isPickupOnly = category.fulfillment_types?.length === 1 && 
+                             category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP;
+        
+        if (isPickupOnly) {
+          hasPickupOnly = true;
+        } else {
+          allCategoriesPickupOnly = false;
+        }
+      }
+    });
+    
+    // Set pickup-only state
+    setHasPickupOnlyCategories(hasPickupOnly);
+    
+    // If all categories are pickup-only, only show pickup option
+    const availableTypes = Array.from(fulfillmentTypes);
+    setAvailableFulfillmentTypes(availableTypes);
+    
+    // Check if we should allow mixed delivery types
+    const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
+    setHasMixedDelivery(hasMultipleTypes && !allCategoriesPickupOnly);
+    
+    // Set default fulfillment type if none selected and options available
+    if (!fulfillmentType && availableTypes.length > 0) {
+      // If we have pickup-only categories, default to pickup
+      if (hasPickupOnly && availableTypes.includes(FULFILLMENT_TYPE_PICKUP)) {
+        onFulfillmentTypeChange(FULFILLMENT_TYPE_PICKUP);
+      } else if (availableTypes.includes(FULFILLMENT_TYPE_DELIVERY)) {
+        onFulfillmentTypeChange(FULFILLMENT_TYPE_DELIVERY);
+      } else {
+        onFulfillmentTypeChange(availableTypes[0]);
+      }
+    }
+  }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
+
+  const itemsByCategory = items.reduce((acc, item) => {
+    const categoryId = item.category_id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = [];
+    }
+    acc[categoryId].push(item);
+    return acc;
+  }, {} as Record<string, typeof items>);
+
+  // Check if there are items that need custom fulfillment
+  const hasCustomPickupItems = categories.some(category => 
+    category.has_custom_pickup && 
+    itemsByCategory[category.id]?.length > 0
+  );
+
+  // Get all categories that are currently set for pickup
   const getPickupCategories = () => {
     const pickupCategoryIds = showMixedCategoryOptions
       ? Object.keys(categoryFulfillmentTypes).filter(id => categoryFulfillmentTypes[id] === FULFILLMENT_TYPE_PICKUP)
@@ -100,65 +151,7 @@ export function DeliveryForm({
   };
 
   useEffect(() => {
-    if (!categories.length) return;
-    
-    const fulfillmentTypes = new Set<string>();
-    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
-    let hasPickupOnly = false;
-    let allCategoriesPickupOnly = true;
-    
-    const jointPickupCategories = categories.filter(category => 
-      category.allow_joint_pickup === true && 
-      itemCategoryIds.includes(category.id) &&
-      (category.fulfillment_types?.includes(FULFILLMENT_TYPE_PICKUP) || []).length > 0
-    );
-
-    setHasJointPickupCategories(jointPickupCategories.length > 1);
-    
-    console.log('Joint pickup categories:', jointPickupCategories);
-    
-    categories.forEach(category => {
-      if (itemCategoryIds.includes(category.id)) {
-        category.fulfillment_types?.forEach(type => fulfillmentTypes.add(type));
-        
-        const isPickupOnly = category.fulfillment_types?.length === 1 && 
-                             category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP;
-        
-        if (isPickupOnly) {
-          hasPickupOnly = true;
-        } else {
-          allCategoriesPickupOnly = false;
-        }
-      }
-    });
-    
-    setHasPickupOnlyCategories(hasPickupOnly);
-    
-    const availableTypes = Array.from(fulfillmentTypes);
-    setAvailableFulfillmentTypes(availableTypes);
-    
-    const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
-    setHasMixedDelivery(hasMultipleTypes && !allCategoriesPickupOnly);
-    
-    if (!fulfillmentType && availableTypes.length > 0) {
-      if (hasPickupOnly && availableTypes.includes(FULFILLMENT_TYPE_PICKUP)) {
-        onFulfillmentTypeChange(FULFILLMENT_TYPE_PICKUP);
-      } else if (availableTypes.includes(FULFILLMENT_TYPE_DELIVERY)) {
-        onFulfillmentTypeChange(FULFILLMENT_TYPE_DELIVERY);
-      } else {
-        onFulfillmentTypeChange(availableTypes[0]);
-      }
-    }
-    
-    setPickupCategoryNames(getPickupCategories());
-  }, [categories, items, fulfillmentType, onFulfillmentTypeChange, categoryFulfillmentTypes]);
-
-  const hasCustomPickupItems = categories.some(category => 
-    category.has_custom_pickup && 
-    itemsByCategory[category.id]?.length > 0
-  );
-
-  useEffect(() => {
+    // Display warnings if mixing fulfillment types
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
       setWarning("Your order contains items with specific pickup requirements. Please select valid pickup times and locations where requested.");
     } else if (hasMixedDelivery) {
@@ -166,18 +159,24 @@ export function DeliveryForm({
     } else {
       setWarning(null);
     }
-    
-    setPickupCategoryNames(getPickupCategories());
-  }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery, categoryFulfillmentTypes]);
+  }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery]);
 
+  // Show mixed category fulfillment options if we have multiple categories with different options
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
+  // Get all pickup category names
+  const pickupCategoryNames = getPickupCategories();
+
+  // Check if any categories require delivery address
   const needsDeliveryAddress = () => {
+    // If there's no mixed delivery, use the global fulfillment type
     if (!showMixedCategoryOptions) {
       return fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
     }
 
+    // For mixed delivery, check if any category has delivery selected
     return Object.entries(categoryFulfillmentTypes).some(([categoryId, type]) => {
+      // If this category only supports pickup, never need delivery address
       const category = categories.find(c => c.id === categoryId);
       if (category?.fulfillment_types.length === 1 && 
           category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
@@ -188,37 +187,18 @@ export function DeliveryForm({
     });
   };
 
+  // Function to handle delivery date changes and ensure we use proper Date objects
   const handleDeliveryDateChange = (categoryId: string, date: Date) => {
     console.log(`DeliveryForm handling date change for ${categoryId}:`, date);
     
+    // Verify we have a valid Date object
     if (!(date instanceof Date)) {
       console.error("Invalid date object in handleDeliveryDateChange", date);
       return;
     }
     
-    if (useJointPickup && fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
-      const category = categories.find(c => c.id === categoryId);
-      if (category?.allow_joint_pickup) {
-        setSharedPickupDate(date);
-        
-        categories.forEach(c => {
-          if (c.allow_joint_pickup && itemsByCategory[c.id]?.length > 0) {
-            onDateChange(c.id, date);
-          }
-        });
-        return;
-      }
-    }
-    
+    // Send the valid Date object to parent
     onDateChange(categoryId, date);
-  };
-
-  const handlePickupDetailChange = (detail: PickupDetail) => {
-    if (useJointPickup && fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
-      setSharedPickupDetail(detail);
-    }
-    
-    onPickupDetailChange(detail);
   };
 
   return (
@@ -252,26 +232,11 @@ export function DeliveryForm({
             </Alert>
           )}
           
-          {fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasJointPickupCategories && (
-            <div className="border p-3 rounded bg-slate-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Synchronized Pickup</h4>
-                  <p className="text-sm text-muted-foreground">Use the same pickup date and location for all eligible items</p>
-                </div>
-                <Switch
-                  checked={useJointPickup}
-                  onCheckedChange={setUseJointPickup}
-                  id="joint-pickup-toggle"
-                />
-              </div>
-            </div>
-          )}
-          
           <Separator />
         </div>
       )}
 
+      {/* Display per-category fulfillment options if we have mixed delivery */}
       {showMixedCategoryOptions && (
         <div className="space-y-4">
           <h3 className="font-medium">Delivery Methods by Category</h3>
@@ -287,6 +252,7 @@ export function DeliveryForm({
             const category = categories.find(c => c.id === categoryId);
             if (!category) return null;
             
+            // Skip if category only supports one fulfillment type
             if (category.fulfillment_types.length <= 1) {
               if (category.fulfillment_types.length === 1 && 
                   category.fulfillment_types[0] !== categoryFulfillmentTypes[categoryId]) {
@@ -320,36 +286,25 @@ export function DeliveryForm({
             );
           })}
           
-          {hasJointPickupCategories && (
-            <div className="border p-3 rounded bg-slate-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Synchronized Pickup</h4>
-                  <p className="text-sm text-muted-foreground">Use the same pickup date and location for all eligible pickup items</p>
-                </div>
-                <Switch
-                  checked={useJointPickup}
-                  onCheckedChange={setUseJointPickup}
-                  id="joint-pickup-toggle-mixed"
-                />
-              </div>
-            </div>
-          )}
-          
           <Separator />
         </div>
       )}
 
+      {/* Only show relevant categories based on selected fulfillment type */}
       {categories.map((category) => {
+        // Skip categories with no items
         if (!itemsByCategory[category.id]) return null;
         
+        // For mixed delivery, use the category-specific fulfillment type
         const effectiveFulfillmentType = showMixedCategoryOptions 
           ? categoryFulfillmentTypes[category.id] || fulfillmentType
           : (
+            // Handle pickup-only categories
             category.fulfillment_types.length === 1 && 
             category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP
           ) ? FULFILLMENT_TYPE_PICKUP : fulfillmentType;
         
+        // Skip categories that don't match the selected fulfillment type
         if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;
         
         return (
@@ -359,18 +314,16 @@ export function DeliveryForm({
               selectedDate={deliveryDates[category.id]}
               onDateChange={(date) => handleDeliveryDateChange(category.id, date)}
               selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
-              onPickupDetailChange={handlePickupDetailChange}
+              onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}
               allPickupCategories={pickupCategoryNames}
-              sharedSelectedDate={useJointPickup ? sharedPickupDate : undefined}
-              sharedPickupDetail={useJointPickup ? sharedPickupDetail : null}
-              isJointPickupActive={useJointPickup}
             />
             <Separator />
           </div>
         );
       })}
 
+      {/* Delivery address is required for delivery orders */}
       {needsDeliveryAddress() && (
         <div className="space-y-2">
           <Label htmlFor="delivery-address">Delivery Address (Required)</Label>

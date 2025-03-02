@@ -23,10 +23,7 @@ export function Checkout() {
   const [formData, setFormData] = useState({
     notes: '',
     deliveryDates: {} as Record<string, Date>,
-    pickupDetail: null as PickupDetail | null,
-    deliveryAddress: '',
-    fulfillmentType: '',
-    categoryFulfillmentTypes: {} as Record<string, string>
+    pickupDetail: null as PickupDetail | null
   });
 
   const [customerData, setCustomerData] = useState({
@@ -86,9 +83,7 @@ export function Checkout() {
           createdAt: new Date().toISOString(),
           pickupTime: formData.pickupDetail?.time || null,
           pickupLocation: formData.pickupDetail?.location || null,
-          paymentProofUrl: null,
-          deliveryAddress: formData.deliveryAddress || null,
-          fulfillmentType: formData.fulfillmentType
+          paymentProofUrl: null
         }
       },
       replace: true
@@ -116,13 +111,6 @@ export function Checkout() {
     category_id: item.category_id,
     discount_percentage: item.discount_percentage
   }));
-
-  const handleFormUpdate = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
