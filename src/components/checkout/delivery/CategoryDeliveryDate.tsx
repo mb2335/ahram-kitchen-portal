@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, AlertCircle, Share2 } from 'lucide-react';
+import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -15,8 +15,6 @@ import {
   ERROR_MESSAGES
 } from '@/types/order';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface CategoryDeliveryDateProps {
   category: {
@@ -33,9 +31,6 @@ export interface CategoryDeliveryDateProps {
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
   allPickupCategories?: string[]; // For all categories being picked up
-  isFirstPickupCategory?: boolean;
-  onApplyToAllPickup?: (date: Date, pickupDetail: PickupDetail) => void;
-  hasMultiplePickupCategories?: boolean;
 }
 
 export function CategoryDeliveryDate({
@@ -45,13 +40,9 @@ export function CategoryDeliveryDate({
   selectedPickupDetail,
   onPickupDetailChange,
   fulfillmentType,
-  allPickupCategories = [],
-  isFirstPickupCategory = false,
-  onApplyToAllPickup,
-  hasMultiplePickupCategories = false
+  allPickupCategories = []
 }: CategoryDeliveryDateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [applyToAll, setApplyToAll] = useState(false);
   
   // Auto-select the first pickup detail if none is selected and we're in pickup mode
   useEffect(() => {
@@ -63,13 +54,6 @@ export function CategoryDeliveryDate({
       onPickupDetailChange(category.pickup_details[0]);
     }
   }, [fulfillmentType, category, selectedPickupDetail, selectedDate, onPickupDetailChange]);
-
-  // When date or pickup detail changes and applyToAll is selected, propagate to all pickup categories
-  useEffect(() => {
-    if (applyToAll && isFirstPickupCategory && onApplyToAllPickup && selectedDate && selectedPickupDetail) {
-      onApplyToAllPickup(selectedDate, selectedPickupDetail);
-    }
-  }, [applyToAll, selectedDate, selectedPickupDetail, isFirstPickupCategory, onApplyToAllPickup]);
 
   const handleSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -97,12 +81,6 @@ export function CategoryDeliveryDate({
     
     // Ensure we pass a valid Date object to the parent
     onDateChange(cleanDate);
-  };
-
-  const handlePickupDetailChange = (value: string) => {
-    const [time, location] = value.split('-', 2);
-    const newDetail = { time, location };
-    onPickupDetailChange(newDetail);
   };
 
   const isDateDisabled = (date: Date) => {
@@ -136,33 +114,7 @@ export function CategoryDeliveryDate({
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h4 className="font-medium">{generatePickupHeading()}</h4>
-          
-          {isFirstPickupCategory && hasMultiplePickupCategories && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="apply-to-all" 
-                      checked={applyToAll}
-                      onCheckedChange={(checked) => setApplyToAll(checked as boolean)}
-                    />
-                    <Label htmlFor="apply-to-all" className="text-sm cursor-pointer flex items-center">
-                      <span>Apply to all pickup items</span>
-                      <Share2 className="h-3.5 w-3.5 ml-1" />
-                    </Label>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Use the same pickup date and details for all items being picked up</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-        
+        <h4 className="font-medium">{generatePickupHeading()}</h4>
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -199,7 +151,10 @@ export function CategoryDeliveryDate({
         {(selectedDate || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
           <RadioGroup 
             value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
-            onValueChange={handlePickupDetailChange}
+            onValueChange={(value) => {
+              const [time, location] = value.split('-', 2);
+              onPickupDetailChange({ time, location });
+            }}
           >
             {category.pickup_details.map((detail, idx) => (
               <div className="flex items-center space-x-2 border p-2 rounded" key={idx}>

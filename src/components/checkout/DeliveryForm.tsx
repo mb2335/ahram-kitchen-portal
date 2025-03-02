@@ -1,3 +1,4 @@
+
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -47,7 +48,6 @@ export function DeliveryForm({
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
   const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
-  const [pickupCategoryIds, setPickupCategoryIds] = useState<string[]>([]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -150,19 +150,6 @@ export function DeliveryForm({
     }).filter(Boolean);
   };
 
-  // Update pickup category IDs
-  useEffect(() => {
-    const pickupCats = showMixedCategoryOptions
-      ? Object.keys(categoryFulfillmentTypes).filter(id => 
-          categoryFulfillmentTypes[id] === FULFILLMENT_TYPE_PICKUP
-        )
-      : fulfillmentType === FULFILLMENT_TYPE_PICKUP 
-          ? Object.keys(itemsByCategory) 
-          : [];
-    
-    setPickupCategoryIds(pickupCats);
-  }, [fulfillmentType, categoryFulfillmentTypes, showMixedCategoryOptions, itemsByCategory]);
-
   useEffect(() => {
     // Display warnings if mixing fulfillment types
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
@@ -180,15 +167,24 @@ export function DeliveryForm({
   // Get all pickup category names
   const pickupCategoryNames = getPickupCategories();
 
-  // Apply the same pickup details to all pickup categories
-  const handleApplyToAllPickup = (date: Date, detail: PickupDetail) => {
-    // Update all pickup categories with the same date and pickup detail
-    pickupCategoryIds.forEach(categoryId => {
-      onDateChange(categoryId, date);
+  // Check if any categories require delivery address
+  const needsDeliveryAddress = () => {
+    // If there's no mixed delivery, use the global fulfillment type
+    if (!showMixedCategoryOptions) {
+      return fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
+    }
+
+    // For mixed delivery, check if any category has delivery selected
+    return Object.entries(categoryFulfillmentTypes).some(([categoryId, type]) => {
+      // If this category only supports pickup, never need delivery address
+      const category = categories.find(c => c.id === categoryId);
+      if (category?.fulfillment_types.length === 1 && 
+          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+        return false;
+      }
+      
+      return type === FULFILLMENT_TYPE_DELIVERY;
     });
-    
-    // Update the pickup detail
-    onPickupDetailChange(detail);
   };
 
   // Function to handle delivery date changes and ensure we use proper Date objects
@@ -295,7 +291,7 @@ export function DeliveryForm({
       )}
 
       {/* Only show relevant categories based on selected fulfillment type */}
-      {categories.map((category, index) => {
+      {categories.map((category) => {
         // Skip categories with no items
         if (!itemsByCategory[category.id]) return null;
         
@@ -310,13 +306,6 @@ export function DeliveryForm({
         
         // Skip categories that don't match the selected fulfillment type
         if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;
-
-        // Determine if this is the first pickup category to be rendered
-        const isFirstPickupCategory = effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP && 
-                                       pickupCategoryIds.indexOf(category.id) === 0;
-        
-        // Check if there are multiple pickup categories
-        const hasMultiplePickupCategories = pickupCategoryIds.length > 1;
         
         return (
           <div key={category.id} className="space-y-4">
@@ -328,9 +317,6 @@ export function DeliveryForm({
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}
               allPickupCategories={pickupCategoryNames}
-              isFirstPickupCategory={isFirstPickupCategory}
-              onApplyToAllPickup={handleApplyToAllPickup}
-              hasMultiplePickupCategories={hasMultiplePickupCategories}
             />
             <Separator />
           </div>

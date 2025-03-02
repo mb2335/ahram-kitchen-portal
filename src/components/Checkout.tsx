@@ -23,10 +23,7 @@ export function Checkout() {
   const [formData, setFormData] = useState({
     notes: '',
     deliveryDates: {} as Record<string, Date>,
-    pickupDetail: null as PickupDetail | null,
-    fulfillmentType: '',
-    deliveryAddress: '',
-    categoryFulfillmentTypes: {} as Record<string, string>
+    pickupDetail: null as PickupDetail | null
   });
 
   const [customerData, setCustomerData] = useState({
@@ -86,8 +83,6 @@ export function Checkout() {
           createdAt: new Date().toISOString(),
           pickupTime: formData.pickupDetail?.time || null,
           pickupLocation: formData.pickupDetail?.location || null,
-          fulfillmentType: formData.fulfillmentType,
-          deliveryAddress: formData.deliveryAddress || null,
           paymentProofUrl: null
         }
       },
