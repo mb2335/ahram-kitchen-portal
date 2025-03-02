@@ -113,12 +113,21 @@ export function useOrderSubmission() {
           dateObj = rawDate;
         } else if (typeof rawDate === 'string') {
           dateObj = new Date(rawDate);
-        } else if (typeof rawDate === 'object' && rawDate !== null && '_type' === 'Date' && rawDate.value?.iso) {
-          // Handle serialized date object
-          dateObj = new Date(rawDate.value.iso);
-        } else if (typeof rawDate === 'object' && rawDate !== null && rawDate.value?.iso) {
-          // Handle serialized date object without _type
-          dateObj = new Date(rawDate.value.iso);
+        } else if (typeof rawDate === 'object' && rawDate !== null) {
+          // Handle possible serialized date structures - safely check each property
+          if (typeof rawDate === 'object' && 'toISOString' in rawDate && typeof rawDate.toISOString === 'function') {
+            // It's a Date-like object with toISOString
+            dateObj = new Date(rawDate.toISOString());
+          } else if (rawDate && typeof rawDate === 'object' && 'iso' in rawDate) {
+            // It has a direct iso property
+            dateObj = new Date(rawDate.iso as string);
+          } else if (rawDate && typeof rawDate === 'object' && 'value' in rawDate && typeof rawDate.value === 'object' && rawDate.value && 'iso' in rawDate.value) {
+            // It has a nested value.iso property
+            dateObj = new Date((rawDate.value as any).iso);
+          } else {
+            // Last resort - try to convert the object to a string
+            dateObj = new Date(String(rawDate));
+          }
         } else {
           console.error(`Invalid date for category ${categoryId}:`, rawDate);
           throw new Error('Please select a valid date for all items in your order');
