@@ -262,6 +262,7 @@ export function CheckoutForm({
       return;
     }
 
+    // Ensure all required dates are present and valid
     const missingDates = Array.from(categoriesWithItems).filter(categoryId => 
       !formData.deliveryDates[categoryId]
     );

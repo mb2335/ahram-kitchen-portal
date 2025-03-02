@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -82,9 +81,28 @@ export function useOrderSubmission() {
         throw new Error('Delivery address is required for delivery orders');
       }
 
+      // Ensure we have proper Date objects for all delivery dates
+      const sanitizedDeliveryDates: Record<string, Date> = {};
+      
+      for (const [categoryId, dateValue] of Object.entries(deliveryDates)) {
+        if (!dateValue) continue;
+        
+        // Handle date objects that might be serialized from JSON
+        if (typeof dateValue === 'object' && '_type' in dateValue && dateValue._type === 'Date') {
+          // For serialized date objects from the form
+          sanitizedDeliveryDates[categoryId] = new Date(dateValue.value.iso || dateValue.value.value);
+        } else if (dateValue instanceof Date) {
+          // For regular Date objects
+          sanitizedDeliveryDates[categoryId] = dateValue;
+        } else if (typeof dateValue === 'string') {
+          // For ISO string dates
+          sanitizedDeliveryDates[categoryId] = new Date(dateValue);
+        }
+      }
+
       // Validate we have dates for all categories in the cart
       const missingDates = uniqueCategoryIds.filter(categoryId => 
-        !deliveryDates[categoryId]
+        !sanitizedDeliveryDates[categoryId]
       );
       
       if (missingDates.length > 0) {
@@ -102,10 +120,10 @@ export function useOrderSubmission() {
       }
 
       // Console logs for debugging
-      console.log("Delivery dates:", deliveryDates);
+      console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
       for (const catId of uniqueCategoryIds) {
-        console.log(`Category ${catId} date:`, deliveryDates[catId]);
+        console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId]);
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -192,7 +210,7 @@ export function useOrderSubmission() {
       // Skip date validation for pickup orders or if specific categories have pickup fulfillment type
       if (!isAllPickup) {
         // Validate each date against fulfillment type and pickup days
-        Object.entries(deliveryDates).forEach(([categoryId, date]) => {
+        Object.entries(sanitizedDeliveryDates).forEach(([categoryId, date]) => {
           if (!date) {
             throw new Error(`Missing delivery date for category ${categoryId}`);
           }
@@ -252,10 +270,10 @@ export function useOrderSubmission() {
         // Use the first category's delivery date for the combined order
         // If no delivery dates are set, use today's date
         let orderDate;
-        const firstCategoryId = Object.keys(deliveryDates)[0];
+        const firstCategoryId = Object.keys(sanitizedDeliveryDates)[0];
         
-        if (firstCategoryId && deliveryDates[firstCategoryId]) {
-          orderDate = deliveryDates[firstCategoryId];
+        if (firstCategoryId && sanitizedDeliveryDates[firstCategoryId]) {
+          orderDate = sanitizedDeliveryDates[firstCategoryId];
         } else {
           // If no date is selected, use today
           orderDate = new Date();
@@ -336,10 +354,10 @@ export function useOrderSubmission() {
       // Create orders for each group (handles mixed fulfillment types)
       const orderPromises = Object.entries(groupedItems).map(async ([groupKey, groupItems]) => {
         const [groupFulfillmentType, categoryId] = groupKey.split('-', 2);
-        const deliveryDate = deliveryDates[categoryId];
+        const deliveryDate = sanitizedDeliveryDates[categoryId];
         
         if (!deliveryDate) {
-          console.error(`Missing delivery date for category ${categoryId}`, deliveryDates);
+          console.error(`Missing delivery date for category ${categoryId}`, sanitizedDeliveryDates);
           throw new Error(`Missing delivery date for category ${categoryId}`);
         }
         
