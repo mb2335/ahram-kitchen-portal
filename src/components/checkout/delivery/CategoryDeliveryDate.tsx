@@ -5,15 +5,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, AlertCircle } from 'lucide-react';
-import { format, isThursday, isFriday } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PickupDetail } from '@/types/pickup';
 import { 
   FULFILLMENT_TYPE_PICKUP, 
   FULFILLMENT_TYPE_DELIVERY,
-  PICKUP_ALLOWED_DAYS,
-  DELIVERY_ALLOWED_DAYS,
   ERROR_MESSAGES
 } from '@/types/order';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,11 +20,10 @@ export interface CategoryDeliveryDateProps {
   category: {
     id: string;
     name: string;
-    delivery_available_from: string | null;
-    delivery_available_until: string | null;
     has_custom_pickup: boolean;
     pickup_details: PickupDetail[];
     fulfillment_types: string[];
+    blocked_dates: string[];
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
@@ -46,13 +43,8 @@ export function CategoryDeliveryDate({
   const [date, setDate] = useState<Date | undefined>(selectedDate);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  const fromDate = category.delivery_available_from 
-    ? new Date(category.delivery_available_from) 
-    : undefined;
-  
-  const toDate = category.delivery_available_until 
-    ? new Date(category.delivery_available_until) 
-    : undefined;
+  // Create a set of blocked dates for efficient lookup
+  const blockedDatesSet = new Set(category.blocked_dates || []);
 
   useEffect(() => {
     if (selectedDate) {
@@ -63,13 +55,13 @@ export function CategoryDeliveryDate({
   const handleSelect = (date: Date | undefined) => {
     if (!date) return;
     
-    const dayOfWeek = date.getDay();
+    const dateStr = format(date, 'yyyy-MM-dd');
     
-    // Validate selection based on fulfillment type
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !PICKUP_ALLOWED_DAYS.includes(dayOfWeek)) {
+    // Check if date is valid based on fulfillment type
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && blockedDatesSet.has(dateStr)) {
       setErrorMessage(ERROR_MESSAGES.PICKUP_INVALID_DAY);
       return;
-    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !DELIVERY_ALLOWED_DAYS.includes(dayOfWeek)) {
+    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !blockedDatesSet.has(dateStr)) {
       setErrorMessage(ERROR_MESSAGES.DELIVERY_INVALID_DAY);
       return;
     }
@@ -80,17 +72,19 @@ export function CategoryDeliveryDate({
   };
 
   const isDateDisabled = (date: Date) => {
-    const dayOfWeek = date.getDay();
-    // Check availability based on fulfillment type and allowed days
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !PICKUP_ALLOWED_DAYS.includes(dayOfWeek)) {
-      return true;
-    }
-    if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !DELIVERY_ALLOWED_DAYS.includes(dayOfWeek)) {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // For pickup: disable blocked dates
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && blockedDatesSet.has(dateStr)) {
       return true;
     }
     
-    // Also check the date range if specified
-    return (fromDate && date < fromDate) || (toDate && date > toDate);
+    // For delivery: disable non-blocked dates (pickup dates)
+    if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !blockedDatesSet.has(dateStr)) {
+      return true;
+    }
+    
+    return false;
   };
 
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
@@ -104,7 +98,7 @@ export function CategoryDeliveryDate({
           </Alert>
         )}
         <div className="space-y-2">
-          <Label>Select pickup date (Thursday or Friday only)</Label>
+          <Label>Select pickup date (only on available days)</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -166,7 +160,7 @@ export function CategoryDeliveryDate({
           </Alert>
         )}
         <div className="mb-4">
-          <Label className="mb-1 block">Select delivery date (not available on Thursday or Friday)</Label>
+          <Label className="mb-1 block">Select delivery date (on non-pickup days)</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button

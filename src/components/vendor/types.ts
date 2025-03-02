@@ -1,3 +1,4 @@
+
 export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
 
 export interface OrderItem {
@@ -39,5 +40,7 @@ export interface Order {
   created_at?: string;
   pickup_time?: string;
   pickup_location?: string;
+  fulfillment_type?: string;
   order_items?: OrderItem[];
+  delivery_address?: string;
 }

@@ -99,8 +99,8 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
-              <SelectItem value={FULFILLMENT_TYPE_PICKUP}>Pickup (Thu-Fri)</SelectItem>
-              <SelectItem value={FULFILLMENT_TYPE_DELIVERY}>Delivery (Mon-Wed, Sat-Sun)</SelectItem>
+              <SelectItem value={FULFILLMENT_TYPE_PICKUP}>Pickup</SelectItem>
+              <SelectItem value={FULFILLMENT_TYPE_DELIVERY}>Delivery</SelectItem>
             </SelectContent>
           </Select>
         </div>

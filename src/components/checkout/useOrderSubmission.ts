@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSubmissionProps, FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
+import { format } from 'date-fns';
 
 export function useOrderSubmission() {
   const session = useSession();
@@ -55,16 +56,32 @@ export function useOrderSubmission() {
 
       if (uploadError) throw uploadError;
 
-      // Validate each date against fulfillment type
+      // Get all categories and their blocked dates
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('menu_categories')
+        .select('id, blocked_dates');
+      
+      if (categoriesError) throw categoriesError;
+      
+      // Create a map of category IDs to their blocked dates
+      const categoryBlockedDates = new Map();
+      categoriesData.forEach(category => {
+        categoryBlockedDates.set(category.id, new Set(category.blocked_dates || []));
+      });
+
+      // Validate each date against fulfillment type and blocked dates
       Object.entries(deliveryDates).forEach(([categoryId, date]) => {
-        const dayOfWeek = date.getDay();
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const blockedDates = categoryBlockedDates.get(categoryId);
         
-        if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && ![4, 5].includes(dayOfWeek)) {
-          throw new Error('Pickup is only available on Thursdays and Fridays');
+        if (!blockedDates) return; // Skip if category not found
+        
+        if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && blockedDates.has(dateStr)) {
+          throw new Error('Pickup is not available on selected date for one or more items');
         }
         
-        if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && [4, 5].includes(dayOfWeek)) {
-          throw new Error('Delivery is not available on Thursdays and Fridays');
+        if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !blockedDates.has(dateStr)) {
+          throw new Error('Delivery is not available on selected date for one or more items');
         }
       });
 

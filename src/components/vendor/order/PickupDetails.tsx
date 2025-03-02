@@ -1,5 +1,5 @@
 
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { MapPin, Clock, Truck, Calendar } from 'lucide-react';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 
@@ -22,16 +22,6 @@ export function PickupDetails({
   const isDelivery = fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
   
   const date = new Date(pickupDate);
-  const dayOfWeek = date.getDay();
-  
-  // Check if the date is on a valid day for the fulfillment type
-  const isValidPickupDay = [4, 5].includes(dayOfWeek); // Thursday or Friday
-  const isValidDeliveryDay = ![4, 5].includes(dayOfWeek); // Not Thursday or Friday
-  
-  const dateValid = 
-    (isPickup && isValidPickupDay) || 
-    (isDelivery && isValidDeliveryDay) ||
-    (!isPickup && !isDelivery);
   
   return (
     <div className="border-t pt-4">
@@ -42,11 +32,8 @@ export function PickupDetails({
       <div className="space-y-3 text-sm text-gray-600">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          <span className={!dateValid ? "text-red-500" : ""}>
+          <span>
             {format(date, 'EEEE, MMMM d, yyyy')}
-            {!dateValid && (isPickup 
-              ? " (Invalid: pickup is only allowed on Thursday/Friday)" 
-              : " (Invalid: delivery is not allowed on Thursday/Friday)")}
           </span>
         </div>
         

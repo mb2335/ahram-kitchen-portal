@@ -14,38 +14,26 @@ export function useCategoryManagement() {
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     name_ko: '',
-    deliveryAvailableFrom: undefined,
-    deliveryAvailableUntil: undefined,
     has_custom_pickup: false,
     pickup_details: [],
     fulfillment_types: [],
+    blocked_dates: [],
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
       name_ko: '',
-      deliveryAvailableFrom: undefined,
-      deliveryAvailableUntil: undefined,
       has_custom_pickup: false,
       pickup_details: [],
       fulfillment_types: [],
+      blocked_dates: [],
     });
     setEditingCategory(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.deliveryAvailableUntil && formData.deliveryAvailableFrom && 
-        formData.deliveryAvailableUntil < formData.deliveryAvailableFrom) {
-      toast({
-        title: "Error",
-        description: "End date cannot be before start date",
-        variant: "destructive",
-      });
-      return;
-    }
 
     try {
       const { data: vendorData } = await supabase
@@ -65,17 +53,6 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // Only include delivery dates if delivery is a fulfillment type
-      const deliveryDates = formData.fulfillment_types.includes('delivery') 
-        ? {
-            delivery_available_from: formData.deliveryAvailableFrom?.toISOString(),
-            delivery_available_until: formData.deliveryAvailableUntil?.toISOString(),
-          }
-        : {
-            delivery_available_from: null,
-            delivery_available_until: null,
-          };
-
       // Only include pickup details if pickup is a fulfillment type and custom pickup is enabled
       const pickupDetails = formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup
         ? formData.pickup_details.map(detail => ({
@@ -88,11 +65,11 @@ export function useCategoryManagement() {
         name: formData.name,
         name_ko: formData.name_ko,
         vendor_id: vendorData.id,
-        ...deliveryDates,
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         has_custom_pickup: formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup,
         pickup_details: pickupDetails,
         fulfillment_types: formData.fulfillment_types,
+        blocked_dates: formData.blocked_dates,
       };
 
       if (editingCategory) {
