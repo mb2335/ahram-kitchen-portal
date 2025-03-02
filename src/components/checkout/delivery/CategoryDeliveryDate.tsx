@@ -24,6 +24,7 @@ export interface CategoryDeliveryDateProps {
     pickup_details: PickupDetail[];
     fulfillment_types: string[];
     pickup_days: number[]; // Days of week for pickup (0=Sunday, 1=Monday, etc.)
+    allow_joint_pickup?: boolean;
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
@@ -31,6 +32,9 @@ export interface CategoryDeliveryDateProps {
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
   allPickupCategories?: string[]; // For all categories being picked up
+  sharedSelectedDate?: Date | undefined; // Shared date for joint pickup
+  sharedPickupDetail?: PickupDetail | null; // Shared pickup detail for joint pickup
+  isJointPickupActive?: boolean; // Whether joint pickup is active
 }
 
 export function CategoryDeliveryDate({
@@ -40,20 +44,32 @@ export function CategoryDeliveryDate({
   selectedPickupDetail,
   onPickupDetailChange,
   fulfillmentType,
-  allPickupCategories = []
+  allPickupCategories = [],
+  sharedSelectedDate,
+  sharedPickupDetail,
+  isJointPickupActive = false
 }: CategoryDeliveryDateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Use shared date and pickup detail if joint pickup is active and category allows it
+  const effectiveDate = (isJointPickupActive && category.allow_joint_pickup) 
+    ? sharedSelectedDate 
+    : selectedDate;
+    
+  const effectivePickupDetail = (isJointPickupActive && category.allow_joint_pickup)
+    ? sharedPickupDetail
+    : selectedPickupDetail;
   
   // Auto-select the first pickup detail if none is selected and we're in pickup mode
   useEffect(() => {
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && 
         category.has_custom_pickup && 
         category.pickup_details?.length > 0 && 
-        !selectedPickupDetail && 
-        selectedDate) {
+        !effectivePickupDetail && 
+        effectiveDate) {
       onPickupDetailChange(category.pickup_details[0]);
     }
-  }, [fulfillmentType, category, selectedPickupDetail, selectedDate, onPickupDetailChange]);
+  }, [fulfillmentType, category, effectivePickupDetail, effectiveDate, onPickupDetailChange]);
 
   const handleSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -111,6 +127,11 @@ export function CategoryDeliveryDate({
     return `${category.name} Pickup Options`;
   };
 
+  // For joint pickup, show a message explaining that the details are synchronized
+  const jointPickupMessage = isJointPickupActive && category.allow_joint_pickup
+    ? `This category shares pickup details with other eligible categories.`
+    : null;
+
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
     return (
       <div className="space-y-4">
@@ -121,6 +142,11 @@ export function CategoryDeliveryDate({
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
+        {jointPickupMessage && (
+          <Alert className="mb-4">
+            <AlertDescription>{jointPickupMessage}</AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-2">
           <Label>Select pickup date (only on available days)</Label>
           <Popover>
@@ -129,17 +155,17 @@ export function CategoryDeliveryDate({
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
+                  !effectiveDate && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                {effectiveDate ? format(effectiveDate, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={selectedDate}
+                selected={effectiveDate}
                 onSelect={handleSelect}
                 disabled={isDateDisabled}
                 initialFocus
@@ -148,9 +174,9 @@ export function CategoryDeliveryDate({
           </Popover>
         </div>
         
-        {(selectedDate || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
+        {(effectiveDate || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
           <RadioGroup 
-            value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
+            value={effectivePickupDetail ? `${effectivePickupDetail.time}-${effectivePickupDetail.location}` : ''}
             onValueChange={(value) => {
               const [time, location] = value.split('-', 2);
               onPickupDetailChange({ time, location });
@@ -191,17 +217,17 @@ export function CategoryDeliveryDate({
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
+                  !effectiveDate && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                {effectiveDate ? format(effectiveDate, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={selectedDate}
+                selected={effectiveDate}
                 onSelect={handleSelect}
                 disabled={isDateDisabled}
                 initialFocus
