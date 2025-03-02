@@ -324,7 +324,7 @@ export function CheckoutForm({
     const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP && category?.has_custom_pickup;
+      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
     });
 
     if (pickupCategories.length > 0 && !formData.pickupDetail) {
