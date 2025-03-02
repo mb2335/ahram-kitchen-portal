@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { Upload } from 'lucide-react';
@@ -113,84 +113,7 @@ export function CheckoutForm({
         setCategoryFulfillmentTypes(newTypes);
       }
     }
-
-    const updatedDates = { ...formData.deliveryDates };
-    let datesWereAdded = false;
-    
-    Array.from(categoriesWithItems).forEach(categoryId => {
-      if (!updatedDates[categoryId]) {
-        const category = categories.find(cat => cat.id === categoryId);
-        const today = new Date();
-        
-        if (category) {
-          const categoryFulfillmentType = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-          
-          if (categoryFulfillmentType === FULFILLMENT_TYPE_PICKUP) {
-            const dayOfWeek = today.getDay();
-            let nextPickupDay = new Date(today);
-            
-            if (category.pickup_days && category.pickup_days.length > 0) {
-              const sortedPickupDays = [...category.pickup_days].sort((a, b) => {
-                const daysUntilA = (a - dayOfWeek + 7) % 7;
-                const daysUntilB = (b - dayOfWeek + 7) % 7;
-                return daysUntilA - daysUntilB;
-              });
-              
-              const nextDay = sortedPickupDays[0];
-              const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
-              
-              nextPickupDay.setDate(today.getDate() + (daysToAdd === 0 ? 0 : daysToAdd));
-            }
-            
-            updatedDates[categoryId] = nextPickupDay;
-          } else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
-            const dayOfWeek = today.getDay();
-            let deliveryDay = new Date(today);
-            
-            if (category.pickup_days && category.pickup_days.length > 0) {
-              const isPickupDay = category.pickup_days.includes(dayOfWeek);
-              
-              if (isPickupDay) {
-                for (let i = 1; i <= 7; i++) {
-                  const nextDate = new Date(today);
-                  nextDate.setDate(today.getDate() + i);
-                  const nextDayOfWeek = nextDate.getDay();
-                  
-                  if (!category.pickup_days.includes(nextDayOfWeek)) {
-                    deliveryDay = nextDate;
-                    break;
-                  }
-                }
-              }
-            }
-            
-            updatedDates[categoryId] = deliveryDay;
-          }
-          
-          datesWereAdded = true;
-          
-          console.log(`Setting date for category ${categoryId}:`, updatedDates[categoryId]);
-          console.log(`Date type: ${typeof updatedDates[categoryId]}`);
-          console.log(`Is Date instance: ${updatedDates[categoryId] instanceof Date}`);
-        }
-      }
-    });
-    
-    if (datesWereAdded) {
-      setFormData(prev => ({
-        ...prev,
-        deliveryDates: updatedDates
-      }));
-      
-      console.log("All delivery dates after setting defaults:", updatedDates);
-      Object.entries(updatedDates).forEach(([catId, dateObj]) => {
-        console.log(`Category ${catId} date:`, dateObj);
-        if (dateObj instanceof Date) {
-          console.log(`  ISO string: ${dateObj.toISOString()}`);
-        }
-      });
-    }
-  }, [categories, items, fulfillmentType, categoryFulfillmentTypes, formData.deliveryDates, setFormData]);
+  }, [categories, items, fulfillmentType, categoryFulfillmentTypes, setFormData]);
 
   const handleDateChange = (categoryId: string, date: Date) => {
     console.log(`Date change for category ${categoryId}:`, date);

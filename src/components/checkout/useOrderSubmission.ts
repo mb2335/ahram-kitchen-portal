@@ -85,161 +85,30 @@ export function useOrderSubmission() {
         throw new Error('Delivery address is required for delivery orders');
       }
 
-      // Ensure we have proper Date objects for all delivery dates
-      const sanitizedDeliveryDates: Record<string, Date> = {};
-      
-      // Debug log for deliveryDates
-      console.log("Processing delivery dates:", deliveryDates);
+      // Verify we have proper Date objects for all delivery dates
+      console.log("Validating delivery dates:", deliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
-
-      // Mapping function to handle different ID formats and partial matches
-      const findMatchingCategoryId = (categoryIdInput: string): string | null => {
-        // Try exact match first
-        if (uniqueCategoryIds.includes(categoryIdInput)) {
-          return categoryIdInput;
-        }
-        
-        // Try to find if the input is a prefix of any categoryId
-        for (const fullId of uniqueCategoryIds) {
-          // If the category ID starts with the input (handles truncated UUIDs)
-          if (fullId.startsWith(categoryIdInput)) {
-            console.log(`Found match: ${categoryIdInput} is a prefix of ${fullId}`);
-            return fullId;
-          }
-          
-          // If the input starts with the category ID (reverse case)
-          if (categoryIdInput.startsWith(fullId)) {
-            console.log(`Found match: ${fullId} is a prefix of ${categoryIdInput}`);
-            return fullId;
-          }
-        }
-        
-        return null;
-      };
-
-      // Process all date entries, attempting to match with valid category IDs
-      for (const [categoryIdKey, dateValue] of Object.entries(deliveryDates)) {
-        if (!dateValue) continue;
-        
-        // Find matching full category ID
-        const matchedCategoryId = findMatchingCategoryId(categoryIdKey);
-        
-        if (matchedCategoryId) {
-          console.log(`Matched key ${categoryIdKey} to category ID ${matchedCategoryId}`);
-          
-          try {
-            let finalDate: Date;
-            
-            // Handle different date formats
-            if (dateValue instanceof Date) {
-              finalDate = dateValue;
-            } else if (typeof dateValue === 'string') {
-              finalDate = new Date(dateValue);
-            } else if (typeof dateValue === 'number') {
-              finalDate = new Date(dateValue);
-            } else if (typeof dateValue === 'object') {
-              // Try to extract date from complex object
-              const dateObj = dateValue as any;
-              
-              if (dateObj._type === 'Date' && dateObj.value) {
-                if (typeof dateObj.value === 'string') {
-                  finalDate = new Date(dateObj.value);
-                } else if (typeof dateObj.value === 'number') {
-                  finalDate = new Date(dateObj.value);
-                } else if (typeof dateObj.value === 'object') {
-                  if (dateObj.value.iso) {
-                    finalDate = new Date(dateObj.value.iso);
-                  } else if (dateObj.value.value) {
-                    finalDate = new Date(dateObj.value.value);
-                  } else {
-                    // Fallback to current date
-                    console.warn(`Could not extract date from object for category ${matchedCategoryId}:`, dateObj);
-                    finalDate = new Date();
-                  }
-                } else {
-                  finalDate = new Date();
-                }
-              } else if (dateObj.iso) {
-                finalDate = new Date(dateObj.iso);
-              } else if (dateObj.timestamp) {
-                finalDate = new Date(dateObj.timestamp);
-              } else if (dateObj.time) {
-                finalDate = new Date(dateObj.time);
-              } else if (dateObj.valueOf && typeof dateObj.valueOf === 'function') {
-                finalDate = new Date(dateObj.valueOf());
-              } else if (dateObj.toISOString && typeof dateObj.toISOString === 'function') {
-                finalDate = new Date(dateObj.toISOString());
-              } else {
-                // Last resort - use current date as fallback
-                console.warn(`Could not extract date from object for category ${matchedCategoryId}:`, dateObj);
-                finalDate = new Date();
-              }
-            } else {
-              // Default to current date if all else fails
-              console.warn(`Unhandled date type for ${matchedCategoryId}:`, typeof dateValue, dateValue);
-              finalDate = new Date();
-            }
-            
-            // Verify the date is valid
-            if (isNaN(finalDate.getTime())) {
-              console.error(`Generated an invalid date for category ${matchedCategoryId}:`, finalDate);
-              finalDate = new Date(); // Use current date as fallback
-            }
-            
-            // Store date for the matched category ID
-            sanitizedDeliveryDates[matchedCategoryId] = finalDate;
-            
-            console.log(`Processed date for category ${matchedCategoryId}:`, sanitizedDeliveryDates[matchedCategoryId].toISOString());
-          } catch (error) {
-            console.error(`Error processing date for category ${matchedCategoryId}:`, error);
-            console.error("Date value:", dateValue);
-            // Fallback to current date
-            sanitizedDeliveryDates[matchedCategoryId] = new Date();
-          }
-        } else {
-          console.warn(`No matching category ID found for key ${categoryIdKey}`);
-        }
-      }
-
-      // Debug log for sanitized dates
-      console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
       
-      // Add additional safety - ensure all category IDs have dates
+      // Check we have a date for each category
       for (const categoryId of uniqueCategoryIds) {
-        if (!sanitizedDeliveryDates[categoryId]) {
-          console.log(`No date found for category ${categoryId}, setting to current date`);
-          sanitizedDeliveryDates[categoryId] = new Date();
+        if (!deliveryDates[categoryId]) {
+          const { data: categoryData } = await supabase
+            .from('menu_categories')
+            .select('name')
+            .eq('id', categoryId)
+            .single();
+            
+          throw new Error(`Please select a date for ${categoryData?.name || 'items in your order'}`);
         }
-      }
-      
-      // Final validation - ensure we have dates for all categories
-      const missingDates = uniqueCategoryIds.filter(categoryId => !sanitizedDeliveryDates[categoryId]);
-      
-      if (missingDates.length > 0) {
-        // Try to get category names
-        const { data: categories } = await supabase
-          .from('menu_categories')
-          .select('id, name')
-          .in('id', missingDates);
-          
-        const categoryNames = categories 
-          ? categories.map(cat => cat.name).join(', ')
-          : missingDates.join(', ');
-          
-        throw new Error(`Please select dates for all items in your order (Missing for: ${categoryNames})`);
-      }
-
-      // Console logs for debugging
-      console.log("Final sanitized delivery dates:", sanitizedDeliveryDates);
-      console.log("Unique category IDs:", uniqueCategoryIds);
-      for (const catId of uniqueCategoryIds) {
-        if (sanitizedDeliveryDates[catId]) {
-          console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId].toISOString());
-        } else {
-          console.warn(`No date for category ${catId}`);
+        
+        // Verify it's a valid date
+        const date = deliveryDates[categoryId];
+        if (!(date instanceof Date) || isNaN(date.getTime())) {
+          throw new Error(`Invalid date selected. Please try selecting a date again.`);
         }
       }
 
+      // Get customer ID or create a new customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
       // Upload payment proof
@@ -324,7 +193,7 @@ export function useOrderSubmission() {
       // Skip date validation for pickup orders or if specific categories have pickup fulfillment type
       if (!isAllPickup) {
         // Validate each date against fulfillment type and pickup days
-        Object.entries(sanitizedDeliveryDates).forEach(([categoryId, date]) => {
+        Object.entries(deliveryDates).forEach(([categoryId, date]) => {
           // Skip if not a real category ID from our items
           if (!uniqueCategoryIds.includes(categoryId)) return;
           
@@ -385,15 +254,12 @@ export function useOrderSubmission() {
         }, 0);
         
         // Use the first category's delivery date for the combined order
-        // If no delivery dates are set, use today's date
-        let orderDate;
         const firstCategoryId = uniqueCategoryIds[0];
+        const orderDate = deliveryDates[firstCategoryId];
         
-        if (firstCategoryId && sanitizedDeliveryDates[firstCategoryId]) {
-          orderDate = sanitizedDeliveryDates[firstCategoryId];
-        } else {
-          // If no date is selected, use today
-          orderDate = new Date();
+        // Validate that we have a date
+        if (!orderDate || !(orderDate instanceof Date)) {
+          throw new Error('Please select a valid date for your order');
         }
 
         const orderData = {
@@ -478,22 +344,11 @@ export function useOrderSubmission() {
         }
         
         // Find the delivery date for this category
-        const deliveryDate = sanitizedDeliveryDates[groupCategoryId];
+        const deliveryDate = deliveryDates[groupCategoryId];
         
-        if (!deliveryDate) {
-          console.error(`Missing delivery date for category ${groupCategoryId.substring(0, 8)}`, sanitizedDeliveryDates);
-          
-          // Check if we can find a partial match (in case of ID truncation)
-          const partialMatch = Object.keys(sanitizedDeliveryDates).find(key => 
-            key.includes(groupCategoryId) || groupCategoryId.includes(key)
-          );
-          
-          if (partialMatch) {
-            console.log(`Found partial match ${partialMatch} for category ${groupCategoryId}`);
-            throw new Error(`Please ensure all items have delivery dates selected`);
-          } else {
-            throw new Error(`Missing delivery date for category ${groupCategoryId.substring(0, 8)}`);
-          }
+        if (!deliveryDate || !(deliveryDate instanceof Date)) {
+          console.error(`Missing or invalid delivery date for category ${groupCategoryId}`);
+          throw new Error(`Please select a valid date for all items in your order`);
         }
         
         const groupTotal = groupItems.reduce((sum, item) => {
