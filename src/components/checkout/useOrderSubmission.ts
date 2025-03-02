@@ -29,12 +29,18 @@ export function useOrderSubmission() {
     setIsUploading(true);
 
     try {
+      // Validate item IDs
       const invalidItems = items.filter(item => 
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
+        item.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)
       );
       
       if (invalidItems.length > 0) {
         throw new Error('Invalid menu item IDs detected');
+      }
+
+      // Validate customer data
+      if (!customerData.fullName || !customerData.email) {
+        throw new Error('Please provide your full name and email address');
       }
 
       // Validate delivery address for delivery orders
@@ -47,6 +53,7 @@ export function useOrderSubmission() {
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
+      // Upload payment proof
       const fileExt = paymentProof.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -58,6 +65,10 @@ export function useOrderSubmission() {
         });
 
       if (uploadError) throw uploadError;
+
+      if (!uploadData?.path) {
+        throw new Error('Failed to upload payment proof');
+      }
 
       // Get all categories and their pickup days
       const { data: categoriesData, error: categoriesError } = await supabase
@@ -83,6 +94,10 @@ export function useOrderSubmission() {
 
       // Validate each date against fulfillment type and pickup days
       Object.entries(deliveryDates).forEach(([categoryId, date]) => {
+        if (!date) {
+          throw new Error(`Missing delivery date for category ${categoryId}`);
+        }
+        
         const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
         const pickupDays = categoryPickupDays.get(categoryId);
         
@@ -154,6 +169,10 @@ export function useOrderSubmission() {
           .single();
 
         if (orderError) throw orderError;
+
+        if (!insertedOrder) {
+          throw new Error('Failed to create order');
+        }
 
         const orderItems = items.map((item) => {
           const unitPrice = item.price * (1 - (item.discount_percentage || 0) / 100);
@@ -253,6 +272,10 @@ export function useOrderSubmission() {
 
         if (orderError) throw orderError;
 
+        if (!insertedOrder) {
+          throw new Error('Failed to create order');
+        }
+
         const orderItems = groupItems.map((item) => {
           const unitPrice = item.price * (1 - (item.discount_percentage || 0) / 100);
           return {
@@ -309,11 +332,13 @@ export function useOrderSubmission() {
       });
 
     } catch (error: any) {
+      console.error('Order submission error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit order',
         variant: 'destructive',
       });
+      throw error; // Re-throw to let the calling component handle it
     } finally {
       setIsUploading(false);
     }

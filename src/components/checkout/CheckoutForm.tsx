@@ -109,12 +109,12 @@ export function CheckoutForm({
     }
 
     // Get categories with items
-    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
+    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
     const categoriesWithItems = new Set(itemCategoryIds);
     
     // Check for missing dates
     const missingDates = Array.from(categoriesWithItems).filter(
-      categoryId => !formData.deliveryDates[categoryId as string]
+      categoryId => !formData.deliveryDates[categoryId]
     );
 
     if (missingDates.length > 0) {
@@ -128,14 +128,14 @@ export function CheckoutForm({
 
     // Identify if all categories are set to pickup
     const isAllPickup = Array.from(categoriesWithItems).every(categoryId => {
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
       return categoryFulfillment === FULFILLMENT_TYPE_PICKUP;
     });
 
     // Check for pickup requirements only if we have pickup items that need custom pickup details
     const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
       return categoryFulfillment === FULFILLMENT_TYPE_PICKUP && category?.has_custom_pickup;
     });
 
@@ -155,7 +155,7 @@ export function CheckoutForm({
 
     // Check for delivery address only if we have delivery items
     const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId as string] || fulfillmentType;
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
       return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
     });
     
@@ -194,21 +194,30 @@ export function CheckoutForm({
       }
     }
 
-    await submitOrder({
-      items,
-      total,
-      taxAmount,
-      notes: formData.notes,
-      deliveryDates: formData.deliveryDates,
-      customerData: {
-        ...customerData,
-        address: deliveryAddress
-      },
-      pickupDetail: formData.pickupDetail,
-      fulfillmentType,
-      categoryFulfillmentTypes,
-      onOrderSuccess
-    }, paymentProof);
+    try {
+      await submitOrder({
+        items,
+        total,
+        taxAmount,
+        notes: formData.notes,
+        deliveryDates: formData.deliveryDates,
+        customerData: {
+          ...customerData,
+          address: deliveryAddress
+        },
+        pickupDetail: formData.pickupDetail,
+        fulfillmentType,
+        categoryFulfillmentTypes,
+        onOrderSuccess
+      }, paymentProof);
+    } catch (error: any) {
+      console.error('Order submission error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to submit order. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

@@ -55,7 +55,7 @@ export function CategoryDeliveryDate({
     if (!date) return;
     
     const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
-    const isPickupDay = category.pickup_days?.includes(dayOfWeek);
+    const isPickupDay = Array.isArray(category.pickup_days) && category.pickup_days.includes(dayOfWeek);
     
     // Check if date is valid based on fulfillment type
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
@@ -72,8 +72,10 @@ export function CategoryDeliveryDate({
   };
 
   const isDateDisabled = (date: Date) => {
+    if (!category.pickup_days || !Array.isArray(category.pickup_days)) return false;
+    
     const dayOfWeek = date.getDay();
-    const isPickupDay = category.pickup_days?.includes(dayOfWeek);
+    const isPickupDay = category.pickup_days.includes(dayOfWeek);
     
     // For pickup: disable non-pickup days
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
