@@ -31,14 +31,12 @@ export function CategoryManagement() {
   const { data: categories = [], refetch } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
-      console.log('Fetching categories...');
       const { data, error } = await supabase
         .from('menu_categories')
         .select('*')
         .order('order_index');
       
       if (error) {
-        console.error('Error fetching categories:', error);
         throw error;
       }
       
@@ -56,7 +54,6 @@ export function CategoryManagement() {
 
   // Subscribe to real-time changes
   useEffect(() => {
-    console.log('Setting up category subscription...');
     const channel = supabase
       .channel('category-changes')
       .on(
@@ -67,18 +64,14 @@ export function CategoryManagement() {
           table: 'menu_categories' 
         },
         async (payload) => {
-          console.log('Category change detected:', payload);
           // Invalidate the cache and immediately refetch
           await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           refetch();
         }
       )
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
-      console.log('Cleaning up category subscription');
       supabase.removeChannel(channel);
     };
   }, [queryClient, refetch]);
@@ -98,7 +91,6 @@ export function CategoryManagement() {
         });
       }
     } catch (error) {
-      console.error('Error in delete process:', error);
       toast({
         title: "Error",
         description: "Failed to process deletion",
@@ -129,7 +121,6 @@ export function CategoryManagement() {
       
       setCategoryToDelete(null);
     } catch (error) {
-      console.error('Error in delete confirmation:', error);
       toast({
         title: "Error",
         description: "Failed to delete category",

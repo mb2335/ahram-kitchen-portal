@@ -1,3 +1,4 @@
+
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -169,10 +170,7 @@ export function DeliveryForm({
   };
 
   const handleDeliveryDateChange = (categoryId: string, date: Date) => {
-    console.log(`DeliveryForm handling date change for ${categoryId}:`, date);
-    
     if (!(date instanceof Date)) {
-      console.error("Invalid date object in handleDeliveryDateChange", date);
       return;
     }
     

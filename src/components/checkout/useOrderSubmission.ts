@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -50,16 +49,13 @@ export function useOrderSubmission() {
         ) {
           return new Date(rawDate.value.iso);
         } else {
-          console.warn(`Using fallback date conversion for ${categoryId}:`, rawDate);
           return new Date(String(rawDate));
         }
       } catch (err) {
-        console.error(`Error parsing date for category ${categoryId}:`, err);
         throw new Error(`Invalid date format for ${categoryId}`);
       }
     }
     
-    console.error(`Couldn't parse date for category ${categoryId}:`, rawDate);
     throw new Error(`Couldn't parse date for ${categoryId}`);
   };
 
@@ -80,19 +76,14 @@ export function useOrderSubmission() {
     // If we have a truncated UUID without hyphens, try to recover it
     // Common pattern is first 8 characters of the UUID
     if (/^[0-9a-f]{8}$/i.test(id)) {
-      console.log(`Attempting to recover truncated UUID: ${id}`);
-      
-      // Try to find the full UUID from the database
       return id;
     }
     
     // Check if ID appears to be a truncated UUID with hyphens
     if (id.includes('-') && id.length < 36) {
-      console.error(`Detected truncated UUID with hyphens: ${id}`);
       return id;
     }
     
-    console.error(`Invalid UUID format: ${id}`);
     return id;
   };
 
@@ -125,15 +116,12 @@ export function useOrderSubmission() {
       
       const uniqueCategoryIds = [...new Set(itemCategoryIds)];
       
-      console.log("All unique category IDs from cart items:", uniqueCategoryIds);
-      
       // Fetch all categories first to create mapping
       const { data: allCategories, error: allCategoriesError } = await supabase
         .from('menu_categories')
         .select('id, fulfillment_types');
         
       if (allCategoriesError) {
-        console.error("Error fetching all categories:", allCategoriesError);
         throw new Error(`Failed to fetch category information: ${allCategoriesError.message}`);
       }
       
@@ -160,8 +148,7 @@ export function useOrderSubmission() {
         if (categoryIdMap.has(id)) {
           return categoryIdMap.get(id);
         }
-        // Otherwise log an error and return the original ID
-        console.error(`Could not find full UUID for category ID: ${id}`);
+        // Otherwise return the original ID
         return id;
       });
       
@@ -172,16 +159,12 @@ export function useOrderSubmission() {
         .in('id', categoryIdsToQuery);
 
       if (categoriesQueryError) {
-        console.error("Error fetching categories:", categoriesQueryError);
         throw new Error(`Failed to fetch category information: ${categoriesQueryError.message}`);
       }
       
       if (!categoriesData || categoriesData.length === 0) {
-        console.error("No categories found matching IDs:", categoryIdsToQuery);
         throw new Error("No matching categories found for the items in your cart");
       }
-
-      console.log("Categories data from database:", categoriesData);
 
       // Create a map to translate between short IDs and full IDs for categories
       const queriedCategoryMap = new Map<string, string>();
@@ -199,7 +182,6 @@ export function useOrderSubmission() {
       if (categoriesData) {
         categoriesData.forEach(category => {
           if (!category || !category.id) {
-            console.warn("Invalid category data:", category);
             return;
           }
           
@@ -239,10 +221,6 @@ export function useOrderSubmission() {
         }
       });
       
-      console.log("Processing delivery dates:", deliveryDates);
-      console.log("Unique category IDs:", uniqueCategoryIds);
-      console.log("Normalized delivery dates:", normalizedDeliveryDates);
-      
       const processedDates: Record<string, Date> = {};
       
       for (const categoryId of uniqueCategoryIds) {
@@ -254,8 +232,6 @@ export function useOrderSubmission() {
         let dateToUse = normalizedDeliveryDates[fullCategoryId] || normalizedDeliveryDates[shortCategoryId] || normalizedDeliveryDates[categoryId];
         
         if (!dateToUse) {
-          console.error(`Missing delivery date for category ${categoryId} (full: ${fullCategoryId}, short: ${shortCategoryId})`);
-          
           try {
             const { data: categoryData, error: categoryError } = await supabase
               .from('menu_categories')
@@ -264,7 +240,6 @@ export function useOrderSubmission() {
               .single();
             
             if (categoryError) {
-              console.error(`Error fetching category name: ${categoryError.message}`);
               throw new Error(`Please select a date for your order items`);
             }
             
@@ -282,21 +257,16 @@ export function useOrderSubmission() {
           const dateObj = safelyParseDate(dateToUse, categoryId);
           
           if (isNaN(dateObj.getTime())) {
-            console.error(`Invalid date for category ${categoryId}:`, dateObj);
             throw new Error(`Please select a valid date for all items in your order`);
           }
           
-          console.log(`Processed date for category ${categoryId}:`, dateObj.toISOString());
           processedDates[fullCategoryId] = dateObj;
           // Also store by short ID for easier lookup
           processedDates[shortCategoryId] = dateObj;
         } catch (error) {
-          console.error(`Error processing date for category ${categoryId}:`, error);
           throw new Error(`Please select a valid date for all items in your order`);
         }
       }
-      
-      console.log("Sanitized delivery dates:", processedDates);
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
@@ -542,7 +512,6 @@ export function useOrderSubmission() {
         const [groupFulfillmentType, groupCategoryId] = groupKey.split('-', 2);
         
         if (!groupCategoryId) {
-          console.error("Invalid group key:", groupKey);
           throw new Error(`Invalid category grouping`);
         }
         
@@ -567,7 +536,6 @@ export function useOrderSubmission() {
           .single();
 
         if (categoryError) {
-          console.error(`Error fetching category data for ${fullCategoryId}:`, categoryError);
           throw new Error(`Could not find category information for your order: ${categoryError.message}`);
         }
 
@@ -602,7 +570,6 @@ export function useOrderSubmission() {
           .single();
 
         if (orderError) {
-          console.error("Error inserting order:", orderError);
           throw new Error(`Failed to create order: ${orderError.message}`);
         }
 
@@ -625,7 +592,6 @@ export function useOrderSubmission() {
           .insert(orderItems);
 
         if (orderItemsError) {
-          console.error("Error inserting order items:", orderItemsError);
           throw new Error(`Failed to create order items: ${orderItemsError.message}`);
         }
 
@@ -635,7 +601,6 @@ export function useOrderSubmission() {
       // Handle promise rejections
       const orders = await Promise.all(
         orderPromises.map(p => p.catch(error => {
-          console.error("Error in order promise:", error);
           return null;
         }))
       );

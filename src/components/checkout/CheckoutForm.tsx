@@ -117,10 +117,7 @@ export function CheckoutForm({
   }, [categories, items, fulfillmentType, categoryFulfillmentTypes, setFormData]);
 
   const handleDateChange = (categoryId: string, date: Date) => {
-    console.log(`Date change for category ${categoryId}:`, date);
-    
     if (!(date instanceof Date) || isNaN(date.getTime())) {
-      console.error(`Invalid date provided for category ${categoryId}`, date);
       toast({
         title: 'Invalid Date',
         description: `Please select a valid date for this category`,
@@ -136,8 +133,6 @@ export function CheckoutForm({
         [categoryId]: date
       }
     }));
-    
-    console.log(`Updated dates for category ${categoryId}:`, date);
   };
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -179,12 +174,8 @@ export function CheckoutForm({
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
     const uniqueCategoryIds = [...new Set(itemCategoryIds)];
     
-    console.log("Validating dates for categories:", uniqueCategoryIds);
-    console.log("Current deliveryDates:", formData.deliveryDates);
-    
     for (const categoryId of uniqueCategoryIds) {
       const hasDate = formData.deliveryDates[categoryId] !== undefined;
-      console.log(`Checking category ${categoryId}, has date: ${hasDate}`);
       
       if (!hasDate) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
@@ -197,7 +188,6 @@ export function CheckoutForm({
       }
       
       const date = formData.deliveryDates[categoryId];
-      console.log(`Date for category ${categoryId}:`, date);
       
       if (!(date instanceof Date) || isNaN(date.getTime())) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
@@ -299,22 +289,8 @@ export function CheckoutForm({
     }
 
     try {
-      console.log("Submitting with delivery dates:", formData.deliveryDates);
-      
       const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
       const uniqueCategoryIds = [...new Set(itemCategoryIds)];
-      console.log("Category IDs in cart:", uniqueCategoryIds);
-      
-      // Log date objects for debugging
-      Object.entries(formData.deliveryDates).forEach(([catId, dateObj]) => {
-        console.log(`Category ${catId} date:`, dateObj);
-        console.log(`Category ${catId} date type:`, typeof dateObj);
-        console.log(`Category ${catId} is Date instance:`, dateObj instanceof Date);
-        
-        if (dateObj instanceof Date) {
-          console.log(`Category ${catId} valid Date ISO:`, dateObj.toISOString());
-        }
-      });
       
       await submitOrder({
         items,
