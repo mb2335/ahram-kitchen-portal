@@ -114,18 +114,19 @@ export function useOrderSubmission() {
         } else if (typeof rawDate === 'string') {
           dateObj = new Date(rawDate);
         } else if (typeof rawDate === 'object' && rawDate !== null) {
-          // Handle possible serialized date structures - safely check each property
-          if (typeof rawDate === 'object' && 'toISOString' in rawDate && typeof rawDate.toISOString === 'function') {
-            // It's a Date-like object with toISOString
+          // Safely handle serialized date objects with explicit type checking
+          if ('toISOString' in rawDate && typeof rawDate.toISOString === 'function') {
+            // It's a Date-like object with toISOString method
             dateObj = new Date(rawDate.toISOString());
-          } else if (rawDate && typeof rawDate === 'object' && 'iso' in rawDate) {
-            // It has a direct iso property
-            dateObj = new Date(rawDate.iso as string);
-          } else if (rawDate && typeof rawDate === 'object' && 'value' in rawDate && typeof rawDate.value === 'object' && rawDate.value && 'iso' in rawDate.value) {
-            // It has a nested value.iso property
-            dateObj = new Date((rawDate.value as any).iso);
+          } else if ('iso' in rawDate && typeof rawDate.iso === 'string') {
+            // Object with direct iso string property
+            dateObj = new Date(rawDate.iso);
+          } else if ('value' in rawDate && typeof rawDate.value === 'object' && rawDate.value !== null && 'iso' in rawDate.value && typeof rawDate.value.iso === 'string') {
+            // Object with nested value.iso property
+            dateObj = new Date(rawDate.value.iso);
           } else {
             // Last resort - try to convert the object to a string
+            console.warn(`Using fallback date conversion for ${categoryId}:`, rawDate);
             dateObj = new Date(String(rawDate));
           }
         } else {
