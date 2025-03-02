@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { Upload } from 'lucide-react';
@@ -48,6 +48,7 @@ export function CheckoutForm({
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
+
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const { data: categories = [] } = useQuery({
@@ -207,16 +208,31 @@ export function CheckoutForm({
       return;
     }
     
+    const itemCategoryIds = items
+      .map(item => item.category_id)
+      .filter((id, index, self) => id && self.indexOf(id) === index) as string[];
+    
+    let fullCategoryId = categoryId;
+    if (!itemCategoryIds.includes(categoryId)) {
+      const matchingId = itemCategoryIds.find(id => 
+        id.startsWith(categoryId) || categoryId.startsWith(id)
+      );
+      if (matchingId) {
+        fullCategoryId = matchingId;
+        console.log(`Matched partial ID ${categoryId} to full ID ${fullCategoryId}`);
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       deliveryDates: {
         ...prev.deliveryDates,
-        [categoryId]: date
+        [fullCategoryId]: date
       }
     }));
     
     setTimeout(() => {
-      console.log(`Verified date for category ${categoryId}:`, formData.deliveryDates[categoryId]);
+      console.log(`Verified date for category ${fullCategoryId}:`, formData.deliveryDates[fullCategoryId]);
     }, 0);
   };
 
@@ -260,9 +276,13 @@ export function CheckoutForm({
     const uniqueCategoryIds = [...new Set(itemCategoryIds)];
     
     for (const categoryId of uniqueCategoryIds) {
-      const hasDate = Object.keys(formData.deliveryDates).some(key => 
-        key === categoryId || key.startsWith(categoryId) || categoryId.startsWith(key)
-      );
+      let hasDate = Object.keys(formData.deliveryDates).includes(categoryId);
+      
+      if (!hasDate) {
+        hasDate = Object.keys(formData.deliveryDates).some(key => 
+          key.startsWith(categoryId) || categoryId.startsWith(key)
+        );
+      }
       
       if (!hasDate) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
@@ -274,9 +294,12 @@ export function CheckoutForm({
         return false;
       }
       
-      const dateKey = Object.keys(formData.deliveryDates).find(key => 
-        key === categoryId || key.startsWith(categoryId) || categoryId.startsWith(key)
-      );
+      let dateKey = categoryId;
+      if (!formData.deliveryDates[categoryId]) {
+        dateKey = Object.keys(formData.deliveryDates).find(key => 
+          key.startsWith(categoryId) || categoryId.startsWith(key)
+        ) || '';
+      }
       
       if (!dateKey) continue;
       
