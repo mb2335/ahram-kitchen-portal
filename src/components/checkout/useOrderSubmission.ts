@@ -51,6 +51,31 @@ export function useOrderSubmission() {
         throw new Error('Delivery address is required for delivery orders');
       }
 
+      // Validate we have dates for all items
+      const itemCategoryIds = items
+        .map(item => item.category_id)
+        .filter(Boolean) as string[];
+      
+      const uniqueCategoryIds = [...new Set(itemCategoryIds)];
+      
+      const missingDates = uniqueCategoryIds.filter(categoryId => 
+        deliveryDates[categoryId] === undefined
+      );
+      
+      if (missingDates.length > 0) {
+        // Try to get category names
+        const { data: categories } = await supabase
+          .from('menu_categories')
+          .select('id, name')
+          .in('id', missingDates);
+          
+        const categoryNames = categories 
+          ? categories.map(cat => cat.name).join(', ')
+          : missingDates.join(', ');
+          
+        throw new Error(`Please select dates for all items in your order (Missing for: ${categoryNames})`);
+      }
+
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
 
       // Upload payment proof
@@ -73,16 +98,21 @@ export function useOrderSubmission() {
       // Get all categories and their pickup days
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('menu_categories')
-        .select('id, pickup_days');
+        .select('id, pickup_days, has_custom_pickup');
       
       if (categoriesError) throw categoriesError;
       
       // Create a map of category IDs to their pickup days
       const categoryPickupDays = new Map();
+      const categoryCustomPickup = new Map();
+      
       if (categoriesData) {
         categoriesData.forEach(category => {
-          if (category && category.id && category.pickup_days) {
-            categoryPickupDays.set(category.id, new Set(category.pickup_days));
+          if (category && category.id) {
+            if (category.pickup_days) {
+              categoryPickupDays.set(category.id, new Set(category.pickup_days));
+            }
+            categoryCustomPickup.set(category.id, category.has_custom_pickup);
           }
         });
       }
@@ -91,6 +121,16 @@ export function useOrderSubmission() {
       const isAllPickup = Object.values(categoryFulfillmentTypes).every(type => 
         type === FULFILLMENT_TYPE_PICKUP) || 
         (fulfillmentType === FULFILLMENT_TYPE_PICKUP && Object.keys(categoryFulfillmentTypes).length === 0);
+
+      // Check if custom pickup is required for pickup items
+      const needsCustomPickup = isAllPickup && uniqueCategoryIds.some(categoryId => 
+        categoryCustomPickup.get(categoryId)
+      );
+      
+      // If pickup needs custom pickup details but none provided
+      if (needsCustomPickup && !pickupDetail) {
+        throw new Error('Please select pickup time and location');
+      }
 
       // Skip date validation for pickup orders or if specific categories have pickup fulfillment type
       if (!isAllPickup) {
@@ -103,7 +143,7 @@ export function useOrderSubmission() {
           const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
           const pickupDays = categoryPickupDays.get(categoryId);
           
-          if (!pickupDays) return; // Skip if category not found
+          if (!pickupDays || pickupDays.size === 0) return; // Skip if category not found or no pickup days
           
           const isPickupDay = pickupDays.has(dayOfWeek);
           const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;

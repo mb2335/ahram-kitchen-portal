@@ -1,3 +1,4 @@
+
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -24,6 +25,8 @@ interface DeliveryFormProps {
   onFulfillmentTypeChange: (type: string) => void;
   deliveryAddress: string;
   onDeliveryAddressChange: (address: string) => void;
+  categoryFulfillmentTypes: Record<string, string>;
+  onCategoryFulfillmentTypeChange: (categoryId: string, type: string) => void;
 }
 
 export function DeliveryForm({ 
@@ -36,10 +39,11 @@ export function DeliveryForm({
   fulfillmentType,
   onFulfillmentTypeChange,
   deliveryAddress,
-  onDeliveryAddressChange
+  onDeliveryAddressChange,
+  categoryFulfillmentTypes,
+  onCategoryFulfillmentTypeChange
 }: DeliveryFormProps) {
   const { items } = useCart();
-  const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
@@ -74,31 +78,15 @@ export function DeliveryForm({
     const fulfillmentTypes = new Set<string>();
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean);
     
-    // Initialize defaults for category fulfillment types
-    const defaultCategoryFulfillmentTypes: Record<string, string> = {};
-    
     categories.forEach(category => {
       if (itemCategoryIds.includes(category.id)) {
         category.fulfillment_types?.forEach(type => fulfillmentTypes.add(type));
-        
-        // Set default fulfillment type for this category
-        if (!categoryFulfillmentTypes[category.id]) {
-          defaultCategoryFulfillmentTypes[category.id] = 
-            category.fulfillment_types?.includes(FULFILLMENT_TYPE_DELIVERY) 
-              ? FULFILLMENT_TYPE_DELIVERY 
-              : FULFILLMENT_TYPE_PICKUP;
-        }
       }
     });
     
     // Check if we should allow mixed delivery types
     const hasMultipleTypes = Array.from(fulfillmentTypes).length > 1;
     setHasMixedDelivery(hasMultipleTypes);
-    
-    // Update category fulfillment types with defaults if not set
-    if (Object.keys(categoryFulfillmentTypes).length === 0) {
-      setCategoryFulfillmentTypes(defaultCategoryFulfillmentTypes);
-    }
     
     const availableTypes = Array.from(fulfillmentTypes);
     setAvailableFulfillmentTypes(availableTypes);
@@ -107,7 +95,7 @@ export function DeliveryForm({
     if (!fulfillmentType && availableTypes.length > 0) {
       onFulfillmentTypeChange(availableTypes[0]);
     }
-  }, [categories, items, fulfillmentType, onFulfillmentTypeChange, categoryFulfillmentTypes]);
+  }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
 
   const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
@@ -134,28 +122,6 @@ export function DeliveryForm({
       const category = categories.find(c => c.id === id);
       return category ? category.name : '';
     }).filter(Boolean);
-  };
-
-  const handleCategoryFulfillmentChange = (categoryId: string, type: string) => {
-    setCategoryFulfillmentTypes(prev => ({
-      ...prev,
-      [categoryId]: type
-    }));
-    
-    // Check if we need to update the global fulfillment type
-    const allTypes = Object.values({ ...categoryFulfillmentTypes, [categoryId]: type });
-    const hasPickup = allTypes.includes(FULFILLMENT_TYPE_PICKUP);
-    const hasDelivery = allTypes.includes(FULFILLMENT_TYPE_DELIVERY);
-    
-    // If we have both pickup and delivery, set the global type based on what we have more of
-    if (hasPickup && hasDelivery) {
-      const pickupCount = allTypes.filter(t => t === FULFILLMENT_TYPE_PICKUP).length;
-      const deliveryCount = allTypes.filter(t => t === FULFILLMENT_TYPE_DELIVERY).length;
-      onFulfillmentTypeChange(pickupCount > deliveryCount ? FULFILLMENT_TYPE_PICKUP : FULFILLMENT_TYPE_DELIVERY);
-    } else {
-      // Otherwise, set to whatever type we have
-      onFulfillmentTypeChange(hasPickup ? FULFILLMENT_TYPE_PICKUP : FULFILLMENT_TYPE_DELIVERY);
-    }
   };
 
   useEffect(() => {
@@ -234,7 +200,7 @@ export function DeliveryForm({
                 <h4 className="font-medium">{category.name}</h4>
                 <RadioGroup 
                   value={categoryFulfillmentTypes[categoryId] || fulfillmentType} 
-                  onValueChange={(value) => handleCategoryFulfillmentChange(categoryId, value)}
+                  onValueChange={(value) => onCategoryFulfillmentTypeChange(categoryId, value)}
                   className="flex flex-col space-y-2"
                 >
                   {category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY) && (

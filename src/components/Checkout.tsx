@@ -61,7 +61,61 @@ export function Checkout() {
       categoryIds.forEach(categoryId => {
         const category = categories.find(cat => cat.id === categoryId);
         if (category) {
-          defaultDates[categoryId] = today;
+          // Check if it has pickup days
+          if (category.pickup_days && category.pickup_days.length > 0) {
+            const dayOfWeek = today.getDay();
+            const isPickupDay = category.pickup_days.includes(dayOfWeek);
+            
+            // If today is a pickup day and we want a delivery date, 
+            // find the next non-pickup day
+            if (isPickupDay && category.fulfillment_types?.includes('delivery')) {
+              let nextDeliveryDate = new Date(today);
+              
+              // Find the next day that isn't a pickup day
+              for (let i = 1; i <= 7; i++) {
+                const nextDate = new Date(today);
+                nextDate.setDate(today.getDate() + i);
+                const nextDayOfWeek = nextDate.getDay();
+                
+                if (!category.pickup_days.includes(nextDayOfWeek)) {
+                  nextDeliveryDate = nextDate;
+                  break;
+                }
+              }
+              
+              defaultDates[categoryId] = nextDeliveryDate;
+            } 
+            // For pickup, use today if it's a pickup day, otherwise next pickup day
+            else if (category.fulfillment_types?.includes('pickup')) {
+              let nextPickupDate = new Date(today);
+              
+              if (!isPickupDay) {
+                // Find the next pickup day
+                const sortedPickupDays = [...category.pickup_days].sort((a, b) => {
+                  const daysUntilA = (a - dayOfWeek + 7) % 7;
+                  const daysUntilB = (b - dayOfWeek + 7) % 7;
+                  return daysUntilA - daysUntilB;
+                });
+                
+                const nextDay = sortedPickupDays[0];
+                const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
+                
+                if (daysToAdd > 0) {
+                  nextPickupDate = new Date(today);
+                  nextPickupDate.setDate(today.getDate() + daysToAdd);
+                }
+              }
+              
+              defaultDates[categoryId] = nextPickupDate;
+            }
+            // Default case - use today's date
+            else {
+              defaultDates[categoryId] = today;
+            }
+          } else {
+            // No pickup days defined, just use today
+            defaultDates[categoryId] = today;
+          }
         }
       });
       

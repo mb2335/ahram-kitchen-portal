@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -50,30 +51,7 @@ export function CheckoutForm({
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
-  const handleDateChange = (categoryId: string, date: Date) => {
-    setFormData(prev => ({
-      ...prev,
-      deliveryDates: {
-        ...prev.deliveryDates,
-        [categoryId]: date
-      }
-    }));
-  };
-
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      notes: e.target.value
-    }));
-  };
-
-  const handlePickupDetailChange = (detail: PickupDetail) => {
-    setFormData(prev => ({
-      ...prev,
-      pickupDetail: detail
-    }));
-  };
-
+  // Fetch all categories to get pickup days and other details
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
@@ -85,49 +63,50 @@ export function CheckoutForm({
     },
   });
 
-  const handleFulfillmentTypeChange = (type: string) => {
-    setFulfillmentType(type);
-  };
+  // Get categories with items
+  const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
+  const categoriesWithItems = new Set(itemCategoryIds);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPaymentProof(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Effect to set initial fulfillment types and default dates
+  useEffect(() => {
+    if (!categories.length) return;
     
-    if (!paymentProof) {
-      toast({
-        title: 'Error',
-        description: 'Please upload proof of payment',
-        variant: 'destructive',
+    // Initialize default category fulfillment types if empty
+    if (Object.keys(categoryFulfillmentTypes).length === 0) {
+      const newCategoryFulfillmentTypes: Record<string, string> = {};
+      
+      Array.from(categoriesWithItems).forEach(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (category?.fulfillment_types?.length) {
+          // Default to delivery if available, otherwise pickup
+          newCategoryFulfillmentTypes[categoryId] = 
+            category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY) 
+              ? FULFILLMENT_TYPE_DELIVERY 
+              : FULFILLMENT_TYPE_PICKUP;
+        }
       });
-      return;
+      
+      if (Object.keys(newCategoryFulfillmentTypes).length > 0) {
+        setCategoryFulfillmentTypes(newCategoryFulfillmentTypes);
+      }
     }
 
-    // Get categories with items
-    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
-    const categoriesWithItems = new Set(itemCategoryIds);
-    
-    // Set default dates for all categories if not already set
+    // Set default dates for categories
     const updatedDates = { ...formData.deliveryDates };
     let datesWereAdded = false;
     
-    // For both delivery and pickup, ensure all categories have dates
     Array.from(categoriesWithItems).forEach(categoryId => {
       if (!updatedDates[categoryId]) {
         const category = categories.find(cat => cat.id === categoryId);
         const today = new Date();
         
         if (category) {
+          const categoryFulfillmentType = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+          
           // For pickup: find the next valid pickup day
-          if (fulfillmentType === FULFILLMENT_TYPE_PICKUP || 
-              categoryFulfillmentTypes[categoryId] === FULFILLMENT_TYPE_PICKUP) {
-              
+          if (categoryFulfillmentType === FULFILLMENT_TYPE_PICKUP) {
             const dayOfWeek = today.getDay();
-            let nextPickupDay = today;
+            let nextPickupDay = new Date(today);
             
             // If category has pickup days defined, find the next valid one
             if (category.pickup_days && category.pickup_days.length > 0) {
@@ -142,20 +121,15 @@ export function CheckoutForm({
               const nextDay = sortedPickupDays[0];
               const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
               
-              if (daysToAdd > 0) {
-                nextPickupDay = new Date(today);
-                nextPickupDay.setDate(today.getDate() + daysToAdd);
-              }
+              nextPickupDay.setDate(today.getDate() + (daysToAdd === 0 ? 0 : daysToAdd));
             }
             
             updatedDates[categoryId] = nextPickupDay;
           } 
           // For delivery: set a default date on a non-pickup day
-          else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY || 
-                   categoryFulfillmentTypes[categoryId] === FULFILLMENT_TYPE_DELIVERY) {
-            
+          else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
             const dayOfWeek = today.getDay();
-            let deliveryDay = today;
+            let deliveryDay = new Date(today);
             
             // If category has pickup days defined, find a non-pickup day
             if (category.pickup_days && category.pickup_days.length > 0) {
@@ -191,8 +165,74 @@ export function CheckoutForm({
         deliveryDates: updatedDates
       }));
     }
+  }, [categories, items, fulfillmentType, categoryFulfillmentTypes, formData.deliveryDates, setFormData]);
 
-    // Check for pickup requirements only if we have pickup items that need custom pickup details
+  const handleDateChange = (categoryId: string, date: Date) => {
+    setFormData(prev => ({
+      ...prev,
+      deliveryDates: {
+        ...prev.deliveryDates,
+        [categoryId]: date
+      }
+    }));
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      notes: e.target.value
+    }));
+  };
+
+  const handlePickupDetailChange = (detail: PickupDetail) => {
+    setFormData(prev => ({
+      ...prev,
+      pickupDetail: detail
+    }));
+  };
+
+  const handleFulfillmentTypeChange = (type: string) => {
+    setFulfillmentType(type);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPaymentProof(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!paymentProof) {
+      toast({
+        title: 'Error',
+        description: 'Please upload proof of payment',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Ensure we have dates for all categories
+    const missingDates = Array.from(categoriesWithItems).filter(categoryId => 
+      !formData.deliveryDates[categoryId]
+    );
+    
+    if (missingDates.length > 0) {
+      const categoryNames = missingDates
+        .map(id => categories.find(cat => cat.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      
+      toast({
+        title: 'Error',
+        description: `Please select dates for: ${categoryNames}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check for pickup requirements
     const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
@@ -213,7 +253,7 @@ export function CheckoutForm({
       return;
     }
 
-    // Check for delivery address only if we have delivery items
+    // Check for delivery address
     const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
       const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
       return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
@@ -228,13 +268,42 @@ export function CheckoutForm({
       return;
     }
 
+    // Validate dates against pickup days
+    const dateErrors: string[] = [];
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (!category || !category.pickup_days) return;
+      
+      const date = formData.deliveryDates[categoryId];
+      if (!date) return;
+      
+      const dayOfWeek = date.getDay();
+      const isPickupDay = category.pickup_days.includes(dayOfWeek);
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      
+      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
+        dateErrors.push(`${category.name}: Pickup is only available on designated pickup days`);
+      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
+        dateErrors.push(`${category.name}: Delivery is not available on pickup days`);
+      }
+    });
+    
+    if (dateErrors.length > 0) {
+      toast({
+        title: 'Date Selection Error',
+        description: dateErrors.join('\n'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await submitOrder({
         items,
         total,
         taxAmount,
         notes: formData.notes,
-        deliveryDates: updatedDates, // Use the updated dates which include default dates
+        deliveryDates: formData.deliveryDates,
         customerData: {
           ...customerData,
           address: deliveryAddress
@@ -267,6 +336,13 @@ export function CheckoutForm({
         onFulfillmentTypeChange={handleFulfillmentTypeChange}
         deliveryAddress={deliveryAddress}
         onDeliveryAddressChange={setDeliveryAddress}
+        categoryFulfillmentTypes={categoryFulfillmentTypes}
+        onCategoryFulfillmentTypeChange={(categoryId, type) => {
+          setCategoryFulfillmentTypes(prev => ({
+            ...prev,
+            [categoryId]: type
+          }));
+        }}
       />
 
       <PaymentInstructions
