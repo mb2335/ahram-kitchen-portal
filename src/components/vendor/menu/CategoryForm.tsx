@@ -4,9 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Copy } from "lucide-react";
 import { CategoryFormData, PickupDetail } from "./types/category";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -15,6 +18,21 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormProps) {
+  // Fetch existing categories to copy pickup details from
+  const { data: categories = [] } = useQuery({
+    queryKey: ['copy-pickup-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('id, name, has_custom_pickup, pickup_details, fulfillment_types, pickup_days')
+        .filter('has_custom_pickup', 'eq', true)
+        .filter('fulfillment_types', 'cs', '{"pickup"}');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const addPickupDetail = () => {
     setFormData({
       ...formData,
@@ -80,6 +98,21 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     });
   };
 
+  const handleCopyPickupDetails = (categoryId: string) => {
+    const selectedCategory = categories.find(category => category.id === categoryId);
+    if (!selectedCategory) return;
+    
+    setFormData({
+      ...formData,
+      has_custom_pickup: selectedCategory.has_custom_pickup,
+      pickup_details: selectedCategory.pickup_details.map((detail: any) => ({
+        time: detail.time || '',
+        location: detail.location || ''
+      })),
+      pickup_days: selectedCategory.pickup_days || []
+    });
+  };
+
   const getDayName = (day: number): string => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[day];
@@ -140,6 +173,38 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
           {formData.fulfillment_types.includes('pickup') && (
             <div className="space-y-4 border p-4 rounded-md">
               <Label className="text-base font-semibold">Pickup Settings</Label>
+              
+              {/* Copy Pickup Details from Existing Category */}
+              {categories.length > 0 && (
+                <div className="space-y-2 bg-secondary/20 p-3 rounded-md">
+                  <Label>Copy Pickup Details from Existing Category</Label>
+                  <div className="flex gap-2">
+                    <Select onValueChange={handleCopyPickupDetails}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      disabled={categories.length === 0}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This will copy pickup days and locations from the selected category
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label>Select Days Available for Pickup</Label>
