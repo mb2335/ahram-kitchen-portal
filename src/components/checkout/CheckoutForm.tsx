@@ -115,6 +115,7 @@ export function CheckoutForm({
       }
     }
 
+    // Set default delivery dates for categories if none exist
     const updatedDates = { ...formData.deliveryDates };
     let datesWereAdded = false;
     
@@ -169,6 +170,11 @@ export function CheckoutForm({
           }
           
           datesWereAdded = true;
+          
+          // Log the structure of the date for debugging
+          console.log(`Setting date for category ${categoryId}:`, updatedDates[categoryId]);
+          console.log(`Date type: ${typeof updatedDates[categoryId]}`);
+          console.log(`Is Date instance: ${updatedDates[categoryId] instanceof Date}`);
         }
       }
     });
@@ -178,10 +184,24 @@ export function CheckoutForm({
         ...prev,
         deliveryDates: updatedDates
       }));
+      
+      // Debug log all dates after setting
+      console.log("All delivery dates after setting defaults:", updatedDates);
+      Object.entries(updatedDates).forEach(([catId, dateObj]) => {
+        console.log(`Category ${catId} date:`, dateObj);
+        if (dateObj instanceof Date) {
+          console.log(`  ISO string: ${dateObj.toISOString()}`);
+        }
+      });
     }
   }, [categories, items, fulfillmentType, categoryFulfillmentTypes, formData.deliveryDates, setFormData]);
 
   const handleDateChange = (categoryId: string, date: Date) => {
+    // Log the date object received from the date picker
+    console.log(`Date change for category ${categoryId}:`, date);
+    console.log(`Date type: ${typeof date}`);
+    console.log(`Is Date instance: ${date instanceof Date}`);
+    
     setFormData(prev => ({
       ...prev,
       deliveryDates: {
@@ -189,6 +209,11 @@ export function CheckoutForm({
         [categoryId]: date
       }
     }));
+    
+    // Verify the date was set correctly
+    setTimeout(() => {
+      console.log(`Verified date for category ${categoryId}:`, formData.deliveryDates[categoryId]);
+    }, 0);
   };
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -276,6 +301,29 @@ export function CheckoutForm({
       toast({
         title: 'Error',
         description: `Please select dates for: ${categoryNames}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if any dates are invalid
+    let hasInvalidDates = false;
+    Object.entries(formData.deliveryDates).forEach(([categoryId, date]) => {
+      if (date instanceof Date) {
+        if (isNaN(date.getTime())) {
+          console.error(`Invalid date for category ${categoryId}:`, date);
+          hasInvalidDates = true;
+        }
+      } else {
+        console.error(`Non-Date value for category ${categoryId}:`, date);
+        hasInvalidDates = true;
+      }
+    });
+    
+    if (hasInvalidDates) {
+      toast({
+        title: 'Error',
+        description: 'Some dates are invalid. Please try selecting dates again.',
         variant: 'destructive',
       });
       return;

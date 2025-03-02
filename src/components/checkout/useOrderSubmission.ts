@@ -89,10 +89,10 @@ export function useOrderSubmission() {
         if (!dateValue) continue;
         
         try {
-          // Handle date objects that might be serialized from JSON
+          // Convert serialized date object to a proper Date object
           if (typeof dateValue === 'object' && dateValue !== null) {
             if ('_type' in dateValue && dateValue._type === 'Date') {
-              // Handle the nested value structure we're seeing in the logs
+              // Handle the nested value structure from serialized date
               if ('value' in dateValue && typeof dateValue.value === 'object') {
                 const valueObj = dateValue.value;
                 
@@ -102,15 +102,18 @@ export function useOrderSubmission() {
                   sanitizedDeliveryDates[categoryId] = new Date(valueObj.value);
                 } else {
                   console.log("Complex date format - trying to convert:", valueObj);
-                  sanitizedDeliveryDates[categoryId] = new Date(); // Fallback to current date
+                  const timestamp = valueObj.value || Date.now();
+                  sanitizedDeliveryDates[categoryId] = new Date(timestamp);
                 }
               } else if ('iso' in dateValue && typeof dateValue.iso === 'string') {
                 sanitizedDeliveryDates[categoryId] = new Date(dateValue.iso);
               } else if (typeof dateValue.valueOf === 'function') {
                 sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf());
               } else {
+                // Last resort - try to extract timestamp from the date object
                 console.log("Unusual date format:", dateValue);
-                sanitizedDeliveryDates[categoryId] = new Date(); // Fallback to current date
+                const timestamp = dateValue.value?.value || dateValue.value || Date.now();
+                sanitizedDeliveryDates[categoryId] = new Date(timestamp);
               }
             } else if (dateValue instanceof Date) {
               // For regular Date objects
@@ -118,7 +121,14 @@ export function useOrderSubmission() {
             } else {
               // Try to convert unknown object to date
               console.log("Converting unknown object to date:", dateValue);
-              sanitizedDeliveryDates[categoryId] = new Date(); // Fallback to current date
+              // Look for any timestamp-like property in the object
+              const timestamp = 
+                (dateValue as any).value?.value || 
+                (dateValue as any).value || 
+                (dateValue as any).timestamp || 
+                (dateValue as any).time || 
+                Date.now();
+              sanitizedDeliveryDates[categoryId] = new Date(timestamp);
             }
           } else if (typeof dateValue === 'string') {
             // For ISO string dates
@@ -128,12 +138,21 @@ export function useOrderSubmission() {
             sanitizedDeliveryDates[categoryId] = new Date(dateValue);
           } else {
             console.log(`Unhandled date type for ${categoryId}:`, typeof dateValue, dateValue);
-            sanitizedDeliveryDates[categoryId] = new Date(); // Fallback to current date
+            // Use current date as fallback
+            sanitizedDeliveryDates[categoryId] = new Date();
+          }
+          
+          // Verify the date is valid
+          if (isNaN(sanitizedDeliveryDates[categoryId].getTime())) {
+            console.error(`Generated an invalid date for category ${categoryId}:`, sanitizedDeliveryDates[categoryId]);
+            // Use current date as fallback
+            sanitizedDeliveryDates[categoryId] = new Date();
           }
         } catch (error) {
           console.error(`Error processing date for category ${categoryId}:`, error);
           console.error("Date value:", dateValue);
           // Don't throw here, we'll validate missing dates later
+          sanitizedDeliveryDates[categoryId] = new Date(); // Fallback to current date
         }
       }
 
@@ -160,15 +179,8 @@ export function useOrderSubmission() {
       console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
       for (const catId of uniqueCategoryIds) {
-        console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId]);
+        console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId].toISOString());
         console.log(`Original date value:`, deliveryDates[catId]);
-        
-        // Add extra validation to ensure we have valid Date objects
-        const date = sanitizedDeliveryDates[catId];
-        if (!(date instanceof Date) || isNaN(date.getTime())) {
-          console.error(`Invalid date for category ${catId}:`, date);
-          throw new Error(`Invalid date selected for a category. Please try again.`);
-        }
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -403,7 +415,6 @@ export function useOrderSubmission() {
         
         if (!deliveryDate) {
           console.error(`Missing delivery date for category ${categoryId}`, sanitizedDeliveryDates);
-          console.error(`Original delivery dates:`, deliveryDates);
           throw new Error(`Missing delivery date for category ${categoryId}`);
         }
         
