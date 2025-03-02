@@ -30,7 +30,7 @@ export interface CategoryDeliveryDateProps {
   selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
-  allPickupCategories?: string[]; // New prop for all categories being picked up
+  allPickupCategories?: string[]; // For all categories being picked up
 }
 
 export function CategoryDeliveryDate({
@@ -42,29 +42,23 @@ export function CategoryDeliveryDate({
   fulfillmentType,
   allPickupCategories = []
 }: CategoryDeliveryDateProps) {
-  const [date, setDate] = useState<Date | undefined>(selectedDate);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Update local state when selectedDate changes from parent
-  useEffect(() => {
-    setDate(selectedDate);
-  }, [selectedDate]);
-
   // Auto-select the first pickup detail if none is selected and we're in pickup mode
   useEffect(() => {
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && 
         category.has_custom_pickup && 
         category.pickup_details?.length > 0 && 
         !selectedPickupDetail && 
-        date) {
+        selectedDate) {
       onPickupDetailChange(category.pickup_details[0]);
     }
-  }, [fulfillmentType, category, selectedPickupDetail, date, onPickupDetailChange]);
+  }, [fulfillmentType, category, selectedPickupDetail, selectedDate, onPickupDetailChange]);
 
-  const handleSelect = (selectedDate: Date | undefined) => {
-    if (!selectedDate) return;
+  const handleSelect = (date: Date | undefined) => {
+    if (!date) return;
     
-    const dayOfWeek = selectedDate.getDay(); // 0=Sunday, 1=Monday, etc.
+    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
     const isPickupDay = Array.isArray(category.pickup_days) && category.pickup_days.includes(dayOfWeek);
     
     // Check if date is valid based on fulfillment type
@@ -77,14 +71,13 @@ export function CategoryDeliveryDate({
     }
     
     setErrorMessage(null);
-    setDate(selectedDate);
     
     // Ensure we pass a valid Date object to the parent
-    onDateChange(selectedDate);
+    onDateChange(date);
     
     // Log for debugging
-    console.log(`Selected date for category ${category.id}:`, selectedDate);
-    console.log(`Selected date is Date instance:`, selectedDate instanceof Date);
+    console.log(`Selected date for category ${category.id}:`, date);
+    console.log(`Selected date is Date instance:`, date instanceof Date);
   };
 
   const isDateDisabled = (date: Date) => {
@@ -133,17 +126,17 @@ export function CategoryDeliveryDate({
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
+                  !selectedDate && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={date}
+                selected={selectedDate}
                 onSelect={handleSelect}
                 disabled={isDateDisabled}
                 initialFocus
@@ -152,7 +145,7 @@ export function CategoryDeliveryDate({
           </Popover>
         </div>
         
-        {(date || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
+        {(selectedDate || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
           <RadioGroup 
             value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
             onValueChange={(value) => {
@@ -195,17 +188,17 @@ export function CategoryDeliveryDate({
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
+                  !selectedDate && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={date}
+                selected={selectedDate}
                 onSelect={handleSelect}
                 disabled={isDateDisabled}
                 initialFocus

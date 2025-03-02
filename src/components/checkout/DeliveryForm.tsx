@@ -187,21 +187,18 @@ export function DeliveryForm({
     });
   };
 
-  // Function to handle delivery date changes and ensure we log them
+  // Function to handle delivery date changes and ensure we use proper Date objects
   const handleDeliveryDateChange = (categoryId: string, date: Date) => {
-    console.log(`DeliveryForm received date change for ${categoryId}:`, date);
+    console.log(`DeliveryForm handling date change for ${categoryId}:`, date);
     
-    // Ensure that we are passing a valid Date object
+    // Verify we have a valid Date object
     if (!(date instanceof Date)) {
-      console.error("Invalid date object passed to handleDeliveryDateChange");
+      console.error("Invalid date object in handleDeliveryDateChange", date);
       return;
     }
     
-    // Pass the date to the parent component
+    // Send the valid Date object to parent
     onDateChange(categoryId, date);
-    
-    // Debug logging
-    console.log(`Date for ${categoryId} after handleDateChange:`, date);
   };
 
   return (

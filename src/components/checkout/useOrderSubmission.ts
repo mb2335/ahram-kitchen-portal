@@ -38,7 +38,7 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      // Extract all unique category IDs from items
+      // Get all unique category IDs from items
       const itemCategoryIds = items
         .map(item => item.category_id)
         .filter(Boolean) as string[];
@@ -86,11 +86,13 @@ export function useOrderSubmission() {
         throw new Error('Delivery address is required for delivery orders');
       }
 
-      // Verify we have proper Date objects for all delivery dates
-      console.log("Validating delivery dates:", deliveryDates);
+      // Process and validate delivery dates
+      const processedDates: Record<string, Date> = {};
+      
+      console.log("Processing delivery dates:", deliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
       
-      // Check we have a date for each category
+      // Ensure we have a date for each category and convert any serialized dates to Date objects
       for (const categoryId of uniqueCategoryIds) {
         if (!deliveryDates[categoryId]) {
           console.error(`Missing delivery date for category ${categoryId}`);
@@ -99,19 +101,40 @@ export function useOrderSubmission() {
             .select('name')
             .eq('id', categoryId)
             .single();
-            
+          
           throw new Error(`Please select a date for ${categoryData?.name || 'items in your order'}`);
         }
         
-        // Extra validation to ensure we have valid Date objects
-        const date = deliveryDates[categoryId];
-        console.log(`Validating date for ${categoryId}:`, date);
+        const rawDate = deliveryDates[categoryId];
+        let dateObj: Date;
         
-        if (!(date instanceof Date) || isNaN(date.getTime())) {
-          console.error(`Invalid date for category ${categoryId}:`, date);
+        // Handle different date formats
+        if (rawDate instanceof Date) {
+          dateObj = rawDate;
+        } else if (typeof rawDate === 'string') {
+          dateObj = new Date(rawDate);
+        } else if (typeof rawDate === 'object' && rawDate !== null && '_type' === 'Date' && rawDate.value?.iso) {
+          // Handle serialized date object
+          dateObj = new Date(rawDate.value.iso);
+        } else if (typeof rawDate === 'object' && rawDate !== null && rawDate.value?.iso) {
+          // Handle serialized date object without _type
+          dateObj = new Date(rawDate.value.iso);
+        } else {
+          console.error(`Invalid date for category ${categoryId}:`, rawDate);
+          throw new Error('Please select a valid date for all items in your order');
+        }
+        
+        // Validate the date
+        if (isNaN(dateObj.getTime())) {
+          console.error(`Invalid date for category ${categoryId}:`, dateObj);
           throw new Error(`Please select a valid date for all items in your order`);
         }
+        
+        console.log(`Processed date for category ${categoryId}:`, dateObj.toISOString());
+        processedDates[categoryId] = dateObj;
       }
+      
+      console.log("Sanitized delivery dates:", processedDates);
 
       // Get customer ID or create a new customer
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -198,13 +221,9 @@ export function useOrderSubmission() {
       // Skip date validation for pickup orders or if specific categories have pickup fulfillment type
       if (!isAllPickup) {
         // Validate each date against fulfillment type and pickup days
-        Object.entries(deliveryDates).forEach(([categoryId, date]) => {
+        Object.entries(processedDates).forEach(([categoryId, date]) => {
           // Skip if not a real category ID from our items
           if (!uniqueCategoryIds.includes(categoryId)) return;
-          
-          if (!date) {
-            throw new Error(`Missing delivery date for category ${categoryId}`);
-          }
           
           const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
           const pickupDays = categoryPickupDays.get(categoryId);
@@ -260,7 +279,7 @@ export function useOrderSubmission() {
         
         // Use the first category's delivery date for the combined order
         const firstCategoryId = uniqueCategoryIds[0];
-        const orderDate = deliveryDates[firstCategoryId];
+        const orderDate = processedDates[firstCategoryId];
         
         // Validate that we have a date
         if (!orderDate || !(orderDate instanceof Date)) {
@@ -348,8 +367,8 @@ export function useOrderSubmission() {
           throw new Error(`Invalid category grouping`);
         }
         
-        // Find the delivery date for this category - use exact match with full category ID
-        const deliveryDate = deliveryDates[groupCategoryId];
+        // Find the delivery date for this category
+        const deliveryDate = processedDates[groupCategoryId];
         
         // Debug the delivery date for troubleshooting
         console.log(`Processing category ${groupCategoryId} with date:`, deliveryDate);

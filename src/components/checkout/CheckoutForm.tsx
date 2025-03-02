@@ -9,7 +9,7 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP, ERROR_MESSAGES } from '@/types/order';
+import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 import type { OrderItem } from '@/types/order';
 import { PickupDetail } from '@/types/pickup';
 
@@ -129,19 +129,15 @@ export function CheckoutForm({
       return;
     }
     
-    // Create a copy of the existing dates to avoid mutation issues
-    const updatedDates = {
-      ...formData.deliveryDates,
-      [categoryId]: date
-    };
-    
     setFormData(prev => ({
       ...prev,
-      deliveryDates: updatedDates
+      deliveryDates: {
+        ...prev.deliveryDates,
+        [categoryId]: date
+      }
     }));
     
-    // Log to verify the date is properly stored
-    console.log(`Updated dates for category ${categoryId}:`, updatedDates);
+    console.log(`Updated dates for category ${categoryId}:`, date);
   };
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -187,7 +183,7 @@ export function CheckoutForm({
     console.log("Current deliveryDates:", formData.deliveryDates);
     
     for (const categoryId of uniqueCategoryIds) {
-      const hasDate = Object.prototype.hasOwnProperty.call(formData.deliveryDates, categoryId);
+      const hasDate = formData.deliveryDates[categoryId] !== undefined;
       console.log(`Checking category ${categoryId}, has date: ${hasDate}`);
       
       if (!hasDate) {
