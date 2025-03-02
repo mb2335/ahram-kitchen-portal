@@ -112,25 +112,74 @@ export function CheckoutForm({
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
     const categoriesWithItems = new Set(itemCategoryIds);
     
-    // Check for missing dates
-    const missingDates = Array.from(categoriesWithItems).filter(
-      categoryId => !formData.deliveryDates[categoryId]
-    );
-
-    if (missingDates.length > 0) {
-      toast({
-        title: 'Error',
-        description: 'Please select dates for all items in your order',
-        variant: 'destructive',
+    // For pickup orders, ensure we have dates for all categories or set default dates
+    const isAllPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP || 
+                        Array.from(categoriesWithItems).every(categoryId => 
+                          categoryFulfillmentTypes[categoryId] === FULFILLMENT_TYPE_PICKUP);
+    
+    // If we're in pickup mode and missing dates, set today's date for missing categories
+    if (isAllPickup) {
+      const today = new Date();
+      const updatedDates = { ...formData.deliveryDates };
+      let datesWereAdded = false;
+      
+      Array.from(categoriesWithItems).forEach(categoryId => {
+        if (!updatedDates[categoryId]) {
+          const category = categories.find(cat => cat.id === categoryId);
+          if (category) {
+            // Find the next valid pickup day
+            const dayOfWeek = today.getDay();
+            let nextPickupDay = today;
+            
+            // If category has pickup days defined, find the next valid one
+            if (category.pickup_days && category.pickup_days.length > 0) {
+              // Sort pickup days to find the next available one
+              const sortedPickupDays = [...category.pickup_days].sort((a, b) => {
+                const daysUntilA = (a - dayOfWeek + 7) % 7;
+                const daysUntilB = (b - dayOfWeek + 7) % 7;
+                return daysUntilA - daysUntilB;
+              });
+              
+              // Get the next pickup day (could be today if it's a pickup day)
+              const nextDay = sortedPickupDays[0];
+              const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
+              
+              if (daysToAdd > 0) {
+                nextPickupDay = new Date(today);
+                nextPickupDay.setDate(today.getDate() + daysToAdd);
+              }
+            }
+            
+            updatedDates[categoryId] = nextPickupDay;
+            datesWereAdded = true;
+          }
+        }
       });
-      return;
-    }
+      
+      if (datesWereAdded) {
+        setFormData(prev => ({
+          ...prev,
+          deliveryDates: updatedDates
+        }));
+      }
+    } else {
+      // For delivery or mixed orders, check for missing dates
+      const missingDates = Array.from(categoriesWithItems).filter(
+        categoryId => {
+          const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+          return !formData.deliveryDates[categoryId] && categoryFulfillment !== FULFILLMENT_TYPE_PICKUP;
+        }
+      );
 
-    // Identify if all categories are set to pickup
-    const isAllPickup = Array.from(categoriesWithItems).every(categoryId => {
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP;
-    });
+      if (missingDates.length > 0) {
+        toast({
+          title: 'Error',
+          description: 'Please select dates for all items in your order',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
 
     // Check for pickup requirements only if we have pickup items that need custom pickup details
     const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {

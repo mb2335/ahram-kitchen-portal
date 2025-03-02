@@ -51,6 +51,17 @@ export function CategoryDeliveryDate({
     }
   }, [selectedDate]);
 
+  // Auto-select the first pickup detail if none is selected and we're in pickup mode
+  useEffect(() => {
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && 
+        category.has_custom_pickup && 
+        category.pickup_details?.length > 0 && 
+        !selectedPickupDetail && 
+        date) {
+      onPickupDetailChange(category.pickup_details[0]);
+    }
+  }, [fulfillmentType, category, selectedPickupDetail, date, onPickupDetailChange]);
+
   const handleSelect = (date: Date | undefined) => {
     if (!date) return;
     
@@ -136,7 +147,7 @@ export function CategoryDeliveryDate({
           </Popover>
         </div>
         
-        {date && (
+        {(date || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
           <RadioGroup 
             value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
             onValueChange={(value) => {

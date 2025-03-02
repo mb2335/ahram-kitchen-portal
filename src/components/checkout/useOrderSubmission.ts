@@ -92,28 +92,31 @@ export function useOrderSubmission() {
         type === FULFILLMENT_TYPE_PICKUP) || 
         (fulfillmentType === FULFILLMENT_TYPE_PICKUP && Object.keys(categoryFulfillmentTypes).length === 0);
 
-      // Validate each date against fulfillment type and pickup days
-      Object.entries(deliveryDates).forEach(([categoryId, date]) => {
-        if (!date) {
-          throw new Error(`Missing delivery date for category ${categoryId}`);
-        }
-        
-        const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
-        const pickupDays = categoryPickupDays.get(categoryId);
-        
-        if (!pickupDays) return; // Skip if category not found
-        
-        const isPickupDay = pickupDays.has(dayOfWeek);
-        const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-        
-        if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
-          throw new Error(`Pickup is only available on designated pickup days for ${categoryId}`);
-        }
-        
-        if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
-          throw new Error(`Delivery is not available on pickup days for ${categoryId}`);
-        }
-      });
+      // Skip date validation for pickup orders or if specific categories have pickup fulfillment type
+      if (!isAllPickup) {
+        // Validate each date against fulfillment type and pickup days
+        Object.entries(deliveryDates).forEach(([categoryId, date]) => {
+          if (!date) {
+            throw new Error(`Missing delivery date for category ${categoryId}`);
+          }
+          
+          const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+          const pickupDays = categoryPickupDays.get(categoryId);
+          
+          if (!pickupDays) return; // Skip if category not found
+          
+          const isPickupDay = pickupDays.has(dayOfWeek);
+          const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+          
+          if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
+            throw new Error(`Pickup is only available on designated pickup days for ${categoryId}`);
+          }
+          
+          if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
+            throw new Error(`Delivery is not available on pickup days for ${categoryId}`);
+          }
+        });
+      }
 
       // Group items by category and fulfillment type
       const groupedItems: Record<string, typeof items> = {};
@@ -143,9 +146,15 @@ export function useOrderSubmission() {
         }, 0);
         
         // Use the first category's delivery date for the combined order
+        // If no delivery dates are set, use today's date
+        let orderDate;
         const firstCategoryId = Object.keys(deliveryDates)[0];
-        if (!firstCategoryId || !deliveryDates[firstCategoryId]) {
-          throw new Error('Missing delivery date');
+        
+        if (firstCategoryId && deliveryDates[firstCategoryId]) {
+          orderDate = deliveryDates[firstCategoryId];
+        } else {
+          // If no date is selected, use today
+          orderDate = new Date();
         }
 
         const orderData = {
@@ -154,7 +163,7 @@ export function useOrderSubmission() {
           tax_amount: taxAmount,
           notes: notes,
           status: 'pending',
-          delivery_date: deliveryDates[firstCategoryId].toISOString(),
+          delivery_date: orderDate.toISOString(),
           payment_proof_url: uploadData.path,
           pickup_time: pickupDetail.time,
           pickup_location: pickupDetail.location,

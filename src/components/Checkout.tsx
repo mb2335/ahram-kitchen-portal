@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
@@ -8,6 +9,7 @@ import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
 import { PickupDetail } from '@/types/pickup';
+import { FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 
 const TAX_RATE = 0.1;
 
