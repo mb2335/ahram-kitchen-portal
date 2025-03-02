@@ -67,7 +67,8 @@ export function DeliveryForm({
           location: detail.location
         })),
         fulfillment_types: category.fulfillment_types || [],
-        pickup_days: category.pickup_days || []
+        pickup_days: category.pickup_days || [],
+        allow_joint_pickup: category.allow_joint_pickup || false
       }));
     },
   });
@@ -305,7 +306,9 @@ export function DeliveryForm({
           ) ? FULFILLMENT_TYPE_PICKUP : fulfillmentType;
         
         // Skip categories that don't match the selected fulfillment type
-        if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;
+        if (!Array.isArray(category.fulfillment_types) || !category.fulfillment_types.includes(effectiveFulfillmentType)) {
+          return null;
+        }
         
         return (
           <div key={category.id} className="space-y-4">
