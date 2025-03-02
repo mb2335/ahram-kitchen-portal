@@ -1,36 +1,32 @@
 
 import { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { PickupDetail } from '@/types/pickup';
-import { 
-  FULFILLMENT_TYPE_PICKUP, 
-  FULFILLMENT_TYPE_DELIVERY,
-  ERROR_MESSAGES
-} from '@/types/order';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
+import { PickupDetail } from '@/types/pickup';
 
-export interface CategoryDeliveryDateProps {
+interface CategoryDeliveryDateProps {
   category: {
     id: string;
     name: string;
-    has_custom_pickup: boolean;
-    pickup_details: PickupDetail[];
-    fulfillment_types: string[];
-    pickup_days: number[]; // Days of week for pickup (0=Sunday, 1=Monday, etc.)
+    pickup_days?: number[];
+    has_custom_pickup?: boolean;
+    pickup_details?: { time: string; location: string }[];
   };
-  selectedDate: Date | undefined;
+  selectedDate: Date | null;
   onDateChange: (date: Date) => void;
   selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
-  allPickupCategories?: string[]; // New prop for all categories being picked up
+  allPickupCategories: string[];
 }
 
 export function CategoryDeliveryDate({
@@ -40,164 +36,198 @@ export function CategoryDeliveryDate({
   selectedPickupDetail,
   onPickupDetailChange,
   fulfillmentType,
-  allPickupCategories = []
+  allPickupCategories
 }: CategoryDeliveryDateProps) {
-  const [date, setDate] = useState<Date | undefined>(selectedDate);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
-  }, [selectedDate]);
+  const [date, setDate] = useState<Date | undefined>(selectedDate || undefined);
+  const [pickupTime, setPickupTime] = useState<string | undefined>(selectedPickupDetail?.time);
+  const [pickupLocation, setPickupLocation] = useState<string | undefined>(selectedPickupDetail?.location);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSelect = (date: Date | undefined) => {
-    if (!date) return;
-    
-    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
-    const isPickupDay = category.pickup_days?.includes(dayOfWeek);
-    
-    // Check if date is valid based on fulfillment type
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
-      setErrorMessage(ERROR_MESSAGES.PICKUP_INVALID_DAY);
-      return;
-    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
-      setErrorMessage(ERROR_MESSAGES.DELIVERY_INVALID_DAY);
-      return;
+  // Generate heading text based on fulfillment type and categories
+  const generateHeading = () => {
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
+      return `${category.name} Pickup Date`;
     }
-    
-    setErrorMessage(null);
-    setDate(date);
-    onDateChange(date);
+    return `${category.name} Delivery Date`;
   };
 
-  const isDateDisabled = (date: Date) => {
-    const dayOfWeek = date.getDay();
-    const isPickupDay = category.pickup_days?.includes(dayOfWeek);
-    
-    // For pickup: disable non-pickup days
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
-      return true;
+  // Generate pickup details heading
+  const generatePickupHeading = () => {
+    if (allPickupCategories.length === 1) {
+      return 'Pickup Details';
     }
     
-    // For delivery: disable pickup days
-    if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
-      return true;
+    const categoryNames = allPickupCategories.length > 2
+      ? 'Multiple Categories'
+      : allPickupCategories.join(' & ');
+      
+    return `${categoryNames} Pickup Details`;
+  };
+
+  // Check if a day is a pickup day
+  const isPickupDay = (day: Date) => {
+    return category.pickup_days?.includes(day.getDay()) || false;
+  };
+
+  // Set the initial pickup detail if not yet selected
+  useEffect(() => {
+    if (
+      fulfillmentType === FULFILLMENT_TYPE_PICKUP &&
+      category.has_custom_pickup &&
+      category.pickup_details?.length &&
+      !selectedPickupDetail
+    ) {
+      // Default to the first available pickup detail
+      onPickupDetailChange({
+        time: category.pickup_details[0].time,
+        location: category.pickup_details[0].location
+      });
+    }
+  }, [fulfillmentType, category, selectedPickupDetail, onPickupDetailChange]);
+
+  // Update parent component when pickup time or location changes
+  useEffect(() => {
+    if (pickupTime && pickupLocation) {
+      onPickupDetailChange({
+        time: pickupTime,
+        location: pickupLocation
+      });
+    }
+  }, [pickupTime, pickupLocation, onPickupDetailChange]);
+
+  // Handle date selection
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) return;
+    
+    setDate(selectedDate);
+    
+    // Check if the selected date is valid for the current fulfillment type
+    const isSelectedDatePickupDay = isPickupDay(selectedDate);
+    
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !isSelectedDatePickupDay) {
+      setError(`Pickup is only available on designated pickup days for ${category.name}.`);
+      return;
+    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && isSelectedDatePickupDay) {
+      setError(`Delivery is not available on pickup days for ${category.name}.`);
+      return;
+    }
+    
+    setError(null);
+    onDateChange(selectedDate);
+  };
+
+  // Function to determine if a date should be disabled
+  const isDateDisabled = (date: Date) => {
+    const isPickupDayValue = isPickupDay(date);
+    
+    // If it's a pickup fulfillment, only allow pickup days
+    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
+      return !isPickupDayValue;
+    }
+    
+    // If it's a delivery fulfillment, don't allow pickup days
+    if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
+      return isPickupDayValue;
     }
     
     return false;
   };
 
-  // Generate the dynamic heading text for pickup
-  const generatePickupHeading = () => {
-    if (allPickupCategories && allPickupCategories.length > 0) {
-      const categoryNames = allPickupCategories.join(' & ');
-      return `${categoryNames} Pickup Details`;
-    }
-    return `${category.name} Pickup Options`;
-  };
-
-  if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
-    return (
-      <div className="space-y-4">
-        <h4 className="font-medium">{generatePickupHeading()}</h4>
-        {errorMessage && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-        )}
-        <div className="space-y-2">
-          <Label>Select pickup date (only on available days)</Label>
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-medium mb-2">{generateHeading()}</h3>
+        <div className="grid gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
+                  !date && "text-gray-500"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                {date ? format(date, "PPP") : `Select ${fulfillmentType === FULFILLMENT_TYPE_PICKUP ? 'Pickup' : 'Delivery'} Date`}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={handleSelect}
-                disabled={isDateDisabled}
+                onSelect={handleDateSelect}
                 initialFocus
+                disabled={(date) => 
+                  date < new Date() || // Past dates
+                  isDateDisabled(date)  // Dates that don't match the fulfillment type
+                }
               />
             </PopoverContent>
           </Popover>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </div>
-        
-        {date && (
-          <RadioGroup 
-            value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
-            onValueChange={(value) => {
-              const [time, location] = value.split('-', 2);
-              onPickupDetailChange({ time, location });
-            }}
-          >
-            {category.pickup_details.map((detail, idx) => (
-              <div className="flex items-center space-x-2 border p-2 rounded" key={idx}>
-                <RadioGroupItem value={`${detail.time}-${detail.location}`} id={`pickup-${category.id}-${idx}`} />
-                <Label htmlFor={`pickup-${category.id}-${idx}`} className="flex-1">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{detail.time}</span>
-                    <span className="text-sm text-muted-foreground">{detail.location}</span>
-                  </div>
-                </Label>
+      </div>
+
+      {fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && (
+        <div className="border p-4 rounded-md space-y-4">
+          <h3 className="font-medium">{generatePickupHeading()}</h3>
+          
+          {category.pickup_details && category.pickup_details.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pickup-time">Pickup Time</Label>
+                <Select
+                  value={pickupTime}
+                  onValueChange={setPickupTime}
+                >
+                  <SelectTrigger id="pickup-time">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(new Set(category.pickup_details.map(detail => detail.time))).map(time => (
+                      <SelectItem key={time} value={time}>{time}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          </RadioGroup>
-        )}
-      </div>
-    );
-  }
-
-  if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
-    return (
-      <div className="space-y-4">
-        <h4 className="font-medium">{category.name} Date</h4>
-        {errorMessage && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-        )}
-        <div className="mb-4">
-          <Label className="mb-1 block">Select delivery date (on non-pickup days)</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={handleSelect}
-                disabled={isDateDisabled}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+              
+              <div className="space-y-2">
+                <Label htmlFor="pickup-location">Pickup Location</Label>
+                <Select
+                  value={pickupLocation}
+                  onValueChange={setPickupLocation}
+                >
+                  <SelectTrigger id="pickup-location">
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      new Set(
+                        category.pickup_details
+                          .filter(detail => !pickupTime || detail.time === pickupTime)
+                          .map(detail => detail.location)
+                      )
+                    ).map(location => (
+                      <SelectItem key={location} value={location}>{location}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>No pickup details available for this category. Please contact the vendor.</AlertDescription>
+            </Alert>
+          )}
         </div>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+    </div>
+  );
 }

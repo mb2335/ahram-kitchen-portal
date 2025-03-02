@@ -168,47 +168,30 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate dates against pickup days
-    for (const [categoryId, date] of Object.entries(formData.deliveryDates)) {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (!category) continue;
-      
-      const dayOfWeek = date.getDay();
-      const isPickupDay = category.pickup_days?.includes(dayOfWeek);
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      
-      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
-        toast({
-          title: 'Invalid Pickup Date',
-          description: `Pickup for ${category.name} is only available on designated pickup days.`,
-          variant: 'destructive',
-        });
-        return;
-      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
-        toast({
-          title: 'Invalid Delivery Date',
-          description: `Delivery for ${category.name} is not available on pickup days.`,
-          variant: 'destructive',
-        });
-        return;
-      }
+    try {
+      await submitOrder({
+        items,
+        total,
+        taxAmount,
+        notes: formData.notes,
+        deliveryDates: formData.deliveryDates,
+        customerData: {
+          ...customerData,
+          address: deliveryAddress
+        },
+        pickupDetail: formData.pickupDetail,
+        fulfillmentType,
+        categoryFulfillmentTypes,
+        onOrderSuccess
+      }, paymentProof);
+    } catch (error) {
+      console.error('Order submission error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An unknown error occurred while placing your order',
+        variant: 'destructive',
+      });
     }
-
-    await submitOrder({
-      items,
-      total,
-      taxAmount,
-      notes: formData.notes,
-      deliveryDates: formData.deliveryDates,
-      customerData: {
-        ...customerData,
-        address: deliveryAddress
-      },
-      pickupDetail: formData.pickupDetail,
-      fulfillmentType,
-      categoryFulfillmentTypes,
-      onOrderSuccess
-    }, paymentProof);
   };
 
   return (
@@ -224,6 +207,8 @@ export function CheckoutForm({
         onFulfillmentTypeChange={handleFulfillmentTypeChange}
         deliveryAddress={deliveryAddress}
         onDeliveryAddressChange={setDeliveryAddress}
+        categoryFulfillmentTypes={categoryFulfillmentTypes}
+        setCategoryFulfillmentTypes={setCategoryFulfillmentTypes}
       />
 
       <PaymentInstructions

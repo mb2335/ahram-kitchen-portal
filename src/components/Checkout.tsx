@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
@@ -50,7 +51,7 @@ export function Checkout() {
         .from('customers')
         .select('*')
         .eq('user_id', session?.user?.id)
-        .single();
+        .maybeSingle();
 
       if (customer) {
         setCustomerData({
