@@ -104,10 +104,15 @@ export function useOrderSubmission() {
       console.log("All unique category IDs from cart items:", uniqueCategoryIds);
       
       // Get categories requiring delivery address
-      const { data: categoriesData } = await supabase
+      const { data: categoriesData, error: categoriesQueryError } = await supabase
         .from('menu_categories')
         .select('id, fulfillment_types')
         .in('id', uniqueCategoryIds);
+
+      if (categoriesQueryError) {
+        console.error("Error fetching categories:", categoriesQueryError);
+        throw new Error(`Failed to fetch category information: ${categoriesQueryError.message}`);
+      }
 
       console.log("Categories data from database:", categoriesData);
 
@@ -152,11 +157,17 @@ export function useOrderSubmission() {
       for (const categoryId of uniqueCategoryIds) {
         if (!deliveryDates[categoryId]) {
           console.error(`Missing delivery date for category ${categoryId}`);
-          const { data: categoryData } = await supabase
+          
+          // Use the complete category ID for this query
+          const { data: categoryData, error: categoryError } = await supabase
             .from('menu_categories')
             .select('name')
             .eq('id', categoryId)
             .single();
+          
+          if (categoryError) {
+            console.error(`Error fetching category name: ${categoryError.message}`);
+          }
           
           throw new Error(`Please select a date for ${categoryData?.name || 'items in your order'}`);
         }
@@ -382,7 +393,7 @@ export function useOrderSubmission() {
               id: insertedOrder.id,
               items: items.map(item => ({
                 name: item.name,
-                nameKo: item.nameKo,
+                nameKo: item.name_ko,
                 quantity: item.quantity,
                 price: item.price,
                 discount_percentage: item.discount_percentage
@@ -422,6 +433,7 @@ export function useOrderSubmission() {
         
         const groupTaxAmount = groupTotal * (taxAmount / total);
 
+        // Use the complete category ID for this query
         const { data: categoryData, error: categoryError } = await supabase
           .from('menu_categories')
           .select('*')
@@ -432,6 +444,12 @@ export function useOrderSubmission() {
 
         const category = categoryData;
         const needsCustomPickup = groupFulfillmentType === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
+        
+        // Fix: Ensure we use the correct date for this category
+        const deliveryDate = processedDates[groupCategoryId];
+        if (!deliveryDate) {
+          throw new Error(`Missing delivery date for category ${category?.name || groupCategoryId}`);
+        }
 
         const orderData = {
           customer_id: customerId,
@@ -496,7 +514,7 @@ export function useOrderSubmission() {
             id: firstOrder.id,
             items: items.map(item => ({
               name: item.name,
-              nameKo: item.nameKo,
+              nameKo: item.name_ko,
               quantity: item.quantity,
               price: item.price,
               discount_percentage: item.discount_percentage
