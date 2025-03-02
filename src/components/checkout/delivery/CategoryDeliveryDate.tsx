@@ -8,6 +8,7 @@ import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PickupDetail } from '@/types/pickup';
 import { 
   FULFILLMENT_TYPE_PICKUP, 
@@ -24,6 +25,7 @@ export interface CategoryDeliveryDateProps {
     pickup_details: PickupDetail[];
     fulfillment_types: string[];
     pickup_days: number[]; // Days of week for pickup (0=Sunday, 1=Monday, etc.)
+    allow_joint_pickup?: boolean; // Whether this category can be picked up with other items
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
@@ -31,6 +33,10 @@ export interface CategoryDeliveryDateProps {
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
   allPickupCategories?: string[]; // For all categories being picked up
+  onJointPickupChange?: (useJointPickup: boolean) => void; // New prop for joint pickup
+  hasOtherPickupItems?: boolean; // Whether there are other pickup items
+  useJointPickup?: boolean; // Whether to use joint pickup
+  jointPickupDetail?: PickupDetail | null; // The joint pickup detail
 }
 
 export function CategoryDeliveryDate({
@@ -40,7 +46,11 @@ export function CategoryDeliveryDate({
   selectedPickupDetail,
   onPickupDetailChange,
   fulfillmentType,
-  allPickupCategories = []
+  allPickupCategories = [],
+  onJointPickupChange,
+  hasOtherPickupItems = false,
+  useJointPickup = false,
+  jointPickupDetail = null
 }: CategoryDeliveryDateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
@@ -50,10 +60,11 @@ export function CategoryDeliveryDate({
         category.has_custom_pickup && 
         category.pickup_details?.length > 0 && 
         !selectedPickupDetail && 
-        selectedDate) {
+        selectedDate && 
+        !useJointPickup) {
       onPickupDetailChange(category.pickup_details[0]);
     }
-  }, [fulfillmentType, category, selectedPickupDetail, selectedDate, onPickupDetailChange]);
+  }, [fulfillmentType, category, selectedPickupDetail, selectedDate, onPickupDetailChange, useJointPickup]);
 
   const handleSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -111,6 +122,12 @@ export function CategoryDeliveryDate({
     return `${category.name} Pickup Options`;
   };
 
+  // Show joint pickup option when category allows it and there are other pickup items
+  const showJointPickupOption = fulfillmentType === FULFILLMENT_TYPE_PICKUP && 
+                               category.allow_joint_pickup && 
+                               hasOtherPickupItems &&
+                               onJointPickupChange;
+
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
     return (
       <div className="space-y-4">
@@ -121,53 +138,90 @@ export function CategoryDeliveryDate({
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
-        <div className="space-y-2">
-          <Label>Select pickup date (only on available days)</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleSelect}
-                disabled={isDateDisabled}
-                initialFocus
+
+        {/* Joint pickup option */}
+        {showJointPickupOption && (
+          <div className="p-3 bg-secondary/20 rounded-md space-y-2">
+            <div className="flex items-start space-x-2">
+              <Checkbox 
+                id={`joint-pickup-${category.id}`} 
+                checked={useJointPickup}
+                onCheckedChange={(checked) => {
+                  if (onJointPickupChange) {
+                    onJointPickupChange(!!checked);
+                  }
+                }}
               />
-            </PopoverContent>
-          </Popover>
-        </div>
-        
-        {(selectedDate || fulfillmentType === FULFILLMENT_TYPE_PICKUP) && (
-          <RadioGroup 
-            value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
-            onValueChange={(value) => {
-              const [time, location] = value.split('-', 2);
-              onPickupDetailChange({ time, location });
-            }}
-          >
-            {category.pickup_details.map((detail, idx) => (
-              <div className="flex items-center space-x-2 border p-2 rounded" key={idx}>
-                <RadioGroupItem value={`${detail.time}-${detail.location}`} id={`pickup-${category.id}-${idx}`} />
-                <Label htmlFor={`pickup-${category.id}-${idx}`} className="flex-1">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{detail.time}</span>
-                    <span className="text-sm text-muted-foreground">{detail.location}</span>
-                  </div>
+              <div>
+                <Label htmlFor={`joint-pickup-${category.id}`} className="font-medium">
+                  Pick up with other products
                 </Label>
+                <p className="text-sm text-muted-foreground">
+                  Use the same pickup time and location as your other pickup items
+                </p>
               </div>
-            ))}
-          </RadioGroup>
+            </div>
+            
+            {useJointPickup && jointPickupDetail && (
+              <div className="ml-6 mt-2 p-2 bg-background border rounded-md">
+                <p className="text-sm font-medium">{jointPickupDetail.time}</p>
+                <p className="text-sm text-muted-foreground">{jointPickupDetail.location}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!useJointPickup && (
+          <>
+            <div className="space-y-2">
+              <Label>Select pickup date (only on available days)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleSelect}
+                    disabled={isDateDisabled}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            {selectedDate && (
+              <RadioGroup 
+                value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
+                onValueChange={(value) => {
+                  const [time, location] = value.split('-', 2);
+                  onPickupDetailChange({ time, location });
+                }}
+              >
+                {category.pickup_details.map((detail, idx) => (
+                  <div className="flex items-center space-x-2 border p-2 rounded" key={idx}>
+                    <RadioGroupItem value={`${detail.time}-${detail.location}`} id={`pickup-${category.id}-${idx}`} />
+                    <Label htmlFor={`pickup-${category.id}-${idx}`} className="flex-1">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{detail.time}</span>
+                        <span className="text-sm text-muted-foreground">{detail.location}</span>
+                      </div>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            )}
+          </>
         )}
       </div>
     );
