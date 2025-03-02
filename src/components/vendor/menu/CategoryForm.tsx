@@ -22,23 +22,14 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   const { data: categories = [] } = useQuery({
     queryKey: ['copy-pickup-categories'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('menu_categories')
-          .select('id, name, has_custom_pickup, pickup_details, fulfillment_types, pickup_days, allow_joint_pickup')
-          .filter('has_custom_pickup', 'eq', true)
-          .filter('fulfillment_types', 'cs', '{"pickup"}');
-        
-        if (error) {
-          console.error('Error fetching categories:', error);
-          return [];
-        }
-        
-        return data || [];
-      } catch (err) {
-        console.error('Exception fetching categories:', err);
-        return [];
-      }
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('id, name, has_custom_pickup, pickup_details, fulfillment_types, pickup_days')
+        .filter('has_custom_pickup', 'eq', true)
+        .filter('fulfillment_types', 'cs', '{"pickup"}');
+      
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -108,18 +99,17 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   };
 
   const handleCopyPickupDetails = (categoryId: string) => {
-    const selectedCategory = categories.find(category => category?.id === categoryId);
+    const selectedCategory = categories.find(category => category.id === categoryId);
     if (!selectedCategory) return;
     
     setFormData({
       ...formData,
-      has_custom_pickup: selectedCategory.has_custom_pickup || false,
-      pickup_details: (selectedCategory.pickup_details || []).map((detail: any) => ({
+      has_custom_pickup: selectedCategory.has_custom_pickup,
+      pickup_details: selectedCategory.pickup_details.map((detail: any) => ({
         time: detail.time || '',
         location: detail.location || ''
       })),
-      pickup_days: selectedCategory.pickup_days || [],
-      allow_joint_pickup: selectedCategory.allow_joint_pickup || false
+      pickup_days: selectedCategory.pickup_days || []
     });
   };
 
@@ -250,26 +240,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                   }
                 />
                 <Label htmlFor="has_custom_pickup">Custom pickup locations & times</Label>
-              </div>
-
-              {/* Allow joint pickup with other items */}
-              <div className="flex items-center space-x-2 py-2 bg-secondary/10 px-3 rounded-md">
-                <Checkbox
-                  id="allow_joint_pickup"
-                  checked={formData.allow_joint_pickup}
-                  onCheckedChange={(checked) => 
-                    setFormData({ 
-                      ...formData, 
-                      allow_joint_pickup: checked as boolean
-                    })
-                  }
-                />
-                <div>
-                  <Label htmlFor="allow_joint_pickup">Allow joint pickup with other products</Label>
-                  <p className="text-xs text-muted-foreground">
-                    If checked, customers can choose to pick this up together with other pickup items
-                  </p>
-                </div>
               </div>
 
               {formData.has_custom_pickup && (

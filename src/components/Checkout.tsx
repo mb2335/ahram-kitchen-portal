@@ -23,8 +23,7 @@ export function Checkout() {
   const [formData, setFormData] = useState({
     notes: '',
     deliveryDates: {} as Record<string, Date>,
-    pickupDetail: null as PickupDetail | null,
-    jointPickupCategories: {} as Record<string, boolean>
+    pickupDetail: null as PickupDetail | null
   });
 
   const [customerData, setCustomerData] = useState({

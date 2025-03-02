@@ -27,8 +27,6 @@ interface DeliveryFormProps {
   onDeliveryAddressChange: (address: string) => void;
   categoryFulfillmentTypes: Record<string, string>;
   onCategoryFulfillmentTypeChange: (categoryId: string, type: string) => void;
-  jointPickupCategories?: Record<string, boolean>;
-  onJointPickupChange?: (categoryId: string, useJointPickup: boolean) => void;
 }
 
 export function DeliveryForm({ 
@@ -43,29 +41,13 @@ export function DeliveryForm({
   deliveryAddress,
   onDeliveryAddressChange,
   categoryFulfillmentTypes,
-  onCategoryFulfillmentTypeChange,
-  jointPickupCategories = {},
-  onJointPickupChange
+  onCategoryFulfillmentTypeChange
 }: DeliveryFormProps) {
   const { items } = useCart();
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
   const [hasPickupOnlyCategories, setHasPickupOnlyCategories] = useState(false);
-  const [pickupCategoryNames, setPickupCategoryNames] = useState<string[]>([]);
-
-  // Calculate items by category - define this before using it
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
-
-  // Show mixed category fulfillment options if we have multiple categories with different options
-  const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -85,8 +67,7 @@ export function DeliveryForm({
           location: detail.location
         })),
         fulfillment_types: category.fulfillment_types || [],
-        pickup_days: category.pickup_days || [],
-        allow_joint_pickup: category.allow_joint_pickup || false
+        pickup_days: category.pickup_days || []
       }));
     },
   });
@@ -140,10 +121,16 @@ export function DeliveryForm({
         onFulfillmentTypeChange(availableTypes[0]);
       }
     }
-
-    // Update pickup category names
-    updatePickupCategoryNames();
   }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
+
+  const itemsByCategory = items.reduce((acc, item) => {
+    const categoryId = item.category_id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = [];
+    }
+    acc[categoryId].push(item);
+    return acc;
+  }, {} as Record<string, typeof items>);
 
   // Check if there are items that need custom fulfillment
   const hasCustomPickupItems = categories.some(category => 
@@ -163,34 +150,6 @@ export function DeliveryForm({
     }).filter(Boolean);
   };
 
-  // Update pickup category names whenever relevant state changes
-  const updatePickupCategoryNames = () => {
-    setPickupCategoryNames(getPickupCategories());
-  };
-
-  // Call updatePickupCategoryNames when relevant state changes
-  useEffect(() => {
-    updatePickupCategoryNames();
-  }, [fulfillmentType, categoryFulfillmentTypes, categories, itemsByCategory]);
-
-  // Find categories with pickup items (for joint pickup)
-  const findPickupCategories = () => {
-    // Get all categories that have pickup as a fulfillment type
-    const pickupCategoryIds = Object.keys(itemsByCategory).filter(categoryId => {
-      const category = categories.find(c => c.id === categoryId);
-      return category?.fulfillment_types?.includes(FULFILLMENT_TYPE_PICKUP);
-    });
-
-    return pickupCategoryIds;
-  };
-
-  // Determine if we have other pickup items for joint pickup
-  const hasOtherPickupItems = (currentCategoryId: string) => {
-    const pickupCategoryIds = findPickupCategories();
-    // Return true if there are other categories besides this one that support pickup
-    return pickupCategoryIds.some(id => id !== currentCategoryId);
-  };
-
   useEffect(() => {
     // Display warnings if mixing fulfillment types
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
@@ -201,6 +160,12 @@ export function DeliveryForm({
       setWarning(null);
     }
   }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery]);
+
+  // Show mixed category fulfillment options if we have multiple categories with different options
+  const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
+
+  // Get all pickup category names
+  const pickupCategoryNames = getPickupCategories();
 
   // Check if any categories require delivery address
   const needsDeliveryAddress = () => {
@@ -342,9 +307,6 @@ export function DeliveryForm({
         // Skip categories that don't match the selected fulfillment type
         if (!category.fulfillment_types?.includes(effectiveFulfillmentType)) return null;
         
-        const useJointPickup = jointPickupCategories?.[category.id] || false;
-        const otherPickupItems = hasOtherPickupItems(category.id);
-        
         return (
           <div key={category.id} className="space-y-4">
             <CategoryDeliveryDate
@@ -355,10 +317,6 @@ export function DeliveryForm({
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}
               allPickupCategories={pickupCategoryNames}
-              onJointPickupChange={onJointPickupChange && ((useJoint) => onJointPickupChange(category.id, useJoint))}
-              hasOtherPickupItems={otherPickupItems}
-              useJointPickup={useJointPickup}
-              jointPickupDetail={pickupDetail}
             />
             <Separator />
           </div>
