@@ -67,64 +67,50 @@ export function CheckoutForm({
   useEffect(() => {
     if (!categories.length) return;
     
-    let hasPickupOnlyItems = false;
-    let hasDeliveryItems = false;
-    let initialFulfillmentType = '';
+    const pickupOnlyCategories = new Set<string>();
+    let hasDeliveryEligibleItems = false;
     
     Array.from(categoriesWithItems).forEach(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
       if (category?.fulfillment_types) {
-        const fulfillmentOptions = category.fulfillment_types;
-        
-        if (fulfillmentOptions.length === 1 && fulfillmentOptions[0] === FULFILLMENT_TYPE_PICKUP) {
-          hasPickupOnlyItems = true;
-        }
-        
-        if (fulfillmentOptions.includes(FULFILLMENT_TYPE_DELIVERY)) {
-          hasDeliveryItems = true;
+        if (category.fulfillment_types.length === 1 && 
+            category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+          pickupOnlyCategories.add(categoryId);
+        } else if (category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY)) {
+          hasDeliveryEligibleItems = true;
         }
       }
     });
     
-    if (hasPickupOnlyItems && !hasDeliveryItems) {
-      initialFulfillmentType = FULFILLMENT_TYPE_PICKUP;
-    } else if (hasDeliveryItems && !hasPickupOnlyItems) {
-      initialFulfillmentType = FULFILLMENT_TYPE_DELIVERY;
-    } else if (fulfillmentType === '') {
-      initialFulfillmentType = FULFILLMENT_TYPE_PICKUP;
+    if (!fulfillmentType) {
+      if (pickupOnlyCategories.size === categoriesWithItems.size) {
+        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
+      } else if (hasDeliveryEligibleItems && pickupOnlyCategories.size === 0) {
+        setFulfillmentType(FULFILLMENT_TYPE_DELIVERY);
+      } else if (pickupOnlyCategories.size > 0) {
+        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
+      } else {
+        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
+      }
     }
     
-    if (fulfillmentType === '' && initialFulfillmentType !== '') {
-      setFulfillmentType(initialFulfillmentType);
-    }
-
     if (Object.keys(categoryFulfillmentTypes).length === 0) {
-      const newCategoryFulfillmentTypes: Record<string, string> = {};
+      const newTypes: Record<string, string> = {};
       
       Array.from(categoriesWithItems).forEach(categoryId => {
         const category = categories.find(cat => cat.id === categoryId);
-        if (category?.fulfillment_types?.length) {
-          if (category.fulfillment_types.length === 1 && 
-              category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
-            newCategoryFulfillmentTypes[categoryId] = FULFILLMENT_TYPE_PICKUP;
-          } 
-          else if (fulfillmentType) {
-            if (category.fulfillment_types.includes(fulfillmentType)) {
-              newCategoryFulfillmentTypes[categoryId] = fulfillmentType;
-            } else {
-              newCategoryFulfillmentTypes[categoryId] = category.fulfillment_types[0];
-            }
-          }
-          else if (category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY)) {
-            newCategoryFulfillmentTypes[categoryId] = FULFILLMENT_TYPE_DELIVERY;
-          } else {
-            newCategoryFulfillmentTypes[categoryId] = category.fulfillment_types[0];
-          }
+        
+        if (pickupOnlyCategories.has(categoryId)) {
+          newTypes[categoryId] = FULFILLMENT_TYPE_PICKUP;
+        } else if (category?.fulfillment_types?.includes(fulfillmentType)) {
+          newTypes[categoryId] = fulfillmentType;
+        } else if (category?.fulfillment_types?.length) {
+          newTypes[categoryId] = category.fulfillment_types[0];
         }
       });
       
-      if (Object.keys(newCategoryFulfillmentTypes).length > 0) {
-        setCategoryFulfillmentTypes(newCategoryFulfillmentTypes);
+      if (Object.keys(newTypes).length > 0) {
+        setCategoryFulfillmentTypes(newTypes);
       }
     }
 
@@ -157,8 +143,7 @@ export function CheckoutForm({
             }
             
             updatedDates[categoryId] = nextPickupDay;
-          } 
-          else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
+          } else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
             const dayOfWeek = today.getDay();
             let deliveryDay = new Date(today);
             
@@ -253,6 +238,13 @@ export function CheckoutForm({
     }
 
     const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      
+      if (category?.fulfillment_types.length === 1 && 
+          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+        return false;
+      }
+      
       const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
       return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
     });

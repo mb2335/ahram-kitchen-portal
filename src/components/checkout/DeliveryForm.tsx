@@ -167,6 +167,26 @@ export function DeliveryForm({
   // Get all pickup category names
   const pickupCategoryNames = getPickupCategories();
 
+  // Check if any categories require delivery address
+  const needsDeliveryAddress = () => {
+    // If there's no mixed delivery, use the global fulfillment type
+    if (!showMixedCategoryOptions) {
+      return fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
+    }
+
+    // For mixed delivery, check if any category has delivery selected
+    return Object.entries(categoryFulfillmentTypes).some(([categoryId, type]) => {
+      // If this category only supports pickup, never need delivery address
+      const category = categories.find(c => c.id === categoryId);
+      if (category?.fulfillment_types.length === 1 && 
+          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+        return false;
+      }
+      
+      return type === FULFILLMENT_TYPE_DELIVERY;
+    });
+  };
+
   return (
     <div className="space-y-6">
       {!showMixedCategoryOptions && availableFulfillmentTypes.length > 1 && (
@@ -290,7 +310,7 @@ export function DeliveryForm({
       })}
 
       {/* Delivery address is required for delivery orders */}
-      {(fulfillmentType === FULFILLMENT_TYPE_DELIVERY || Object.values(categoryFulfillmentTypes).includes(FULFILLMENT_TYPE_DELIVERY)) && (
+      {needsDeliveryAddress() && (
         <div className="space-y-2">
           <Label htmlFor="delivery-address">Delivery Address (Required)</Label>
           <Input 

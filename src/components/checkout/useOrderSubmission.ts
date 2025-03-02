@@ -37,7 +37,7 @@ export function useOrderSubmission() {
         throw new Error('Invalid menu item IDs detected');
       }
 
-      // Check which categories require a delivery address
+      // Extract all unique category IDs from items
       const itemCategoryIds = items
         .map(item => item.category_id)
         .filter(Boolean) as string[];
@@ -82,12 +82,6 @@ export function useOrderSubmission() {
       }
 
       // Validate we have dates for all items
-      const itemCategoryIds = items
-        .map(item => item.category_id)
-        .filter(Boolean) as string[];
-      
-      const uniqueCategoryIds = [...new Set(itemCategoryIds)];
-      
       const missingDates = uniqueCategoryIds.filter(categoryId => 
         deliveryDates[categoryId] === undefined
       );
