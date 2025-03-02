@@ -153,7 +153,9 @@ export function CategoryDeliveryDate({
             value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
             onValueChange={(value) => {
               const [time, location] = value.split('-', 2);
-              onPickupDetailChange({ time, location });
+              // Fix: Include day property when creating PickupDetail
+              const dayOfWeek = selectedDate ? selectedDate.getDay() : 0;
+              onPickupDetailChange({ day: dayOfWeek, time, location });
             }}
           >
             {category.pickup_details.map((detail, idx) => (

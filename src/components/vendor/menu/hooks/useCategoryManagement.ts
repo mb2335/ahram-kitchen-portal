@@ -58,13 +58,20 @@ export function useCategoryManagement() {
         ? formData.pickup_details
         : [];
 
+      // Convert PickupDetail objects to plain objects for Supabase
+      const pickupDetailsForDb = pickupDetails.map(detail => ({
+        day: detail.day,
+        time: detail.time,
+        location: detail.location
+      }));
+
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
         vendor_id: vendorData.id,
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         has_custom_pickup: formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup,
-        pickup_details: pickupDetails,
+        pickup_details: pickupDetailsForDb,
         fulfillment_types: formData.fulfillment_types,
         pickup_days: formData.pickup_days,
       };

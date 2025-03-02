@@ -63,8 +63,9 @@ export function DeliveryForm({
         name: category.name,
         has_custom_pickup: category.has_custom_pickup,
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          time: detail.time,
-          location: detail.location
+          day: detail.day !== undefined ? detail.day : 0, // Ensure day is always included
+          time: detail.time || '',
+          location: detail.location || ''
         })),
         fulfillment_types: category.fulfillment_types || [],
         pickup_days: category.pickup_days || []
