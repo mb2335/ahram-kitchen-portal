@@ -4,12 +4,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { Plus, Trash2, Copy, ArrowRight } from "lucide-react";
 import { CategoryFormData, PickupDetail } from "./types/category";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -18,6 +27,9 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormProps) {
+  const [dayToCopyFrom, setDayToCopyFrom] = useState<number | null>(null);
+  const [dayToCopyTo, setDayToCopyTo] = useState<number | null>(null);
+  
   // Fetch existing categories to copy pickup details from
   const { data: categories = [] } = useQuery({
     queryKey: ['copy-pickup-categories'],
@@ -33,10 +45,11 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     },
   });
 
-  const addPickupDetail = () => {
+  const addPickupDetail = (day: number) => {
+    const newDetail: PickupDetail = { day, time: '', location: '' };
     setFormData({
       ...formData,
-      pickup_details: [...formData.pickup_details, { time: '', location: '' }]
+      pickup_details: [...formData.pickup_details, newDetail]
     });
   };
 
@@ -48,7 +61,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     });
   };
 
-  const updatePickupDetail = (index: number, field: keyof PickupDetail, value: string) => {
+  const updatePickupDetail = (index: number, field: keyof PickupDetail, value: any) => {
     const newPickupDetails = formData.pickup_details.map((detail, i) => {
       if (i === index) {
         return { ...detail, [field]: value };
@@ -89,6 +102,18 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
       const index = newPickupDays.indexOf(day);
       if (index !== -1) {
         newPickupDays.splice(index, 1);
+        
+        // Also remove any pickup details associated with this day
+        const filteredPickupDetails = formData.pickup_details.filter(
+          detail => detail.day !== day
+        );
+        
+        setFormData({
+          ...formData,
+          pickup_days: newPickupDays,
+          pickup_details: filteredPickupDetails
+        });
+        return;
       }
     }
     
@@ -106,6 +131,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
       ...formData,
       has_custom_pickup: selectedCategory.has_custom_pickup,
       pickup_details: selectedCategory.pickup_details.map((detail: any) => ({
+        day: detail.day !== undefined ? detail.day : 0,
         time: detail.time || '',
         location: detail.location || ''
       })),
@@ -116,6 +142,37 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   const getDayName = (day: number): string => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[day];
+  };
+
+  const getPickupDetailsForDay = (day: number): PickupDetail[] => {
+    return formData.pickup_details.filter(detail => detail.day === day);
+  };
+
+  const copyPickupDetailsFromDay = () => {
+    if (dayToCopyFrom === null || dayToCopyTo === null) return;
+    
+    // Get pickup details from source day
+    const detailsToCopy = formData.pickup_details
+      .filter(detail => detail.day === dayToCopyFrom)
+      .map(detail => ({
+        ...detail,
+        day: dayToCopyTo
+      }));
+    
+    // Remove existing details for target day
+    const filteredDetails = formData.pickup_details.filter(
+      detail => detail.day !== dayToCopyTo
+    );
+    
+    // Add the new details
+    setFormData({
+      ...formData,
+      pickup_details: [...filteredDetails, ...detailsToCopy]
+    });
+    
+    // Reset the selection
+    setDayToCopyFrom(null);
+    setDayToCopyTo(null);
   };
 
   return (
@@ -235,55 +292,142 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                     setFormData({ 
                       ...formData, 
                       has_custom_pickup: checked as boolean,
-                      pickup_details: checked ? [{ time: '', location: '' }] : []
+                      pickup_details: checked ? formData.pickup_details : []
                     })
                   }
                 />
                 <Label htmlFor="has_custom_pickup">Custom pickup locations & times</Label>
               </div>
 
-              {formData.has_custom_pickup && (
-                <div className="space-y-4">
-                  {formData.pickup_details.map((detail, index) => (
-                    <div key={index} className="flex gap-4 items-start bg-secondary/10 p-4 rounded-lg">
-                      <div className="flex-1 space-y-2">
-                        <Label>Pickup Time</Label>
-                        <Input
-                          value={detail.time}
-                          onChange={(e) => updatePickupDetail(index, 'time', e.target.value)}
-                          placeholder="e.g., 1:00 PM"
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <Label>Pickup Location</Label>
-                        <Input
-                          value={detail.location}
-                          onChange={(e) => updatePickupDetail(index, 'location', e.target.value)}
-                          placeholder="e.g., Kirkland"
-                          className="w-full"
-                        />
-                      </div>
+              {formData.has_custom_pickup && formData.pickup_days.length > 0 && (
+                <div className="space-y-6">
+                  {/* Copy between days */}
+                  <div className="space-y-2 bg-secondary/20 p-3 rounded-md">
+                    <Label>Copy Pickup Details Between Days</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={dayToCopyFrom?.toString() || ''}
+                        onValueChange={(val) => setDayToCopyFrom(Number(val))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Copy from day" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formData.pickup_days.map((day) => (
+                            <SelectItem key={`from-${day}`} value={day.toString()}>
+                              {getDayName(day)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <ArrowRight className="h-4 w-4" />
+
+                      <Select
+                        value={dayToCopyTo?.toString() || ''}
+                        onValueChange={(val) => setDayToCopyTo(Number(val))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Copy to day" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formData.pickup_days.map((day) => (
+                            <SelectItem key={`to-${day}`} value={day.toString()}>
+                              {getDayName(day)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="mt-8"
-                        onClick={() => removePickupDetail(index)}
+                        variant="outline"
+                        disabled={dayToCopyFrom === null || dayToCopyTo === null}
+                        onClick={copyPickupDetailsFromDay}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy
                       </Button>
                     </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={addPickupDetail}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Another Time & Location
-                  </Button>
+                  </div>
+
+                  <Tabs defaultValue={formData.pickup_days[0]?.toString()}>
+                    <TabsList className="mb-4 flex flex-wrap h-auto">
+                      {formData.pickup_days.map((day) => (
+                        <TabsTrigger key={day} value={day.toString()} className="mb-1">
+                          {getDayName(day)}
+                          <Badge variant="outline" className="ml-2">
+                            {getPickupDetailsForDay(day).length}
+                          </Badge>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+
+                    {formData.pickup_days.map((day) => (
+                      <TabsContent key={day} value={day.toString()} className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium">{getDayName(day)} Pickup Options</h3>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addPickupDetail(day)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Time & Location
+                          </Button>
+                        </div>
+
+                        <Separator />
+
+                        {getPickupDetailsForDay(day).length === 0 ? (
+                          <div className="text-center p-4 border border-dashed rounded-md">
+                            <p className="text-muted-foreground">
+                              No pickup details for {getDayName(day)}. Add one above.
+                            </p>
+                          </div>
+                        ) : (
+                          getPickupDetailsForDay(day).map((detail, index) => {
+                            const actualIndex = formData.pickup_details.findIndex(
+                              d => d === detail
+                            );
+                            
+                            return (
+                              <div key={index} className="flex gap-4 items-start bg-secondary/10 p-4 rounded-lg">
+                                <div className="flex-1 space-y-2">
+                                  <Label>Pickup Time</Label>
+                                  <Input
+                                    value={detail.time}
+                                    onChange={(e) => updatePickupDetail(actualIndex, 'time', e.target.value)}
+                                    placeholder="e.g., 1:00 PM"
+                                    className="w-full"
+                                  />
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                  <Label>Pickup Location</Label>
+                                  <Input
+                                    value={detail.location}
+                                    onChange={(e) => updatePickupDetail(actualIndex, 'location', e.target.value)}
+                                    placeholder="e.g., Kirkland"
+                                    className="w-full"
+                                  />
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="mt-8"
+                                  onClick={() => removePickupDetail(actualIndex)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
                 </div>
               )}
             </div>

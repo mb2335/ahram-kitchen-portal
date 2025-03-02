@@ -43,6 +43,7 @@ export function CategoryManagement() {
       return data.map(category => ({
         ...category,
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
+          day: detail.day !== undefined ? detail.day : 0,
           time: detail.time || '',
           location: detail.location || ''
         })) as PickupDetail[],
@@ -63,7 +64,7 @@ export function CategoryManagement() {
           schema: 'public', 
           table: 'menu_categories' 
         },
-        async (payload) => {
+        async () => {
           // Invalidate the cache and immediately refetch
           await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           refetch();

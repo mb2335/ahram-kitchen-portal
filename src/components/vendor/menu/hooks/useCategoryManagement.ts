@@ -55,10 +55,7 @@ export function useCategoryManagement() {
 
       // Only include pickup details if pickup is a fulfillment type and custom pickup is enabled
       const pickupDetails = formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup
-        ? formData.pickup_details.map(detail => ({
-            time: detail.time,
-            location: detail.location
-          }))
+        ? formData.pickup_details
         : [];
 
       const categoryData = {
