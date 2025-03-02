@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -21,6 +22,7 @@ export function useOrderSubmission() {
     deliveryDates,
     customerData,
     pickupDetail,
+    fulfillmentType,
     onOrderSuccess
   }: OrderSubmissionProps, paymentProof: File) => {
     setIsUploading(true);
@@ -72,7 +74,7 @@ export function useOrderSubmission() {
         if (categoryError) throw categoryError;
 
         const category = categoryData;
-        const needsCustomPickup = category?.has_custom_pickup ?? false;
+        const needsCustomPickup = fulfillmentType === 'pickup' && (category?.has_custom_pickup ?? false);
 
         const orderData = {
           customer_id: customerId,
@@ -84,6 +86,7 @@ export function useOrderSubmission() {
           payment_proof_url: uploadData.path,
           pickup_time: needsCustomPickup ? pickupDetail?.time : null,
           pickup_location: needsCustomPickup ? pickupDetail?.location : null,
+          fulfillment_type: fulfillmentType,
         };
 
         const { data: insertedOrder, error: orderError } = await supabase
@@ -140,7 +143,8 @@ export function useOrderSubmission() {
             taxAmount: taxAmount,
             createdAt: firstOrder.created_at,
             pickupTime: firstOrder.pickup_time,
-            pickupLocation: firstOrder.pickup_location
+            pickupLocation: firstOrder.pickup_location,
+            fulfillmentType: fulfillmentType
           }
         },
         replace: true

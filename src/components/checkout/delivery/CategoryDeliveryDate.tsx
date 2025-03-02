@@ -1,11 +1,16 @@
-import { format } from 'date-fns';
+
+import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PickupDetail } from '@/types/pickup';
 
-interface CategoryDeliveryDateProps {
+export interface CategoryDeliveryDateProps {
   category: {
     id: string;
     name: string;
@@ -13,140 +18,105 @@ interface CategoryDeliveryDateProps {
     delivery_available_until: string | null;
     has_custom_pickup: boolean;
     pickup_details: PickupDetail[];
+    fulfillment_types: string[];
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
   selectedPickupDetail: PickupDetail | null;
-  onPickupDetailChange: (pickupDetail: PickupDetail) => void;
+  onPickupDetailChange: (detail: PickupDetail) => void;
+  fulfillmentType: string;
 }
 
-export function CategoryDeliveryDate({ 
-  category, 
-  selectedDate, 
+export function CategoryDeliveryDate({
+  category,
+  selectedDate,
   onDateChange,
   selectedPickupDetail,
-  onPickupDetailChange
+  onPickupDetailChange,
+  fulfillmentType
 }: CategoryDeliveryDateProps) {
-  const isDateDisabled = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const [date, setDate] = useState<Date | undefined>(selectedDate);
+  
+  const fromDate = category.delivery_available_from 
+    ? new Date(category.delivery_available_from) 
+    : undefined;
+  
+  const toDate = category.delivery_available_until 
+    ? new Date(category.delivery_available_until) 
+    : undefined;
 
-    if (date < today) return true;
-
-    const from = category.delivery_available_from ? new Date(category.delivery_available_from) : null;
-    const until = category.delivery_available_until ? new Date(category.delivery_available_until) : null;
-
-    if (from) from.setHours(12, 0, 0, 0);
-    if (until) until.setHours(12, 0, 0, 0);
-    date.setHours(12, 0, 0, 0);
-
-    if (from && date < from) return true;
-    if (until && date > until) return true;
-
-    return false;
-  };
-
-  const formatDateForInput = (date: Date) => {
-    try {
-      return format(date, 'yyyy-MM-dd');
-    } catch (error) {
-      return '';
+  useEffect(() => {
+    if (selectedDate) {
+      setDate(selectedDate);
     }
+  }, [selectedDate]);
+
+  const handleSelect = (date: Date | undefined) => {
+    if (!date) return;
+    setDate(date);
+    onDateChange(date);
   };
 
-  const handlePickupDetailSelection = (detail: PickupDetail) => {
-    console.log('[CategoryDeliveryDate] Selecting pickup detail:', detail);
-    onPickupDetailChange(detail);
-  };
-
-  const pickupDetails = category.pickup_details || [];
-  const hasPickupOptions = category.has_custom_pickup && pickupDetails.length > 0;
-
-  return (
-    <div className="space-y-4">
-      <Label className="text-lg font-medium">{category.name}</Label>
-      
+  if (fulfillmentType === 'pickup' && category.has_custom_pickup && category.pickup_details?.length > 0) {
+    return (
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Pickup Date</Label>
-          <Input
-            type="date"
-            value={selectedDate ? formatDateForInput(selectedDate) : ''}
-            onChange={(e) => {
-              if (e.target.value) {
-                const date = new Date(e.target.value + 'T12:00:00');
-                if (!isNaN(date.getTime()) && !isDateDisabled(date)) {
-                  onDateChange(date);
-                }
-              }
-            }}
-            min={category.delivery_available_from ? formatDateForInput(new Date(category.delivery_available_from)) : formatDateForInput(new Date())}
-            max={category.delivery_available_until ? formatDateForInput(new Date(category.delivery_available_until)) : undefined}
-            className={cn(
-              "flex-1",
-              "focus:ring-2 focus:ring-primary",
-              "hover:border-primary transition-colors"
-            )}
-          />
-        </div>
-
-        {hasPickupOptions && (
-          <div className="space-y-2">
-            <Label>Pickup Location & Time</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {pickupDetails.map((detail, index) => (
-                <div
-                  key={index}
-                  onClick={() => handlePickupDetailSelection(detail)}
-                  className={cn(
-                    "flex flex-col gap-2 p-3 rounded-lg border text-left transition-all cursor-pointer",
-                    "hover:border-primary hover:bg-accent",
-                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                    selectedPickupDetail && 
-                    selectedPickupDetail.time === detail.time && 
-                    selectedPickupDetail.location === detail.location
-                      ? "border-primary bg-accent shadow-sm" 
-                      : "border-input"
-                  )}
-                >
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium">{detail.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">{detail.location}</span>
-                  </div>
+        <h4 className="font-medium">{category.name} Pickup Options</h4>
+        <RadioGroup 
+          value={selectedPickupDetail ? `${selectedPickupDetail.time}-${selectedPickupDetail.location}` : ''}
+          onValueChange={(value) => {
+            const [time, location] = value.split('-', 2);
+            onPickupDetailChange({ time, location });
+          }}
+        >
+          {category.pickup_details.map((detail, idx) => (
+            <div className="flex items-center space-x-2 border p-2 rounded" key={idx}>
+              <RadioGroupItem value={`${detail.time}-${detail.location}`} id={`pickup-${category.id}-${idx}`} />
+              <Label htmlFor={`pickup-${category.id}-${idx}`} className="flex-1">
+                <div className="flex flex-col">
+                  <span className="font-medium">{detail.time}</span>
+                  <span className="text-sm text-muted-foreground">{detail.location}</span>
                 </div>
-              ))}
+              </Label>
             </div>
-          </div>
-        )}
-
-        <div className="text-sm space-y-1">
-          {category.delivery_available_from && category.delivery_available_until && (
-            <p className="text-muted-foreground">
-              Available for pickup between{' '}
-              <span className="font-medium text-foreground">
-                {format(new Date(category.delivery_available_from), 'MMM d, yyyy')}
-              </span>
-              {' '}and{' '}
-              <span className="font-medium text-foreground">
-                {format(new Date(category.delivery_available_until), 'MMM d, yyyy')}
-              </span>
-              {' '}(inclusive)
-            </p>
-          )}
-          {!category.delivery_available_from && !category.delivery_available_until && (
-            <p className="text-muted-foreground">
-              Available for pickup starting{' '}
-              <span className="font-medium text-foreground">
-                {format(new Date(), 'MMM d, yyyy')}
-              </span>
-            </p>
-          )}
-        </div>
+          ))}
+        </RadioGroup>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (fulfillmentType === 'delivery') {
+    return (
+      <div className="space-y-4">
+        <h4 className="font-medium">{category.name} Date</h4>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={handleSelect}
+              disabled={(date) => {
+                // Disable dates outside the available range
+                return (fromDate && date < fromDate) || (toDate && date > toDate);
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  }
+
+  return null;
 }

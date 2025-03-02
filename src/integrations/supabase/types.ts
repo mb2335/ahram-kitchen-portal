@@ -41,6 +41,7 @@ export type Database = {
           created_at: string | null
           delivery_available_from: string | null
           delivery_available_until: string | null
+          fulfillment_types: string[] | null
           has_custom_pickup: boolean | null
           id: string
           name: string
@@ -53,6 +54,7 @@ export type Database = {
           created_at?: string | null
           delivery_available_from?: string | null
           delivery_available_until?: string | null
+          fulfillment_types?: string[] | null
           has_custom_pickup?: boolean | null
           id?: string
           name: string
@@ -65,6 +67,7 @@ export type Database = {
           created_at?: string | null
           delivery_available_from?: string | null
           delivery_available_until?: string | null
+          fulfillment_types?: string[] | null
           has_custom_pickup?: boolean | null
           id?: string
           name?: string
@@ -196,6 +199,7 @@ export type Database = {
           created_at: string | null
           customer_id: string
           delivery_date: string
+          fulfillment_type: string | null
           id: string
           notes: string | null
           payment_proof_url: string
@@ -210,6 +214,7 @@ export type Database = {
           created_at?: string | null
           customer_id: string
           delivery_date: string
+          fulfillment_type?: string | null
           id?: string
           notes?: string | null
           payment_proof_url: string
@@ -224,6 +229,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string
           delivery_date?: string
+          fulfillment_type?: string | null
           id?: string
           notes?: string | null
           payment_proof_url?: string

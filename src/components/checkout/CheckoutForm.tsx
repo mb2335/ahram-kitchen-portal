@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const { toast } = useToast();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [fulfillmentType, setFulfillmentType] = useState<string>('delivery');
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const handleDateChange = (categoryId: string, date: Date) => {
@@ -105,32 +107,34 @@ export function CheckoutForm({
       categoryId => !formData.deliveryDates[categoryId as string]
     );
 
-    if (missingDates.length > 0) {
+    if (fulfillmentType === 'delivery' && missingDates.length > 0) {
       toast({
         title: 'Error',
-        description: 'Please select pickup dates for all categories',
+        description: 'Please select delivery dates for all categories',
         variant: 'destructive',
       });
       return;
     }
 
-    const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      return category?.has_custom_pickup && !formData.pickupDetail;
-    });
-
-    if (missingPickupDetails.length > 0) {
-      const categoryNames = missingPickupDetails
-        .map(id => categories.find(cat => cat.id === id)?.name)
-        .filter(Boolean)
-        .join(', ');
-      
-      toast({
-        title: 'Error',
-        description: `Please select pickup time and location for: ${categoryNames}`,
-        variant: 'destructive',
+    if (fulfillmentType === 'pickup') {
+      const missingPickupDetails = Array.from(categoriesWithItems).filter(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        return category?.has_custom_pickup && !formData.pickupDetail;
       });
-      return;
+
+      if (missingPickupDetails.length > 0) {
+        const categoryNames = missingPickupDetails
+          .map(id => categories.find(cat => cat.id === id)?.name)
+          .filter(Boolean)
+          .join(', ');
+        
+        toast({
+          title: 'Error',
+          description: `Please select pickup time and location for: ${categoryNames}`,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     await submitOrder({
@@ -141,6 +145,7 @@ export function CheckoutForm({
       deliveryDates: formData.deliveryDates,
       customerData,
       pickupDetail: formData.pickupDetail,
+      fulfillmentType,
       onOrderSuccess
     }, paymentProof);
   };
@@ -154,6 +159,8 @@ export function CheckoutForm({
         onNotesChange={handleNotesChange}
         pickupDetail={formData.pickupDetail}
         onPickupDetailChange={handlePickupDetailChange}
+        fulfillmentType={fulfillmentType}
+        onFulfillmentTypeChange={setFulfillmentType}
       />
 
       <PaymentInstructions
