@@ -34,16 +34,54 @@ export function Checkout() {
 
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
 
+  // Fetch categories and set default dates
   useEffect(() => {
     if (items.length === 0) {
       navigate('/cart');
       return;
     }
     
+    // Set default delivery dates for all categories
+    const setDefaultDates = async () => {
+      const { data: categories } = await supabase
+        .from('menu_categories')
+        .select('*');
+      
+      if (!categories) return;
+      
+      const defaultDates: Record<string, Date> = {};
+      const today = new Date();
+      
+      // Get all unique category IDs from items
+      const categoryIds = items
+        .map(item => item.category_id)
+        .filter((id, index, self) => id && self.indexOf(id) === index) as string[];
+      
+      // Set a default date for each category
+      categoryIds.forEach(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (category) {
+          defaultDates[categoryId] = today;
+        }
+      });
+      
+      if (Object.keys(defaultDates).length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          deliveryDates: {
+            ...prev.deliveryDates,
+            ...defaultDates
+          }
+        }));
+      }
+    };
+    
+    setDefaultDates();
+    
     if (session?.user) {
       loadUserData();
     }
-  }, [session, items.length, navigate]);
+  }, [session, items, navigate]);
 
   const loadUserData = async () => {
     setIsLoadingUserData(true);

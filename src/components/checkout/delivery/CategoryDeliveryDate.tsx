@@ -45,11 +45,64 @@ export function CategoryDeliveryDate({
   const [date, setDate] = useState<Date | undefined>(selectedDate);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  // Set default date if none provided
   useEffect(() => {
-    if (selectedDate) {
+    if (!selectedDate) {
+      const today = new Date();
+      
+      // For pickup, find the next valid pickup day
+      if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.pickup_days?.length > 0) {
+        const dayOfWeek = today.getDay();
+        const nextPickupDayIndex = category.pickup_days.findIndex(day => 
+          (day - dayOfWeek + 7) % 7 >= 0
+        );
+        
+        if (nextPickupDayIndex >= 0) {
+          const nextDay = category.pickup_days[nextPickupDayIndex];
+          const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
+          
+          const nextPickupDate = new Date(today);
+          nextPickupDate.setDate(today.getDate() + daysToAdd);
+          
+          setDate(nextPickupDate);
+          onDateChange(nextPickupDate);
+        } else {
+          // Default to today if no pickup days found
+          setDate(today);
+          onDateChange(today);
+        }
+      } 
+      // For delivery, find a non-pickup day
+      else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && category.pickup_days?.length > 0) {
+        const dayOfWeek = today.getDay();
+        const isPickupDay = category.pickup_days.includes(dayOfWeek);
+        
+        if (isPickupDay) {
+          // Find the next non-pickup day
+          const nextDeliveryDate = new Date(today);
+          for (let i = 1; i <= 7; i++) {
+            nextDeliveryDate.setDate(today.getDate() + i);
+            if (!category.pickup_days.includes(nextDeliveryDate.getDay())) {
+              break;
+            }
+          }
+          
+          setDate(nextDeliveryDate);
+          onDateChange(nextDeliveryDate);
+        } else {
+          // Today is not a pickup day, so it's valid for delivery
+          setDate(today);
+          onDateChange(today);
+        }
+      } else {
+        // No pickup days defined, use today
+        setDate(today);
+        onDateChange(today);
+      }
+    } else {
       setDate(selectedDate);
     }
-  }, [selectedDate]);
+  }, [selectedDate, category.pickup_days, fulfillmentType, onDateChange]);
 
   // Auto-select the first pickup detail if none is selected and we're in pickup mode
   useEffect(() => {

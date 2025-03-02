@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -112,22 +111,21 @@ export function CheckoutForm({
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
     const categoriesWithItems = new Set(itemCategoryIds);
     
-    // For pickup orders, ensure we have dates for all categories or set default dates
-    const isAllPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP || 
-                        Array.from(categoriesWithItems).every(categoryId => 
-                          categoryFulfillmentTypes[categoryId] === FULFILLMENT_TYPE_PICKUP);
+    // Set default dates for all categories if not already set
+    const updatedDates = { ...formData.deliveryDates };
+    let datesWereAdded = false;
     
-    // If we're in pickup mode and missing dates, set today's date for missing categories
-    if (isAllPickup) {
-      const today = new Date();
-      const updatedDates = { ...formData.deliveryDates };
-      let datesWereAdded = false;
-      
-      Array.from(categoriesWithItems).forEach(categoryId => {
-        if (!updatedDates[categoryId]) {
-          const category = categories.find(cat => cat.id === categoryId);
-          if (category) {
-            // Find the next valid pickup day
+    // For both delivery and pickup, ensure all categories have dates
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      if (!updatedDates[categoryId]) {
+        const category = categories.find(cat => cat.id === categoryId);
+        const today = new Date();
+        
+        if (category) {
+          // For pickup: find the next valid pickup day
+          if (fulfillmentType === FULFILLMENT_TYPE_PICKUP || 
+              categoryFulfillmentTypes[categoryId] === FULFILLMENT_TYPE_PICKUP) {
+              
             const dayOfWeek = today.getDay();
             let nextPickupDay = today;
             
@@ -151,34 +149,47 @@ export function CheckoutForm({
             }
             
             updatedDates[categoryId] = nextPickupDay;
-            datesWereAdded = true;
+          } 
+          // For delivery: set a default date on a non-pickup day
+          else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY || 
+                   categoryFulfillmentTypes[categoryId] === FULFILLMENT_TYPE_DELIVERY) {
+            
+            const dayOfWeek = today.getDay();
+            let deliveryDay = today;
+            
+            // If category has pickup days defined, find a non-pickup day
+            if (category.pickup_days && category.pickup_days.length > 0) {
+              // Check if today is a pickup day
+              const isPickupDay = category.pickup_days.includes(dayOfWeek);
+              
+              if (isPickupDay) {
+                // Find the next non-pickup day
+                for (let i = 1; i <= 7; i++) {
+                  const nextDate = new Date(today);
+                  nextDate.setDate(today.getDate() + i);
+                  const nextDayOfWeek = nextDate.getDay();
+                  
+                  if (!category.pickup_days.includes(nextDayOfWeek)) {
+                    deliveryDay = nextDate;
+                    break;
+                  }
+                }
+              }
+            }
+            
+            updatedDates[categoryId] = deliveryDay;
           }
+          
+          datesWereAdded = true;
         }
-      });
-      
-      if (datesWereAdded) {
-        setFormData(prev => ({
-          ...prev,
-          deliveryDates: updatedDates
-        }));
       }
-    } else {
-      // For delivery or mixed orders, check for missing dates
-      const missingDates = Array.from(categoriesWithItems).filter(
-        categoryId => {
-          const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-          return !formData.deliveryDates[categoryId] && categoryFulfillment !== FULFILLMENT_TYPE_PICKUP;
-        }
-      );
-
-      if (missingDates.length > 0) {
-        toast({
-          title: 'Error',
-          description: 'Please select dates for all items in your order',
-          variant: 'destructive',
-        });
-        return;
-      }
+    });
+    
+    if (datesWereAdded) {
+      setFormData(prev => ({
+        ...prev,
+        deliveryDates: updatedDates
+      }));
     }
 
     // Check for pickup requirements only if we have pickup items that need custom pickup details
@@ -217,39 +228,13 @@ export function CheckoutForm({
       return;
     }
 
-    // Validate dates against pickup days
-    for (const [categoryId, date] of Object.entries(formData.deliveryDates)) {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (!category) continue;
-      
-      const dayOfWeek = date.getDay();
-      const isPickupDay = category.pickup_days?.includes(dayOfWeek);
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      
-      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
-        toast({
-          title: 'Invalid Pickup Date',
-          description: `Pickup for ${category.name} is only available on designated pickup days.`,
-          variant: 'destructive',
-        });
-        return;
-      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
-        toast({
-          title: 'Invalid Delivery Date',
-          description: `Delivery for ${category.name} is not available on pickup days.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
     try {
       await submitOrder({
         items,
         total,
         taxAmount,
         notes: formData.notes,
-        deliveryDates: formData.deliveryDates,
+        deliveryDates: updatedDates, // Use the updated dates which include default dates
         customerData: {
           ...customerData,
           address: deliveryAddress
