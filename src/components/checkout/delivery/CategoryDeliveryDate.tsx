@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -89,7 +88,7 @@ export function CategoryDeliveryDate({
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
     return (
       <div className="space-y-4">
-        <h4 className="font-medium">{category.name} Pickup Options</h4>
+        <h4 className="font-medium">{category.name} Pickup Details (All items will be included in this pickup)</h4>
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
