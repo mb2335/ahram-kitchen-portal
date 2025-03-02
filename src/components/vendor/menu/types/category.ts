@@ -1,3 +1,4 @@
+
 export interface PickupDetail {
   time: string;
   location: string;
@@ -14,6 +15,7 @@ export interface Category {
   delivery_available_until: string | null;
   pickup_details: PickupDetail[];
   has_custom_pickup: boolean;
+  fulfillment_types: string[];
 }
 
 export interface CategoryFormData {
@@ -23,4 +25,5 @@ export interface CategoryFormData {
   deliveryAvailableUntil: Date | undefined;
   has_custom_pickup: boolean;
   pickup_details: PickupDetail[];
+  fulfillment_types: string[];
 }

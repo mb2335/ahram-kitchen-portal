@@ -1,3 +1,4 @@
+
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -46,7 +47,8 @@ export function CategoryManagement() {
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
           time: detail.time || '',
           location: detail.location || ''
-        })) as PickupDetail[]
+        })) as PickupDetail[],
+        fulfillment_types: category.fulfillment_types || []
       })) as Category[];
     },
   });
@@ -155,6 +157,7 @@ export function CategoryManagement() {
             deliveryAvailableUntil: category.delivery_available_until ? new Date(category.delivery_available_until) : undefined,
             has_custom_pickup: category.has_custom_pickup || false,
             pickup_details: category.pickup_details || [],
+            fulfillment_types: category.fulfillment_types || [],
           });
           setIsDialogOpen(true);
         }}

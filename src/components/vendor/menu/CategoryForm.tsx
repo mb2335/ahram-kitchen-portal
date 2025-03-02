@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,6 +61,23 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     });
   };
 
+  const handleFulfillmentTypeChange = (type: string, checked: boolean) => {
+    let newFulfillmentTypes = [...formData.fulfillment_types];
+    
+    if (checked) {
+      if (!newFulfillmentTypes.includes(type)) {
+        newFulfillmentTypes.push(type);
+      }
+    } else {
+      newFulfillmentTypes = newFulfillmentTypes.filter(t => t !== type);
+    }
+    
+    setFormData({
+      ...formData,
+      fulfillment_types: newFulfillmentTypes
+    });
+  };
+
   return (
     <ScrollArea className="h-[80vh] w-full">
       <form onSubmit={onSubmit} className="space-y-6 px-8">
@@ -87,42 +105,74 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
           </div>
 
           <div className="space-y-2">
-            <Label>Delivery Available From</Label>
-            <Input
-              type="date"
-              value={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : ''}
-              onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
-              className="w-full"
-            />
+            <Label className="text-base font-semibold">Fulfillment Types</Label>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="delivery-type"
+                  checked={formData.fulfillment_types.includes('delivery')}
+                  onCheckedChange={(checked) => 
+                    handleFulfillmentTypeChange('delivery', checked as boolean)
+                  }
+                />
+                <Label htmlFor="delivery-type">Delivery</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="pickup-type"
+                  checked={formData.fulfillment_types.includes('pickup')}
+                  onCheckedChange={(checked) => 
+                    handleFulfillmentTypeChange('pickup', checked as boolean)
+                  }
+                />
+                <Label htmlFor="pickup-type">Pickup</Label>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Delivery Available Until</Label>
-            <Input
-              type="date"
-              value={formData.deliveryAvailableUntil ? formData.deliveryAvailableUntil.toISOString().split('T')[0] : ''}
-              onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
-              className="w-full"
-              min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
-            />
-          </div>
+          {formData.fulfillment_types.includes('delivery') && (
+            <>
+              <div className="space-y-2">
+                <Label>Delivery Available From</Label>
+                <Input
+                  type="date"
+                  value={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : ''}
+                  onChange={(e) => handleDateInput('deliveryAvailableFrom', e.target.value)}
+                  className="w-full"
+                />
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="has_custom_pickup"
-              checked={formData.has_custom_pickup}
-              onCheckedChange={(checked) => 
-                setFormData({ 
-                  ...formData, 
-                  has_custom_pickup: checked as boolean,
-                  pickup_details: checked ? [{ time: '', location: '' }] : []
-                })
-              }
-            />
-            <Label htmlFor="has_custom_pickup">Custom locations & times</Label>
-          </div>
+              <div className="space-y-2">
+                <Label>Delivery Available Until</Label>
+                <Input
+                  type="date"
+                  value={formData.deliveryAvailableUntil ? formData.deliveryAvailableUntil.toISOString().split('T')[0] : ''}
+                  onChange={(e) => handleDateInput('deliveryAvailableUntil', e.target.value)}
+                  className="w-full"
+                  min={formData.deliveryAvailableFrom ? formData.deliveryAvailableFrom.toISOString().split('T')[0] : undefined}
+                />
+              </div>
+            </>
+          )}
 
-          {formData.has_custom_pickup && (
+          {formData.fulfillment_types.includes('pickup') && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="has_custom_pickup"
+                checked={formData.has_custom_pickup}
+                onCheckedChange={(checked) => 
+                  setFormData({ 
+                    ...formData, 
+                    has_custom_pickup: checked as boolean,
+                    pickup_details: checked ? [{ time: '', location: '' }] : []
+                  })
+                }
+              />
+              <Label htmlFor="has_custom_pickup">Custom pickup locations & times</Label>
+            </div>
+          )}
+
+          {formData.has_custom_pickup && formData.fulfillment_types.includes('pickup') && (
             <div className="space-y-4">
               {formData.pickup_details.map((detail, index) => (
                 <div key={index} className="flex gap-4 items-start bg-secondary/10 p-4 rounded-lg">

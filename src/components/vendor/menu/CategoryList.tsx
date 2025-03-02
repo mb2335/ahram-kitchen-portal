@@ -1,8 +1,10 @@
+
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, MapPin, Truck } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Category } from "./types/category";
+import { Badge } from "@/components/ui/badge";
 
 interface CategoryListProps {
   categories: Category[];
@@ -21,9 +23,26 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
           <div>
             <p className="font-medium">{category.name}</p>
             <p className="text-sm text-gray-600">{category.name_ko}</p>
-            {category.delivery_available_from && category.delivery_available_until && (
-              <p className="text-xs text-gray-500">
-                Delivery available: {format(new Date(category.delivery_available_from), "PPP")} - {format(new Date(category.delivery_available_until), "PPP")}
+            <div className="flex gap-2 mt-1">
+              {category.fulfillment_types?.includes('delivery') && (
+                <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                  <Truck className="h-3 w-3" /> Delivery
+                </Badge>
+              )}
+              {category.fulfillment_types?.includes('pickup') && (
+                <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                  <MapPin className="h-3 w-3" /> Pickup
+                </Badge>
+              )}
+            </div>
+            {category.fulfillment_types?.includes('delivery') && category.delivery_available_from && category.delivery_available_until && (
+              <p className="text-xs text-gray-500 mt-1">
+                Delivery: {format(new Date(category.delivery_available_from), "PPP")} - {format(new Date(category.delivery_available_until), "PPP")}
+              </p>
+            )}
+            {category.fulfillment_types?.includes('pickup') && category.has_custom_pickup && category.pickup_details && category.pickup_details.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Pickup locations: {category.pickup_details.length}
               </p>
             )}
           </div>
@@ -66,6 +85,12 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
           </div>
         </div>
       ))}
+
+      {categories.length === 0 && (
+        <div className="text-center p-6 border border-dashed rounded-lg">
+          <p className="text-muted-foreground">No categories yet. Create your first category to organize your menu items.</p>
+        </div>
+      )}
     </div>
   );
 }

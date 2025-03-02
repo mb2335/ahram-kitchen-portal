@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CategoryFormData, PickupDetail } from '../types/category';
@@ -17,6 +18,7 @@ export function useCategoryManagement() {
     deliveryAvailableUntil: undefined,
     has_custom_pickup: false,
     pickup_details: [],
+    fulfillment_types: [],
   });
 
   const resetForm = () => {
@@ -27,6 +29,7 @@ export function useCategoryManagement() {
       deliveryAvailableUntil: undefined,
       has_custom_pickup: false,
       pickup_details: [],
+      fulfillment_types: [],
     });
     setEditingCategory(null);
   };
@@ -62,19 +65,34 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // Convert pickup_details to JSON format
+      // Only include delivery dates if delivery is a fulfillment type
+      const deliveryDates = formData.fulfillment_types.includes('delivery') 
+        ? {
+            delivery_available_from: formData.deliveryAvailableFrom?.toISOString(),
+            delivery_available_until: formData.deliveryAvailableUntil?.toISOString(),
+          }
+        : {
+            delivery_available_from: null,
+            delivery_available_until: null,
+          };
+
+      // Only include pickup details if pickup is a fulfillment type and custom pickup is enabled
+      const pickupDetails = formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup
+        ? formData.pickup_details.map(detail => ({
+            time: detail.time,
+            location: detail.location
+          }))
+        : [];
+
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
         vendor_id: vendorData.id,
-        delivery_available_from: formData.deliveryAvailableFrom?.toISOString(),
-        delivery_available_until: formData.deliveryAvailableUntil?.toISOString(),
+        ...deliveryDates,
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
-        has_custom_pickup: formData.has_custom_pickup,
-        pickup_details: formData.pickup_details.map(detail => ({
-          time: detail.time,
-          location: detail.location
-        })),
+        has_custom_pickup: formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup,
+        pickup_details: pickupDetails,
+        fulfillment_types: formData.fulfillment_types,
       };
 
       if (editingCategory) {
