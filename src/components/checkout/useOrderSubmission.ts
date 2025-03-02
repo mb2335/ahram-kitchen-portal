@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -97,9 +98,9 @@ export function useOrderSubmission() {
                 
                 if (valueObj && typeof valueObj === 'object' && 'iso' in valueObj && typeof valueObj.iso === 'string') {
                   sanitizedDeliveryDates[categoryId] = new Date(valueObj.iso);
-                } else if (valueObj && typeof valueObj === 'object' && 'valueOf' in valueObj) {
+                } else if (valueObj && typeof valueObj === 'object' && 'valueOf' in valueObj && typeof valueObj.valueOf === 'function') {
                   // Use valueOf method if available
-                  sanitizedDeliveryDates[categoryId] = new Date(valueObj.valueOf());
+                  sanitizedDeliveryDates[categoryId] = new Date(valueObj.valueOf() as number);
                 } else if (valueObj && typeof valueObj === 'number') {
                   sanitizedDeliveryDates[categoryId] = new Date(valueObj);
                 } else {
@@ -110,7 +111,7 @@ export function useOrderSubmission() {
               } else if ('iso' in dateValue && typeof dateValue.iso === 'string') {
                 sanitizedDeliveryDates[categoryId] = new Date(dateValue.iso);
               } else if (typeof dateValue.valueOf === 'function') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf());
+                sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf() as number);
               } else {
                 console.log("Unusual date format:", dateValue);
                 sanitizedDeliveryDates[categoryId] = new Date();
@@ -122,18 +123,21 @@ export function useOrderSubmission() {
               // Try to convert unknown object to date
               console.log("Converting unknown object to date:", dateValue);
               
+              // Use type assertion to help TypeScript understand we're checking properties
+              const dateObj = dateValue as Record<string, unknown>;
+              
               // Try various approaches to get a valid timestamp
-              if ('timestamp' in dateValue && typeof dateValue.timestamp === 'number') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.timestamp);
-              } else if ('time' in dateValue && typeof dateValue.time === 'number') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.time);
-              } else if ('valueOf' in dateValue && typeof dateValue.valueOf === 'function') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf());
-              } else if ('toISOString' in dateValue && typeof dateValue.toISOString === 'function') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.toISOString());
+              if ('timestamp' in dateObj && typeof dateObj.timestamp === 'number') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateObj.timestamp);
+              } else if ('time' in dateObj && typeof dateObj.time === 'number') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateObj.time);
+              } else if ('valueOf' in dateObj && typeof dateObj.valueOf === 'function') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateObj.valueOf() as number);
+              } else if ('toISOString' in dateObj && typeof dateObj.toISOString === 'function') {
+                sanitizedDeliveryDates[categoryId] = new Date(dateObj.toISOString() as string);
               } else {
                 // Last resort - use current date as fallback
-                console.warn(`Could not extract date from object for category ${categoryId}:`, dateValue);
+                console.warn(`Could not extract date from object for category ${categoryId}:`, dateObj);
                 sanitizedDeliveryDates[categoryId] = new Date();
               }
             }
