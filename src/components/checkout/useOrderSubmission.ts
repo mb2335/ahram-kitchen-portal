@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -62,6 +63,11 @@ export function useOrderSubmission() {
     throw new Error(`Couldn't parse date for ${categoryId}`);
   };
 
+  // Helper function to get short ID from full UUID
+  const getShortId = (fullId: string): string => {
+    return fullId.split('-')[0];
+  };
+
   // Helper function to ensure we have a valid UUID format or try to reconstruct it
   const ensureFullUuid = (id: string): string => {
     if (!id) return id;
@@ -121,7 +127,7 @@ export function useOrderSubmission() {
       
       console.log("All unique category IDs from cart items:", uniqueCategoryIds);
       
-      // Instead of trying to validate UUIDs directly, we'll query for all categories first
+      // Fetch all categories first to create mapping
       const { data: allCategories, error: allCategoriesError } = await supabase
         .from('menu_categories')
         .select('id, fulfillment_types');
@@ -131,15 +137,20 @@ export function useOrderSubmission() {
         throw new Error(`Failed to fetch category information: ${allCategoriesError.message}`);
       }
       
-      // Create a mapping of partial category IDs to full category IDs
+      // Create mapping of short category IDs to full category IDs
       const categoryIdMap = new Map<string, string>();
+      const shortIdToFullIdMap = new Map<string, string>();
       
       if (allCategories) {
         allCategories.forEach(category => {
           const fullId = category.id;
-          // Map both the full ID and the first 8 characters to the full ID
+          const shortId = getShortId(fullId);
+          
+          // Store both forms of mapping
           categoryIdMap.set(fullId, fullId);
-          categoryIdMap.set(fullId.split('-')[0], fullId);
+          categoryIdMap.set(shortId, fullId);
+          
+          shortIdToFullIdMap.set(shortId, fullId);
         });
       }
       
@@ -172,11 +183,14 @@ export function useOrderSubmission() {
 
       console.log("Categories data from database:", categoriesData);
 
-      // Create a new map for category ID mappings based on the query results
+      // Create a map to translate between short IDs and full IDs for categories
       const queriedCategoryMap = new Map<string, string>();
       if (categoriesData) {
         categoriesData.forEach(category => {
-          queriedCategoryMap.set(category.id.split('-')[0], category.id);
+          const fullId = category.id;
+          const shortId = getShortId(fullId);
+          queriedCategoryMap.set(shortId, fullId);
+          queriedCategoryMap.set(fullId, fullId);
         });
       }
 
@@ -211,17 +225,36 @@ export function useOrderSubmission() {
         throw new Error('Delivery address is required for delivery orders');
       }
 
-      const processedDates: Record<string, Date> = {};
+      // Create a normalized version of deliveryDates where both full and short IDs work
+      const normalizedDeliveryDates: Record<string, Date> = {};
+      Object.entries(deliveryDates).forEach(([categoryId, date]) => {
+        const fullId = queriedCategoryMap.get(categoryId);
+        
+        if (fullId) {
+          // Make date accessible by both full and short ID
+          normalizedDeliveryDates[fullId] = date;
+          normalizedDeliveryDates[getShortId(fullId)] = date;
+        } else {
+          normalizedDeliveryDates[categoryId] = date;
+        }
+      });
       
       console.log("Processing delivery dates:", deliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
+      console.log("Normalized delivery dates:", normalizedDeliveryDates);
+      
+      const processedDates: Record<string, Date> = {};
       
       for (const categoryId of uniqueCategoryIds) {
-        // Use the full category ID if available
+        // Try to get full ID if available
         const fullCategoryId = queriedCategoryMap.get(categoryId) || categoryId;
+        const shortCategoryId = getShortId(fullCategoryId);
         
-        if (!deliveryDates[categoryId]) {
-          console.error(`Missing delivery date for category ${categoryId}`);
+        // Look for dates using both full and short IDs
+        let dateToUse = normalizedDeliveryDates[fullCategoryId] || normalizedDeliveryDates[shortCategoryId] || normalizedDeliveryDates[categoryId];
+        
+        if (!dateToUse) {
+          console.error(`Missing delivery date for category ${categoryId} (full: ${fullCategoryId}, short: ${shortCategoryId})`);
           
           try {
             const { data: categoryData, error: categoryError } = await supabase
@@ -246,7 +279,7 @@ export function useOrderSubmission() {
         }
         
         try {
-          const dateObj = safelyParseDate(deliveryDates[categoryId], categoryId);
+          const dateObj = safelyParseDate(dateToUse, categoryId);
           
           if (isNaN(dateObj.getTime())) {
             console.error(`Invalid date for category ${categoryId}:`, dateObj);
@@ -254,7 +287,9 @@ export function useOrderSubmission() {
           }
           
           console.log(`Processed date for category ${categoryId}:`, dateObj.toISOString());
-          processedDates[categoryId] = dateObj;
+          processedDates[fullCategoryId] = dateObj;
+          // Also store by short ID for easier lookup
+          processedDates[shortCategoryId] = dateObj;
         } catch (error) {
           console.error(`Error processing date for category ${categoryId}:`, error);
           throw new Error(`Please select a valid date for all items in your order`);
@@ -296,9 +331,14 @@ export function useOrderSubmission() {
           if (category && category.id) {
             if (category.pickup_days) {
               categoryPickupDays.set(category.id, new Set(category.pickup_days));
+              // Also map by short ID
+              categoryPickupDays.set(getShortId(category.id), new Set(category.pickup_days));
             }
             categoryCustomPickup.set(category.id, category.has_custom_pickup);
+            categoryCustomPickup.set(getShortId(category.id), category.has_custom_pickup);
+            
             categoryFulfillmentOptionsMap.set(category.id, category.fulfillment_types || []);
+            categoryFulfillmentOptionsMap.set(getShortId(category.id), category.fulfillment_types || []);
           }
         });
       }
@@ -306,27 +346,43 @@ export function useOrderSubmission() {
       const pickupOnlyCategories = new Set<string>();
       
       for (const categoryId of uniqueCategoryIds) {
-        const fulfillmentOptions = categoryFulfillmentOptionsMap.get(categoryId) || [];
+        // Try both full and short ID for lookup
+        const fullId = queriedCategoryMap.get(categoryId) || categoryId;
+        const shortId = getShortId(fullId);
+        
+        const fulfillmentOptions = categoryFulfillmentOptionsMap.get(fullId) || 
+                                   categoryFulfillmentOptionsMap.get(shortId) || 
+                                   [];
+        
         if (fulfillmentOptions.length === 1 && fulfillmentOptions[0] === FULFILLMENT_TYPE_PICKUP) {
-          pickupOnlyCategories.add(categoryId);
+          pickupOnlyCategories.add(fullId);
+          pickupOnlyCategories.add(shortId);
         }
       }
 
       const isAllPickup = uniqueCategoryIds.every(categoryId => {
-        if (pickupOnlyCategories.has(categoryId)) return true;
+        const fullId = queriedCategoryMap.get(categoryId) || categoryId;
+        const shortId = getShortId(fullId);
         
-        const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+        if (pickupOnlyCategories.has(fullId) || pickupOnlyCategories.has(shortId)) return true;
+        
+        const categoryFulfillment = categoryFulfillmentTypes[fullId] || 
+                                   categoryFulfillmentTypes[shortId] || 
+                                   fulfillmentType;
         return categoryFulfillment === FULFILLMENT_TYPE_PICKUP;
       });
 
       const needsCustomPickup = uniqueCategoryIds.some(categoryId => {
-        const categoryFulfillment = pickupOnlyCategories.has(categoryId) ? 
+        const fullId = queriedCategoryMap.get(categoryId) || categoryId;
+        const shortId = getShortId(fullId);
+        
+        const categoryFulfillment = (pickupOnlyCategories.has(fullId) || pickupOnlyCategories.has(shortId)) ? 
           FULFILLMENT_TYPE_PICKUP : 
-          (categoryFulfillmentTypes[categoryId] || fulfillmentType);
+          (categoryFulfillmentTypes[fullId] || categoryFulfillmentTypes[shortId] || fulfillmentType);
           
         if (categoryFulfillment !== FULFILLMENT_TYPE_PICKUP) return false;
         
-        return categoryCustomPickup.get(categoryId);
+        return categoryCustomPickup.get(fullId) || categoryCustomPickup.get(shortId);
       });
       
       if (needsCustomPickup && !pickupDetail) {
@@ -335,15 +391,26 @@ export function useOrderSubmission() {
 
       if (!isAllPickup) {
         Object.entries(processedDates).forEach(([categoryId, date]) => {
-          if (!uniqueCategoryIds.includes(categoryId)) return;
+          if (!uniqueCategoryIds.includes(categoryId) && 
+              !uniqueCategoryIds.some(id => {
+                const fullId = queriedCategoryMap.get(id) || id;
+                return fullId === categoryId || getShortId(fullId) === categoryId;
+              })) return;
           
           const dayOfWeek = date.getDay();
-          const pickupDays = categoryPickupDays.get(categoryId);
+          const pickupDays = categoryPickupDays.get(categoryId) || new Set();
           
-          if (!pickupDays || pickupDays.size === 0) return;
+          if (pickupDays.size === 0) return;
           
           const isPickupDay = pickupDays.has(dayOfWeek);
-          const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+          
+          // Try lookup using both full and short IDs
+          const fullId = queriedCategoryMap.get(categoryId) || categoryId;
+          const shortId = getShortId(fullId);
+          
+          const categoryFulfillment = categoryFulfillmentTypes[fullId] || 
+                                     categoryFulfillmentTypes[shortId] || 
+                                     fulfillmentType;
           
           if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
             throw new Error(`Pickup is only available on designated pickup days for ${categoryId}`);
@@ -360,13 +427,19 @@ export function useOrderSubmission() {
       items.forEach(item => {
         if (!item.category_id) return;
         
-        let categoryFulfillment = categoryFulfillmentTypes[item.category_id] || fulfillmentType;
+        // Get full ID if available
+        const fullCategoryId = queriedCategoryMap.get(item.category_id) || item.category_id;
+        const shortCategoryId = getShortId(fullCategoryId);
         
-        if (pickupOnlyCategories.has(item.category_id)) {
+        let categoryFulfillment = categoryFulfillmentTypes[fullCategoryId] || 
+                                 categoryFulfillmentTypes[shortCategoryId] || 
+                                 fulfillmentType;
+        
+        if (pickupOnlyCategories.has(fullCategoryId) || pickupOnlyCategories.has(shortCategoryId)) {
           categoryFulfillment = FULFILLMENT_TYPE_PICKUP;
         }
         
-        const groupKey = `${categoryFulfillment}-${item.category_id}`;
+        const groupKey = `${categoryFulfillment}-${fullCategoryId}`;
         
         if (!groupedItems[groupKey]) {
           groupedItems[groupKey] = [];
@@ -386,7 +459,8 @@ export function useOrderSubmission() {
         }, 0);
         
         const firstCategoryId = uniqueCategoryIds[0];
-        const orderDate = processedDates[firstCategoryId];
+        const fullFirstCategoryId = queriedCategoryMap.get(firstCategoryId) || firstCategoryId;
+        const orderDate = processedDates[fullFirstCategoryId] || processedDates[getShortId(fullFirstCategoryId)];
         
         if (!orderDate || !(orderDate instanceof Date)) {
           throw new Error('Please select a valid date for your order');
@@ -472,8 +546,9 @@ export function useOrderSubmission() {
           throw new Error(`Invalid category grouping`);
         }
         
-        // Use the full category ID if available
+        // Use the full category ID
         const fullCategoryId = queriedCategoryMap.get(groupCategoryId) || groupCategoryId;
+        const shortCategoryId = getShortId(fullCategoryId);
         
         const groupTotal = groupItems.reduce((sum, item) => {
           const originalPrice = item.price * item.quantity;
@@ -485,9 +560,6 @@ export function useOrderSubmission() {
         
         const groupTaxAmount = groupTotal * (taxAmount / total);
 
-        // Ensure full UUID for category lookup
-        const validCategoryId = ensureFullUuid(groupCategoryId);
-        
         const { data: categoryData, error: categoryError } = await supabase
           .from('menu_categories')
           .select('*')
@@ -502,7 +574,9 @@ export function useOrderSubmission() {
         const category = categoryData;
         const needsCustomPickup = groupFulfillmentType === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
         
-        const deliveryDate = processedDates[groupCategoryId];
+        // Look for delivery date using both full and short IDs
+        const deliveryDate = processedDates[fullCategoryId] || processedDates[shortCategoryId];
+        
         if (!deliveryDate) {
           throw new Error(`Missing delivery date for category ${category?.name || groupCategoryId}`);
         }
