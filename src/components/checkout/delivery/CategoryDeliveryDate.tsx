@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -29,6 +30,7 @@ export interface CategoryDeliveryDateProps {
   selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
+  allPickupCategories?: string[]; // New prop for all categories being picked up
 }
 
 export function CategoryDeliveryDate({
@@ -37,7 +39,8 @@ export function CategoryDeliveryDate({
   onDateChange,
   selectedPickupDetail,
   onPickupDetailChange,
-  fulfillmentType
+  fulfillmentType,
+  allPickupCategories = []
 }: CategoryDeliveryDateProps) {
   const [date, setDate] = useState<Date | undefined>(selectedDate);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -85,10 +88,23 @@ export function CategoryDeliveryDate({
     return false;
   };
 
+  // Generate the dynamic heading text for pickup
+  const generatePickupHeading = () => {
+    if (allPickupCategories && allPickupCategories.length > 0) {
+      if (allPickupCategories.length === 1) {
+        return `${category.name} Pickup Details (All items will be included in this pickup)`;
+      } else {
+        const categoryNames = allPickupCategories.join(' & ');
+        return `${category.name} Pickup Details (${categoryNames} will be included in this pickup)`;
+      }
+    }
+    return `${category.name} Pickup Options`;
+  };
+
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
     return (
       <div className="space-y-4">
-        <h4 className="font-medium">{category.name} Pickup Details (All items will be included in this pickup)</h4>
+        <h4 className="font-medium">{generatePickupHeading()}</h4>
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />

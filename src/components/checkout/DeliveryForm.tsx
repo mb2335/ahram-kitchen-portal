@@ -124,6 +124,18 @@ export function DeliveryForm({
     itemsByCategory[category.id]?.length > 0
   );
 
+  // Get all categories that are currently set for pickup
+  const getPickupCategories = () => {
+    const pickupCategoryIds = showMixedCategoryOptions
+      ? Object.keys(categoryFulfillmentTypes).filter(id => categoryFulfillmentTypes[id] === FULFILLMENT_TYPE_PICKUP)
+      : fulfillmentType === FULFILLMENT_TYPE_PICKUP ? Object.keys(itemsByCategory) : [];
+      
+    return pickupCategoryIds.map(id => {
+      const category = categories.find(c => c.id === id);
+      return category ? category.name : '';
+    }).filter(Boolean);
+  };
+
   const handleCategoryFulfillmentChange = (categoryId: string, type: string) => {
     setCategoryFulfillmentTypes(prev => ({
       ...prev,
@@ -159,6 +171,9 @@ export function DeliveryForm({
 
   // Show mixed category fulfillment options if we have multiple categories
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
+
+  // Get all pickup category names
+  const pickupCategoryNames = getPickupCategories();
 
   return (
     <div className="space-y-6">
@@ -265,6 +280,7 @@ export function DeliveryForm({
               selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}
+              allPickupCategories={pickupCategoryNames}
             />
             <Separator />
           </div>
