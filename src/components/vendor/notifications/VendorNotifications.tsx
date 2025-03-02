@@ -16,15 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 import { CalendarIcon, SearchIcon, SendIcon, UserIcon, XCircleIcon } from 'lucide-react';
-
-interface NotificationFormData {
-  message: string;
-  sendMethod: 'email' | 'sms' | 'both';
-  date?: Date;
-  pickupLocation?: string;
-  fulfillmentType?: string;
-  searchQuery?: string;
-}
+import { NotificationFormData } from '@/types/notification';
 
 export function VendorNotifications() {
   const { register, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<NotificationFormData>({
@@ -85,6 +77,8 @@ export function VendorNotifications() {
       try {
         setHistoryLoading(true);
         
+        // Since we're now using JOIN syntax with the clients for Supabase v2,
+        // we need to adjust our query to use the correct approach
         const { data, error } = await supabase
           .from('notifications')
           .select(`
@@ -92,19 +86,35 @@ export function VendorNotifications() {
             message,
             send_method,
             created_at,
-            filters,
-            recipients:notification_recipients(
-              id,
-              customer:customers(full_name, email, phone)
-            )
+            filters
           `)
           .eq('vendor_id', vendorData.id)
           .order('created_at', { ascending: false })
           .limit(10);
         
         if (error) throw error;
+
+        // For each notification, fetch recipients
+        const notificationsWithRecipients = await Promise.all(
+          data.map(async (notification) => {
+            const { data: recipients, error: recipientsError } = await supabase
+              .from('notification_recipients')
+              .select(`
+                id,
+                customer:customer_id(full_name, email, phone)
+              `)
+              .eq('notification_id', notification.id);
+            
+            if (recipientsError) {
+              console.error('Error fetching recipients:', recipientsError);
+              return { ...notification, recipients: [] };
+            }
+            
+            return { ...notification, recipients };
+          })
+        );
         
-        setNotificationHistory(data);
+        setNotificationHistory(notificationsWithRecipients);
       } catch (error) {
         console.error('Error fetching notification history:', error);
         toast({
@@ -147,17 +157,37 @@ export function VendorNotifications() {
             total_amount,
             delivery_date,
             status,
-            customer:customers(id, full_name, email, phone)
+            customer_id
           `)
           .or(`id.eq.${searchQuery},id.ilike.${searchQuery}`)
           .limit(5);
         
         if (orderError) throw orderError;
         
+        // Fetch customer details for orders
+        const ordersWithCustomers = await Promise.all(
+          orders.map(async (order) => {
+            const { data: customer, error: customerError } = await supabase
+              .from('customers')
+              .select('id, full_name, email, phone')
+              .eq('id', order.customer_id)
+              .single();
+            
+            if (customerError) {
+              console.error('Error fetching customer:', customerError);
+              return { ...order, customer: null };
+            }
+            
+            return { ...order, customer };
+          })
+        );
+        
         // Combine results
         const results = [
           ...customers.map(customer => ({ type: 'customer', data: customer })),
-          ...orders.map(order => ({ type: 'order', data: order }))
+          ...ordersWithCustomers
+            .filter(order => order.customer)
+            .map(order => ({ type: 'order', data: order }))
         ];
         
         setSearchResults(results);
@@ -257,25 +287,41 @@ export function VendorNotifications() {
       setSelectedOrder(null);
       
       // Refresh notification history
-      const { data: historyData, error: historyError } = await supabase
+      const { data: notificationsData, error: notificationsError } = await supabase
         .from('notifications')
         .select(`
           id,
           message,
           send_method,
           created_at,
-          filters,
-          recipients:notification_recipients(
-            id,
-            customer:customers(full_name, email, phone)
-          )
+          filters
         `)
         .eq('vendor_id', vendorData.id)
         .order('created_at', { ascending: false })
         .limit(10);
       
-      if (!historyError) {
-        setNotificationHistory(historyData);
+      if (!notificationsError && notificationsData) {
+        // For each notification, fetch recipients
+        const notificationsWithRecipients = await Promise.all(
+          notificationsData.map(async (notification) => {
+            const { data: recipients, error: recipientsError } = await supabase
+              .from('notification_recipients')
+              .select(`
+                id,
+                customer:customer_id(full_name, email, phone)
+              `)
+              .eq('notification_id', notification.id);
+            
+            if (recipientsError) {
+              console.error('Error fetching recipients:', recipientsError);
+              return { ...notification, recipients: [] };
+            }
+            
+            return { ...notification, recipients };
+          })
+        );
+        
+        setNotificationHistory(notificationsWithRecipients);
       }
       
     } catch (error: any) {

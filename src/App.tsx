@@ -12,7 +12,7 @@ import { Checkout } from './components/Checkout';
 import { OrderHistory } from './components/OrderHistory';
 import { OrderThankYou } from './components/OrderThankYou';
 import { Help } from './pages/Help';
-import { Index } from './pages/Index';
+import Index from './pages/Index';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { VendorDashboard } from './components/vendor/VendorDashboard';
 import { Toaster } from './components/ui/toaster';
