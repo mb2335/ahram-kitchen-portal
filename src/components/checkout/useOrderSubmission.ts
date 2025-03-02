@@ -94,7 +94,7 @@ export function useOrderSubmission() {
             if ('_type' in dateValue && dateValue._type === 'Date') {
               // Handle the nested value structure from serialized date
               if ('value' in dateValue) {
-                const valueObj = dateValue.value as Record<string, unknown>;
+                const valueObj = dateValue.value;
                 
                 if (valueObj && typeof valueObj === 'object' && 'iso' in valueObj && typeof valueObj.iso === 'string') {
                   sanitizedDeliveryDates[categoryId] = new Date(valueObj.iso);
@@ -167,20 +167,6 @@ export function useOrderSubmission() {
         }
       }
 
-      // Add debug logging for date processing
-      console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
-      console.log("Unique category IDs:", uniqueCategoryIds);
-      for (const catId of uniqueCategoryIds) {
-        console.log(`Category ${catId} date type:`, typeof sanitizedDeliveryDates[catId]);
-        console.log(`Category ${catId} date value:`, sanitizedDeliveryDates[catId]);
-        if (sanitizedDeliveryDates[catId] instanceof Date) {
-          console.log(`Category ${catId} date constructor:`, sanitizedDeliveryDates[catId].constructor.name);
-          console.log(`Category ${catId} valid Date:`, sanitizedDeliveryDates[catId].toISOString());
-        } else {
-          console.log(`Category ${catId} missing date`);
-        }
-      }
-
       // Validate we have dates for all categories in the cart
       const missingDates = uniqueCategoryIds.filter(categoryId => 
         !sanitizedDeliveryDates[categoryId]
@@ -198,6 +184,13 @@ export function useOrderSubmission() {
           : missingDates.join(', ');
           
         throw new Error(`Please select dates for all items in your order (Missing for: ${categoryNames})`);
+      }
+
+      // Console logs for debugging
+      console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
+      console.log("Unique category IDs:", uniqueCategoryIds);
+      for (const catId of uniqueCategoryIds) {
+        console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId].toISOString());
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -428,20 +421,11 @@ export function useOrderSubmission() {
       // Create orders for each group (handles mixed fulfillment types)
       const orderPromises = Object.entries(groupedItems).map(async ([groupKey, groupItems]) => {
         const [groupFulfillmentType, categoryId] = groupKey.split('-', 2);
-        
-        // Fix: Ensure we have a valid date for this category and cast it as a proper Date object
-        let deliveryDate = sanitizedDeliveryDates[categoryId];
+        const deliveryDate = sanitizedDeliveryDates[categoryId];
         
         if (!deliveryDate) {
           console.error(`Missing delivery date for category ${categoryId}`, sanitizedDeliveryDates);
-          // Instead of throwing error, use current date as fallback
-          deliveryDate = new Date();
-        }
-        
-        // Ensure we actually have a Date object
-        if (!(deliveryDate instanceof Date)) {
-          console.error(`Invalid date object for category ${categoryId}:`, deliveryDate);
-          deliveryDate = new Date();
+          throw new Error(`Missing delivery date for category ${categoryId}`);
         }
         
         const groupTotal = groupItems.reduce((sum, item) => {
@@ -471,7 +455,7 @@ export function useOrderSubmission() {
           tax_amount: groupTaxAmount,
           notes: notes,
           status: 'pending',
-          delivery_date: deliveryDate.toISOString(),  // Ensure it's an ISO string
+          delivery_date: deliveryDate.toISOString(),
           payment_proof_url: uploadData.path,
           pickup_time: needsCustomPickup ? pickupDetail?.time : null,
           pickup_location: needsCustomPickup ? pickupDetail?.location : null,
@@ -479,19 +463,13 @@ export function useOrderSubmission() {
           delivery_address: groupFulfillmentType === FULFILLMENT_TYPE_DELIVERY ? customerData.address : null,
         };
 
-        // Add debug logging
-        console.log(`Creating order for category ${categoryId} with date:`, orderData.delivery_date);
-
         const { data: insertedOrder, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
           .select()
           .single();
 
-        if (orderError) {
-          console.error("Order insertion error:", orderError);
-          throw orderError;
-        }
+        if (orderError) throw orderError;
 
         if (!insertedOrder) {
           throw new Error('Failed to create order');

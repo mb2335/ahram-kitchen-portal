@@ -1,26 +1,19 @@
 
 import { useState, useEffect } from 'react';
+import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Form } from '@/components/ui/form';
+import { useToast } from '@/components/ui/use-toast';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
-import { OrderConfirmation } from './OrderConfirmation';
+import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
-import { useCart } from '@/contexts/CartContext';
-import { useSession } from '@supabase/auth-helpers-react';
-import { OrderItem } from '@/types/order';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP, ERROR_MESSAGES } from '@/types/order';
+import type { OrderItem } from '@/types/order';
 import { PickupDetail } from '@/types/pickup';
-import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
-import { LoadingState } from '@/components/shared/LoadingState';
 
 interface CheckoutFormProps {
-  formData: {
-    notes: string;
-    deliveryDates: Record<string, Date>;
-    pickupDetail: PickupDetail | null;
-  };
-  setFormData: (data: any) => void;
   customerData: {
     fullName: string;
     email: string;
@@ -30,145 +23,379 @@ interface CheckoutFormProps {
   total: number;
   taxAmount: number;
   items: OrderItem[];
+  formData: {
+    notes: string;
+    deliveryDates: Record<string, Date>;
+    pickupDetail: PickupDetail | null;
+  };
+  setFormData: React.Dispatch<React.SetStateAction<{
+    notes: string;
+    deliveryDates: Record<string, Date>;
+    pickupDetail: PickupDetail | null;
+  }>>;
 }
 
 export function CheckoutForm({
-  formData,
-  setFormData,
   customerData,
   onOrderSuccess,
   total,
   taxAmount,
-  items
+  items,
+  formData,
+  setFormData
 }: CheckoutFormProps) {
-  const { submitOrder, isUploading } = useOrderSubmission();
-  const session = useSession();
-  const { clearCart } = useCart();
-  const [paymentFile, setPaymentFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState(1);
-  // Added state for fulfillment type and delivery address
-  const [fulfillmentType, setFulfillmentType] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const { toast } = useToast();
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [fulfillmentType, setFulfillmentType] = useState<string>('');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
-  
-  // Add debugging for dates
+  const { submitOrder, isUploading } = useOrderSubmission();
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
+  const categoriesWithItems = new Set(itemCategoryIds);
+
   useEffect(() => {
-    if (Object.keys(formData.deliveryDates).length > 0) {
-      console.log("All delivery dates after setting defaults:", formData.deliveryDates);
+    if (!categories.length) return;
+    
+    const pickupOnlyCategories = new Set<string>();
+    let hasDeliveryEligibleItems = false;
+    
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (category?.fulfillment_types) {
+        if (category.fulfillment_types.length === 1 && 
+            category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+          pickupOnlyCategories.add(categoryId);
+        } else if (category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY)) {
+          hasDeliveryEligibleItems = true;
+        }
+      }
+    });
+    
+    if (!fulfillmentType) {
+      if (pickupOnlyCategories.size === categoriesWithItems.size) {
+        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
+      } else if (hasDeliveryEligibleItems && pickupOnlyCategories.size === 0) {
+        setFulfillmentType(FULFILLMENT_TYPE_DELIVERY);
+      } else if (pickupOnlyCategories.size > 0) {
+        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
+      } else {
+        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
+      }
+    }
+    
+    if (Object.keys(categoryFulfillmentTypes).length === 0) {
+      const newTypes: Record<string, string> = {};
       
-      Object.entries(formData.deliveryDates).forEach(([categoryId, date]) => {
-        console.log(`Category ${categoryId} date:`, date);
-        if (date instanceof Date) {
-          console.log(`  ISO string: ${date.toISOString()}`);
+      Array.from(categoriesWithItems).forEach(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        
+        if (pickupOnlyCategories.has(categoryId)) {
+          newTypes[categoryId] = FULFILLMENT_TYPE_PICKUP;
+        } else if (category?.fulfillment_types?.includes(fulfillmentType)) {
+          newTypes[categoryId] = fulfillmentType;
+        } else if (category?.fulfillment_types?.length) {
+          newTypes[categoryId] = category.fulfillment_types[0];
+        }
+      });
+      
+      if (Object.keys(newTypes).length > 0) {
+        setCategoryFulfillmentTypes(newTypes);
+      }
+    }
+
+    // Set default delivery dates for categories if none exist
+    const updatedDates = { ...formData.deliveryDates };
+    let datesWereAdded = false;
+    
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      if (!updatedDates[categoryId]) {
+        const category = categories.find(cat => cat.id === categoryId);
+        const today = new Date();
+        
+        if (category) {
+          const categoryFulfillmentType = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+          
+          if (categoryFulfillmentType === FULFILLMENT_TYPE_PICKUP) {
+            const dayOfWeek = today.getDay();
+            let nextPickupDay = new Date(today);
+            
+            if (category.pickup_days && category.pickup_days.length > 0) {
+              const sortedPickupDays = [...category.pickup_days].sort((a, b) => {
+                const daysUntilA = (a - dayOfWeek + 7) % 7;
+                const daysUntilB = (b - dayOfWeek + 7) % 7;
+                return daysUntilA - daysUntilB;
+              });
+              
+              const nextDay = sortedPickupDays[0];
+              const daysToAdd = (nextDay - dayOfWeek + 7) % 7;
+              
+              nextPickupDay.setDate(today.getDate() + (daysToAdd === 0 ? 0 : daysToAdd));
+            }
+            
+            updatedDates[categoryId] = nextPickupDay;
+          } else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
+            const dayOfWeek = today.getDay();
+            let deliveryDay = new Date(today);
+            
+            if (category.pickup_days && category.pickup_days.length > 0) {
+              const isPickupDay = category.pickup_days.includes(dayOfWeek);
+              
+              if (isPickupDay) {
+                for (let i = 1; i <= 7; i++) {
+                  const nextDate = new Date(today);
+                  nextDate.setDate(today.getDate() + i);
+                  const nextDayOfWeek = nextDate.getDay();
+                  
+                  if (!category.pickup_days.includes(nextDayOfWeek)) {
+                    deliveryDay = nextDate;
+                    break;
+                  }
+                }
+              }
+            }
+            
+            updatedDates[categoryId] = deliveryDay;
+          }
+          
+          datesWereAdded = true;
+          
+          // Log the structure of the date for debugging
+          console.log(`Setting date for category ${categoryId}:`, updatedDates[categoryId]);
+          console.log(`Date type: ${typeof updatedDates[categoryId]}`);
+          console.log(`Is Date instance: ${updatedDates[categoryId] instanceof Date}`);
+        }
+      }
+    });
+    
+    if (datesWereAdded) {
+      setFormData(prev => ({
+        ...prev,
+        deliveryDates: updatedDates
+      }));
+      
+      // Debug log all dates after setting
+      console.log("All delivery dates after setting defaults:", updatedDates);
+      Object.entries(updatedDates).forEach(([catId, dateObj]) => {
+        console.log(`Category ${catId} date:`, dateObj);
+        if (dateObj instanceof Date) {
+          console.log(`  ISO string: ${dateObj.toISOString()}`);
         }
       });
     }
-  }, [formData.deliveryDates]);
+  }, [categories, items, fulfillmentType, categoryFulfillmentTypes, formData.deliveryDates, setFormData]);
 
-  const onDateChange = (categoryId: string, date: Date) => {
+  const handleDateChange = (categoryId: string, date: Date) => {
+    // Log the date object received from the date picker
     console.log(`Date change for category ${categoryId}:`, date);
-    console.log(`Date type:`, typeof date);
-    console.log(`Is Date instance:`, date instanceof Date);
+    console.log(`Date type: ${typeof date}`);
+    console.log(`Is Date instance: ${date instanceof Date}`);
     
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       deliveryDates: {
-        ...formData.deliveryDates,
+        ...prev.deliveryDates,
         [categoryId]: date
       }
-    });
+    }));
     
     // Verify the date was set correctly
     setTimeout(() => {
       console.log(`Verified date for category ${categoryId}:`, formData.deliveryDates[categoryId]);
-    }, 100);
+    }, 0);
   };
-  
-  const onNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
       notes: e.target.value
-    });
+    }));
   };
 
-  const onPickupDetailChange = (detail: PickupDetail) => {
-    setFormData({
-      ...formData,
+  const handlePickupDetailChange = (detail: PickupDetail) => {
+    setFormData(prev => ({
+      ...prev,
       pickupDetail: detail
-    });
+    }));
   };
 
-  const onFulfillmentTypeChange = (type: string) => {
+  const handleFulfillmentTypeChange = (type: string) => {
     setFulfillmentType(type);
-  };
-
-  const onDeliveryAddressChange = (address: string) => {
-    setDeliveryAddress(address);
-  };
-
-  const onCategoryFulfillmentTypeChange = (categoryId: string, type: string) => {
-    setCategoryFulfillmentTypes({
-      ...categoryFulfillmentTypes,
-      [categoryId]: type
-    });
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setPaymentFile(e.target.files[0]);
-    }
-  };
-
-  const onNextStep = () => {
-    // Add validation before proceeding to next step
-    if (step === 1) {
-      // Validate delivery dates are set for all categories
-      const categoryIds = [...new Set(items.map(item => item.category_id).filter(Boolean))];
-      
-      // Check if we have all required dates or if any are invalid
-      const missingDates = categoryIds.filter(id => !formData.deliveryDates[id as string]);
-      
-      if (missingDates.length > 0) {
-        alert(`Please select dates for all items in your order`);
-        return;
-      }
-      
-      // For pickup fulfillment, validate pickup details
-      if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && !formData.pickupDetail) {
-        alert('Please select pickup time and location');
-        return;
-      }
-      
-      // For delivery fulfillment, validate address
-      if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !deliveryAddress) {
-        alert('Please provide a delivery address');
-        return;
-      }
-    }
     
-    setStep(step + 1);
+    const updatedCategoryTypes = { ...categoryFulfillmentTypes };
+    
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (category?.fulfillment_types?.includes(type)) {
+        updatedCategoryTypes[categoryId] = type;
+      }
+    });
+    
+    setCategoryFulfillmentTypes(updatedCategoryTypes);
   };
 
-  const onPrevStep = () => {
-    setStep(step - 1);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPaymentProof(e.target.files[0]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!paymentFile) {
-      alert('Please upload your payment proof');
+    if (!paymentProof) {
+      toast({
+        title: 'Error',
+        description: 'Please upload proof of payment',
+        variant: 'destructive',
+      });
       return;
     }
+
+    // Check if we have any delivery items
+    const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      
+      // Skip categories that only support pickup
+      if (category?.fulfillment_types.length === 1 && 
+          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+        return false;
+      }
+      
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
+    });
     
-    // Debug logging
-    console.log("Submitting with delivery dates:", formData.deliveryDates);
-    console.log("Category IDs in cart:", [...new Set(items.map(item => item.category_id).filter(Boolean))]);
+    // Only validate delivery address if there are delivery items
+    if (hasDeliveryItems && !deliveryAddress.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a delivery address for delivery items',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Ensure all required dates are present and valid
+    const missingDates = Array.from(categoriesWithItems).filter(categoryId => 
+      !formData.deliveryDates[categoryId]
+    );
     
-    setIsSubmitting(true);
+    if (missingDates.length > 0) {
+      const categoryNames = missingDates
+        .map(id => categories.find(cat => cat.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      
+      toast({
+        title: 'Error',
+        description: `Please select dates for: ${categoryNames}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if any dates are invalid
+    let hasInvalidDates = false;
+    Object.entries(formData.deliveryDates).forEach(([categoryId, date]) => {
+      if (date instanceof Date) {
+        if (isNaN(date.getTime())) {
+          console.error(`Invalid date for category ${categoryId}:`, date);
+          hasInvalidDates = true;
+        }
+      } else {
+        console.error(`Non-Date value for category ${categoryId}:`, date);
+        hasInvalidDates = true;
+      }
+    });
     
+    if (hasInvalidDates) {
+      toast({
+        title: 'Error',
+        description: 'Some dates are invalid. Please try selecting dates again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP && category?.has_custom_pickup;
+    });
+
+    if (pickupCategories.length > 0 && !formData.pickupDetail) {
+      const categoryNames = pickupCategories
+        .map(id => categories.find(cat => cat.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      
+      toast({
+        title: 'Error',
+        description: `Please select pickup time and location for: ${categoryNames}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const dateErrors: string[] = [];
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (!category || !category.pickup_days) return;
+      
+      const date = formData.deliveryDates[categoryId];
+      if (!date) return;
+      
+      const dayOfWeek = date.getDay();
+      const isPickupDay = category.pickup_days.includes(dayOfWeek);
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      
+      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
+        dateErrors.push(`${category.name}: Pickup is only available on designated pickup days`);
+      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
+        dateErrors.push(`${category.name}: Delivery is not available on pickup days`);
+      }
+    });
+    
+    if (dateErrors.length > 0) {
+      toast({
+        title: 'Date Selection Error',
+        description: dateErrors.join('\n'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
+      // Log the delivery dates for debugging
+      console.log("Submitting with delivery dates:", formData.deliveryDates);
+      console.log("Category IDs in cart:", Array.from(categoriesWithItems));
+      
+      // DEBUG: Log the structure of each date object
+      Object.entries(formData.deliveryDates).forEach(([catId, dateObj]) => {
+        console.log(`Category ${catId} date type:`, typeof dateObj);
+        console.log(`Category ${catId} date value:`, dateObj);
+        console.log(`Category ${catId} date constructor:`, dateObj?.constructor?.name);
+        
+        // Try to extract date components for verification
+        if (dateObj instanceof Date) {
+          console.log(`Category ${catId} valid Date:`, dateObj.toISOString());
+        } else if (dateObj && typeof dateObj === 'object') {
+          console.log(`Category ${catId} object properties:`, Object.keys(dateObj));
+        }
+      });
+      
       await submitOrder({
         items,
         total,
@@ -183,90 +410,54 @@ export function CheckoutForm({
         fulfillmentType,
         categoryFulfillmentTypes,
         onOrderSuccess
-      }, paymentFile);
-      
-      clearCart();
-    } catch (error) {
-      console.error('Failed to submit order:', error);
-      setIsSubmitting(false);
+      }, paymentProof);
+    } catch (error: any) {
+      console.error('Order submission error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to submit order. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
-  if (isSubmitting || isUploading) {
-    return <LoadingState message="Processing your order..." />;
-  }
-
   return (
-    <Form onSubmit={handleSubmit}>
-      {step === 1 && (
-        <DeliveryForm
-          deliveryDates={formData.deliveryDates}
-          notes={formData.notes}
-          onDateChange={onDateChange}
-          onNotesChange={onNotesChange}
-          pickupDetail={formData.pickupDetail}
-          onPickupDetailChange={onPickupDetailChange}
-          fulfillmentType={fulfillmentType}
-          onFulfillmentTypeChange={onFulfillmentTypeChange}
-          deliveryAddress={deliveryAddress}
-          onDeliveryAddressChange={onDeliveryAddressChange}
-          categoryFulfillmentTypes={categoryFulfillmentTypes}
-          onCategoryFulfillmentTypeChange={onCategoryFulfillmentTypeChange}
-        />
-      )}
-      
-      {step === 2 && (
-        <div className="space-y-6">
-          <PaymentInstructions 
-            total={total} 
-            onFileChange={onFileChange} 
-            file={paymentFile}
-          />
-          <Separator />
-          <OrderConfirmation 
-            items={items}
-            total={total}
-            taxAmount={taxAmount}
-            customer={customerData}
-            notes={formData.notes}
-            pickupDetail={formData.pickupDetail}
-            deliveryDates={formData.deliveryDates}
-            fulfillmentType={fulfillmentType}
-            deliveryAddress={deliveryAddress}
-            categoryFulfillmentTypes={categoryFulfillmentTypes}
-          />
-        </div>
-      )}
-      
-      <div className="flex justify-between mt-6">
-        {step > 1 && (
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onPrevStep}
-          >
-            Back
-          </Button>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <DeliveryForm
+        deliveryDates={formData.deliveryDates}
+        notes={formData.notes}
+        onDateChange={handleDateChange}
+        onNotesChange={handleNotesChange}
+        pickupDetail={formData.pickupDetail}
+        onPickupDetailChange={handlePickupDetailChange}
+        fulfillmentType={fulfillmentType}
+        onFulfillmentTypeChange={handleFulfillmentTypeChange}
+        deliveryAddress={deliveryAddress}
+        onDeliveryAddressChange={setDeliveryAddress}
+        categoryFulfillmentTypes={categoryFulfillmentTypes}
+        onCategoryFulfillmentTypeChange={(categoryId, type) => {
+          setCategoryFulfillmentTypes(prev => ({
+            ...prev,
+            [categoryId]: type
+          }));
+        }}
+      />
+
+      <PaymentInstructions
+        paymentProof={paymentProof}
+        onFileChange={handleFileChange}
+      />
+
+      <Button type="submit" className="w-full" disabled={isUploading}>
+        {isUploading ? (
+          <>
+            <Upload className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          'Place Order'
         )}
-        
-        <div className="ml-auto">
-          {step < 2 ? (
-            <Button 
-              type="button" 
-              onClick={onNextStep}
-            >
-              Continue to Payment
-            </Button>
-          ) : (
-            <Button 
-              type="submit" 
-              disabled={!paymentFile}
-            >
-              Place Order
-            </Button>
-          )}
-        </div>
-      </div>
-    </Form>
+      </Button>
+    </form>
   );
 }
