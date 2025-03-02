@@ -85,92 +85,93 @@ export function useOrderSubmission() {
       // Ensure we have proper Date objects for all delivery dates
       const sanitizedDeliveryDates: Record<string, Date> = {};
       
+      // Debug log for deliveryDates
+      console.log("Processing delivery dates:", deliveryDates);
+      console.log("Unique category IDs:", uniqueCategoryIds);
+
       for (const [categoryId, dateValue] of Object.entries(deliveryDates)) {
         if (!dateValue) continue;
         
         try {
-          // Convert serialized date object to a proper Date object
-          if (typeof dateValue === 'object' && dateValue !== null) {
-            if ('_type' in dateValue && dateValue._type === 'Date') {
-              // Handle the nested value structure from serialized date
-              if ('value' in dateValue) {
-                const valueObj = dateValue.value;
-                
-                if (valueObj && typeof valueObj === 'object' && 'iso' in valueObj && typeof valueObj.iso === 'string') {
-                  sanitizedDeliveryDates[categoryId] = new Date(valueObj.iso);
-                } else if (valueObj && typeof valueObj === 'object' && 'valueOf' in valueObj && typeof valueObj.valueOf === 'function') {
-                  // Use valueOf method if available
-                  sanitizedDeliveryDates[categoryId] = new Date(valueObj.valueOf() as number);
-                } else if (valueObj && typeof valueObj === 'number') {
-                  sanitizedDeliveryDates[categoryId] = new Date(valueObj);
-                } else {
-                  console.log("Complex date format - trying to convert:", valueObj);
-                  // Last fallback, try to use the dateValue directly
-                  sanitizedDeliveryDates[categoryId] = new Date();
-                }
-              } else if ('iso' in dateValue && typeof dateValue.iso === 'string') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.iso);
-              } else if (typeof dateValue.valueOf === 'function') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateValue.valueOf() as number);
-              } else {
-                console.log("Unusual date format:", dateValue);
-                sanitizedDeliveryDates[categoryId] = new Date();
-              }
-            } else if (dateValue instanceof Date) {
-              // For regular Date objects
-              sanitizedDeliveryDates[categoryId] = dateValue;
-            } else {
-              // Try to convert unknown object to date
-              console.log("Converting unknown object to date:", dateValue);
-              
-              // Use type assertion to help TypeScript understand we're checking properties
-              const dateObj = dateValue as Record<string, unknown>;
-              
-              // Try various approaches to get a valid timestamp
-              if ('timestamp' in dateObj && typeof dateObj.timestamp === 'number') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateObj.timestamp);
-              } else if ('time' in dateObj && typeof dateObj.time === 'number') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateObj.time);
-              } else if ('valueOf' in dateObj && typeof dateObj.valueOf === 'function') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateObj.valueOf() as number);
-              } else if ('toISOString' in dateObj && typeof dateObj.toISOString === 'function') {
-                sanitizedDeliveryDates[categoryId] = new Date(dateObj.toISOString() as string);
-              } else {
-                // Last resort - use current date as fallback
-                console.warn(`Could not extract date from object for category ${categoryId}:`, dateObj);
-                sanitizedDeliveryDates[categoryId] = new Date();
-              }
-            }
+          let finalDate: Date;
+          
+          // Handle different date formats
+          if (dateValue instanceof Date) {
+            finalDate = dateValue;
           } else if (typeof dateValue === 'string') {
-            // For ISO string dates
-            sanitizedDeliveryDates[categoryId] = new Date(dateValue);
+            finalDate = new Date(dateValue);
           } else if (typeof dateValue === 'number') {
-            // For timestamp dates
-            sanitizedDeliveryDates[categoryId] = new Date(dateValue);
+            finalDate = new Date(dateValue);
+          } else if (typeof dateValue === 'object') {
+            // Try to extract date from complex object
+            const dateObj = dateValue as any;
+            
+            if (dateObj._type === 'Date' && dateObj.value) {
+              if (typeof dateObj.value === 'string') {
+                finalDate = new Date(dateObj.value);
+              } else if (typeof dateObj.value === 'number') {
+                finalDate = new Date(dateObj.value);
+              } else if (typeof dateObj.value === 'object') {
+                if (dateObj.value.iso) {
+                  finalDate = new Date(dateObj.value.iso);
+                } else if (dateObj.value.value) {
+                  finalDate = new Date(dateObj.value.value);
+                } else {
+                  // Fallback to current date
+                  console.warn(`Could not extract date from object for category ${categoryId}:`, dateObj);
+                  finalDate = new Date();
+                }
+              } else {
+                finalDate = new Date();
+              }
+            } else if (dateObj.iso) {
+              finalDate = new Date(dateObj.iso);
+            } else if (dateObj.timestamp) {
+              finalDate = new Date(dateObj.timestamp);
+            } else if (dateObj.time) {
+              finalDate = new Date(dateObj.time);
+            } else if (dateObj.valueOf && typeof dateObj.valueOf === 'function') {
+              finalDate = new Date(dateObj.valueOf());
+            } else if (dateObj.toISOString && typeof dateObj.toISOString === 'function') {
+              finalDate = new Date(dateObj.toISOString());
+            } else {
+              // Last resort - use current date as fallback
+              console.warn(`Could not extract date from object for category ${categoryId}:`, dateObj);
+              finalDate = new Date();
+            }
           } else {
-            console.log(`Unhandled date type for ${categoryId}:`, typeof dateValue, dateValue);
-            // Use current date as fallback
-            sanitizedDeliveryDates[categoryId] = new Date();
+            // Default to current date if all else fails
+            console.warn(`Unhandled date type for ${categoryId}:`, typeof dateValue, dateValue);
+            finalDate = new Date();
           }
           
           // Verify the date is valid
-          if (isNaN(sanitizedDeliveryDates[categoryId].getTime())) {
-            console.error(`Generated an invalid date for category ${categoryId}:`, sanitizedDeliveryDates[categoryId]);
-            // Use current date as fallback
-            sanitizedDeliveryDates[categoryId] = new Date();
+          if (isNaN(finalDate.getTime())) {
+            console.error(`Generated an invalid date for category ${categoryId}:`, finalDate);
+            finalDate = new Date(); // Use current date as fallback
           }
+          
+          sanitizedDeliveryDates[categoryId] = finalDate;
+          console.log(`Processed date for category ${categoryId}:`, sanitizedDeliveryDates[categoryId].toISOString());
         } catch (error) {
           console.error(`Error processing date for category ${categoryId}:`, error);
           console.error("Date value:", dateValue);
-          // Don't throw here, we'll validate missing dates later
-          sanitizedDeliveryDates[categoryId] = new Date(); // Fallback to current date
+          // Fallback to current date
+          sanitizedDeliveryDates[categoryId] = new Date();
         }
       }
 
+      // Debug log for sanitized dates
+      console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
+      
       // Validate we have dates for all categories in the cart
-      const missingDates = uniqueCategoryIds.filter(categoryId => 
-        !sanitizedDeliveryDates[categoryId]
-      );
+      const missingDates = uniqueCategoryIds.filter(categoryId => {
+        if (!sanitizedDeliveryDates[categoryId]) {
+          console.warn(`Missing date for category ${categoryId}`);
+          return true;
+        }
+        return false;
+      });
       
       if (missingDates.length > 0) {
         // Try to get category names
@@ -190,7 +191,11 @@ export function useOrderSubmission() {
       console.log("Sanitized delivery dates:", sanitizedDeliveryDates);
       console.log("Unique category IDs:", uniqueCategoryIds);
       for (const catId of uniqueCategoryIds) {
-        console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId].toISOString());
+        if (sanitizedDeliveryDates[catId]) {
+          console.log(`Category ${catId} date:`, sanitizedDeliveryDates[catId].toISOString());
+        } else {
+          console.warn(`No date for category ${catId}`);
+        }
       }
 
       const customerId = await getOrCreateCustomer(customerData, session?.user?.id);
@@ -421,6 +426,12 @@ export function useOrderSubmission() {
       // Create orders for each group (handles mixed fulfillment types)
       const orderPromises = Object.entries(groupedItems).map(async ([groupKey, groupItems]) => {
         const [groupFulfillmentType, categoryId] = groupKey.split('-', 2);
+        
+        if (!categoryId) {
+          console.error("Invalid group key:", groupKey);
+          throw new Error(`Invalid category grouping`);
+        }
+        
         const deliveryDate = sanitizedDeliveryDates[categoryId];
         
         if (!deliveryDate) {

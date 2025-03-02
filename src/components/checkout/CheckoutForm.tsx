@@ -251,6 +251,35 @@ export function CheckoutForm({
     }
   };
 
+  const validateDates = (): boolean => {
+    // Check if we have valid dates for all categories
+    for (const categoryId of categoriesWithItems) {
+      if (!formData.deliveryDates[categoryId]) {
+        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+        toast({
+          title: 'Missing Date',
+          description: `Please select a date for ${categoryName}`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+      
+      // Make sure date is valid
+      const date = formData.deliveryDates[categoryId];
+      if (!(date instanceof Date) || isNaN(date.getTime())) {
+        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+        toast({
+          title: 'Invalid Date',
+          description: `The date for ${categoryName} is invalid. Please try selecting it again.`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -260,6 +289,11 @@ export function CheckoutForm({
         description: 'Please upload proof of payment',
         variant: 'destructive',
       });
+      return;
+    }
+
+    // Validate dates first
+    if (!validateDates()) {
       return;
     }
 
@@ -282,48 +316,6 @@ export function CheckoutForm({
       toast({
         title: 'Error',
         description: 'Please enter a delivery address for delivery items',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Ensure all required dates are present and valid
-    const missingDates = Array.from(categoriesWithItems).filter(categoryId => 
-      !formData.deliveryDates[categoryId]
-    );
-    
-    if (missingDates.length > 0) {
-      const categoryNames = missingDates
-        .map(id => categories.find(cat => cat.id === id)?.name)
-        .filter(Boolean)
-        .join(', ');
-      
-      toast({
-        title: 'Error',
-        description: `Please select dates for: ${categoryNames}`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Check if any dates are invalid
-    let hasInvalidDates = false;
-    Object.entries(formData.deliveryDates).forEach(([categoryId, date]) => {
-      if (date instanceof Date) {
-        if (isNaN(date.getTime())) {
-          console.error(`Invalid date for category ${categoryId}:`, date);
-          hasInvalidDates = true;
-        }
-      } else {
-        console.error(`Non-Date value for category ${categoryId}:`, date);
-        hasInvalidDates = true;
-      }
-    });
-    
-    if (hasInvalidDates) {
-      toast({
-        title: 'Error',
-        description: 'Some dates are invalid. Please try selecting dates again.',
         variant: 'destructive',
       });
       return;
