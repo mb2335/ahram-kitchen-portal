@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Card } from './ui/card';
@@ -26,9 +26,12 @@ export function Auth() {
   const [isRequestingReset, setIsRequestingReset] = useState(false);
   const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const { toast } = useToast();
+  const processedTokenRef = useRef(false);
 
+  // Process URL hash parameters once
   useEffect(() => {
-    // Parse hash parameters more reliably
+    if (processedTokenRef.current) return;
+
     const parseHashParams = (): HashParams => {
       const hash = window.location.hash.substring(1);
       console.log("Raw URL hash:", hash);
@@ -48,7 +51,6 @@ export function Auth() {
       return params;
     };
 
-    // Check for password reset tokens in the URL
     const hashParams = parseHashParams();
     const type = hashParams.type;
     const accessToken = hashParams.access_token;
@@ -59,7 +61,7 @@ export function Auth() {
     });
 
     if (type === 'recovery' && accessToken) {
-      // Handle password recovery flow
+      processedTokenRef.current = true;
       console.log("Password recovery flow detected with token:", accessToken);
       setIsResetPassword(true);
       setIsRequestingReset(false);
@@ -75,10 +77,14 @@ export function Auth() {
     }
   }, [toast]);
 
-  // We need a separate useEffect for session handling to prevent conflicts with the recovery flow
+  // Handle session changes separately from recovery flow
   useEffect(() => {
-    // Only redirect if we're not in password reset mode
-    if (session && !isResetPassword && !recoveryToken) {
+    // Skip redirect if we're handling a password reset
+    if (isResetPassword || recoveryToken) {
+      return;
+    }
+
+    if (session) {
       const returnTo = location.state?.returnTo || '/';
       navigate(returnTo);
     }

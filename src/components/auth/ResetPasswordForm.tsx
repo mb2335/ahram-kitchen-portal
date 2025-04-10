@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { AuthFormField } from './AuthFormField';
 import { Button } from '@/components/ui/button';
@@ -19,23 +19,27 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+  const tokenValidationAttemptedRef = useRef(false);
 
   // Log when component mounts to track token
   useEffect(() => {
     console.log("ResetPasswordForm mounted with recoveryToken:", recoveryToken ? "exists" : "missing");
     
-    // Validate the token when component mounts
+    // Validate the token only once when component mounts
     const validateToken = async () => {
+      if (tokenValidationAttemptedRef.current) return;
+      tokenValidationAttemptedRef.current = true;
+      
       if (!recoveryToken) {
         setTokenValid(false);
         return;
       }
 
       try {
-        // Just verify we can set the session with the token
+        // Verify the token using Supabase's verifyOtp method
         const { error } = await supabase.auth.verifyOtp({
-          token_hash: recoveryToken,
           type: 'recovery',
+          token: recoveryToken,
         });
 
         if (error) {
@@ -58,6 +62,11 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
       } catch (error) {
         console.error("Error validating token:", error);
         setTokenValid(false);
+        
+        // Redirect back to sign in on error
+        if (onComplete) {
+          setTimeout(onComplete, 2000);
+        }
       }
     };
 
@@ -99,7 +108,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     console.log("Attempting to reset password with recovery token");
 
     try {
-      // Update the password using the OTP verification method
+      // Use the recoveryToken to update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
