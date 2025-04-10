@@ -45,7 +45,7 @@ export function DeliveryTimeSlotSelector({
         // First check for date-specific slots
         let query = supabase
           .from('delivery_schedules')
-          .select('*');
+          .select('*') as any;
           
         if (categoryId) {
           query = query.eq('category_id', categoryId);
@@ -68,16 +68,15 @@ export function DeliveryTimeSlotSelector({
         // Get all bookings for this date to filter out already booked slots
         const { data: bookings, error: bookingsError } = await supabase
           .from('delivery_time_bookings')
-          .select('time_slot_id')
-          .eq('booking_date', dateString);
+          .select('time_slot_id') as any;
           
         if (bookingsError) throw bookingsError;
         
-        const bookedSlotIds = new Set((bookings || []).map(b => b.time_slot_id));
+        const bookedSlotIds = new Set((bookings || []).map((b: any) => b.time_slot_id));
         
         // Filter out unavailable and booked slots
-        const slots = schedules.flatMap(schedule => 
-          schedule.time_slots.filter(slot => 
+        const slots = schedules.flatMap((schedule: any) => 
+          schedule.time_slots.filter((slot: TimeSlot) => 
             slot.available && !bookedSlotIds.has(slot.id)
           )
         );

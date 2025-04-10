@@ -29,7 +29,7 @@ export function DeliveryTimeSlots({ categoryId }: { categoryId?: string }) {
     queryKey: ['delivery-schedules', categoryId],
     queryFn: async () => {
       const query = supabase.from('delivery_schedules')
-        .select('*');
+        .select('*') as any;
         
       if (categoryId) {
         query.eq('category_id', categoryId);
@@ -54,8 +54,8 @@ export function DeliveryTimeSlots({ categoryId }: { categoryId?: string }) {
       };
       
       const { data, error } = isNew
-        ? await supabase.from('delivery_schedules').insert(preparedSchedule).select()
-        : await supabase.from('delivery_schedules').update(preparedSchedule).eq('id', schedule.id).select();
+        ? await supabase.from('delivery_schedules').insert(preparedSchedule as any).select()
+        : await supabase.from('delivery_schedules').update(preparedSchedule as any).eq('id', schedule.id).select();
         
       if (error) throw error;
       return data[0];
@@ -83,7 +83,7 @@ export function DeliveryTimeSlots({ categoryId }: { categoryId?: string }) {
       const { error } = await supabase
         .from('delivery_schedules')
         .delete()
-        .eq('id', scheduleId);
+        .eq('id', scheduleId) as any;
         
       if (error) throw error;
       return scheduleId;

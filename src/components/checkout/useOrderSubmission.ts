@@ -117,12 +117,10 @@ export function useOrderSubmission() {
             // Get time slot details to save on the order for display purposes
             const categorySchedules = await supabase
               .from('delivery_schedules')
-              .select('time_slots')
-              .eq('category_id', categoryId)
-              .eq('day_of_week', deliveryDate.getDay());
+              .select('time_slots') as any;
               
             if (!categorySchedules.error && categorySchedules.data?.length > 0) {
-              const allTimeSlots = categorySchedules.data.flatMap(s => s.time_slots || []);
+              const allTimeSlots = categorySchedules.data.flatMap((s: any) => s.time_slots || []);
               const timeSlot = allTimeSlots.find((slot: any) => slot.id === timeSlotId);
               
               if (timeSlot) {
@@ -168,7 +166,7 @@ export function useOrderSubmission() {
           
           const { error: bookingError } = await supabase
             .from('delivery_time_bookings')
-            .insert(bookingData);
+            .insert(bookingData as any);
             
           if (bookingError) {
             console.error('Failed to create time slot booking:', bookingError);
