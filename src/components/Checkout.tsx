@@ -11,6 +11,7 @@ import { CustomerForm } from './checkout/CustomerForm';
 import { PickupDetail } from '@/types/pickup';
 import { FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useQuery } from '@tanstack/react-query';
 
 const TAX_RATE = 0.1;
 
@@ -35,6 +36,20 @@ export function Checkout() {
   });
 
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
+
+  // Fetch categories to include with items
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   // Check if cart is empty and redirect if needed
   useEffect(() => {
@@ -78,7 +93,16 @@ export function Checkout() {
       state: {
         orderDetails: {
           id: orderId,
-          items: checkoutItems,
+          items: checkoutItems.map(item => {
+            const category = categories.find(cat => cat.id === item.category_id);
+            return {
+              ...item,
+              category: category ? {
+                name: category.name,
+                name_ko: category.name_ko
+              } : undefined
+            };
+          }),
           subtotal: total - taxAmount,
           taxAmount: taxAmount,
           total: total,

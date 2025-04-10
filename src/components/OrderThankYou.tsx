@@ -1,3 +1,4 @@
+
 import { useLocation, Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -17,6 +18,10 @@ interface OrderDetails {
     quantity: number;
     price: number;
     discount_percentage?: number;
+    category?: {
+      name: string;
+      name_ko?: string;
+    };
   }>;
   total: number;
   taxAmount: number;

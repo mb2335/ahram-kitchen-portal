@@ -42,14 +42,20 @@ export function OrderSummary() {
   // Calculate final total
   const total = taxableAmount + taxAmount;
 
-  const formattedItems = items.map(item => ({
-    name: item.name,
-    nameKo: item.name_ko,
-    quantity: item.quantity,
-    price: item.price,
-    discount_percentage: item.discount_percentage,
-    category: categories.find(cat => cat.id === item.category_id)
-  }));
+  const formattedItems = items.map(item => {
+    const category = categories.find(cat => cat.id === item.category_id);
+    return {
+      name: item.name,
+      nameKo: item.name_ko,
+      quantity: item.quantity,
+      price: item.price,
+      discount_percentage: item.discount_percentage,
+      category: category ? {
+        name: category.name,
+        name_ko: category.name_ko
+      } : undefined
+    };
+  });
 
   return (
     <div className="space-y-6">

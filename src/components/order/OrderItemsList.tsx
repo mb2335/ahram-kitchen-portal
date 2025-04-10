@@ -1,3 +1,4 @@
+
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface OrderItem {
@@ -20,7 +21,7 @@ interface OrderItemsListProps {
 }
 
 export function OrderItemsList({ items }: OrderItemsListProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const calculateItemTotal = (item: OrderItem) => {
     const originalPrice = item.quantity * item.unit_price;
@@ -37,8 +38,11 @@ export function OrderItemsList({ items }: OrderItemsListProps) {
         <div key={item.id} className="flex justify-between items-start py-2 border-b">
           <div className="space-y-1">
             <span className="font-medium">
-              {item.quantity}x {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
+              {language === 'en' ? item.menu_item?.name : item.menu_item?.name_ko}
             </span>
+            <p className="text-sm text-gray-500">
+              {t('checkout.quantity')}: {item.quantity}
+            </p>
             {item.menu_item?.category && (
               <p className="text-sm text-muted-foreground">
                 {language === 'en' ? item.menu_item.category.name : item.menu_item.category.name_ko}
@@ -46,11 +50,11 @@ export function OrderItemsList({ items }: OrderItemsListProps) {
             )}
             <div className="text-sm space-y-1">
               <p className="text-gray-600">
-                ${item.unit_price.toFixed(2)} each
+                ${item.unit_price.toFixed(2)} {t('checkout.quantity')}
               </p>
               {item.menu_item?.discount_percentage && (
                 <p className="text-red-500">
-                  {item.menu_item.discount_percentage}% off
+                  {item.menu_item.discount_percentage}% {t('checkout.discount')}
                 </p>
               )}
             </div>

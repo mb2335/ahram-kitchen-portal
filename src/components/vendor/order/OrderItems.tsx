@@ -1,3 +1,4 @@
+
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OrderItem } from "../types";
 
@@ -6,7 +7,7 @@ interface OrderItemsProps {
 }
 
 export function OrderItems({ items }: OrderItemsProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <div className="space-y-4">
@@ -24,7 +25,7 @@ export function OrderItems({ items }: OrderItemsProps) {
                 </p>
               )}
               <p className="text-sm text-gray-600">
-                ${item.unit_price.toFixed(2)} each
+                ${item.unit_price.toFixed(2)} {t('checkout.quantity')}
               </p>
             </div>
             <span className="font-medium">
