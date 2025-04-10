@@ -80,7 +80,7 @@ export const useOrderSubmission = () => {
                 
                 const { data: existingBookings } = await supabase
                   .from('delivery_time_bookings')
-                  .select('*')
+                  .select('id')
                   .eq('category_id', categoryId)
                   .eq('delivery_date', deliveryDateStr)
                   .eq('time_slot', timeSlot);
@@ -102,7 +102,7 @@ export const useOrderSubmission = () => {
             
             const { data: scheduleData } = await supabase
               .from('delivery_schedules')
-              .select('*')
+              .select('id')
               .eq('category_id', categoryId)
               .eq('day_of_week', dayOfWeek)
               .eq('active', true);
@@ -114,7 +114,7 @@ export const useOrderSubmission = () => {
         }
         
         // Create the order
-        const orderData = {
+        const orderData: any = {
           customer_id: customerId,
           total_amount: totalAmount,
           tax_amount: categoryTaxAmount,
@@ -165,14 +165,16 @@ export const useOrderSubmission = () => {
         
         // Book the delivery time slot if applicable
         if (deliveryTimeSlot) {
+          const bookingData = {
+            order_id: order.id,
+            category_id: categoryId,
+            delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
+            time_slot: deliveryTimeSlot,
+          };
+          
           const { error: bookingError } = await supabase
             .from('delivery_time_bookings')
-            .insert({
-              order_id: order.id,
-              category_id: categoryId,
-              delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
-              time_slot: deliveryTimeSlot,
-            });
+            .insert(bookingData);
             
           if (bookingError) throw bookingError;
         }

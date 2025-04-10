@@ -7,12 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { TimeIcon, PlusIcon, TrashIcon, ClockIcon } from "lucide-react";
+import { PlusIcon, TrashIcon, ClockIcon, Timer as TimerIcon } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DeliverySchedule, DAY_NAMES, generateTimeSlots, formatTime } from "@/types/delivery";
-import { Tables } from '@/integrations/supabase/types/tables';
 
 interface DeliveryTimeSlotsProps {
   categoryId: string;
@@ -35,7 +34,16 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         .order('day_of_week');
       
       if (error) throw error;
-      return data as Tables<'delivery_schedules'>[];
+      return data as Array<{
+        id: string;
+        category_id: string;
+        day_of_week: number;
+        time_interval: number;
+        start_time: string;
+        end_time: string;
+        active: boolean;
+        created_at: string;
+      }>;
     },
   });
 
@@ -112,16 +120,18 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         if (error) throw error;
       } else {
         // Create new schedule
-        const { error } = await supabase
-          .from('delivery_schedules')
-          .insert([{
+        const scheduleData = {
             category_id: categoryId,
             day_of_week: dayOfWeek,
             time_interval: schedule.time_interval,
             start_time: schedule.start_time,
             end_time: schedule.end_time,
             active: schedule.active
-          }]);
+        };
+        
+        const { error } = await supabase
+          .from('delivery_schedules')
+          .insert([scheduleData]);
           
         if (error) throw error;
       }

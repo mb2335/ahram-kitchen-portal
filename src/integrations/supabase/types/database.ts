@@ -1,3 +1,4 @@
+
 import { Tables } from './tables';
 
 export interface Database {

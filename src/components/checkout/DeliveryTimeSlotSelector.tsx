@@ -6,8 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { DeliveryTimeSlotSelection, TimeSlot, formatTime, generateTimeSlots } from '@/types/delivery';
-import { Tables } from '@/integrations/supabase/types/tables';
+import { TimeSlot, formatTime, generateTimeSlots } from '@/types/delivery';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -54,7 +53,16 @@ export function DeliveryTimeSlotSelector({
         throw error;
       }
       
-      return data as Tables<'delivery_schedules'> | null;
+      return data as {
+        id: string;
+        category_id: string;
+        day_of_week: number;
+        time_interval: number;
+        start_time: string;
+        end_time: string;
+        active: boolean;
+        created_at: string;
+      } | null;
     },
     enabled: dayOfWeek >= 0,
   });
@@ -85,12 +93,12 @@ export function DeliveryTimeSlotSelector({
         // Check which slots are already booked
         const { data: bookings } = await supabase
           .from('delivery_time_bookings')
-          .select('*')
+          .select('time_slot')
           .eq('category_id', categoryId)
           .eq('delivery_date', formattedDate);
         
         // Mark booked slots as unavailable
-        const bookedTimes = new Set(bookings?.map(booking => booking.time_slot) || []);
+        const bookedTimes = new Set((bookings || []).map(booking => booking.time_slot));
         
         const availableSlots: TimeSlot[] = slots.map(time => ({
           time,
