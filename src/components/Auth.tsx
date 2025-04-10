@@ -31,6 +31,7 @@ export function Auth() {
     // Parse hash parameters more reliably
     const parseHashParams = (): HashParams => {
       const hash = window.location.hash.substring(1);
+      console.log("Raw URL hash:", hash);
       return hash.split('&').reduce((result: HashParams, item) => {
         const [key, value] = item.split('=');
         if (key) {
@@ -45,11 +46,11 @@ export function Auth() {
     const type = hashParams.type;
     const accessToken = hashParams.access_token;
 
-    console.log("URL hash parameters:", { type, hasAccessToken: !!accessToken });
+    console.log("URL hash parameters:", { type, hasAccessToken: !!accessToken, fullParams: hashParams });
 
     if (type === 'recovery' && accessToken) {
       // Handle password recovery flow
-      console.log("Password recovery flow detected");
+      console.log("Password recovery flow detected with token:", accessToken);
       setIsResetPassword(true);
       setIsRequestingReset(false);
       setRecoveryToken(accessToken);
