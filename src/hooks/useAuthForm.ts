@@ -106,56 +106,6 @@ export function useAuthForm(isSignUp: boolean) {
     }
   };
 
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.email) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address to reset your password.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email.trim(), {
-        redirectTo: window.location.origin + '/auth',
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Password Reset Email Sent",
-        description: "If an account exists with this email, you'll receive instructions to reset your password.",
-      });
-      
-    } catch (error: any) {
-      console.error('Error during password reset:', error);
-      toast({
-        title: "Error",
-        description: "There was a problem sending the password reset email. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -241,6 +191,5 @@ export function useAuthForm(isSignUp: boolean) {
     validatePassword,
     handleSignIn: isSignUp ? undefined : handleSignIn,
     handleSignUp: isSignUp ? handleSignUp : undefined,
-    handlePasswordReset,
   };
 }
