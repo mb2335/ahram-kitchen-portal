@@ -45,7 +45,7 @@ export function DeliveryForm({
   onCategoryFulfillmentTypeChange
 }: DeliveryFormProps) {
   const { items } = useCart();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
@@ -241,7 +241,9 @@ export function DeliveryForm({
             
             return (
               <div key={`fulfillment-${categoryId}`} className="border p-3 rounded space-y-3">
-                <h4 className="font-medium">{category.name}</h4>
+                <h4 className="font-medium">
+                  {language === 'en' ? category.name : category.name_ko || category.name}
+                </h4>
                 <RadioGroup 
                   value={categoryFulfillmentTypes[categoryId] || fulfillmentType} 
                   onValueChange={(value) => onCategoryFulfillmentTypeChange(categoryId, value)}

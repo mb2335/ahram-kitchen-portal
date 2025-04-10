@@ -35,6 +35,7 @@ interface OrderDetails {
 export function OrderThankYou() {
   const location = useLocation();
   const orderDetails = location.state?.orderDetails as OrderDetails | undefined;
+  const { language, t } = useLanguage();
 
   if (!orderDetails) {
     return <Navigate to="/" replace />;
@@ -63,24 +64,24 @@ export function OrderThankYou() {
     <div className="container mx-auto max-w-2xl p-6">
       <Card className="p-6 space-y-6">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Thanks, your order has been placed.</h1>
+          <h1 className="text-2xl font-bold">{t('checkout.thankyou.title')}</h1>
           <p className="text-gray-600">
-            Here is a detailed summary of your order.
+            {t('checkout.thankyou.details')}
           </p>
         </div>
 
         <div className="space-y-4">
-          <h2 className="font-semibold">Order Summary</h2>
-          <p className="text-sm text-gray-600">Order #{orderDetails.id.slice(0, 8)}</p>
+          <h2 className="font-semibold">{t('checkout.summary')}</h2>
+          <p className="text-sm text-gray-600">{t('checkout.thankyou.id')}{orderDetails.id.slice(0, 8)}</p>
           <p className="text-sm text-gray-600">
-            Placed on {format(new Date(orderDetails.createdAt), 'PPP')}
+            {t('checkout.thankyou.placed')} {format(new Date(orderDetails.createdAt), 'PPP')}
           </p>
 
           {(orderDetails.pickupTime || orderDetails.pickupLocation) && (
             <>
               <Separator />
               <div className="space-y-2">
-                <h3 className="font-semibold">Pickup Details</h3>
+                <h3 className="font-semibold">{t('checkout.thankyou.pickup')}</h3>
                 {orderDetails.pickupTime && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="h-4 w-4" />
@@ -112,10 +113,10 @@ export function OrderThankYou() {
 
         <div className="flex justify-center space-x-4">
           <Link to="/">
-            <Button variant="outline">Return to Menu</Button>
+            <Button variant="outline">{t('checkout.thankyou.return')}</Button>
           </Link>
           <Link to="/orders">
-            <Button>View Order History</Button>
+            <Button>{t('checkout.thankyou.vieworders')}</Button>
           </Link>
         </div>
       </Card>
