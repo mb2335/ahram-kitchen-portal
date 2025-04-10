@@ -118,11 +118,10 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     console.log("Attempting to reset password with recovery token");
 
     try {
-      // Use the dedicated password update flow with OTP
-      const { data, error } = await supabase.auth.updateUserWithToken(
-        recoveryToken,
-        { password: newPassword }
-      );
+      // Use the correct method for updating password with OTP
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
 
       if (error) {
         console.error("Password reset error:", error);
