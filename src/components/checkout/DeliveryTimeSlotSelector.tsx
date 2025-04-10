@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,9 +8,10 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { TimeSlot, formatTime, generateTimeSlots } from '@/types/delivery';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DeliveryTimeSlotSelectorProps {
   categoryId: string;
@@ -34,7 +36,7 @@ export function DeliveryTimeSlotSelector({
   const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
 
-  const { data: scheduleData } = useQuery({
+  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
     queryKey: ['delivery-schedule', categoryId, dayOfWeek],
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
@@ -87,11 +89,22 @@ export function DeliveryTimeSlotSelector({
           interval
         );
         
-        const { data: bookingsData } = await supabase
+        if (slots.length === 0) {
+          setError(`No delivery time slots configured for ${categoryName} on this day.`);
+          setTimeSlots([]);
+          onTimeSlotChange(null);
+          return;
+        }
+        
+        const { data: bookingsData, error: bookingError } = await supabase
           .from('delivery_time_bookings')
           .select('time_slot')
           .eq('category_id', categoryId)
           .eq('delivery_date', formattedDate);
+          
+        if (bookingError) {
+          throw bookingError;
+        }
         
         const bookedTimes = new Set((bookingsData || []).map(booking => booking.time_slot));
         
@@ -102,6 +115,7 @@ export function DeliveryTimeSlotSelector({
         
         setTimeSlots(availableSlots);
         
+        // If the previously selected time slot is no longer available, clear the selection
         if (selectedTimeSlot && !availableSlots.find(slot => slot.time === selectedTimeSlot && slot.available)) {
           onTimeSlotChange(null);
         }
@@ -114,7 +128,7 @@ export function DeliveryTimeSlotSelector({
       }
     };
     
-    if (selectedDate) {
+    if (selectedDate && dayOfWeek >= 0) {
       loadAvailableTimeSlots();
     } else {
       setTimeSlots([]);
@@ -133,8 +147,17 @@ export function DeliveryTimeSlotSelector({
     );
   }
   
-  if (isLoading) {
-    return <div className="text-sm mt-2">Loading available time slots...</div>;
+  if (isScheduleLoading || isLoading) {
+    return (
+      <div className="mt-4 space-y-2">
+        <Label className="mb-2 block">Select Delivery Time Slot</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <Skeleton key={i} className="h-10 w-full rounded-md" />
+          ))}
+        </div>
+      </div>
+    );
   }
   
   if (error) {
@@ -159,7 +182,10 @@ export function DeliveryTimeSlotSelector({
 
   return (
     <div className="mt-4">
-      <Label className="mb-2 block">Select Delivery Time Slot</Label>
+      <Label className="mb-2 block flex items-center gap-1">
+        <Clock className="h-4 w-4" /> 
+        Select Delivery Time Slot
+      </Label>
       <ScrollArea className="max-h-64 border rounded-md">
         <RadioGroup
           value={selectedTimeSlot || ""}
