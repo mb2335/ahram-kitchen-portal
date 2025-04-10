@@ -1,22 +1,39 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Card } from './ui/card';
 import { SignInForm } from './auth/SignInForm';
 import { SignUpForm } from './auth/SignUpForm';
+import { useToast } from './ui/use-toast';
 
 export function Auth() {
   const session = useSession();
+  const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check for password reset tokens in the URL
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    const accessToken = hashParams.get('access_token');
+
+    if (type === 'recovery' && accessToken) {
+      // Handle password recovery flow
+      toast({
+        title: "Password Reset",
+        description: "Please enter your new password to complete the reset process.",
+      });
+    }
+    
     if (session) {
       const returnTo = location.state?.returnTo || '/';
       navigate(returnTo);
     }
-  }, [session, navigate, location]);
+  }, [session, navigate, location, toast]);
 
   return (
     <div className="container mx-auto max-w-md p-6">

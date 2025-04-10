@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -31,7 +32,7 @@ export function useAuthForm(isSignUp: boolean) {
   };
 
   const validateForm = () => {
-    if (!formData.email || !formData.password) {
+    if (!formData.email || (!isSignUp && !formData.password)) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -98,6 +99,56 @@ export function useAuthForm(isSignUp: boolean) {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email.trim(), {
+        redirectTo: window.location.origin + '/auth',
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Password Reset Email Sent",
+        description: "If an account exists with this email, you'll receive instructions to reset your password.",
+      });
+      
+    } catch (error: any) {
+      console.error('Error during password reset:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem sending the password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -190,5 +241,6 @@ export function useAuthForm(isSignUp: boolean) {
     validatePassword,
     handleSignIn: isSignUp ? undefined : handleSignIn,
     handleSignUp: isSignUp ? handleSignUp : undefined,
+    handlePasswordReset,
   };
 }
