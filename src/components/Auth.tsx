@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
@@ -70,12 +71,17 @@ export function Auth() {
       // Clear the URL hash immediately but keep the recovery state in React
       // This prevents token leakage while maintaining the recovery flow
       try {
+        // Use a more reliable method to clear the hash and maintain the current URL
         if (window.history && window.history.replaceState) {
+          const cleanUrl = window.location.pathname + window.location.search;
           window.history.replaceState(
-            {recoveryMode: true}, 
+            {recoveryMode: true, token: accessToken}, 
             document.title, 
-            window.location.pathname + window.location.search
+            cleanUrl
           );
+          console.log("URL hash cleared", cleanUrl);
+        } else {
+          console.warn("History API not available, couldn't clear URL hash");
         }
       } catch (e) {
         console.error("Error clearing URL hash:", e);
@@ -92,11 +98,13 @@ export function Auth() {
   useEffect(() => {
     // Skip redirect if we're handling a password reset
     if (isResetPassword || recoveryToken) {
+      console.log("Skipping redirect due to password reset flow");
       return;
     }
 
     if (session) {
       const returnTo = location.state?.returnTo || '/';
+      console.log("Session detected, navigating to:", returnTo);
       navigate(returnTo);
     }
   }, [session, navigate, location, isResetPassword, recoveryToken]);
@@ -114,6 +122,7 @@ export function Auth() {
 
   // Handle completion of password reset
   const handleResetComplete = () => {
+    console.log("Reset password completed, returning to sign in");
     setIsResetPassword(false);
     setRecoveryToken(null);
     processedTokenRef.current = false; // Reset for potential future password resets

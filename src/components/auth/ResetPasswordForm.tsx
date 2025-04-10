@@ -35,6 +35,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
       if (!recoveryToken) {
         setTokenValid(false);
         setIsValidating(false);
+        console.log("No recovery token found");
         return;
       }
 
@@ -47,9 +48,22 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
           throw new Error("Invalid token format");
         }
         
-        // For password reset flow, we don't need to explicitly set the session
-        // as updateUser will handle the verification when the token is in the URL
-        // We just need to validate the token format here
+        // For password reset flow, we need to explicitly set the session with the recovery token
+        // This establishes the auth context for the subsequent updateUser call
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: recoveryToken,
+          refresh_token: '',
+        });
+        
+        console.log("setSession result:", sessionError ? "failed" : "success");
+        
+        if (sessionError) {
+          console.error("Session initialization error:", sessionError);
+          throw sessionError;
+        }
+        
+        console.log("Session established:", sessionData.session ? "yes" : "no");
+        sessionInitializedRef.current = true;
         
         setTokenValid(true);
         setIsValidating(false);
@@ -74,7 +88,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     };
 
     initializeSession();
-  }, [recoveryToken, toast, onComplete]);
+  }, [recoveryToken, toast, onComplete, supabase]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -109,10 +123,11 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
 
     setIsLoading(true);
     console.log("Attempting to reset password with recovery token");
+    console.log("Session initialized before update:", sessionInitializedRef.current ? "yes" : "no");
 
     try {
       // Update the user's password using the recovery token
-      // The token is already in the URL hash which Supabase will automatically use
+      // The session should now be established from the setSession call
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
       });
