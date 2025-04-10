@@ -1,5 +1,7 @@
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CustomerFormProps {
   fullName: string;
@@ -20,10 +22,13 @@ export function CustomerForm({
   onPhoneChange,
   isReadOnly = false,
 }: CustomerFormProps) {
+  const { t } = useLanguage();
+  
   return (
     <div className="space-y-4">
+      <h3 className="font-medium text-lg">{t('checkout.customer.info')}</h3>
       <div>
-        <Label htmlFor="fullName">Full Name</Label>
+        <Label htmlFor="fullName">{t('checkout.customer.fullName')}</Label>
         <Input
           id="fullName"
           value={fullName}
@@ -35,7 +40,7 @@ export function CustomerForm({
       </div>
 
       <div>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('checkout.customer.email')}</Label>
         <Input
           id="email"
           type="email"
@@ -48,7 +53,7 @@ export function CustomerForm({
       </div>
 
       <div>
-        <Label htmlFor="phone">Phone Number</Label>
+        <Label htmlFor="phone">{t('checkout.customer.phone')}</Label>
         <Input
           id="phone"
           type="tel"

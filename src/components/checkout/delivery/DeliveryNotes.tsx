@@ -1,5 +1,7 @@
+
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DeliveryNotesProps {
   notes: string;
@@ -7,14 +9,16 @@ interface DeliveryNotesProps {
 }
 
 export function DeliveryNotes({ notes, onNotesChange }: DeliveryNotesProps) {
+  const { t } = useLanguage();
+  
   return (
     <div>
-      <Label htmlFor="notes">Special Instructions (Optional)</Label>
+      <Label htmlFor="notes">{t('checkout.notes')}</Label>
       <Textarea
         id="notes"
         value={notes}
         onChange={onNotesChange}
-        placeholder="Any special requests or dietary requirements?"
+        placeholder={t('checkout.notes.placeholder')}
       />
     </div>
   );

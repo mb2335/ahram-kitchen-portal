@@ -1,3 +1,4 @@
+
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +7,7 @@ import { OrderSummary as SharedOrderSummary } from "@/components/shared/OrderSum
 
 export function OrderSummary() {
   const { items } = useCart();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -52,7 +53,7 @@ export function OrderSummary() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Order Summary</h2>
+      <h2 className="text-xl font-semibold">{t('checkout.summary')}</h2>
       <SharedOrderSummary
         items={formattedItems}
         subtotal={subtotal}

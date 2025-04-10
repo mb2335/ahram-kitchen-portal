@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 import type { OrderItem } from '@/types/order';
 import { PickupDetail } from '@/types/pickup';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CheckoutFormProps {
   customerData: {
@@ -45,6 +46,7 @@ export function CheckoutForm({
   setFormData
 }: CheckoutFormProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [deliveryAddress, setDeliveryAddress] = useState<string>('');
@@ -119,7 +121,7 @@ export function CheckoutForm({
   const handleDateChange = (categoryId: string, date: Date) => {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
       toast({
-        title: 'Invalid Date',
+        title: t('checkout.error.date'),
         description: `Please select a valid date for this category`,
         variant: 'destructive',
       });
@@ -180,7 +182,7 @@ export function CheckoutForm({
       if (!hasDate) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
         toast({
-          title: 'Missing Date',
+          title: t('checkout.error.date'),
           description: `Please select a date for ${categoryName}`,
           variant: 'destructive',
         });
@@ -192,7 +194,7 @@ export function CheckoutForm({
       if (!(date instanceof Date) || isNaN(date.getTime())) {
         const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
         toast({
-          title: 'Invalid Date',
+          title: t('checkout.error.date'),
           description: `The date for ${categoryName} is invalid. Please try selecting it again.`,
           variant: 'destructive',
         });
@@ -208,8 +210,8 @@ export function CheckoutForm({
     
     if (!paymentProof) {
       toast({
-        title: 'Error',
-        description: 'Please upload proof of payment',
+        title: t('checkout.error.payment'),
+        description: t('checkout.error.payment'),
         variant: 'destructive',
       });
       return;
@@ -233,8 +235,8 @@ export function CheckoutForm({
     
     if (hasDeliveryItems && !deliveryAddress.trim()) {
       toast({
-        title: 'Error',
-        description: 'Please enter a delivery address for delivery items',
+        title: t('checkout.error.address'),
+        description: t('checkout.error.address'),
         variant: 'destructive',
       });
       return;
@@ -253,8 +255,8 @@ export function CheckoutForm({
         .join(', ');
       
       toast({
-        title: 'Error',
-        description: `Please select pickup time and location for: ${categoryNames}`,
+        title: t('checkout.error.pickup'),
+        description: `${t('checkout.error.pickup')}: ${categoryNames}`,
         variant: 'destructive',
       });
       return;
@@ -281,7 +283,7 @@ export function CheckoutForm({
     
     if (dateErrors.length > 0) {
       toast({
-        title: 'Date Selection Error',
+        title: t('checkout.error.date'),
         description: dateErrors.join('\n'),
         variant: 'destructive',
       });
@@ -348,10 +350,10 @@ export function CheckoutForm({
         {isUploading ? (
           <>
             <Upload className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
+            {t('checkout.processing')}
           </>
         ) : (
-          'Place Order'
+          t('checkout.submit')
         )}
       </Button>
     </form>

@@ -15,6 +15,7 @@ import {
   ERROR_MESSAGES
 } from '@/types/order';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface CategoryDeliveryDateProps {
   category: {
@@ -43,6 +44,7 @@ export function CategoryDeliveryDate({
   allPickupCategories = []
 }: CategoryDeliveryDateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { t, language } = useLanguage();
   
   // Auto-select the first pickup detail if none is selected and we're in pickup mode
   useEffect(() => {
@@ -106,9 +108,9 @@ export function CategoryDeliveryDate({
   const generatePickupHeading = () => {
     if (allPickupCategories && allPickupCategories.length > 0) {
       const categoryNames = allPickupCategories.join(' & ');
-      return `${categoryNames} Pickup Details`;
+      return `${categoryNames} ${t('checkout.pickup.title')}`;
     }
-    return `${category.name} Pickup Options`;
+    return `${category.name} ${t('checkout.pickup.options')}`;
   };
 
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
@@ -122,7 +124,7 @@ export function CategoryDeliveryDate({
           </Alert>
         )}
         <div className="space-y-2">
-          <Label>Select pickup date (only on available days)</Label>
+          <Label>{t('checkout.date')}</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -133,7 +135,7 @@ export function CategoryDeliveryDate({
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                {selectedDate ? format(selectedDate, "PPP") : <span>{t('checkout.date.select')}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
@@ -178,7 +180,7 @@ export function CategoryDeliveryDate({
   if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
     return (
       <div className="space-y-4">
-        <h4 className="font-medium">{category.name} Date</h4>
+        <h4 className="font-medium">{category.name} {t('checkout.date')}</h4>
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -186,7 +188,7 @@ export function CategoryDeliveryDate({
           </Alert>
         )}
         <div className="mb-4">
-          <Label className="mb-1 block">Select delivery date (on non-pickup days)</Label>
+          <Label className="mb-1 block">{t('checkout.date')}</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -197,7 +199,7 @@ export function CategoryDeliveryDate({
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                {selectedDate ? format(selectedDate, "PPP") : <span>{t('checkout.date.select')}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">

@@ -10,6 +10,7 @@ import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
 import { PickupDetail } from '@/types/pickup';
 import { FULFILLMENT_TYPE_PICKUP } from '@/types/order';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const TAX_RATE = 0.1;
 
@@ -18,6 +19,7 @@ export function Checkout() {
   const session = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const taxAmount = total * TAX_RATE;
 
   const [formData, setFormData] = useState({
@@ -114,6 +116,7 @@ export function Checkout() {
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
+      <h1 className="text-2xl font-bold mb-6">{t('checkout.title')}</h1>
       <div className="space-y-6">
         <OrderSummary />
         {!session && (

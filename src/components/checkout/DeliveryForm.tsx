@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -44,6 +45,7 @@ export function DeliveryForm({
   onCategoryFulfillmentTypeChange
 }: DeliveryFormProps) {
   const { items } = useCart();
+  const { t } = useLanguage();
   const [availableFulfillmentTypes, setAvailableFulfillmentTypes] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
   const [hasMixedDelivery, setHasMixedDelivery] = useState(false);
@@ -142,13 +144,13 @@ export function DeliveryForm({
 
   useEffect(() => {
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
-      setWarning("Your order contains items with specific pickup requirements. Please select valid pickup times and locations where requested.");
+      setWarning(t('checkout.error.pickup'));
     } else if (hasMixedDelivery) {
-      setWarning("Your order contains items with different fulfillment requirements. You'll need to select appropriate dates for each category.");
+      setWarning(t('checkout.categories.methods'));
     } else {
       setWarning(null);
     }
-  }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery]);
+  }, [fulfillmentType, hasCustomPickupItems, hasMixedDelivery, t]);
 
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
@@ -182,7 +184,7 @@ export function DeliveryForm({
     <div className="space-y-6">
       {!showMixedCategoryOptions && availableFulfillmentTypes.length > 1 && (
         <div className="space-y-4">
-          <h3 className="font-medium">Fulfillment Method</h3>
+          <h3 className="font-medium">{t('checkout.fulfillment')}</h3>
           <RadioGroup 
             value={fulfillmentType} 
             onValueChange={onFulfillmentTypeChange}
@@ -191,13 +193,13 @@ export function DeliveryForm({
             {availableFulfillmentTypes.includes(FULFILLMENT_TYPE_DELIVERY) && (
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value={FULFILLMENT_TYPE_DELIVERY} id={FULFILLMENT_TYPE_DELIVERY} />
-                <Label htmlFor={FULFILLMENT_TYPE_DELIVERY}>Delivery</Label>
+                <Label htmlFor={FULFILLMENT_TYPE_DELIVERY}>{t('checkout.fulfillment.delivery')}</Label>
               </div>
             )}
             {availableFulfillmentTypes.includes(FULFILLMENT_TYPE_PICKUP) && (
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value={FULFILLMENT_TYPE_PICKUP} id={FULFILLMENT_TYPE_PICKUP} />
-                <Label htmlFor={FULFILLMENT_TYPE_PICKUP}>Pickup</Label>
+                <Label htmlFor={FULFILLMENT_TYPE_PICKUP}>{t('checkout.fulfillment.pickup')}</Label>
               </div>
             )}
           </RadioGroup>
@@ -215,7 +217,7 @@ export function DeliveryForm({
 
       {showMixedCategoryOptions && (
         <div className="space-y-4">
-          <h3 className="font-medium">Delivery Methods by Category</h3>
+          <h3 className="font-medium">{t('checkout.categories.methods')}</h3>
           
           {warning && (
             <Alert>
@@ -247,13 +249,13 @@ export function DeliveryForm({
                   {category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY) && (
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value={FULFILLMENT_TYPE_DELIVERY} id={`${FULFILLMENT_TYPE_DELIVERY}-${categoryId}`} />
-                      <Label htmlFor={`${FULFILLMENT_TYPE_DELIVERY}-${categoryId}`}>Delivery</Label>
+                      <Label htmlFor={`${FULFILLMENT_TYPE_DELIVERY}-${categoryId}`}>{t('checkout.fulfillment.delivery')}</Label>
                     </div>
                   )}
                   {category.fulfillment_types.includes(FULFILLMENT_TYPE_PICKUP) && (
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value={FULFILLMENT_TYPE_PICKUP} id={`${FULFILLMENT_TYPE_PICKUP}-${categoryId}`} />
-                      <Label htmlFor={`${FULFILLMENT_TYPE_PICKUP}-${categoryId}`}>Pickup</Label>
+                      <Label htmlFor={`${FULFILLMENT_TYPE_PICKUP}-${categoryId}`}>{t('checkout.fulfillment.pickup')}</Label>
                     </div>
                   )}
                 </RadioGroup>
@@ -297,12 +299,12 @@ export function DeliveryForm({
 
       {needsDeliveryAddress() && (
         <div className="space-y-2">
-          <Label htmlFor="delivery-address">Delivery Address (Required)</Label>
+          <Label htmlFor="delivery-address">{t('checkout.delivery.address')}</Label>
           <Input 
             id="delivery-address"
             value={deliveryAddress}
             onChange={(e) => onDeliveryAddressChange(e.target.value)}
-            placeholder="Enter your complete delivery address"
+            placeholder={t('checkout.delivery.address.placeholder')}
             className="w-full"
             required
           />
