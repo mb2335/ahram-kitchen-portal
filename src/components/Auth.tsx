@@ -28,6 +28,14 @@ export function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Handle regular session redirection (for authenticated users)
+    if (session && !isResetPassword) {
+      const returnTo = location.state?.returnTo || '/';
+      navigate(returnTo);
+    }
+  }, [session, navigate, location, isResetPassword]);
+
+  useEffect(() => {
     // Parse hash parameters more reliably
     const parseHashParams = (): HashParams => {
       const hash = window.location.hash.substring(1);
@@ -64,11 +72,8 @@ export function Auth() {
         title: "Password Reset",
         description: "Please enter your new password to complete the reset process.",
       });
-    } else if (session) {
-      const returnTo = location.state?.returnTo || '/';
-      navigate(returnTo);
     }
-  }, [session, navigate, location, toast]);
+  }, [toast]);
 
   // Handler for requesting a password reset (show the email form)
   const handleRequestPasswordReset = () => {

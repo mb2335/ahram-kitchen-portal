@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { AuthFormField } from './AuthFormField';
 import { Button } from '@/components/ui/button';
@@ -16,61 +16,8 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [hasValidSession, setHasValidSession] = useState(false);
   const supabase = useSupabaseClient();
   const { toast } = useToast();
-
-  useEffect(() => {
-    console.log("ResetPasswordForm mounted with recoveryToken:", recoveryToken ? "exists" : "missing");
-    
-    // Verify if we have a valid token for password reset
-    const checkSession = async () => {
-      if (!recoveryToken) {
-        console.log("No recovery token provided");
-        setHasValidSession(false);
-        toast({
-          title: 'Invalid Reset Link',
-          description: 'This password reset link is invalid or has expired. Please request a new password reset.',
-          variant: 'destructive',
-        });
-        if (onComplete) {
-          setTimeout(() => onComplete(), 3000); // Go back to sign in after showing the message
-        }
-        return;
-      }
-      
-      try {
-        console.log("Setting auth session with recovery token");
-        // This explicitly sets the auth session with the recovery token
-        const { data, error } = await supabase.auth.setSession({
-          access_token: recoveryToken,
-          refresh_token: "",
-        });
-        
-        if (error) {
-          console.error("Error setting auth session:", error);
-          throw error;
-        }
-        
-        console.log("Auth session successfully set:", data);
-        setHasValidSession(true);
-      } catch (error) {
-        console.error("Failed to set auth session:", error);
-        setHasValidSession(false);
-        toast({
-          title: 'Invalid Reset Link',
-          description: 'The password reset link is invalid or has expired. Please request a new password reset.',
-          variant: 'destructive',
-        });
-        
-        if (onComplete) {
-          setTimeout(() => onComplete(), 3000); // Go back to sign in after showing the message
-        }
-      }
-    };
-
-    checkSession();
-  }, [recoveryToken, toast, onComplete, supabase.auth]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -84,8 +31,8 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!hasValidSession) {
-      console.log("Attempted to reset password without a valid session");
+    if (!recoveryToken) {
+      console.error("No recovery token available");
       toast({
         title: 'Invalid Session',
         description: 'Your password reset session is invalid. Please request a new password reset link.',
@@ -105,9 +52,21 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     }
 
     setIsLoading(true);
-    console.log("Attempting to reset password");
+    console.log("Attempting to reset password with recovery token");
 
     try {
+      // First set the session with the recovery token
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: recoveryToken,
+        refresh_token: '',
+      });
+
+      if (sessionError) {
+        console.error("Error setting session with recovery token:", sessionError);
+        throw sessionError;
+      }
+
+      // Then update the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -137,12 +96,18 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
         description: error.message || 'Failed to reset password. Please try again.',
         variant: 'destructive',
       });
+      
+      // Go back to sign in on error
+      if (onComplete) {
+        onComplete();
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!hasValidSession) {
+  // Check if we have a token before showing the form
+  if (!recoveryToken) {
     return (
       <div className="text-center">
         <p className="text-destructive mb-4">Invalid password reset link</p>
@@ -153,7 +118,6 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
 
   return (
     <form onSubmit={handleResetPassword} className="space-y-4">
-      <h2 className="text-xl font-semibold text-center">Reset Your Password</h2>
       <p className="text-sm text-gray-600 text-center mb-4">
         Please enter your new password below.
       </p>
