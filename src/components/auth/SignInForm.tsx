@@ -7,9 +7,10 @@ import { useState } from 'react';
 
 interface SignInFormProps {
   onToggleForm: () => void;
+  onResetPassword?: () => void;
 }
 
-export function SignInForm({ onToggleForm }: SignInFormProps) {
+export function SignInForm({ onToggleForm, onResetPassword }: SignInFormProps) {
   const [isResetMode, setIsResetMode] = useState(false);
   
   const {
@@ -21,6 +22,12 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
   } = useAuthForm(false);
 
   const toggleResetMode = () => {
+    // If external handler is provided, use it instead of internal state
+    if (onResetPassword && !isResetMode) {
+      onResetPassword();
+      return;
+    }
+    
     setIsResetMode(!isResetMode);
     // Clear any existing password data when toggling modes
     setFormData(prevData => ({

@@ -18,21 +18,37 @@ export function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Parse hash parameters more reliably
+    const parseHashParams = () => {
+      const hash = window.location.hash.substring(1);
+      return hash.split('&').reduce((result, item) => {
+        const [key, value] = item.split('=');
+        return { ...result, [key]: value !== undefined ? decodeURIComponent(value) : '' };
+      }, {});
+    };
+
     // Check for password reset tokens in the URL
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    const accessToken = hashParams.get('access_token');
+    const hashParams = parseHashParams();
+    const type = hashParams.type;
+    const accessToken = hashParams.access_token;
+
+    console.log("URL hash parameters:", { type, hasAccessToken: !!accessToken });
 
     if (type === 'recovery' && accessToken) {
       // Handle password recovery flow
+      console.log("Password recovery flow detected");
       setIsResetPassword(true);
+      
+      // Clear the hash to prevent issues with repeated token detection
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, document.title, window.location.pathname);
+      }
+      
       toast({
         title: "Password Reset",
         description: "Please enter your new password to complete the reset process.",
       });
-    }
-    
-    if (session) {
+    } else if (session) {
       const returnTo = location.state?.returnTo || '/';
       navigate(returnTo);
     }
@@ -52,11 +68,14 @@ export function Auth() {
         </div>
 
         {isResetPassword ? (
-          <ResetPasswordForm />
+          <ResetPasswordForm onComplete={() => setIsResetPassword(false)} />
         ) : isSignUp ? (
           <SignUpForm onToggleForm={() => setIsSignUp(false)} />
         ) : (
-          <SignInForm onToggleForm={() => setIsSignUp(true)} />
+          <SignInForm 
+            onToggleForm={() => setIsSignUp(true)} 
+            onResetPassword={() => setIsResetPassword(true)} 
+          />
         )}
       </Card>
     </div>

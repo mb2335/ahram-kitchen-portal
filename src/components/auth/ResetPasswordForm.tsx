@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
-export function ResetPasswordForm() {
+interface ResetPasswordFormProps {
+  onComplete?: () => void;
+}
+
+export function ResetPasswordForm({ onComplete }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,8 +55,13 @@ export function ResetPasswordForm() {
         description: 'Your password has been reset. You can now sign in with your new password.',
       });
       
-      // Redirect to home page
-      window.location.href = '/';
+      // Call onComplete if provided
+      if (onComplete) {
+        onComplete();
+      } else {
+        // Redirect to home page if no callback
+        window.location.href = '/';
+      }
     } catch (error: any) {
       console.error('Error resetting password:', error);
       toast({
