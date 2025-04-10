@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, Copy, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Copy, ArrowRight, Clock } from "lucide-react";
 import { CategoryFormData, PickupDetail } from "./types/category";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -139,6 +140,16 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     });
   };
 
+  const handleDeliverySettingChange = (field: keyof CategoryFormData['delivery_settings'], value: any) => {
+    setFormData({
+      ...formData,
+      delivery_settings: {
+        ...formData.delivery_settings,
+        [field]: value
+      }
+    });
+  };
+
   const getDayName = (day: number): string => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[day];
@@ -174,6 +185,16 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     setDayToCopyFrom(null);
     setDayToCopyTo(null);
   };
+
+  // Time interval options (in minutes)
+  const timeIntervalOptions = [15, 30, 45, 60, 90, 120];
+  
+  // Time options for start and end time
+  const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
+    const hour = Math.floor(i / 4);
+    const minute = (i % 4) * 15;
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  });
 
   return (
     <ScrollArea className="h-[80vh] w-full">
@@ -228,6 +249,86 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               </div>
             </div>
           </div>
+
+          {/* Delivery Time Slots */}
+          {formData.fulfillment_types.includes('delivery') && (
+            <div className="space-y-4 border p-4 rounded-md">
+              <Label className="text-base font-semibold">Delivery Time Slots</Label>
+              <p className="text-sm text-muted-foreground">
+                Set the time slots for delivery. This will determine when customers can schedule deliveries.
+              </p>
+              
+              <Card className="bg-secondary/10">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Label>Time Interval</Label>
+                    </div>
+                    <Select
+                      value={formData.delivery_settings.time_interval.toString()}
+                      onValueChange={(value) => handleDeliverySettingChange('time_interval', parseInt(value))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select interval" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeIntervalOptions.map((interval) => (
+                          <SelectItem key={interval} value={interval.toString()}>
+                            {interval} minutes
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Label>Start Time</Label>
+                    </div>
+                    <Select
+                      value={formData.delivery_settings.start_time}
+                      onValueChange={(value) => handleDeliverySettingChange('start_time', value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select start time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.slice(0, -1).map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Label>End Time</Label>
+                    </div>
+                    <Select
+                      value={formData.delivery_settings.end_time}
+                      onValueChange={(value) => handleDeliverySettingChange('end_time', value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select end time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.filter(time => time > formData.delivery_settings.start_time).map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Pickup settings */}
           {formData.fulfillment_types.includes('pickup') && (
@@ -435,8 +536,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               )}
             </div>
           )}
-          
-          {/* Note: The delivery time slot settings will be handled in a separate view after category creation */}
         </div>
 
         <Button type="submit" className="w-full mb-6">

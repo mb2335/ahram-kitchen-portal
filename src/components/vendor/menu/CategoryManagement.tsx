@@ -9,9 +9,8 @@ import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItem
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Category, PickupDetail } from './types/category';
+import { Category, DeliverySettings, PickupDetail } from './types/category';
 import { useEffect, useState } from 'react';
-import { DeliveryTimeSlots } from '../delivery/DeliveryTimeSlots';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -45,22 +44,59 @@ export function CategoryManagement() {
         throw error;
       }
       
-      return data.map(category => ({
-        ...category,
-        pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          day: detail.day !== undefined ? detail.day : 0,
-          time: detail.time || '',
-          location: detail.location || ''
-        })) as PickupDetail[],
-        fulfillment_types: category.fulfillment_types || [],
-        pickup_days: category.pickup_days || [],
-      })) as Category[];
+      // Get the related delivery schedules for all categories
+      const { data: deliverySchedules } = await supabase
+        .from('delivery_schedules')
+        .select('*');
+      
+      // Group delivery schedules by category
+      const schedulesByCategory: Record<string, any[]> = {};
+      if (deliverySchedules) {
+        deliverySchedules.forEach(schedule => {
+          if (!schedulesByCategory[schedule.category_id]) {
+            schedulesByCategory[schedule.category_id] = [];
+          }
+          schedulesByCategory[schedule.category_id].push(schedule);
+        });
+      }
+      
+      return data.map(category => {
+        // Extract delivery settings from schedules, or use defaults
+        let delivery_settings: DeliverySettings = {
+          time_interval: 30,
+          start_time: '09:00',
+          end_time: '17:00'
+        };
+        
+        const categorySchedules = schedulesByCategory[category.id] || [];
+        if (categorySchedules.length > 0) {
+          // Use settings from the first schedule as they should be the same for all days
+          const firstSchedule = categorySchedules[0];
+          delivery_settings = {
+            time_interval: firstSchedule.time_interval || 30,
+            start_time: firstSchedule.start_time || '09:00',
+            end_time: firstSchedule.end_time || '17:00'
+          };
+        }
+        
+        return {
+          ...category,
+          pickup_details: (category.pickup_details || []).map((detail: any) => ({
+            day: detail.day !== undefined ? detail.day : 0,
+            time: detail.time || '',
+            location: detail.location || ''
+          })) as PickupDetail[],
+          fulfillment_types: category.fulfillment_types || [],
+          pickup_days: category.pickup_days || [],
+          delivery_settings
+        } as Category;
+      });
     },
   });
 
   // Subscribe to real-time changes
   useEffect(() => {
-    const channel = supabase
+    const categoryChannel = supabase
       .channel('category-changes')
       .on(
         'postgres_changes',
@@ -76,9 +112,27 @@ export function CategoryManagement() {
         }
       )
       .subscribe();
+      
+    const scheduleChannel = supabase
+      .channel('schedule-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'delivery_schedules' 
+        },
+        async () => {
+          // Invalidate the cache and immediately refetch categories to get updated delivery settings
+          await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          refetch();
+        }
+      )
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(categoryChannel);
+      supabase.removeChannel(scheduleChannel);
     };
   }, [queryClient, refetch]);
 
@@ -135,32 +189,11 @@ export function CategoryManagement() {
     }
   };
 
-  const handleManageTimeSlots = (category: Category) => {
-    if (category.fulfillment_types.includes('delivery')) {
-      setSelectedCategoryForTimeSlots({
-        id: category.id,
-        name: category.name
-      });
-      setActiveTab("timeSlots");
-    } else {
-      toast({
-        title: "Not Available",
-        description: "Delivery time slots can only be configured for categories that offer delivery.",
-      });
-    }
-  };
-
   return (
     <div className="mb-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger 
-            value="timeSlots" 
-            disabled={!selectedCategoryForTimeSlots}
-          >
-            Delivery Time Slots
-          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="categories">
@@ -182,30 +215,16 @@ export function CategoryManagement() {
                 pickup_details: category.pickup_details || [],
                 fulfillment_types: category.fulfillment_types || [],
                 pickup_days: category.pickup_days || [],
+                delivery_settings: category.delivery_settings || {
+                  time_interval: 30,
+                  start_time: '09:00',
+                  end_time: '17:00'
+                }
               });
               setIsDialogOpen(true);
             }}
             onDelete={handleDelete}
-            onManageTimeSlots={handleManageTimeSlots}
           />
-        </TabsContent>
-        
-        <TabsContent value="timeSlots">
-          {selectedCategoryForTimeSlots && (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={() => setActiveTab("categories")}
-                className="mb-4"
-              >
-                Back to Categories
-              </Button>
-              <DeliveryTimeSlots 
-                categoryId={selectedCategoryForTimeSlots.id}
-                categoryName={selectedCategoryForTimeSlots.name}
-              />
-            </>
-          )}
         </TabsContent>
       </Tabs>
 
