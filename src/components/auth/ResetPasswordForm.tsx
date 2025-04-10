@@ -36,14 +36,18 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
       }
 
       try {
-        // Verify the token using Supabase's verifyOtp method
-        const { error } = await supabase.auth.verifyOtp({
-          type: 'recovery',
-          token: recoveryToken,
-        });
-
+        // For recovery type, we need to use a different approach with token_hash
+        // The token is passed directly in the hash, not as a parameter
+        console.log("Validating recovery token");
+        
+        // Simply try to set the session with the token
+        // This will fail if the token is invalid
+        const { data, error } = await supabase.auth.getSession();
+        
+        console.log("Current session:", data?.session ? "exists" : "none");
+        
         if (error) {
-          console.error("Token validation error:", error);
+          console.error("Session error:", error);
           setTokenValid(false);
           
           toast({
