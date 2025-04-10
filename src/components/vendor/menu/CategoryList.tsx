@@ -111,7 +111,8 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
                 </div>
               )}
 
-              {category.delivery_settings && (
+              {/* Only show delivery settings if delivery is a fulfillment type */}
+              {category.delivery_settings && category.fulfillment_types && category.fulfillment_types.includes('delivery') && (
                 <div>
                   <h4 className="font-medium mb-1">Delivery Settings</h4>
                   <div className="text-xs space-y-1">
