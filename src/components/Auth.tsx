@@ -8,6 +8,13 @@ import { SignUpForm } from './auth/SignUpForm';
 import { ResetPasswordForm } from './auth/ResetPasswordForm';
 import { useToast } from './ui/use-toast';
 
+// Define an interface for hash parameters
+interface HashParams {
+  [key: string]: string;
+  type?: string;
+  access_token?: string;
+}
+
 export function Auth() {
   const session = useSession();
   const supabase = useSupabaseClient();
@@ -19,11 +26,14 @@ export function Auth() {
 
   useEffect(() => {
     // Parse hash parameters more reliably
-    const parseHashParams = () => {
+    const parseHashParams = (): HashParams => {
       const hash = window.location.hash.substring(1);
-      return hash.split('&').reduce((result, item) => {
+      return hash.split('&').reduce((result: HashParams, item) => {
         const [key, value] = item.split('=');
-        return { ...result, [key]: value !== undefined ? decodeURIComponent(value) : '' };
+        if (key) {
+          result[key] = value !== undefined ? decodeURIComponent(value) : '';
+        }
+        return result;
       }, {});
     };
 
