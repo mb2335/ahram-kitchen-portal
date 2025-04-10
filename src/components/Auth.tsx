@@ -67,11 +67,8 @@ export function Auth() {
       setIsRequestingReset(false);
       setRecoveryToken(accessToken);
       
-      // Clear the hash to prevent issues with repeated token detection
-      // Use setTimeout to ensure it happens after the current render
-      setTimeout(() => {
-        window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
-      }, 0);
+      // Clear the hash immediately to prevent issues with repeated token detection
+      window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
       
       toast({
         title: "Password Reset",

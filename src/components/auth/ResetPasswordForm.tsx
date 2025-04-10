@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { AuthFormField } from './AuthFormField';
 import { Button } from '@/components/ui/button';
@@ -13,41 +13,35 @@ interface ResetPasswordFormProps {
 
 export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const supabase = useSupabaseClient();
   const { toast } = useToast();
-  const tokenValidationAttemptedRef = useRef(false);
 
   // Log when component mounts to track token
   useEffect(() => {
     console.log("ResetPasswordForm mounted with recoveryToken:", recoveryToken ? "exists" : "missing");
     
-    // Validate the token only once when component mounts
     const validateToken = async () => {
-      if (tokenValidationAttemptedRef.current) return;
-      tokenValidationAttemptedRef.current = true;
-      
       if (!recoveryToken) {
         setTokenValid(false);
+        setIsValidating(false);
         return;
       }
 
       try {
-        // For recovery type, we need to use a different approach with token_hash
-        // The token is passed directly in the hash, not as a parameter
-        console.log("Validating recovery token");
-        
-        // Simply try to set the session with the token
-        // This will fail if the token is invalid
+        setIsValidating(true);
+        // Try to get the current session instead of verifying OTP
+        // This should work if the recovery token in the URL was valid
         const { data, error } = await supabase.auth.getSession();
         
-        console.log("Current session:", data?.session ? "exists" : "none");
+        console.log("Current session check:", data?.session ? "exists" : "none");
         
-        if (error) {
-          console.error("Session error:", error);
+        if (error || !data.session) {
+          console.error("Session validation error:", error || "No session found");
           setTokenValid(false);
           
           toast({
@@ -71,6 +65,8 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
         if (onComplete) {
           setTimeout(onComplete, 2000);
         }
+      } finally {
+        setIsValidating(false);
       }
     };
 
@@ -112,7 +108,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     console.log("Attempting to reset password with recovery token");
 
     try {
-      // Use the recoveryToken to update the user's password
+      // Use the updateUser method to reset the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -150,7 +146,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   };
 
   // Show loading state while validating token
-  if (tokenValid === null) {
+  if (isValidating) {
     return (
       <div className="flex flex-col items-center justify-center py-6">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
