@@ -1,3 +1,4 @@
+
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Separator } from "@/components/ui/separator";
 
@@ -28,7 +29,7 @@ export function OrderSummary({
   items = [],
   showItems = true 
 }: OrderSummaryProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const calculateItemPrice = (item: typeof items[0]) => {
     const originalPrice = item.price * item.quantity;
@@ -51,11 +52,16 @@ export function OrderSummary({
                     {language === 'en' ? item.name : item.nameKo}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Quantity: {item.quantity}
+                    {t('checkout.quantity')}: {item.quantity}
                   </p>
+                  {item.category && (
+                    <p className="text-sm text-gray-500">
+                      {language === 'en' ? item.category.name : item.category.name_ko}
+                    </p>
+                  )}
                   {item.discount_percentage && (
                     <p className="text-sm text-red-500">
-                      {item.discount_percentage}% OFF
+                      {item.discount_percentage}% {t('checkout.discount')}
                     </p>
                   )}
                 </div>
@@ -76,21 +82,21 @@ export function OrderSummary({
 
       <div className="space-y-2">
         <div className="flex justify-between">
-          <span className="text-gray-600">Subtotal</span>
+          <span className="text-gray-600">{t('checkout.subtotal')}</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
         {discountAmount > 0 && (
           <div className="flex justify-between text-red-500">
-            <span>Discount</span>
+            <span>{t('checkout.discount')}</span>
             <span>-${discountAmount.toFixed(2)}</span>
           </div>
         )}
         <div className="flex justify-between">
-          <span className="text-gray-600">Tax</span>
+          <span className="text-gray-600">{t('checkout.tax')}</span>
           <span>${taxAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold">
-          <span>Total</span>
+          <span>{t('checkout.total')}</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </div>

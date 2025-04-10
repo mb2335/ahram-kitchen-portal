@@ -87,7 +87,12 @@ export function OrderThankYou() {
           <div className="space-y-2">
             {orderDetails.items.map((item, index) => (
               <div key={index} className="flex justify-between">
-                <span>{item.quantity}x {language === 'en' ? item.name : item.nameKo}</span>
+                <div>
+                  <span>{language === 'en' ? item.name : item.nameKo}</span>
+                  <span className="text-sm text-gray-600 ml-2">
+                    ({t('checkout.quantity')}: {item.quantity})
+                  </span>
+                </div>
                 <div className="text-right">
                   <span>${(item.price * item.quantity).toFixed(2)}</span>
                   {item.discount_percentage && (
