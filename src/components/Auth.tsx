@@ -5,6 +5,7 @@ import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Card } from './ui/card';
 import { SignInForm } from './auth/SignInForm';
 import { SignUpForm } from './auth/SignUpForm';
+import { ResetPasswordForm } from './auth/ResetPasswordForm';
 import { useToast } from './ui/use-toast';
 
 export function Auth() {
@@ -13,6 +14,7 @@ export function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,6 +25,7 @@ export function Auth() {
 
     if (type === 'recovery' && accessToken) {
       // Handle password recovery flow
+      setIsResetPassword(true);
       toast({
         title: "Password Reset",
         description: "Please enter your new password to complete the reset process.",
@@ -40,13 +43,17 @@ export function Auth() {
       <Card className="p-6">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-center mb-4">
-            {location.state?.returnTo === '/checkout' 
-              ? 'Sign in to Complete Your Order' 
-              : isSignUp ? 'Create an Account' : 'Welcome Back'}
+            {isResetPassword 
+              ? 'Reset Your Password'
+              : location.state?.returnTo === '/checkout' 
+                ? 'Sign in to Complete Your Order' 
+                : isSignUp ? 'Create an Account' : 'Welcome Back'}
           </h2>
         </div>
 
-        {isSignUp ? (
+        {isResetPassword ? (
+          <ResetPasswordForm />
+        ) : isSignUp ? (
           <SignUpForm onToggleForm={() => setIsSignUp(false)} />
         ) : (
           <SignInForm onToggleForm={() => setIsSignUp(true)} />
