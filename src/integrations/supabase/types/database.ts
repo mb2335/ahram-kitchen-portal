@@ -3,7 +3,9 @@ import type { Tables } from './tables';
 
 export interface Database {
   public: {
-    Tables: Tables
+    Tables: {
+      [K in keyof Tables]: Tables[K]
+    }
     Views: {
       [_ in never]: never
     }
