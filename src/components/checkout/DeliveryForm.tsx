@@ -63,6 +63,7 @@ export function DeliveryForm({
       return data.map(category => ({
         id: category.id,
         name: category.name,
+        name_ko: category.name_ko, // Include Korean name
         has_custom_pickup: category.has_custom_pickup,
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
           day: detail.day !== undefined ? detail.day : 0, // Ensure day is always included
@@ -138,7 +139,7 @@ export function DeliveryForm({
       
     return pickupCategoryIds.map(id => {
       const category = categories.find(c => c.id === id);
-      return category ? category.name : '';
+      return category ? { name: category.name, name_ko: category.name_ko } : null;
     }).filter(Boolean);
   };
 

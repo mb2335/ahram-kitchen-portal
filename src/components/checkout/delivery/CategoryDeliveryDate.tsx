@@ -21,6 +21,7 @@ export interface CategoryDeliveryDateProps {
   category: {
     id: string;
     name: string;
+    name_ko?: string; // Add Korean name support
     has_custom_pickup: boolean;
     pickup_details: PickupDetail[];
     fulfillment_types: string[];
@@ -31,7 +32,7 @@ export interface CategoryDeliveryDateProps {
   selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (detail: PickupDetail) => void;
   fulfillmentType: string;
-  allPickupCategories?: string[]; // For all categories being picked up
+  allPickupCategories?: Array<{name: string, name_ko?: string}>; // Updated to handle Korean names
 }
 
 export function CategoryDeliveryDate({
@@ -77,10 +78,6 @@ export function CategoryDeliveryDate({
     
     setErrorMessage(null);
     
-    // Log for debugging
-    console.log(`Selected date for category ${category.id}:`, cleanDate);
-    console.log(`Selected date is Date instance:`, cleanDate instanceof Date);
-    
     // Ensure we pass a valid Date object to the parent
     onDateChange(cleanDate);
   };
@@ -107,10 +104,14 @@ export function CategoryDeliveryDate({
   // Generate the dynamic heading text for pickup
   const generatePickupHeading = () => {
     if (allPickupCategories && allPickupCategories.length > 0) {
-      const categoryNames = allPickupCategories.join(' & ');
+      // Use language-appropriate category names
+      const categoryNames = allPickupCategories
+        .map(cat => language === 'en' ? cat.name : cat.name_ko || cat.name)
+        .join(' & ');
       return `${categoryNames} ${t('checkout.pickup.title')}`;
     }
-    return `${category.name} ${t('checkout.pickup.options')}`;
+    const categoryName = language === 'en' ? category.name : category.name_ko || category.name;
+    return `${categoryName} ${t('checkout.pickup.options')}`;
   };
 
   if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && category.has_custom_pickup && category.pickup_details?.length > 0) {
@@ -180,7 +181,9 @@ export function CategoryDeliveryDate({
   if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
     return (
       <div className="space-y-4">
-        <h4 className="font-medium">{category.name} {t('checkout.date')}</h4>
+        <h4 className="font-medium">
+          {language === 'en' ? category.name : category.name_ko || category.name} {t('checkout.date')}
+        </h4>
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
