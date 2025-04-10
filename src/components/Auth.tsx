@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
@@ -68,10 +67,18 @@ export function Auth() {
       setIsRequestingReset(false);
       setRecoveryToken(accessToken);
       
-      // Clear the URL hash immediately to prevent token leakage and issues with repeated token detection
-      // Use history.replaceState to avoid page reload
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      // Clear the URL hash immediately but keep the recovery state in React
+      // This prevents token leakage while maintaining the recovery flow
+      try {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(
+            {recoveryMode: true}, 
+            document.title, 
+            window.location.pathname + window.location.search
+          );
+        }
+      } catch (e) {
+        console.error("Error clearing URL hash:", e);
       }
       
       toast({
@@ -105,6 +112,13 @@ export function Auth() {
     setIsRequestingReset(false);
   };
 
+  // Handle completion of password reset
+  const handleResetComplete = () => {
+    setIsResetPassword(false);
+    setRecoveryToken(null);
+    processedTokenRef.current = false; // Reset for potential future password resets
+  };
+
   return (
     <div className="container mx-auto max-w-md p-6">
       <Card className="p-6">
@@ -122,11 +136,7 @@ export function Auth() {
 
         {isResetPassword ? (
           <ResetPasswordForm 
-            onComplete={() => {
-              setIsResetPassword(false);
-              setRecoveryToken(null);
-              processedTokenRef.current = false; // Reset for potential future password resets
-            }} 
+            onComplete={handleResetComplete} 
             recoveryToken={recoveryToken}
           />
         ) : isRequestingReset ? (
