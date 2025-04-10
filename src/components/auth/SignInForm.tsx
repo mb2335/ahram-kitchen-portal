@@ -61,17 +61,6 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
         />
       )}
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={toggleResetMode}
-          className="text-sm text-primary hover:underline"
-          disabled={isLoading}
-        >
-          {isResetMode ? "Back to sign in" : "Forgot password?"}
-        </button>
-      </div>
-
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? (
           <>
@@ -82,6 +71,17 @@ export function SignInForm({ onToggleForm }: SignInFormProps) {
           isResetMode ? 'Send Password Reset Link' : 'Sign In'
         )}
       </Button>
+
+      <div className="flex justify-center">
+        <button
+          type="button"
+          onClick={toggleResetMode}
+          className="text-sm text-primary hover:underline"
+          disabled={isLoading}
+        >
+          {isResetMode ? "Back to sign in" : "Forgot password?"}
+        </button>
+      </div>
 
       <p className="text-center text-sm text-gray-600">
         Don't have an account?{' '}
