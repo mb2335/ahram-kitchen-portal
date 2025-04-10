@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
@@ -9,10 +8,12 @@ import { useVendorOrders } from '@/hooks/useOrders';
 import { OrderFilters } from './order/OrderFilters';
 import type { OrderFilters as OrderFiltersType } from './order/OrderFilters';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
+import { DeliveryTimeSlots } from './delivery/DeliveryTimeSlots';
 
 export function OrderManagement() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [filters, setFilters] = useState<OrderFiltersType>({});
+  const [selectedTab, setSelectedTab] = useState('pending');
   const { toast } = useToast();
   const { orders, updateOrderStatus, deleteOrder, refetch } = useVendorOrders();
 
@@ -46,7 +47,6 @@ export function OrderManagement() {
           title: 'Success',
           description: 'Order deleted successfully',
         });
-        // Immediately refetch orders after successful deletion
         await refetch();
       } else {
         throw new Error(result.error);
@@ -65,14 +65,12 @@ export function OrderManagement() {
       const selectedDate = filters.date ? new Date(filters.date) : null;
       const orderDate = new Date(order.delivery_date);
 
-      // Date filter
       if (selectedDate) {
         const orderDateString = orderDate.toDateString();
         const selectedDateString = selectedDate.toDateString();
         if (orderDateString !== selectedDateString) return false;
       }
 
-      // Category filter
       if (filters.categoryId) {
         const hasCategory = order.order_items?.some(item => 
           item.menu_item?.category?.id === filters.categoryId
@@ -80,12 +78,10 @@ export function OrderManagement() {
         if (!hasCategory) return false;
       }
 
-      // Fulfillment type filter
       if (filters.fulfillmentType && order.fulfillment_type !== filters.fulfillmentType) {
         return false;
       }
 
-      // Pickup location filter
       if (filters.pickupLocation && order.pickup_location !== filters.pickupLocation) {
         return false;
       }
@@ -100,7 +96,6 @@ export function OrderManagement() {
     return filterOrders(statusFiltered);
   };
 
-  // Extract unique categories from orders
   const uniqueCategories = new Set();
   const categories = orders?.flatMap(order => 
     order.order_items?.map(item => {
@@ -118,12 +113,10 @@ export function OrderManagement() {
   )
   .filter(Boolean) || [];
 
-  // Extract unique pickup locations from orders
   const pickupLocations = Array.from(new Set(
     orders?.map(order => order.pickup_location).filter(Boolean) || []
   ));
 
-  // Count orders by fulfillment type
   const pickupCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length || 0;
   const deliveryCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length || 0;
 
@@ -173,8 +166,8 @@ export function OrderManagement() {
         pickupLocations={pickupLocations}
       />
 
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="pending" className="w-full" onValueChange={setSelectedTab}>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="pending">
             Pending ({getFilteredOrders('pending').length})
           </TabsTrigger>
@@ -186,6 +179,9 @@ export function OrderManagement() {
           </TabsTrigger>
           <TabsTrigger value="rejected">
             Rejected ({getFilteredOrders('rejected').length})
+          </TabsTrigger>
+          <TabsTrigger value="delivery-settings">
+            Settings
           </TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="mt-6">
@@ -207,6 +203,9 @@ export function OrderManagement() {
           <div className="grid gap-4">
             {renderOrdersList(getFilteredOrders('rejected'))}
           </div>
+        </TabsContent>
+        <TabsContent value="delivery-settings" className="mt-6">
+          <DeliveryTimeSlots />
         </TabsContent>
       </Tabs>
     </div>

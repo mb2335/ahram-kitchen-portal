@@ -42,5 +42,9 @@ export interface Order {
   pickup_location?: string;
   fulfillment_type?: string;
   order_items?: OrderItem[];
-  delivery_address?: string; // Added for delivery orders
+  delivery_address?: string;
+  delivery_time_slot_id?: string;
+  delivery_time_start?: string;
+  delivery_time_end?: string;
 }
+

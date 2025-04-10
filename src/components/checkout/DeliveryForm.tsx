@@ -1,4 +1,3 @@
-
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +13,7 @@ import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { DeliveryTimeSlotSelector } from './DeliveryTimeSlotSelector';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -28,6 +28,8 @@ interface DeliveryFormProps {
   onDeliveryAddressChange: (address: string) => void;
   categoryFulfillmentTypes: Record<string, string>;
   onCategoryFulfillmentTypeChange: (categoryId: string, type: string) => void;
+  selectedTimeSlots: Record<string, string | null>;
+  onTimeSlotChange: (categoryId: string, timeSlotId: string | null) => void;
 }
 
 export function DeliveryForm({ 
@@ -42,7 +44,9 @@ export function DeliveryForm({
   deliveryAddress,
   onDeliveryAddressChange,
   categoryFulfillmentTypes,
-  onCategoryFulfillmentTypeChange
+  onCategoryFulfillmentTypeChange,
+  selectedTimeSlots,
+  onTimeSlotChange
 }: DeliveryFormProps) {
   const { items } = useCart();
   const { t, language } = useLanguage();
@@ -63,10 +67,10 @@ export function DeliveryForm({
       return data.map(category => ({
         id: category.id,
         name: category.name,
-        name_ko: category.name_ko, // Include Korean name
+        name_ko: category.name_ko,
         has_custom_pickup: category.has_custom_pickup,
         pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          day: detail.day !== undefined ? detail.day : 0, // Ensure day is always included
+          day: detail.day !== undefined ? detail.day : 0,
           time: detail.time || '',
           location: detail.location || ''
         })),
@@ -295,6 +299,16 @@ export function DeliveryForm({
               fulfillmentType={effectiveFulfillmentType}
               allPickupCategories={pickupCategoryNames}
             />
+            
+            {effectiveFulfillmentType === FULFILLMENT_TYPE_DELIVERY && deliveryDates[category.id] && (
+              <DeliveryTimeSlotSelector
+                selectedDate={deliveryDates[category.id]}
+                categoryId={category.id}
+                selectedTimeSlot={selectedTimeSlots[category.id] || null}
+                onTimeSlotChange={(timeSlotId) => onTimeSlotChange(category.id, timeSlotId)}
+              />
+            )}
+            
             <Separator />
           </div>
         );

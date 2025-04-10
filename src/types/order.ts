@@ -1,4 +1,3 @@
-
 import { PickupDetail } from "./pickup";
 
 export interface OrderItem {
@@ -26,6 +25,7 @@ export interface OrderSubmissionProps {
   pickupDetail: PickupDetail | null;
   fulfillmentType: string;
   categoryFulfillmentTypes?: Record<string, string>; // For mixed delivery types
+  timeSlots?: Record<string, string | null>; // Time slot IDs by category
   onOrderSuccess: (orderId: string) => void;
 }
 
@@ -45,6 +45,9 @@ export interface OrderData {
   rejection_reason?: string;
   delivery_address?: string; // Added for delivery orders
   relatedOrderIds?: string[]; // Added for multi-fulfillment orders
+  delivery_time_slot_id?: string; // Added for delivery time slots
+  delivery_time_start?: string; // Time range display
+  delivery_time_end?: string; // Time range display
 }
 
 export interface OrderHistoryItem {
