@@ -21,6 +21,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const validationAttemptedRef = useRef(false);
+  const sessionInitializedRef = useRef(false);
 
   // Initialize session with the recovery token
   useEffect(() => {
@@ -39,22 +40,25 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
 
       try {
         setIsValidating(true);
+        console.log("Initializing session with recovery token");
         
         // Verify token format (basic validation)
         if (!recoveryToken || typeof recoveryToken !== 'string' || recoveryToken.length < 10) {
           throw new Error("Invalid token format");
         }
         
-        console.log("Attempting password reset with token");
+        // For password reset flow, we don't need to explicitly set the session
+        // as updateUser will handle the verification when the token is in the URL
+        // We just need to validate the token format here
         
-        // For Supabase password reset, we need to use updateUser directly with the token
-        // This approach works better than setSession for password recovery flows
         setTokenValid(true);
         setIsValidating(false);
+        console.log("Session initialization result: success");
       } catch (error) {
         console.error("Error validating token:", error);
         setTokenValid(false);
         setIsValidating(false);
+        console.log("Session initialization result: failed");
         
         toast({
           title: "Invalid Recovery Link",
@@ -107,16 +111,10 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     console.log("Attempting to reset password with recovery token");
 
     try {
-      // Update the user's password with the recovery token
+      // Update the user's password using the recovery token
+      // The token is already in the URL hash which Supabase will automatically use
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
-      }, {
-        // Pass the recovery token as an auth override to authenticate this specific request
-        auth: {
-          persistSession: false, // Don't persist this session
-          autoRefreshToken: false, // Don't refresh this token
-          detectSessionInUrl: true, // Detect the reset token in the URL
-        }
       });
 
       if (error) {
