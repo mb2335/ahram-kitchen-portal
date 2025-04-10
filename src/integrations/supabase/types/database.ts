@@ -1,10 +1,10 @@
 
-import type { Tables } from './tables';
+import type { Database as DatabaseDefinition } from './tables';
 
 export interface Database {
   public: {
     Tables: {
-      [K in keyof Tables]: Tables[K]
+      [K in keyof DatabaseDefinition['public']['Tables']]: DatabaseDefinition['public']['Tables'][K]
     }
     Views: {
       [_ in never]: never
