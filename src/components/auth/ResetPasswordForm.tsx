@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { AuthFormField } from './AuthFormField';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,38 @@ import { useToast } from '@/components/ui/use-toast';
 
 interface ResetPasswordFormProps {
   onComplete?: () => void;
+  recoveryToken?: string | null;
 }
 
-export function ResetPasswordForm({ onComplete }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [hasValidSession, setHasValidSession] = useState(!!recoveryToken);
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Verify if we have a valid session for password reset
+    const checkSession = async () => {
+      if (!recoveryToken) {
+        setHasValidSession(false);
+        toast({
+          title: 'Invalid Reset Link',
+          description: 'This password reset link is invalid or has expired. Please request a new password reset.',
+          variant: 'destructive',
+        });
+        if (onComplete) {
+          setTimeout(() => onComplete(), 3000); // Go back to sign in after showing the message
+        }
+        return;
+      }
+      setHasValidSession(true);
+    };
+
+    checkSession();
+  }, [recoveryToken, toast, onComplete]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -29,6 +52,16 @@ export function ResetPasswordForm({ onComplete }: ResetPasswordFormProps) {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!hasValidSession) {
+      toast({
+        title: 'Invalid Session',
+        description: 'Your password reset session is invalid. Please request a new password reset link.',
+        variant: 'destructive',
+      });
+      if (onComplete) onComplete();
+      return;
+    }
 
     if (!validatePassword(newPassword)) {
       return;
@@ -73,6 +106,15 @@ export function ResetPasswordForm({ onComplete }: ResetPasswordFormProps) {
       setIsLoading(false);
     }
   };
+
+  if (!hasValidSession) {
+    return (
+      <div className="text-center">
+        <p className="text-destructive mb-4">Invalid password reset link</p>
+        <p className="text-sm text-gray-600">Please request a new password reset from the sign in page.</p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleResetPassword} className="space-y-4">

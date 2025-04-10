@@ -24,6 +24,7 @@ export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [isRequestingReset, setIsRequestingReset] = useState(false);
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function Auth() {
           result[key] = value !== undefined ? decodeURIComponent(value) : '';
         }
         return result;
-      }, {});
+      }, {} as HashParams);
     };
 
     // Check for password reset tokens in the URL
@@ -51,6 +52,7 @@ export function Auth() {
       console.log("Password recovery flow detected");
       setIsResetPassword(true);
       setIsRequestingReset(false);
+      setRecoveryToken(accessToken);
       
       // Clear the hash to prevent issues with repeated token detection
       if (window.history && window.history.replaceState) {
@@ -94,7 +96,10 @@ export function Auth() {
         </div>
 
         {isResetPassword ? (
-          <ResetPasswordForm onComplete={() => setIsResetPassword(false)} />
+          <ResetPasswordForm 
+            onComplete={() => setIsResetPassword(false)} 
+            recoveryToken={recoveryToken}
+          />
         ) : isRequestingReset ? (
           <RequestPasswordResetForm onCancel={handleCancelRequest} />
         ) : isSignUp ? (
