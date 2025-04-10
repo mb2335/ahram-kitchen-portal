@@ -28,25 +28,24 @@ export function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Handle regular session redirection (for authenticated users)
-    if (session && !isResetPassword) {
-      const returnTo = location.state?.returnTo || '/';
-      navigate(returnTo);
-    }
-  }, [session, navigate, location, isResetPassword]);
-
-  useEffect(() => {
     // Parse hash parameters more reliably
     const parseHashParams = (): HashParams => {
       const hash = window.location.hash.substring(1);
       console.log("Raw URL hash:", hash);
-      return hash.split('&').reduce((result: HashParams, item) => {
-        const [key, value] = item.split('=');
-        if (key) {
-          result[key] = value !== undefined ? decodeURIComponent(value) : '';
-        }
-        return result;
-      }, {} as HashParams);
+      
+      const params: HashParams = {};
+      
+      if (hash) {
+        hash.split('&').forEach(item => {
+          const [key, value] = item.split('=');
+          if (key) {
+            params[key] = value !== undefined ? decodeURIComponent(value) : '';
+          }
+        });
+      }
+      
+      console.log("Parsed hash parameters:", params);
+      return params;
     };
 
     // Check for password reset tokens in the URL
@@ -54,7 +53,10 @@ export function Auth() {
     const type = hashParams.type;
     const accessToken = hashParams.access_token;
 
-    console.log("URL hash parameters:", { type, hasAccessToken: !!accessToken, fullParams: hashParams });
+    console.log("URL hash parameters:", { 
+      type, 
+      hasAccessToken: !!accessToken
+    });
 
     if (type === 'recovery' && accessToken) {
       // Handle password recovery flow
@@ -64,9 +66,7 @@ export function Auth() {
       setRecoveryToken(accessToken);
       
       // Clear the hash to prevent issues with repeated token detection
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState(null, document.title, window.location.pathname);
-      }
+      window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
       
       toast({
         title: "Password Reset",
@@ -74,6 +74,15 @@ export function Auth() {
       });
     }
   }, [toast]);
+
+  // We need a separate useEffect for session handling to prevent conflicts with the recovery flow
+  useEffect(() => {
+    // Only redirect if we're not in password reset mode
+    if (session && !isResetPassword && !recoveryToken) {
+      const returnTo = location.state?.returnTo || '/';
+      navigate(returnTo);
+    }
+  }, [session, navigate, location, isResetPassword, recoveryToken]);
 
   // Handler for requesting a password reset (show the email form)
   const handleRequestPasswordReset = () => {
@@ -103,7 +112,10 @@ export function Auth() {
 
         {isResetPassword ? (
           <ResetPasswordForm 
-            onComplete={() => setIsResetPassword(false)} 
+            onComplete={() => {
+              setIsResetPassword(false);
+              setRecoveryToken(null);
+            }} 
             recoveryToken={recoveryToken}
           />
         ) : isRequestingReset ? (

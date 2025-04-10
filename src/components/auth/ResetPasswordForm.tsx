@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { AuthFormField } from './AuthFormField';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,53 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const supabase = useSupabaseClient();
   const { toast } = useToast();
+
+  // Log when component mounts to track token
+  useEffect(() => {
+    console.log("ResetPasswordForm mounted with recoveryToken:", recoveryToken ? "exists" : "missing");
+    
+    // Validate the token when component mounts
+    const validateToken = async () => {
+      if (!recoveryToken) {
+        setTokenValid(false);
+        return;
+      }
+
+      try {
+        // Just verify we can set the session with the token
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: recoveryToken,
+          type: 'recovery',
+        });
+
+        if (error) {
+          console.error("Token validation error:", error);
+          setTokenValid(false);
+          
+          toast({
+            title: "Invalid Recovery Link",
+            description: "The password reset link is invalid or has expired. Please request a new password reset.",
+            variant: 'destructive',
+          });
+          
+          // Redirect back to sign in after showing error
+          if (onComplete) {
+            setTimeout(onComplete, 2000);
+          }
+        } else {
+          setTokenValid(true);
+        }
+      } catch (error) {
+        console.error("Error validating token:", error);
+        setTokenValid(false);
+      }
+    };
+
+    validateToken();
+  }, [recoveryToken, supabase, toast, onComplete]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -31,8 +76,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!recoveryToken) {
-      console.error("No recovery token available");
+    if (!recoveryToken || !tokenValid) {
       toast({
         title: 'Invalid Session',
         description: 'Your password reset session is invalid. Please request a new password reset link.',
@@ -55,18 +99,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     console.log("Attempting to reset password with recovery token");
 
     try {
-      // First set the session with the recovery token
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: recoveryToken,
-        refresh_token: '',
-      });
-
-      if (sessionError) {
-        console.error("Error setting session with recovery token:", sessionError);
-        throw sessionError;
-      }
-
-      // Then update the password
+      // Update the password using the OTP verification method
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -85,9 +118,6 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
       // Call onComplete if provided
       if (onComplete) {
         onComplete();
-      } else {
-        // Redirect to home page if no callback
-        window.location.href = '/';
       }
     } catch (error: any) {
       console.error('Error resetting password:', error);
@@ -106,12 +136,22 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     }
   };
 
-  // Check if we have a token before showing the form
-  if (!recoveryToken) {
+  // Show loading state while validating token
+  if (tokenValid === null) {
+    return (
+      <div className="flex flex-col items-center justify-center py-6">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-sm text-gray-600">Validating your reset link...</p>
+      </div>
+    );
+  }
+
+  // Show error if token is invalid
+  if (tokenValid === false) {
     return (
       <div className="text-center">
-        <p className="text-destructive mb-4">Invalid password reset link</p>
-        <p className="text-sm text-gray-600">Please request a new password reset from the sign in page.</p>
+        <p className="text-destructive mb-4">Invalid or expired password reset link</p>
+        <p className="text-sm text-gray-600 mb-4">Please request a new password reset from the sign in page.</p>
       </div>
     );
   }
