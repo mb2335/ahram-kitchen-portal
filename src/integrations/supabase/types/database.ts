@@ -1,9 +1,9 @@
 
-import { Tables } from './tables';
+import type { Tables as GenericTables } from './tables';
 
 export interface Database {
   public: {
-    Tables: Tables
+    Tables: GenericTables
     Views: {
       [_ in never]: never
     }

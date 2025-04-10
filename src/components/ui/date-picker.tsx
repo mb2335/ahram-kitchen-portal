@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 interface DatePickerProps {
   date?: Date
-  onSelect?: (date: Date) => void
+  onSelect?: (date: Date | undefined) => void
   disabled?: (date: Date) => boolean
 }
 

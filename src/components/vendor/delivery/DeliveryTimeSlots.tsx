@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { PlusIcon, TrashIcon, ClockIcon, Timer as TimerIcon } from "lucide-react";
+import { PlusIcon, TrashIcon, ClockIcon, TimerIcon } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -53,13 +52,13 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
   useEffect(() => {
     const newSchedulesByDay: Record<number, DeliverySchedule> = {};
     
-    // Initialize with default values for all days
+    // Initialize with default values for all days - now with 30 minutes as default
     for (let i = 0; i < 7; i++) {
       newSchedulesByDay[i] = {
         id: '', // Empty ID means it's a new schedule
         category_id: categoryId,
         day_of_week: i,
-        time_interval: 30,
+        time_interval: 30, // Default to 30 minutes
         start_time: '09:00',
         end_time: '17:00',
         active: false
@@ -72,7 +71,7 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         id: schedule.id,
         category_id: schedule.category_id,
         day_of_week: schedule.day_of_week,
-        time_interval: schedule.time_interval,
+        time_interval: schedule.time_interval || 30, // Use 30 minutes if not specified
         start_time: schedule.start_time,
         end_time: schedule.end_time,
         active: schedule.active,
@@ -86,7 +85,7 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
     if (activeTab === "" && Object.keys(newSchedulesByDay).length) {
       setActiveTab("0");
     }
-  }, [schedules, categoryId]);
+  }, [schedules, categoryId, activeTab]);
 
   const handleSaveSchedule = async (dayOfWeek: number) => {
     try {

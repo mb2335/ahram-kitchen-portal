@@ -41,7 +41,7 @@ export function DeliveryTimeSlotSelector({
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
       
-      const { data, error } = await supabase
+      const { data: scheduleData, error } = await supabase
         .from('delivery_schedules')
         .select('*')
         .eq('category_id', categoryId)
@@ -53,7 +53,7 @@ export function DeliveryTimeSlotSelector({
         throw error;
       }
       
-      return data as {
+      return scheduleData as {
         id: string;
         category_id: string;
         day_of_week: number;
@@ -83,22 +83,23 @@ export function DeliveryTimeSlotSelector({
           return;
         }
         
-        // Generate time slots based on schedule
+        // Generate time slots based on schedule - use the interval from the database, defaulting to 30 minutes
+        const interval = scheduleData.time_interval || 30;
         const slots = generateTimeSlots(
           scheduleData.start_time,
           scheduleData.end_time,
-          scheduleData.time_interval
+          interval
         );
         
         // Check which slots are already booked
-        const { data: bookings } = await supabase
+        const { data: bookingsData } = await supabase
           .from('delivery_time_bookings')
           .select('time_slot')
           .eq('category_id', categoryId)
           .eq('delivery_date', formattedDate);
         
         // Mark booked slots as unavailable
-        const bookedTimes = new Set((bookings || []).map(booking => booking.time_slot));
+        const bookedTimes = new Set((bookingsData || []).map(booking => booking.time_slot));
         
         const availableSlots: TimeSlot[] = slots.map(time => ({
           time,
