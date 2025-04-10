@@ -21,7 +21,6 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const validationAttemptedRef = useRef(false);
-  const sessionInitializedRef = useRef(false);
 
   // Initialize session with the recovery token
   useEffect(() => {
@@ -43,36 +42,30 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
         setIsValidating(true);
         console.log("Initializing session with recovery token");
         
-        // Verify token format (basic validation)
-        if (!recoveryToken || typeof recoveryToken !== 'string' || recoveryToken.length < 10) {
+        // Basic token validation
+        if (typeof recoveryToken !== 'string' || recoveryToken.length < 10) {
           throw new Error("Invalid token format");
         }
-        
-        // For password reset flow, we need to explicitly set the session with the recovery token
-        // This establishes the auth context for the subsequent updateUser call
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: recoveryToken,
-          refresh_token: '',
+
+        // Instead of trying to set the session (which might be failing),
+        // let's verify the token directly
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: recoveryToken,
+          type: 'recovery',
         });
         
-        console.log("setSession result:", sessionError ? "failed" : "success");
-        
-        if (sessionError) {
-          console.error("Session initialization error:", sessionError);
-          throw sessionError;
+        if (error) {
+          console.error("Token verification error:", error);
+          throw error;
         }
         
-        console.log("Session established:", sessionData.session ? "yes" : "no");
-        sessionInitializedRef.current = true;
-        
+        console.log("Token verification successful");
         setTokenValid(true);
         setIsValidating(false);
-        console.log("Session initialization result: success");
       } catch (error) {
         console.error("Error validating token:", error);
         setTokenValid(false);
         setIsValidating(false);
-        console.log("Session initialization result: failed");
         
         toast({
           title: "Invalid Recovery Link",
@@ -123,14 +116,13 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
 
     setIsLoading(true);
     console.log("Attempting to reset password with recovery token");
-    console.log("Session initialized before update:", sessionInitializedRef.current ? "yes" : "no");
 
     try {
-      // Update the user's password using the recovery token
-      // The session should now be established from the setSession call
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+      // Use the dedicated password update flow with OTP
+      const { data, error } = await supabase.auth.updateUserWithToken(
+        recoveryToken,
+        { password: newPassword }
+      );
 
       if (error) {
         console.error("Password reset error:", error);

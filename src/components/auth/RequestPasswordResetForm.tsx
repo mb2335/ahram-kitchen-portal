@@ -41,8 +41,12 @@ export function RequestPasswordResetForm({ onCancel }: RequestPasswordResetFormP
     setIsLoading(true);
     
     try {
+      // Ensure the absolute URL is used for redirection
+      const redirectUrl = new URL('/auth', window.location.origin).toString();
+      console.log("Password reset redirect URL:", redirectUrl);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + '/auth',
+        redirectTo: redirectUrl,
       });
 
       if (error) {

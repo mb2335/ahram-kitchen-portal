@@ -30,52 +30,58 @@ export function Auth() {
 
   // Process URL hash parameters once
   useEffect(() => {
-    if (processedTokenRef.current) return;
+    if (processedTokenRef.current) {
+      console.log("Token already processed, skipping");
+      return;
+    }
 
+    // Parse hash parameters more reliably
     const parseHashParams = (): HashParams => {
-      // Get the hash without the leading # character
       const hash = window.location.hash.substring(1);
       console.log("Raw URL hash:", hash);
       
+      // Skip if there's no hash
+      if (!hash) return { type: '', access_token: '' };
+      
       const params: HashParams = {};
       
-      if (hash) {
-        hash.split('&').forEach(item => {
-          const [key, value] = item.split('=');
+      // Split by & and then by = to get key-value pairs
+      hash.split('&').forEach(item => {
+        if (!item) return;
+        
+        const parts = item.split('=');
+        if (parts.length >= 2) {
+          const key = parts[0];
+          // Join the rest with = in case the value itself contains =
+          const value = parts.slice(1).join('=');
           if (key) {
-            params[key] = value !== undefined ? decodeURIComponent(value) : '';
+            params[key] = decodeURIComponent(value);
           }
-        });
-      }
+        }
+      });
       
       console.log("Parsed hash parameters:", params);
       return params;
     };
 
     const hashParams = parseHashParams();
-    const type = hashParams.type;
-    const accessToken = hashParams.access_token;
-
-    console.log("URL hash parameters:", { 
-      type, 
-      hasAccessToken: !!accessToken
-    });
-
-    if (type === 'recovery' && accessToken) {
+    
+    // Check for recovery flow
+    if (hashParams.type === 'recovery' && hashParams.access_token) {
       processedTokenRef.current = true;
-      console.log("Password recovery flow detected with token:", accessToken);
+      console.log("Password recovery flow detected with token:", hashParams.access_token);
+      
+      // Set up the recovery UI state
       setIsResetPassword(true);
       setIsRequestingReset(false);
-      setRecoveryToken(accessToken);
+      setRecoveryToken(hashParams.access_token);
       
-      // Clear the URL hash immediately but keep the recovery state in React
-      // This prevents token leakage while maintaining the recovery flow
+      // Clear the URL hash to prevent token leakage
       try {
-        // Use a more reliable method to clear the hash and maintain the current URL
         if (window.history && window.history.replaceState) {
           const cleanUrl = window.location.pathname + window.location.search;
           window.history.replaceState(
-            {recoveryMode: true, token: accessToken}, 
+            {recoveryMode: true, token: hashParams.access_token}, 
             document.title, 
             cleanUrl
           );
@@ -91,6 +97,8 @@ export function Auth() {
         title: "Password Reset",
         description: "Please enter your new password to complete the reset process.",
       });
+    } else {
+      console.log("No recovery parameters found in URL hash");
     }
   }, [toast]);
 
