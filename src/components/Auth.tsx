@@ -33,6 +33,7 @@ export function Auth() {
     if (processedTokenRef.current) return;
 
     const parseHashParams = (): HashParams => {
+      // Get the hash without the leading # character
       const hash = window.location.hash.substring(1);
       console.log("Raw URL hash:", hash);
       
@@ -67,8 +68,11 @@ export function Auth() {
       setIsRequestingReset(false);
       setRecoveryToken(accessToken);
       
-      // Clear the hash immediately to prevent issues with repeated token detection
-      window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      // Clear the URL hash immediately to prevent token leakage and issues with repeated token detection
+      // Use history.replaceState to avoid page reload
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      }
       
       toast({
         title: "Password Reset",
@@ -121,6 +125,7 @@ export function Auth() {
             onComplete={() => {
               setIsResetPassword(false);
               setRecoveryToken(null);
+              processedTokenRef.current = false; // Reset for potential future password resets
             }} 
             recoveryToken={recoveryToken}
           />

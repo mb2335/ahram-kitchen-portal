@@ -21,16 +21,17 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
   const supabase = useSupabaseClient();
   const { toast } = useToast();
   const validationAttemptedRef = useRef(false);
+  const sessionSetRef = useRef(false);
 
-  // Log when component mounts to track token
+  // Initialize session with the recovery token
   useEffect(() => {
     console.log("ResetPasswordForm mounted with recoveryToken:", recoveryToken ? "exists" : "missing");
     
-    // Only validate once to prevent infinite loops
-    const validateToken = async () => {
-      if (validationAttemptedRef.current) return;
+    const initializeSession = async () => {
+      // Only run once to prevent infinite loops
+      if (validationAttemptedRef.current || sessionSetRef.current) return;
       validationAttemptedRef.current = true;
-
+      
       if (!recoveryToken) {
         setTokenValid(false);
         setIsValidating(false);
@@ -40,12 +41,26 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
       try {
         setIsValidating(true);
         
-        // Since we have a recovery token directly from the URL hash,
-        // we'll assume it's valid for now and let the password update
-        // operation verify it properly
-        setTokenValid(true);
-        setIsValidating(false);
+        // Establish a session using the access token from the URL
+        console.log("Initializing session with recovery token");
+        const { data, error } = await supabase.auth.setSession({
+          access_token: recoveryToken,
+          refresh_token: '',
+        });
         
+        console.log("Session initialization result:", data?.session ? "success" : "failed");
+        
+        if (error) {
+          console.error("Session initialization error:", error);
+          throw error;
+        }
+        
+        if (!data.session) {
+          throw new Error("No session established");
+        }
+        
+        sessionSetRef.current = true;
+        setTokenValid(true);
       } catch (error) {
         console.error("Error validating token:", error);
         setTokenValid(false);
@@ -65,8 +80,8 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
       }
     };
 
-    validateToken();
-  }, [recoveryToken, toast, onComplete]);
+    initializeSession();
+  }, [recoveryToken, supabase, toast, onComplete]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -103,7 +118,7 @@ export function ResetPasswordForm({ onComplete, recoveryToken }: ResetPasswordFo
     console.log("Attempting to reset password with recovery token");
 
     try {
-      // Update the user's password directly with the recovery token already in the URL
+      // Update the user's password with the session established earlier
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
