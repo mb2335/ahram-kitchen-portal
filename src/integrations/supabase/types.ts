@@ -36,6 +36,89 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_schedules: {
+        Row: {
+          active: boolean
+          category_id: string
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          time_interval: number
+        }
+        Insert: {
+          active?: boolean
+          category_id: string
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          time_interval: number
+        }
+        Update: {
+          active?: boolean
+          category_id?: string
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          time_interval?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_schedules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_time_bookings: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          delivery_date: string
+          id: string
+          order_id: string
+          time_slot: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          delivery_date: string
+          id?: string
+          order_id: string
+          time_slot: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          delivery_date?: string
+          id?: string
+          order_id?: string
+          time_slot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_time_bookings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_time_bookings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           blocked_dates: string[] | null
@@ -200,6 +283,7 @@ export type Database = {
           customer_id: string
           delivery_address: string | null
           delivery_date: string
+          delivery_time_slot: string | null
           fulfillment_type: string | null
           id: string
           notes: string | null
@@ -216,6 +300,7 @@ export type Database = {
           customer_id: string
           delivery_address?: string | null
           delivery_date: string
+          delivery_time_slot?: string | null
           fulfillment_type?: string | null
           id?: string
           notes?: string | null
@@ -232,6 +317,7 @@ export type Database = {
           customer_id?: string
           delivery_address?: string | null
           delivery_date?: string
+          delivery_time_slot?: string | null
           fulfillment_type?: string | null
           id?: string
           notes?: string | null

@@ -179,6 +179,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     <ScrollArea className="h-[80vh] w-full">
       <form onSubmit={onSubmit} className="space-y-6 px-8">
         <div className="space-y-4 pr-6">
+          {/* Basic information fields */}
           <div className="space-y-2">
             <Label>Name (English)</Label>
             <Input
@@ -201,6 +202,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             />
           </div>
 
+          {/* Fulfillment types */}
           <div className="space-y-2">
             <Label className="text-base font-semibold">Fulfillment Types</Label>
             <div className="space-y-2 mt-2">
@@ -227,6 +229,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             </div>
           </div>
 
+          {/* Pickup settings */}
           {formData.fulfillment_types.includes('pickup') && (
             <div className="space-y-4 border p-4 rounded-md">
               <Label className="text-base font-semibold">Pickup Settings</Label>
@@ -432,6 +435,8 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
               )}
             </div>
           )}
+          
+          {/* Note: The delivery time slot settings will be handled in a separate view after category creation */}
         </div>
 
         <Button type="submit" className="w-full mb-6">

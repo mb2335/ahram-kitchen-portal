@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -6,203 +7,307 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Tables {
-  announcements: {
-    Row: {
-      id: string
-      vendor_id: string | null
-      title: string
-      title_ko: string | null
-      content: string
-      content_ko: string | null
-      is_active: boolean | null
-      start_date: string | null
-      end_date: string | null
-      created_at: string | null
+export interface Database {
+  public: {
+    Tables: {
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+      }
+      delivery_schedules: {
+        Row: {
+          id: string
+          category_id: string
+          day_of_week: number
+          time_interval: number
+          start_time: string
+          end_time: string
+          active: boolean
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          day_of_week: number
+          time_interval: number
+          start_time: string
+          end_time: string
+          active?: boolean
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          day_of_week?: number
+          time_interval?: number
+          start_time?: string
+          end_time?: string
+          active?: boolean
+          created_at?: string | null
+        }
+      }
+      delivery_time_bookings: {
+        Row: {
+          id: string
+          order_id: string
+          category_id: string
+          delivery_date: string
+          time_slot: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          category_id: string
+          delivery_date: string
+          time_slot: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          category_id?: string
+          delivery_date?: string
+          time_slot?: string
+          created_at?: string | null
+        }
+      }
+      menu_categories: {
+        Row: {
+          blocked_dates: string[] | null
+          created_at: string | null
+          fulfillment_types: string[] | null
+          has_custom_pickup: boolean | null
+          id: string
+          name: string
+          name_ko: string
+          order_index: number
+          pickup_days: number[] | null
+          pickup_details: Json[] | null
+          vendor_id: string | null
+        }
+        Insert: {
+          blocked_dates?: string[] | null
+          created_at?: string | null
+          fulfillment_types?: string[] | null
+          has_custom_pickup?: boolean | null
+          id?: string
+          name: string
+          name_ko: string
+          order_index: number
+          pickup_days?: number[] | null
+          pickup_details?: Json[] | null
+          vendor_id?: string | null
+        }
+        Update: {
+          blocked_dates?: string[] | null
+          created_at?: string | null
+          fulfillment_types?: string[] | null
+          has_custom_pickup?: boolean | null
+          id?: string
+          name?: string
+          name_ko?: string
+          order_index?: number
+          pickup_days?: number[] | null
+          pickup_details?: Json[] | null
+          vendor_id?: string | null
+        }
+      }
+      menu_items: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          description_ko: string | null
+          discount_percentage: number | null
+          id: string
+          image: string | null
+          is_available: boolean | null
+          name: string
+          name_ko: string
+          order_index: number
+          price: number
+          quantity_limit: number | null
+          vendor_id: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          description_ko?: string | null
+          discount_percentage?: number | null
+          id?: string
+          image?: string | null
+          is_available?: boolean | null
+          name: string
+          name_ko: string
+          order_index: number
+          price: number
+          quantity_limit?: number | null
+          vendor_id?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          description_ko?: string | null
+          discount_percentage?: number | null
+          id?: string
+          image?: string | null
+          is_available?: boolean | null
+          name?: string
+          name_ko?: string
+          order_index?: number
+          price?: number
+          quantity_limit?: number | null
+          vendor_id?: string | null
+        }
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string | null
+          menu_item_id: string
+          quantity: number
+          unit_price: number
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          order_id?: string | null
+          menu_item_id: string
+          quantity: number
+          unit_price: number
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          order_id?: string | null
+          menu_item_id?: string
+          quantity?: number
+          unit_price?: number
+          created_at?: string | null
+        }
+      }
+      orders: {
+        Row: {
+          id: string
+          customer_id: string
+          total_amount: number
+          tax_amount: number
+          delivery_date: string
+          created_at: string | null
+          status: string
+          notes: string | null
+          payment_proof_url: string
+          rejection_reason: string | null
+          pickup_time: string | null
+          pickup_location: string | null
+          fulfillment_type: string | null
+          delivery_address: string | null
+          delivery_time_slot: string | null
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          total_amount: number
+          tax_amount: number
+          delivery_date: string
+          created_at?: string | null
+          status?: string
+          notes?: string | null
+          payment_proof_url: string
+          rejection_reason?: string | null
+          pickup_time?: string | null
+          pickup_location?: string | null
+          fulfillment_type?: string | null
+          delivery_address?: string | null
+          delivery_time_slot?: string | null
+        }
+        Update: {
+          id?: string
+          customer_id?: string
+          total_amount?: number
+          tax_amount?: number
+          delivery_date?: string
+          created_at?: string | null
+          status?: string
+          notes?: string | null
+          payment_proof_url?: string
+          rejection_reason?: string | null
+          pickup_time?: string | null
+          pickup_location?: string | null
+          fulfillment_type?: string | null
+          delivery_address?: string | null
+          delivery_time_slot?: string | null
+        }
+      }
+      vendors: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string | null
+          is_active: boolean | null
+          phone: string | null
+          business_name: string
+          email: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+          is_active?: boolean | null
+          phone?: string | null
+          business_name: string
+          email: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+          is_active?: boolean | null
+          phone?: string | null
+          business_name?: string
+          email?: string
+        }
+      }
     }
-    Insert: {
-      id?: string
-      vendor_id?: string | null
-      title: string
-      title_ko?: string | null
-      content: string
-      content_ko?: string | null
-      is_active?: boolean | null
-      start_date?: string | null
-      end_date?: string | null
-      created_at?: string | null
+    Views: {
+      [_ in never]: never
     }
-    Update: {
-      id?: string
-      vendor_id?: string | null
-      title?: string
-      title_ko?: string | null
-      content?: string
-      content_ko?: string | null
-      is_active?: boolean | null
-      start_date?: string | null
-      end_date?: string | null
-      created_at?: string | null
+    Functions: {
+      [_ in never]: never
     }
-  }
-  customers: {
-    Row: {
-      id: string
-      user_id: string | null
-      full_name: string
-      email: string
-      phone: string | null
-      created_at: string | null
+    Enums: {
+      [_ in never]: never
     }
-    Insert: {
-      id?: string
-      user_id?: string | null
-      full_name: string
-      email: string
-      phone?: string | null
-      created_at?: string | null
-    }
-    Update: {
-      id?: string
-      user_id?: string | null
-      full_name?: string
-      email?: string
-      phone?: string | null
-      created_at?: string | null
-    }
-  }
-  menu_items: {
-    Row: {
-      id: string
-      vendor_id: string | null
-      name: string
-      name_ko: string
-      description: string | null
-      description_ko: string | null
-      price: number
-      image: string | null
-      category: string
-      is_available: boolean | null
-      created_at: string | null
-    }
-    Insert: {
-      id?: string
-      vendor_id?: string | null
-      name: string
-      name_ko: string
-      description?: string | null
-      description_ko?: string | null
-      price: number
-      image?: string | null
-      category: string
-      is_available?: boolean | null
-      created_at?: string | null
-    }
-    Update: {
-      id?: string
-      vendor_id?: string | null
-      name?: string
-      name_ko?: string
-      description?: string | null
-      description_ko?: string | null
-      price?: number
-      image?: string | null
-      category?: string
-      is_available?: boolean | null
-      created_at?: string | null
-    }
-  }
-  order_items: {
-    Row: {
-      id: string
-      order_id: string | null
-      menu_item_id: string
-      quantity: number
-      unit_price: number
-      created_at: string | null
-    }
-    Insert: {
-      id?: string
-      order_id?: string | null
-      menu_item_id: string
-      quantity: number
-      unit_price: number
-      created_at?: string | null
-    }
-    Update: {
-      id?: string
-      order_id?: string | null
-      menu_item_id?: string
-      quantity?: number
-      unit_price?: number
-      created_at?: string | null
-    }
-  }
-  orders: {
-    Row: {
-      id: string
-      customer_id: string
-      total_amount: number
-      tax_amount: number
-      status: string
-      notes: string | null
-      delivery_date: string
-      payment_proof_url: string
-      rejection_reason: string | null
-      created_at: string | null
-    }
-    Insert: {
-      id?: string
-      customer_id: string
-      total_amount: number
-      tax_amount: number
-      status?: string
-      notes?: string | null
-      delivery_date: string
-      payment_proof_url: string
-      rejection_reason?: string | null
-      created_at?: string | null
-    }
-    Update: {
-      id?: string
-      customer_id?: string
-      total_amount?: number
-      tax_amount?: number
-      status?: string
-      notes?: string | null
-      delivery_date?: string
-      payment_proof_url?: string
-      rejection_reason?: string | null
-      created_at?: string | null
-    }
-  }
-  vendors: {
-    Row: {
-      id: string
-      user_id: string | null
-      business_name: string
-      email: string
-      phone: string | null
-      is_active: boolean | null
-      created_at: string | null
-    }
-    Insert: {
-      id?: string
-      user_id?: string | null
-      business_name: string
-      email: string
-      phone?: string | null
-      is_active?: boolean | null
-      created_at?: string | null
-    }
-    Update: {
-      id?: string
-      user_id?: string | null
-      business_name?: string
-      email?: string
-      phone?: string | null
-      is_active?: boolean | null
-      created_at?: string | null
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
+
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type Enums<T extends keyof Database['public']['Enums']> = Database['public']['Enums'][T]

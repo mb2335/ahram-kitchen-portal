@@ -1,101 +1,150 @@
 
-import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, MapPin, Truck } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Category } from "./types/category";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, ArrowUpDown, Clock } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { Category } from "./types/category";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP } from "@/types/order";
 
 interface CategoryListProps {
   categories: Category[];
   onEdit: (category: Category) => void;
   onDelete: (categoryId: string) => void;
+  onManageTimeSlots: (category: Category) => void;
 }
 
-export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps) {
-  // Helper function to get day name
-  const getDayName = (day: number): string => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return days[day];
+export function CategoryList({ categories, onEdit, onDelete, onManageTimeSlots }: CategoryListProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { language } = useLanguage();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const oldIndex = categories.findIndex(cat => cat.id === active.id);
+      const newIndex = categories.findIndex(cat => cat.id === over.id);
+      
+      if (oldIndex >= 0 && newIndex >= 0) {
+        const reorderedCategories = [...categories];
+        const [movedCategory] = reorderedCategories.splice(oldIndex, 1);
+        reorderedCategories.splice(newIndex, 0, movedCategory);
+        
+        // Update order indices and save to database
+        try {
+          await Promise.all(
+            reorderedCategories.map((category, index) => 
+              supabase
+                .from('menu_categories')
+                .update({ order_index: index })
+                .eq('id', category.id)
+            )
+          );
+          
+          toast({
+            title: "Categories Reordered",
+            description: "Category order has been updated successfully"
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to reorder categories",
+            variant: "destructive"
+          });
+        }
+      }
+    }
   };
 
-  return (
-    <div className="space-y-2">
-      {categories.map((category) => (
-        <div
-          key={category.id}
-          className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm"
-        >
-          <div>
-            <p className="font-medium">{category.name}</p>
-            <p className="text-sm text-gray-600">{category.name_ko}</p>
-            <div className="flex gap-2 mt-1">
-              {category.fulfillment_types?.includes('delivery') && (
-                <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                  <Truck className="h-3 w-3" /> Delivery
-                </Badge>
-              )}
-              {category.fulfillment_types?.includes('pickup') && (
-                <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                  <MapPin className="h-3 w-3" /> Pickup
-                </Badge>
-              )}
-            </div>
-            {category.pickup_days && category.pickup_days.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
-                Pickup days: {category.pickup_days.map(day => getDayName(day)).join(', ')}
-              </p>
-            )}
-            {category.fulfillment_types?.includes('pickup') && category.has_custom_pickup && category.pickup_details && category.pickup_details.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
-                Pickup locations: {category.pickup_details.length}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(category)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this category? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(category.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      ))}
+  if (!categories.length) {
+    return (
+      <Card className="p-6 text-center">
+        <p className="text-muted-foreground">No categories found. Add your first category to get started.</p>
+      </Card>
+    );
+  }
 
-      {categories.length === 0 && (
-        <div className="text-center p-6 border border-dashed rounded-lg">
-          <p className="text-muted-foreground">No categories yet. Create your first category to organize your menu items.</p>
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToVerticalAxis]}
+    >
+      <SortableContext
+        items={categories.map(cat => cat.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-4">
+          {categories.map(category => {
+            const displayName = language === 'en' ? category.name : category.name_ko;
+            
+            return (
+              <Card key={category.id} className="p-4 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="icon" className="cursor-grab">
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <h3 className="font-medium">{displayName}</h3>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY) && (
+                        <Badge variant="outline">Delivery</Badge>
+                      )}
+                      {category.fulfillment_types.includes(FULFILLMENT_TYPE_PICKUP) && (
+                        <Badge variant="outline">Pickup</Badge>
+                      )}
+                      {category.has_custom_pickup && (
+                        <Badge variant="outline">Custom Pickup</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onManageTimeSlots(category)}
+                      title="Manage Delivery Time Slots"
+                    >
+                      <Clock className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(category)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(category.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
         </div>
-      )}
-    </div>
+      </SortableContext>
+    </DndContext>
   );
 }

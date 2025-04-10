@@ -10,11 +10,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PickupDetail } from './types/category';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { DeliveryTimeSlots } from '../delivery/DeliveryTimeSlots';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function CategoryManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<string>("categories");
+  const [selectedCategoryForTimeSlots, setSelectedCategoryForTimeSlots] = useState<{ id: string; name: string } | null>(null);
   const {
     isDialogOpen,
     setIsDialogOpen,
@@ -130,31 +135,79 @@ export function CategoryManagement() {
     }
   };
 
+  const handleManageTimeSlots = (category: Category) => {
+    if (category.fulfillment_types.includes('delivery')) {
+      setSelectedCategoryForTimeSlots({
+        id: category.id,
+        name: category.name
+      });
+      setActiveTab("timeSlots");
+    } else {
+      toast({
+        title: "Not Available",
+        description: "Delivery time slots can only be configured for categories that offer delivery.",
+      });
+    }
+  };
+
   return (
     <div className="mb-6">
-      <CategoryHeader
-        onAddClick={() => {
-          resetForm();
-          setIsDialogOpen(true);
-        }}
-      />
-      
-      <CategoryList 
-        categories={categories || []}
-        onEdit={(category) => {
-          setEditingCategory(category);
-          setFormData({
-            name: category.name,
-            name_ko: category.name_ko,
-            has_custom_pickup: category.has_custom_pickup || false,
-            pickup_details: category.pickup_details || [],
-            fulfillment_types: category.fulfillment_types || [],
-            pickup_days: category.pickup_days || [],
-          });
-          setIsDialogOpen(true);
-        }}
-        onDelete={handleDelete}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger 
+            value="timeSlots" 
+            disabled={!selectedCategoryForTimeSlots}
+          >
+            Delivery Time Slots
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="categories">
+          <CategoryHeader
+            onAddClick={() => {
+              resetForm();
+              setIsDialogOpen(true);
+            }}
+          />
+          
+          <CategoryList 
+            categories={categories || []}
+            onEdit={(category) => {
+              setEditingCategory(category);
+              setFormData({
+                name: category.name,
+                name_ko: category.name_ko,
+                has_custom_pickup: category.has_custom_pickup || false,
+                pickup_details: category.pickup_details || [],
+                fulfillment_types: category.fulfillment_types || [],
+                pickup_days: category.pickup_days || [],
+              });
+              setIsDialogOpen(true);
+            }}
+            onDelete={handleDelete}
+            onManageTimeSlots={handleManageTimeSlots}
+          />
+        </TabsContent>
+        
+        <TabsContent value="timeSlots">
+          {selectedCategoryForTimeSlots && (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setActiveTab("categories")}
+                className="mb-4"
+              >
+                Back to Categories
+              </Button>
+              <DeliveryTimeSlots 
+                categoryId={selectedCategoryForTimeSlots.id}
+                categoryName={selectedCategoryForTimeSlots.name}
+              />
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
