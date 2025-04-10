@@ -1,3 +1,4 @@
+
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from '@/components/ui/card';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GripVertical } from "lucide-react";
 import { MenuItem } from "./types";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,11 +84,15 @@ export function SortableMenuItem({ item, onEdit, onDelete }: SortableMenuItemPro
           
           <div className="flex flex-col sm:flex-row gap-4 w-full">
             {item.image && (
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full sm:w-24 h-32 sm:h-24 object-cover rounded-lg"
-              />
+              <div className="w-full sm:w-24 h-32 sm:h-24">
+                <AspectRatio ratio={1/1} className="rounded-lg overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
+                </AspectRatio>
+              </div>
             )}
             
             <div className="flex-1 space-y-2">

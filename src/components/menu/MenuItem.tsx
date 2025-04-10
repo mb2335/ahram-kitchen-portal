@@ -1,9 +1,11 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -35,26 +37,28 @@ export function MenuItem({ item, onAddToCart }: MenuItemProps) {
 
   return (
     <Card className="group relative flex flex-col h-full overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        {item.image ? (
-          <img
-            src={item.image}
-            alt={displayName}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-accent/10">
-            <span className="text-muted-foreground">No image</span>
-          </div>
-        )}
-        {item.discount_percentage && (
-          <Badge 
-            variant="destructive" 
-            className="absolute top-2 right-2 z-10 bg-red-500 text-white whitespace-nowrap"
-          >
-            {item.discount_percentage}% OFF
-          </Badge>
-        )}
+      <div className="relative overflow-hidden bg-muted">
+        <AspectRatio ratio={4/3}>
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={displayName}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-accent/10">
+              <span className="text-muted-foreground">No image</span>
+            </div>
+          )}
+          {item.discount_percentage && (
+            <Badge 
+              variant="destructive" 
+              className="absolute top-2 right-2 z-10 bg-red-500 text-white whitespace-nowrap"
+            >
+              {item.discount_percentage}% OFF
+            </Badge>
+          )}
+        </AspectRatio>
       </div>
 
       <div className="flex flex-col flex-grow p-4 space-y-3">

@@ -1,8 +1,10 @@
+
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface CartItemProps {
   item: MenuItem & { quantity: number };
@@ -22,11 +24,15 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in">
       <div className="flex items-center space-x-4">
-        <img
-          src={item.image}
-          alt={language === 'en' ? item.name : item.name_ko}
-          className="w-20 h-20 object-cover rounded-lg"
-        />
+        <div className="w-20 h-20">
+          <AspectRatio ratio={1/1}>
+            <img
+              src={item.image}
+              alt={language === 'en' ? item.name : item.name_ko}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          </AspectRatio>
+        </div>
         <div>
           <h3 className="font-medium text-lg">
             {language === 'en' ? item.name : item.name_ko}
