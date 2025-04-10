@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PickupDetail } from '@/types/pickup';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PickupLocationSelectorProps {
   category: {
