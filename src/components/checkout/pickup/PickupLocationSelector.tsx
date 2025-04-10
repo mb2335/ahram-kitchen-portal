@@ -94,14 +94,16 @@ export function PickupLocationSelector({
           <SelectValue placeholder="Select pickup location and time" />
         </SelectTrigger>
         <SelectContent>
-          {availablePickupDetails.map((detail, index) => (
-            <SelectItem 
-              key={index} 
-              value={`${detail.location}-${detail.time}`}
-            >
-              {detail.location} - {detail.time}
-            </SelectItem>
-          ))}
+          <ScrollArea className="max-h-[200px]">
+            {availablePickupDetails.map((detail, index) => (
+              <SelectItem 
+                key={index} 
+                value={`${detail.location}-${detail.time}`}
+              >
+                {detail.location} - {detail.time}
+              </SelectItem>
+            ))}
+          </ScrollArea>
         </SelectContent>
       </Select>
     </div>

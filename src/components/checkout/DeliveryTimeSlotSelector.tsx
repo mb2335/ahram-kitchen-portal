@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -32,11 +31,9 @@ export function DeliveryTimeSlotSelector({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Get the day of week (0-6) for the selected date
   const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
 
-  // Query for the delivery schedule
   const { data: scheduleData } = useQuery({
     queryKey: ['delivery-schedule', categoryId, dayOfWeek],
     queryFn: async () => {
@@ -50,7 +47,7 @@ export function DeliveryTimeSlotSelector({
         .eq('active', true)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
       
@@ -74,7 +71,6 @@ export function DeliveryTimeSlotSelector({
       setError(null);
       
       try {
-        // Clear time slots if no schedule is available for this day
         if (!scheduleData) {
           setTimeSlots([]);
           onTimeSlotChange(null);
@@ -84,7 +80,6 @@ export function DeliveryTimeSlotSelector({
           return;
         }
         
-        // Generate time slots based on schedule - use the interval from the database, defaulting to 30 minutes
         const interval = scheduleData.time_interval || 30;
         const slots = generateTimeSlots(
           scheduleData.start_time,
@@ -92,14 +87,12 @@ export function DeliveryTimeSlotSelector({
           interval
         );
         
-        // Check which slots are already booked
         const { data: bookingsData } = await supabase
           .from('delivery_time_bookings')
           .select('time_slot')
           .eq('category_id', categoryId)
           .eq('delivery_date', formattedDate);
         
-        // Mark booked slots as unavailable
         const bookedTimes = new Set((bookingsData || []).map(booking => booking.time_slot));
         
         const availableSlots: TimeSlot[] = slots.map(time => ({
@@ -109,7 +102,6 @@ export function DeliveryTimeSlotSelector({
         
         setTimeSlots(availableSlots);
         
-        // If the previously selected slot is no longer available, clear it
         if (selectedTimeSlot && !availableSlots.find(slot => slot.time === selectedTimeSlot && slot.available)) {
           onTimeSlotChange(null);
         }
@@ -168,11 +160,11 @@ export function DeliveryTimeSlotSelector({
   return (
     <div className="mt-4">
       <Label className="mb-2 block">Select Delivery Time Slot</Label>
-      <ScrollArea className="max-h-64">
+      <ScrollArea className="max-h-64 border rounded-md">
         <RadioGroup
           value={selectedTimeSlot || ""}
           onValueChange={onTimeSlotChange}
-          className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-1"
+          className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2"
         >
           {timeSlots.map((slot) => (
             <div key={slot.time} className="relative">

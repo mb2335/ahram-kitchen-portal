@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +30,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   const [dayToCopyFrom, setDayToCopyFrom] = useState<number | null>(null);
   const [dayToCopyTo, setDayToCopyTo] = useState<number | null>(null);
   
-  // Fetch existing categories to copy pickup details from
   const { data: categories = [] } = useQuery({
     queryKey: ['copy-pickup-categories'],
     queryFn: async () => {
@@ -104,7 +102,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
       if (index !== -1) {
         newPickupDays.splice(index, 1);
         
-        // Also remove any pickup details associated with this day
         const filteredPickupDetails = formData.pickup_details.filter(
           detail => detail.day !== day
         );
@@ -162,7 +159,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   const copyPickupDetailsFromDay = () => {
     if (dayToCopyFrom === null || dayToCopyTo === null) return;
     
-    // Get pickup details from source day
     const detailsToCopy = formData.pickup_details
       .filter(detail => detail.day === dayToCopyFrom)
       .map(detail => ({
@@ -170,26 +166,21 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
         day: dayToCopyTo
       }));
     
-    // Remove existing details for target day
     const filteredDetails = formData.pickup_details.filter(
       detail => detail.day !== dayToCopyTo
     );
     
-    // Add the new details
     setFormData({
       ...formData,
       pickup_details: [...filteredDetails, ...detailsToCopy]
     });
     
-    // Reset the selection
     setDayToCopyFrom(null);
     setDayToCopyTo(null);
   };
 
-  // Time interval options (in minutes) - updated to be every 30 minutes up to 2 hours
   const timeIntervalOptions = [30, 60, 90, 120];
-  
-  // Generate hour options for start and end time (every hour)
+
   const generateHourOptions = () => {
     const options = [];
     for (let i = 0; i < 24; i++) {
@@ -205,7 +196,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     <ScrollArea className="h-[80vh] w-full">
       <form onSubmit={onSubmit} className="space-y-6 px-8">
         <div className="space-y-4 pr-6">
-          {/* Basic information fields */}
           <div className="space-y-2">
             <Label>Name (English)</Label>
             <Input
@@ -228,7 +218,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             />
           </div>
 
-          {/* Fulfillment types */}
           <div className="space-y-2">
             <Label className="text-base font-semibold">Fulfillment Types</Label>
             <div className="space-y-2 mt-2">
@@ -255,7 +244,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             </div>
           </div>
 
-          {/* Delivery Time Slots - Only show if delivery is selected */}
           {formData.fulfillment_types.includes('delivery') && (
             <div className="space-y-4 border p-4 rounded-md">
               <Label className="text-base font-semibold">Delivery Time Slots</Label>
@@ -278,11 +266,13 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                         <SelectValue placeholder="Select interval" />
                       </SelectTrigger>
                       <SelectContent>
-                        {timeIntervalOptions.map((interval) => (
-                          <SelectItem key={interval} value={interval.toString()}>
-                            {interval === 60 ? "1 hour" : interval === 120 ? "2 hours" : `${interval} minutes`}
-                          </SelectItem>
-                        ))}
+                        <ScrollArea className="max-h-[200px]">
+                          {timeIntervalOptions.map((interval) => (
+                            <SelectItem key={interval} value={interval.toString()}>
+                              {interval === 60 ? "1 hour" : interval === 120 ? "2 hours" : `${interval} minutes`}
+                            </SelectItem>
+                          ))}
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
                   </div>
@@ -300,14 +290,16 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                         <SelectValue placeholder="Select start time" />
                       </SelectTrigger>
                       <SelectContent>
-                        {hourOptions.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {parseInt(time) === 0 ? "12:00 AM" : 
-                             parseInt(time) === 12 ? "12:00 PM" : 
-                             parseInt(time) < 12 ? `${parseInt(time)}:00 AM` : 
-                             `${parseInt(time) - 12}:00 PM`}
-                          </SelectItem>
-                        ))}
+                        <ScrollArea className="max-h-[200px]">
+                          {hourOptions.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {parseInt(time) === 0 ? "12:00 AM" : 
+                               parseInt(time) === 12 ? "12:00 PM" : 
+                               parseInt(time) < 12 ? `${parseInt(time)}:00 AM` : 
+                               `${parseInt(time) - 12}:00 PM`}
+                            </SelectItem>
+                          ))}
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
                   </div>
@@ -325,17 +317,19 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                         <SelectValue placeholder="Select end time" />
                       </SelectTrigger>
                       <SelectContent>
-                        {hourOptions
-                          .filter(time => (!formData.delivery_settings?.start_time || time > formData.delivery_settings?.start_time))
-                          .map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {parseInt(time) === 0 ? "12:00 AM" : 
-                               parseInt(time) === 12 ? "12:00 PM" : 
-                               parseInt(time) < 12 ? `${parseInt(time)}:00 AM` : 
-                               `${parseInt(time) - 12}:00 PM`}
-                            </SelectItem>
-                          ))
-                        }
+                        <ScrollArea className="max-h-[200px]">
+                          {hourOptions
+                            .filter(time => (!formData.delivery_settings?.start_time || time > formData.delivery_settings?.start_time))
+                            .map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {parseInt(time) === 0 ? "12:00 AM" : 
+                                 parseInt(time) === 12 ? "12:00 PM" : 
+                                 parseInt(time) < 12 ? `${parseInt(time)}:00 AM` : 
+                                 `${parseInt(time) - 12}:00 PM`}
+                              </SelectItem>
+                            ))
+                          }
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
                   </div>
@@ -344,12 +338,10 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             </div>
           )}
 
-          {/* Pickup settings */}
           {formData.fulfillment_types.includes('pickup') && (
             <div className="space-y-4 border p-4 rounded-md">
               <Label className="text-base font-semibold">Pickup Settings</Label>
               
-              {/* Copy Pickup Details from Existing Category */}
               {categories.length > 0 && (
                 <div className="space-y-2 bg-secondary/20 p-3 rounded-md">
                   <Label>Copy Pickup Details from Existing Category</Label>
@@ -419,7 +411,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
 
               {formData.has_custom_pickup && formData.pickup_days.length > 0 && (
                 <div className="space-y-6">
-                  {/* Copy between days */}
                   <div className="space-y-2 bg-secondary/20 p-3 rounded-md">
                     <Label>Copy Pickup Details Between Days</Label>
                     <div className="flex items-center gap-2">
