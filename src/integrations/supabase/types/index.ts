@@ -1,4 +1,4 @@
 
 // Re-export database types
 export * from './tables';
-export { Database as SupabaseDatabase } from './database';
+export type { Database as SupabaseDatabase } from './database';
