@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,6 @@ export function CheckoutForm({
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
-  const [selectedTimeSlots, setSelectedTimeSlots] = useState<Record<string, string | null>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
 
   const { data: categories = [] } = useQuery({
@@ -172,13 +172,6 @@ export function CheckoutForm({
     }
   };
 
-  const handleTimeSlotChange = (categoryId: string, timeSlotId: string | null) => {
-    setSelectedTimeSlots(prev => ({
-      ...prev,
-      [categoryId]: timeSlotId
-    }));
-  };
-
   const validateDates = (): boolean => {
     const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
     const uniqueCategoryIds = [...new Set(itemCategoryIds)];
@@ -212,27 +205,6 @@ export function CheckoutForm({
     return true;
   };
 
-  const validateTimeSlots = (): boolean => {
-    const deliveryCategories = Array.from(categoriesWithItems).filter(categoryId => {
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
-    });
-    
-    for (const categoryId of deliveryCategories) {
-      if (!selectedTimeSlots[categoryId]) {
-        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
-        toast({
-          title: t('checkout.error.timeSlot'),
-          description: `Please select a delivery time for ${categoryName}`,
-          variant: 'destructive',
-        });
-        return false;
-      }
-    }
-    
-    return true;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -246,10 +218,6 @@ export function CheckoutForm({
     }
 
     if (!validateDates()) {
-      return;
-    }
-    
-    if (!validateTimeSlots()) {
       return;
     }
 
@@ -339,7 +307,6 @@ export function CheckoutForm({
         pickupDetail: formData.pickupDetail,
         fulfillmentType,
         categoryFulfillmentTypes,
-        timeSlots: selectedTimeSlots,
         onOrderSuccess
       }, paymentProof);
     } catch (error: any) {
@@ -372,8 +339,6 @@ export function CheckoutForm({
             [categoryId]: type
           }));
         }}
-        selectedTimeSlots={selectedTimeSlots}
-        onTimeSlotChange={handleTimeSlotChange}
       />
 
       <PaymentInstructions

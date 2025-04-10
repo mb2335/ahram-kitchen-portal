@@ -9,8 +9,6 @@ interface PickupDetailsProps {
   pickupLocation?: string;
   fulfillmentType?: string;
   deliveryAddress?: string;
-  deliveryTimeStart?: string;
-  deliveryTimeEnd?: string;
 }
 
 export function PickupDetails({ 
@@ -18,9 +16,7 @@ export function PickupDetails({
   pickupTime, 
   pickupLocation, 
   fulfillmentType,
-  deliveryAddress,
-  deliveryTimeStart,
-  deliveryTimeEnd
+  deliveryAddress
 }: PickupDetailsProps) {
   const isPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP;
   const isDelivery = fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
@@ -69,14 +65,6 @@ export function PickupDetails({
                 </div>
               </div>
             </div>
-            
-            {deliveryTimeStart && deliveryTimeEnd && (
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium">Delivery Time:</span>
-                <span>{deliveryTimeStart} - {deliveryTimeEnd}</span>
-              </div>
-            )}
           </>
         )}
       </div>
