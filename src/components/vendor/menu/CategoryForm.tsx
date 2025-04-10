@@ -186,15 +186,20 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
     setDayToCopyTo(null);
   };
 
-  // Time interval options (in minutes)
-  const timeIntervalOptions = [15, 30, 45, 60, 90, 120];
+  // Time interval options (in minutes) - updated to be every 30 minutes up to 2 hours
+  const timeIntervalOptions = [30, 60, 90, 120];
   
-  // Time options for start and end time
-  const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
-    const hour = Math.floor(i / 4);
-    const minute = (i % 4) * 15;
-    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-  });
+  // Generate hour options for start and end time (every hour)
+  const generateHourOptions = () => {
+    const options = [];
+    for (let i = 0; i < 24; i++) {
+      const hour = i.toString().padStart(2, '0');
+      options.push(`${hour}:00`);
+    }
+    return options;
+  };
+  
+  const hourOptions = generateHourOptions();
 
   return (
     <ScrollArea className="h-[80vh] w-full">
@@ -250,7 +255,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
             </div>
           </div>
 
-          {/* Delivery Time Slots */}
+          {/* Delivery Time Slots - Only show if delivery is selected */}
           {formData.fulfillment_types.includes('delivery') && (
             <div className="space-y-4 border p-4 rounded-md">
               <Label className="text-base font-semibold">Delivery Time Slots</Label>
@@ -266,7 +271,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       <Label>Time Interval</Label>
                     </div>
                     <Select
-                      value={formData.delivery_settings.time_interval.toString()}
+                      value={formData.delivery_settings?.time_interval?.toString() || "30"}
                       onValueChange={(value) => handleDeliverySettingChange('time_interval', parseInt(value))}
                     >
                       <SelectTrigger className="w-full">
@@ -275,7 +280,7 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       <SelectContent>
                         {timeIntervalOptions.map((interval) => (
                           <SelectItem key={interval} value={interval.toString()}>
-                            {interval} minutes
+                            {interval === 60 ? "1 hour" : interval === 120 ? "2 hours" : `${interval} minutes`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -288,16 +293,19 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       <Label>Start Time</Label>
                     </div>
                     <Select
-                      value={formData.delivery_settings.start_time}
+                      value={formData.delivery_settings?.start_time || "09:00"}
                       onValueChange={(value) => handleDeliverySettingChange('start_time', value)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select start time" />
                       </SelectTrigger>
                       <SelectContent>
-                        {timeOptions.slice(0, -1).map((time) => (
+                        {hourOptions.map((time) => (
                           <SelectItem key={time} value={time}>
-                            {time}
+                            {parseInt(time) === 0 ? "12:00 AM" : 
+                             parseInt(time) === 12 ? "12:00 PM" : 
+                             parseInt(time) < 12 ? `${parseInt(time)}:00 AM` : 
+                             `${parseInt(time) - 12}:00 PM`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -310,18 +318,24 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
                       <Label>End Time</Label>
                     </div>
                     <Select
-                      value={formData.delivery_settings.end_time}
+                      value={formData.delivery_settings?.end_time || "17:00"}
                       onValueChange={(value) => handleDeliverySettingChange('end_time', value)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select end time" />
                       </SelectTrigger>
                       <SelectContent>
-                        {timeOptions.filter(time => time > formData.delivery_settings.start_time).map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
+                        {hourOptions
+                          .filter(time => (!formData.delivery_settings?.start_time || time > formData.delivery_settings?.start_time))
+                          .map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {parseInt(time) === 0 ? "12:00 AM" : 
+                               parseInt(time) === 12 ? "12:00 PM" : 
+                               parseInt(time) < 12 ? `${parseInt(time)}:00 AM` : 
+                               `${parseInt(time) - 12}:00 PM`}
+                            </SelectItem>
+                          ))
+                        }
                       </SelectContent>
                     </Select>
                   </div>

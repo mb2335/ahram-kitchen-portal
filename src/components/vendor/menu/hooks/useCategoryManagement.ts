@@ -75,6 +75,7 @@ export function useCategoryManagement() {
         location: detail.location
       }));
 
+      // Don't include delivery_settings in the category data since it's not a column
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
@@ -84,7 +85,6 @@ export function useCategoryManagement() {
         pickup_details: pickupDetailsForDb,
         fulfillment_types: formData.fulfillment_types,
         pickup_days: formData.pickup_days,
-        delivery_settings: formData.delivery_settings,
       };
 
       // First save the category data
@@ -112,7 +112,7 @@ export function useCategoryManagement() {
       }
 
       // If delivery is a fulfillment type, update or create delivery schedule
-      if (formData.fulfillment_types.includes('delivery')) {
+      if (formData.fulfillment_types.includes('delivery') && formData.delivery_settings) {
         // First, check if there's already a schedule for this category
         const { data: existingSchedules } = await supabase
           .from('delivery_schedules')
@@ -135,9 +135,9 @@ export function useCategoryManagement() {
           const scheduleData = {
             category_id: categoryId,
             day_of_week: day,
-            time_interval: formData.delivery_settings.time_interval,
-            start_time: formData.delivery_settings.start_time,
-            end_time: formData.delivery_settings.end_time,
+            time_interval: formData.delivery_settings.time_interval || 30,
+            start_time: formData.delivery_settings.start_time || '09:00',
+            end_time: formData.delivery_settings.end_time || '17:00',
             active
           };
           
