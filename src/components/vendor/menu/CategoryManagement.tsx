@@ -1,22 +1,19 @@
-
-import { CategoryForm } from './CategoryForm';
-import { CategoryList } from './CategoryList';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DeleteCategoryDialog } from './dialogs/DeleteCategoryDialog';
-import { CategoryHeader } from './components/CategoryHeader';
-import { useCategoryManagement } from './hooks/useCategoryManagement';
-import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DeleteCategoryDialog } from './dialogs/DeleteCategoryDialog';
+import { CategoryHeader } from './components/CategoryHeader';
+import { CategoryList } from './CategoryList';
+import { CategoryForm } from './CategoryForm';
+import { useCategoryManagement } from './hooks/useCategoryManagement';
+import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
 import { Category, DeliverySettings, PickupDetail } from './types/category';
-import { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function CategoryManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<string>("categories");
   const {
     isDialogOpen,
     setIsDialogOpen,
@@ -42,12 +39,10 @@ export function CategoryManagement() {
         throw error;
       }
       
-      // Get the related delivery schedules for all categories
       const { data: deliverySchedules } = await supabase
         .from('delivery_schedules')
         .select('*');
       
-      // Group delivery schedules by category
       const schedulesByCategory: Record<string, any[]> = {};
       if (deliverySchedules) {
         deliverySchedules.forEach(schedule => {
@@ -59,14 +54,12 @@ export function CategoryManagement() {
       }
       
       return data.map(category => {
-        // Extract delivery settings from schedules
         let delivery_settings: DeliverySettings = {
           activated_slots: [],
         };
         
         const categorySchedules = schedulesByCategory[category.id] || [];
         if (categorySchedules.length > 0) {
-          // Combine activated slots from all schedules
           const allSlots = new Set<string>();
           categorySchedules.forEach(schedule => {
             if (schedule.activated_slots && Array.isArray(schedule.activated_slots)) {
@@ -97,7 +90,6 @@ export function CategoryManagement() {
     },
   });
 
-  // Subscribe to real-time changes
   useEffect(() => {
     const categoryChannel = supabase
       .channel('category-changes')
@@ -109,7 +101,6 @@ export function CategoryManagement() {
           table: 'menu_categories' 
         },
         async () => {
-          // Invalidate the cache and immediately refetch
           await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           refetch();
         }
@@ -126,7 +117,6 @@ export function CategoryManagement() {
           table: 'delivery_schedules' 
         },
         async () => {
-          // Invalidate the cache and immediately refetch categories to get updated delivery settings
           await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           refetch();
         }
@@ -146,7 +136,6 @@ export function CategoryManagement() {
         setCategoryToDelete({ id: categoryId, itemCount });
       } else {
         await deleteCategory(categoryId);
-        // Immediately refetch after deletion
         await refetch();
         toast({
           title: "Success",
@@ -174,7 +163,6 @@ export function CategoryManagement() {
       
       await deleteCategory(categoryToDelete.id);
       
-      // Immediately refetch after deletion
       await refetch();
       
       toast({
@@ -194,41 +182,32 @@ export function CategoryManagement() {
 
   return (
     <div className="mb-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="categories">
-          <CategoryHeader
-            onAddClick={() => {
-              resetForm();
-              setIsDialogOpen(true);
-            }}
-          />
-          
-          <CategoryList 
-            categories={categories || []}
-            onEdit={(category) => {
-              console.log("Editing category with delivery settings:", category.delivery_settings);
-              setEditingCategory(category);
-              setFormData({
-                name: category.name,
-                name_ko: category.name_ko,
-                has_custom_pickup: category.has_custom_pickup || false,
-                pickup_details: category.pickup_details || [],
-                fulfillment_types: category.fulfillment_types || [],
-                pickup_days: category.pickup_days || [],
-                delivery_settings: {
-                  activated_slots: category.delivery_settings?.activated_slots || [],
-                }
-              });
-              setIsDialogOpen(true);
-            }}
-            onDelete={handleDelete}
-          />
-        </TabsContent>
-      </Tabs>
+      <CategoryHeader
+        onAddClick={() => {
+          resetForm();
+          setIsDialogOpen(true);
+        }}
+      />
+      
+      <CategoryList 
+        categories={categories || []}
+        onEdit={(category) => {
+          setEditingCategory(category);
+          setFormData({
+            name: category.name,
+            name_ko: category.name_ko,
+            has_custom_pickup: category.has_custom_pickup || false,
+            pickup_details: category.pickup_details || [],
+            fulfillment_types: category.fulfillment_types || [],
+            pickup_days: category.pickup_days || [],
+            delivery_settings: {
+              activated_slots: category.delivery_settings?.activated_slots || [],
+            }
+          });
+          setIsDialogOpen(true);
+        }}
+        onDelete={handleDelete}
+      />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
