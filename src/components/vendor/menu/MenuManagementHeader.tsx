@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,17 +12,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface MenuManagementHeaderProps {
-  onAddClick: () => void;
-  isDialogOpen: boolean;
-  setIsDialogOpen: (open: boolean) => void;
-}
-
-export function MenuManagementHeader({
-  onAddClick,
-  isDialogOpen,
-  setIsDialogOpen,
-}: MenuManagementHeaderProps) {
+export function MenuManagementHeader() {
   const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
   const [discountPercentage, setDiscountPercentage] = useState("");
   const { toast } = useToast();
@@ -65,19 +54,12 @@ export function MenuManagementHeader({
   return (
     <div className="flex justify-between items-center mb-6">
       <h2 className="text-2xl font-bold">Menu Management</h2>
-      <div className="space-x-2">
+      <div>
         <Button
           variant="outline"
           onClick={() => setIsDiscountDialogOpen(true)}
         >
           Apply Menu-wide Discount
-        </Button>
-        <Button onClick={() => {
-          setIsDialogOpen(true);
-          onAddClick();
-        }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Item
         </Button>
       </div>
 

@@ -6,10 +6,12 @@ import { MenuManagementHeader } from './menu/MenuManagementHeader';
 import { MenuItemGrid } from './menu/MenuItemGrid';
 import { CategoryManagement } from './menu/CategoryManagement';
 import { MenuItemDialog } from './menu/components/MenuItemDialog';
+import { ItemsHeader } from './menu/components/ItemsHeader';
 import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 export function MenuManagement() {
   const session = useSession();
@@ -75,17 +77,39 @@ export function MenuManagement() {
 
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] overflow-y-auto pr-4">
-      <MenuManagementHeader
-        onAddClick={() => {
-          setEditingItem(null);
-          resetForm();
-          setSelectedImage(null);
-        }}
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen={setIsDialogOpen}
-      />
+      <MenuManagementHeader />
       
       <CategoryManagement />
+
+      <TabsContent value="items">
+        <ItemsHeader 
+          onAddClick={() => {
+            setEditingItem(null);
+            resetForm();
+            setSelectedImage(null);
+            setIsDialogOpen(true);
+          }}
+        />
+        <MenuItemGrid
+          items={menuItems}
+          onEdit={(item) => {
+            setEditingItem(item);
+            setFormData({
+              name: item.name,
+              name_ko: item.name_ko || '',
+              description: item.description || '',
+              description_ko: item.description_ko || '',
+              price: item.price.toString(),
+              quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
+              is_available: item.is_available,
+              category_id: item.category_id || undefined,
+            });
+            setIsDialogOpen(true);
+          }}
+          onDelete={handleDeleteMenuItem}
+          onReorder={updateMenuItemOrder}
+        />
+      </TabsContent>
 
       <MenuItemDialog
         isOpen={isDialogOpen}
@@ -96,26 +120,6 @@ export function MenuManagement() {
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
         onSubmit={(data) => handleSubmit(data, session?.user?.id!)}
-      />
-
-      <MenuItemGrid
-        items={menuItems}
-        onEdit={(item) => {
-          setEditingItem(item);
-          setFormData({
-            name: item.name,
-            name_ko: item.name_ko || '',
-            description: item.description || '',
-            description_ko: item.description_ko || '',
-            price: item.price.toString(),
-            quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
-            is_available: item.is_available,
-            category_id: item.category_id || undefined,
-          });
-          setIsDialogOpen(true);
-        }}
-        onDelete={handleDeleteMenuItem}
-        onReorder={updateMenuItemOrder}
       />
     </div>
   );
