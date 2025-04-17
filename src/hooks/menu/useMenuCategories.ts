@@ -14,21 +14,10 @@ export function useMenuCategories(menuItems: MenuItem[]) {
       
       if (error) throw error;
       
-      return data.map(category => {
-        // Ensure pickup_details are properly formatted with day information
-        const pickup_details = (category.pickup_details || []).map((detail: any) => ({
-          day: detail.day !== undefined ? detail.day : 0,
-          time: detail.time || '',
-          location: detail.location || ''
-        }));
-        
-        return {
-          ...category,
-          pickup_details,
-          fulfillment_types: category.fulfillment_types || [],
-          pickup_days: category.pickup_days || [],
-        };
-      });
+      return data.map(category => ({
+        ...category,
+        fulfillment_types: category.fulfillment_types || []
+      }));
     },
     retry: false,
     refetchOnWindowFocus: false,

@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Category, PickupDetail } from "../types/category";
+import { Category } from "../types/category";
+import { PickupDetail } from "@/types/pickup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -35,16 +36,41 @@ export function PickupSettingsManager({ categories }: { categories: Category[] }
   // Update state when category changes
   useEffect(() => {
     if (selectedCategory) {
-      setHasCustomPickup(selectedCategory.has_custom_pickup);
-      setPickupDays(selectedCategory.pickup_days || []);
-      setPickupDetails(selectedCategory.pickup_details || []);
+      setHasCustomPickup(selectedCategory.has_custom_pickup || false);
       
-      // Set active day to first pickup day if available
-      if (selectedCategory.pickup_days && selectedCategory.pickup_days.length > 0) {
-        setActiveDay(selectedCategory.pickup_days[0].toString());
-      } else {
-        setActiveDay("0"); // Default to Sunday
-      }
+      // Initialize empty arrays as these properties are no longer in the Category type
+      setPickupDays([]);
+      setPickupDetails([]);
+      
+      // Load pickup days and details from pickup_settings table
+      const fetchPickupSettings = async () => {
+        const { data } = await supabase
+          .from('pickup_settings')
+          .select('*')
+          .eq('vendor_id', selectedCategory.vendor_id);
+        
+        if (data && data.length > 0) {
+          // Extract unique days
+          const days = Array.from(new Set(data.map(item => item.day)));
+          setPickupDays(days);
+          
+          // Map to pickup details
+          const details = data.map(item => ({
+            day: item.day,
+            time: item.time || '',
+            location: item.location || ''
+          }));
+          setPickupDetails(details);
+          
+          // Set active day
+          if (days.length > 0) {
+            setActiveDay(days[0].toString());
+          }
+        }
+      };
+      
+      fetchPickupSettings();
+      
     } else {
       setHasCustomPickup(false);
       setPickupDays([]);
@@ -136,58 +162,39 @@ export function PickupSettingsManager({ categories }: { categories: Category[] }
     try {
       setIsSaving(true);
       
-      // Convert PickupDetail[] to plain objects compatible with Supabase JSON type
-      const pickupDetailsJson = pickupDetails.map(detail => ({
-        day: detail.day,
-        time: detail.time,
-        location: detail.location
-      }));
-      
-      const categoryData = {
-        has_custom_pickup: hasCustomPickup,
-        pickup_details: hasCustomPickup ? pickupDetailsJson : [],
-        pickup_days: pickupDays
-      };
-      
-      const { error } = await supabase
+      // Update category with custom pickup setting
+      await supabase
         .from('menu_categories')
-        .update(categoryData)
+        .update({
+          has_custom_pickup: hasCustomPickup
+        })
         .eq('id', selectedCategoryId);
-        
-      if (error) throw error;
       
-      // Update delivery schedules to mark pickup days as inactive for delivery
-      // First get existing schedules
-      const { data: existingSchedules } = await supabase
-        .from('delivery_schedules')
-        .select('id, day_of_week, activated_slots')
-        .eq('category_id', selectedCategoryId);
+      // Delete all existing pickup settings for this vendor
+      if (selectedCategory?.vendor_id) {
+        await supabase
+          .from('pickup_settings')
+          .delete()
+          .eq('vendor_id', selectedCategory.vendor_id);
         
-      // Update or create schedules for pickup days (set active=false)
-      for (const day of pickupDays) {
-        const existingSchedule = existingSchedules?.find(s => s.day_of_week === day);
-        
-        if (existingSchedule) {
-          // Update existing schedule
+        // Re-insert pickup settings if we have custom pickup enabled
+        if (hasCustomPickup && pickupDetails.length > 0) {
+          const pickupSettingsToInsert = pickupDetails.map(detail => ({
+            vendor_id: selectedCategory.vendor_id,
+            day: detail.day,
+            time: detail.time,
+            location: detail.location
+          }));
+          
           await supabase
-            .from('delivery_schedules')
-            .update({ active: false })
-            .eq('id', existingSchedule.id);
-        } else {
-          // Create new schedule marked inactive
-          await supabase
-            .from('delivery_schedules')
-            .insert([{
-              category_id: selectedCategoryId,
-              day_of_week: day,
-              active: false,
-              activated_slots: [] // Empty since it's inactive
-            }]);
+            .from('pickup_settings')
+            .insert(pickupSettingsToInsert);
         }
       }
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['pickup-settings'] });
       
       toast({
         title: "Success",

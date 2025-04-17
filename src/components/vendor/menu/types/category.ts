@@ -18,3 +18,5 @@ export interface Category {
   vendor_id?: string;
   created_at?: string;
 }
+
+export type { PickupDetail };

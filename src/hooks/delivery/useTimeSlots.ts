@@ -22,13 +22,13 @@ export function useTimeSlots({
   const [error, setError] = useState<string | null>(null);
 
   const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
-    queryKey: ['delivery-schedule', categoryId, dayOfWeek],
+    queryKey: ['delivery-settings', categoryId, dayOfWeek],
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
       
       try {
         const { data: scheduleData, error } = await supabase
-          .from('delivery_schedules')
+          .from('delivery_settings')
           .select('*')
           .eq('category_id', categoryId)
           .eq('day_of_week', dayOfWeek)
