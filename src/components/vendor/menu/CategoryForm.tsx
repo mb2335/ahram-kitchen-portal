@@ -144,7 +144,7 @@ export function CategoryForm({
   };
 
   const toggleTimeSlot = (timeSlot: string) => {
-    setFormData((prev) => {
+    setFormData((prev: CategoryFormData): CategoryFormData => {
       const currentSlots = prev.delivery_settings.activated_slots || [];
       let newSlots;
       
