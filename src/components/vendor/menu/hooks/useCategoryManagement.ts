@@ -140,31 +140,36 @@ export function useCategoryManagement() {
             activated_slots: formData.delivery_settings.activated_slots || []
           };
           
-          if (existingSchedulesByDay.has(day)) {
-            // Update existing schedule
-            const { error } = await supabase
-              .from('delivery_schedules')
-              .update(scheduleData)
-              .eq('id', existingSchedulesByDay.get(day));
+          try {
+            if (existingSchedulesByDay.has(day)) {
+              // Update existing schedule
+              const { error } = await supabase
+                .from('delivery_schedules')
+                .update(scheduleData)
+                .eq('id', existingSchedulesByDay.get(day));
+                
+              if (error) {
+                console.error("Error updating delivery schedule:", error);
+                throw error;
+              }
               
-            if (error) {
-              console.error("Error updating delivery schedule:", error);
-              throw error;
-            }
-            
-            console.log(`Updated delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
-          } else {
-            // Create new schedule
-            const { error } = await supabase
-              .from('delivery_schedules')
-              .insert([scheduleData]);
+              console.log(`Updated delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
+            } else {
+              // Create new schedule
+              const { error } = await supabase
+                .from('delivery_schedules')
+                .insert([scheduleData]);
+                
+              if (error) {
+                console.error("Error creating delivery schedule:", error);
+                throw error;
+              }
               
-            if (error) {
-              console.error("Error creating delivery schedule:", error);
-              throw error;
+              console.log(`Created delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
             }
-            
-            console.log(`Created delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
+          } catch (err) {
+            console.error(`Error handling delivery schedule for day ${day}:`, err);
+            throw err;
           }
         }
       }

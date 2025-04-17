@@ -26,19 +26,26 @@ export function useTimeSlots({
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
       
-      const { data: scheduleData, error } = await supabase
-        .from('delivery_schedules')
-        .select('*')
-        .eq('category_id', categoryId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('active', true)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      try {
+        const { data: scheduleData, error } = await supabase
+          .from('delivery_schedules')
+          .select('*')
+          .eq('category_id', categoryId)
+          .eq('day_of_week', dayOfWeek)
+          .eq('active', true)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error("Error fetching delivery schedule:", error);
+          throw error;
+        }
+        
+        console.log("Fetched schedule data:", scheduleData);
+        return scheduleData;
+      } catch (err) {
+        console.error("Error in queryFn:", err);
+        throw err;
       }
-      
-      return scheduleData;
     },
     enabled: dayOfWeek >= 0,
   });
@@ -58,6 +65,7 @@ export function useTimeSlots({
         }
         
         const slots = scheduleData.activated_slots;
+        console.log("Time slots from database:", slots);
         
         if (slots.length === 0) {
           setError(`No delivery time slots have been configured for this day.`);
@@ -72,6 +80,7 @@ export function useTimeSlots({
           .eq('delivery_date', formattedDate);
           
         if (bookingError) {
+          console.error("Error fetching bookings:", bookingError);
           throw bookingError;
         }
         
@@ -83,6 +92,7 @@ export function useTimeSlots({
         }));
         
         availableSlots.sort((a, b) => a.time.localeCompare(b.time));
+        console.log("Processed available slots:", availableSlots);
         setTimeSlots(availableSlots);
         
       } catch (err) {
