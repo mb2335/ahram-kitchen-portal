@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CategoryFormData, PickupDetail } from '../types/category';
+import { CategoryFormData } from '../types/category';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,26 +13,14 @@ export function useCategoryManagement() {
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     name_ko: '',
-    has_custom_pickup: false,
-    pickup_details: [],
     fulfillment_types: [],
-    pickup_days: [],
-    delivery_settings: {
-      activated_slots: [],
-    },
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
       name_ko: '',
-      has_custom_pickup: false,
-      pickup_details: [],
       fulfillment_types: [],
-      pickup_days: [],
-      delivery_settings: {
-        activated_slots: [],
-      },
     });
     setEditingCategory(null);
   };
@@ -60,31 +47,34 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // Only include pickup details if pickup is a fulfillment type and custom pickup is enabled
-      const pickupDetails = formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup
-        ? formData.pickup_details
-        : [];
-
-      // Convert PickupDetail objects to plain objects for Supabase
-      const pickupDetailsForDb = pickupDetails.map(detail => ({
-        day: detail.day,
-        time: detail.time,
-        location: detail.location
-      }));
-
-      // Don't include delivery_settings in the category data since it's not a column
-      const categoryData = {
+      // If editing, preserve existing pickup and delivery settings
+      const categoryData: any = {
         name: formData.name,
         name_ko: formData.name_ko,
         vendor_id: vendorData.id,
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
-        has_custom_pickup: formData.fulfillment_types.includes('pickup') && formData.has_custom_pickup,
-        pickup_details: pickupDetailsForDb,
         fulfillment_types: formData.fulfillment_types,
-        pickup_days: formData.pickup_days,
       };
 
-      // First save the category data
+      // When editing, preserve existing properties not in form
+      if (editingCategory) {
+        // Keep existing settings if editing
+        if (editingCategory.has_custom_pickup !== undefined) {
+          categoryData.has_custom_pickup = editingCategory.has_custom_pickup;
+        }
+        if (editingCategory.pickup_details) {
+          categoryData.pickup_details = editingCategory.pickup_details;
+        }
+        if (editingCategory.pickup_days) {
+          categoryData.pickup_days = editingCategory.pickup_days;
+        }
+      } else {
+        // Set defaults for new categories
+        categoryData.has_custom_pickup = false;
+        categoryData.pickup_details = [];
+        categoryData.pickup_days = [];
+      }
+
       let categoryId: string;
       
       if (editingCategory) {
@@ -108,70 +98,6 @@ export function useCategoryManagement() {
         if (error) throw error;
         categoryId = data.id;
         console.log("Created new category with ID:", categoryId);
-      }
-
-      // If delivery is a fulfillment type, update or create delivery schedule
-      if (formData.fulfillment_types.includes('delivery')) {
-        console.log("Processing delivery settings with activated slots:", formData.delivery_settings.activated_slots);
-        
-        // First, check if there's already a schedule for this category
-        const { data: existingSchedules } = await supabase
-          .from('delivery_schedules')
-          .select('id, day_of_week')
-          .eq('category_id', categoryId);
-          
-        // Create a map of existing schedules by day
-        const existingSchedulesByDay = new Map();
-        if (existingSchedules) {
-          existingSchedules.forEach(schedule => {
-            existingSchedulesByDay.set(schedule.day_of_week, schedule.id);
-          });
-        }
-        
-        // Create or update schedules for each day
-        for (let day = 0; day < 7; day++) {
-          const isPickupDay = formData.pickup_days.includes(day);
-          const active = !isPickupDay; // Active for delivery if not a pickup day
-          
-          const scheduleData = {
-            category_id: categoryId,
-            day_of_week: day,
-            active,
-            activated_slots: formData.delivery_settings.activated_slots || []
-          };
-          
-          try {
-            if (existingSchedulesByDay.has(day)) {
-              // Update existing schedule
-              const { error } = await supabase
-                .from('delivery_schedules')
-                .update(scheduleData)
-                .eq('id', existingSchedulesByDay.get(day));
-                
-              if (error) {
-                console.error("Error updating delivery schedule:", error);
-                throw error;
-              }
-              
-              console.log(`Updated delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
-            } else {
-              // Create new schedule
-              const { error } = await supabase
-                .from('delivery_schedules')
-                .insert([scheduleData]);
-                
-              if (error) {
-                console.error("Error creating delivery schedule:", error);
-                throw error;
-              }
-              
-              console.log(`Created delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
-            }
-          } catch (err) {
-            console.error(`Error handling delivery schedule for day ${day}:`, err);
-            throw err;
-          }
-        }
       }
 
       toast({

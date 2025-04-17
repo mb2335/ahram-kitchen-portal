@@ -12,11 +12,12 @@ export interface DeliverySettings {
 export interface CategoryFormData {
   name: string;
   name_ko: string;
-  has_custom_pickup: boolean;
-  pickup_details: PickupDetail[];
   fulfillment_types: string[];
-  pickup_days: number[];
-  delivery_settings: DeliverySettings;
+  // Following fields removed from form but kept in type
+  has_custom_pickup?: boolean;
+  pickup_details?: PickupDetail[];
+  pickup_days?: number[];
+  delivery_settings?: DeliverySettings;
 }
 
 export interface Category {

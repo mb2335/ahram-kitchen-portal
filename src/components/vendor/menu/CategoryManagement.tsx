@@ -9,9 +9,10 @@ import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItem
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Category, DeliverySettings, PickupDetail } from './types/category';
+import { Category, DeliverySettings } from './types/category';
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 
 export function CategoryManagement() {
   const { toast } = useToast();
@@ -88,7 +89,7 @@ export function CategoryManagement() {
             day: detail.day !== undefined ? detail.day : 0,
             time: detail.time || '',
             location: detail.location || ''
-          })) as PickupDetail[],
+          })),
           fulfillment_types: category.fulfillment_types || [],
           pickup_days: category.pickup_days || [],
           delivery_settings
@@ -197,6 +198,8 @@ export function CategoryManagement() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
         </TabsList>
         
         <TabsContent value="categories">
@@ -215,18 +218,27 @@ export function CategoryManagement() {
               setFormData({
                 name: category.name,
                 name_ko: category.name_ko,
-                has_custom_pickup: category.has_custom_pickup || false,
-                pickup_details: category.pickup_details || [],
-                fulfillment_types: category.fulfillment_types || [],
-                pickup_days: category.pickup_days || [],
-                delivery_settings: {
-                  activated_slots: category.delivery_settings?.activated_slots || [],
-                }
+                fulfillment_types: category.fulfillment_types || []
               });
               setIsDialogOpen(true);
             }}
             onDelete={handleDelete}
           />
+        </TabsContent>
+        
+        <TabsContent value="items">
+          <div className="p-4">
+            {/* This will be where the MenuManagement component would be integrated */}
+            <h2 className="text-lg font-medium mb-4">Item Management</h2>
+            <p className="text-muted-foreground">
+              Items management has been moved to this tab for better organization.
+              Please use the Menu Management section to add or edit items.
+            </p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="fulfillment">
+          <FulfillmentSettings categories={categories} />
         </TabsContent>
       </Tabs>
 
