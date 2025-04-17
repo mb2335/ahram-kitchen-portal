@@ -28,11 +28,14 @@ interface CategoryFormProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
-export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormProps) {
+export function CategoryForm({
+  formData,
+  setFormData,
+  onSubmit,
+}: CategoryFormProps) {
   const [dayToCopyFrom, setDayToCopyFrom] = useState<number | null>(null);
   const [dayToCopyTo, setDayToCopyTo] = useState<number | null>(null);
   
-  // Time selector UI states
   const [startTimeOpen, setStartTimeOpen] = useState(false);
   const [endTimeOpen, setEndTimeOpen] = useState(false);
   
@@ -198,7 +201,6 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
   
   const hourOptions = generateHourOptions();
   
-  // Format time for display
   const formatTimeDisplay = (time: string) => {
     if (!time) return "Select time";
     
@@ -264,138 +266,132 @@ export function CategoryForm({ formData, setFormData, onSubmit }: CategoryFormPr
 
           {formData.fulfillment_types.includes('delivery') && (
             <div className="space-y-4 border p-4 rounded-md">
-              <Label className="text-base font-semibold">Delivery Time Slots</Label>
-              <p className="text-sm text-muted-foreground">
-                Set the time slots for delivery. This will determine when customers can schedule deliveries.
-              </p>
-              
-              <Card className="bg-secondary/10">
-                <CardContent className="pt-6 space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <Label>Time Interval</Label>
-                    </div>
-                    <Select
-                      value={formData.delivery_settings?.time_interval?.toString() || "30"}
-                      onValueChange={(value) => handleDeliverySettingChange('time_interval', parseInt(value))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select interval" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <ScrollArea className="max-h-[200px]">
-                          {timeIntervalOptions.map((interval) => (
-                            <SelectItem key={interval} value={interval.toString()}>
-                              {interval === 60 ? "1 hour" : interval === 120 ? "2 hours" : `${interval} minutes`}
-                            </SelectItem>
-                          ))}
-                        </ScrollArea>
-                      </SelectContent>
-                    </Select>
+              <h3 className="text-lg font-medium">Delivery Settings</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Label>Time Interval</Label>
                   </div>
+                  <Select
+                    value={formData.delivery_settings?.time_interval?.toString() || "30"}
+                    onValueChange={(value) => handleDeliverySettingChange('time_interval', parseInt(value))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select interval" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <ScrollArea className="max-h-[200px]">
+                        {timeIntervalOptions.map((interval) => (
+                          <SelectItem key={interval} value={interval.toString()}>
+                            {interval === 60 ? "1 hour" : interval === 120 ? "2 hours" : `${interval} minutes`}
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  {/* Enhanced Start Time Selector */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <Label>Start Time</Label>
-                    </div>
-                    <Popover open={startTimeOpen} onOpenChange={setStartTimeOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={startTimeOpen}
-                          className="w-full justify-between font-normal"
-                        >
-                          {formData.delivery_settings?.start_time 
-                            ? formatTimeDisplay(formData.delivery_settings.start_time)
-                            : "Select start time"}
-                          {startTimeOpen ? (
-                            <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          ) : (
-                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
-                        <ScrollArea className="h-72 rounded-md border">
-                          <div className="grid grid-cols-1 gap-1 p-2">
-                            {hourOptions.map((time) => (
+                {/* Enhanced Start Time Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Label>Start Time</Label>
+                  </div>
+                  <Popover open={startTimeOpen} onOpenChange={setStartTimeOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={startTimeOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.delivery_settings?.start_time 
+                          ? formatTimeDisplay(formData.delivery_settings.start_time)
+                          : "Select start time"}
+                        {startTimeOpen ? (
+                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        ) : (
+                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <ScrollArea className="h-72 rounded-md border">
+                        <div className="grid grid-cols-1 gap-1 p-2">
+                          {hourOptions.map((time) => (
+                            <Button
+                              key={time}
+                              variant="ghost"
+                              className={cn(
+                                "justify-start font-normal",
+                                formData.delivery_settings?.start_time === time && "bg-accent text-accent-foreground"
+                              )}
+                              onClick={() => {
+                                handleDeliverySettingChange('start_time', time);
+                                setStartTimeOpen(false);
+                              }}
+                            >
+                              {formatTimeDisplay(time)}
+                            </Button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Enhanced End Time Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Label>End Time</Label>
+                  </div>
+                  <Popover open={endTimeOpen} onOpenChange={setEndTimeOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={endTimeOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.delivery_settings?.end_time 
+                          ? formatTimeDisplay(formData.delivery_settings.end_time)
+                          : "Select end time"}
+                        {endTimeOpen ? (
+                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        ) : (
+                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <ScrollArea className="h-72 rounded-md border">
+                        <div className="grid grid-cols-1 gap-1 p-2">
+                          {hourOptions
+                            .filter(time => (!formData.delivery_settings?.start_time || time > formData.delivery_settings?.start_time))
+                            .map((time) => (
                               <Button
                                 key={time}
                                 variant="ghost"
                                 className={cn(
                                   "justify-start font-normal",
-                                  formData.delivery_settings?.start_time === time && "bg-accent text-accent-foreground"
+                                  formData.delivery_settings?.end_time === time && "bg-accent text-accent-foreground"
                                 )}
                                 onClick={() => {
-                                  handleDeliverySettingChange('start_time', time);
-                                  setStartTimeOpen(false);
+                                  handleDeliverySettingChange('end_time', time);
+                                  setEndTimeOpen(false);
                                 }}
                               >
                                 {formatTimeDisplay(time)}
                               </Button>
                             ))}
-                          </div>
-                        </ScrollArea>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  {/* Enhanced End Time Selector */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <Label>End Time</Label>
-                    </div>
-                    <Popover open={endTimeOpen} onOpenChange={setEndTimeOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={endTimeOpen}
-                          className="w-full justify-between font-normal"
-                        >
-                          {formData.delivery_settings?.end_time 
-                            ? formatTimeDisplay(formData.delivery_settings.end_time)
-                            : "Select end time"}
-                          {endTimeOpen ? (
-                            <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          ) : (
-                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
-                        <ScrollArea className="h-72 rounded-md border">
-                          <div className="grid grid-cols-1 gap-1 p-2">
-                            {hourOptions
-                              .filter(time => (!formData.delivery_settings?.start_time || time > formData.delivery_settings?.start_time))
-                              .map((time) => (
-                                <Button
-                                  key={time}
-                                  variant="ghost"
-                                  className={cn(
-                                    "justify-start font-normal",
-                                    formData.delivery_settings?.end_time === time && "bg-accent text-accent-foreground"
-                                  )}
-                                  onClick={() => {
-                                    handleDeliverySettingChange('end_time', time);
-                                    setEndTimeOpen(false);
-                                  }}
-                                >
-                                  {formatTimeDisplay(time)}
-                                </Button>
-                              ))}
-                          </div>
-                        </ScrollArea>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </CardContent>
-              </Card>
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
             </div>
           )}
 
