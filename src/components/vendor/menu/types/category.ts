@@ -6,9 +6,7 @@ export interface PickupDetail {
 }
 
 export interface DeliverySettings {
-  time_interval?: number;
-  start_time?: string;
-  end_time?: string;
+  activated_slots?: string[];
 }
 
 export interface CategoryFormData {

@@ -19,9 +19,7 @@ export function useCategoryManagement() {
     fulfillment_types: [],
     pickup_days: [],
     delivery_settings: {
-      time_interval: 30,
-      start_time: '09:00',
-      end_time: '17:00',
+      activated_slots: [],
     },
   });
 
@@ -34,9 +32,7 @@ export function useCategoryManagement() {
       fulfillment_types: [],
       pickup_days: [],
       delivery_settings: {
-        time_interval: 30,
-        start_time: '09:00',
-        end_time: '17:00',
+        activated_slots: [],
       },
     });
     setEditingCategory(null);
@@ -112,7 +108,7 @@ export function useCategoryManagement() {
       }
 
       // If delivery is a fulfillment type, update or create delivery schedule
-      if (formData.fulfillment_types.includes('delivery') && formData.delivery_settings) {
+      if (formData.fulfillment_types.includes('delivery')) {
         // First, check if there's already a schedule for this category
         const { data: existingSchedules } = await supabase
           .from('delivery_schedules')
@@ -135,10 +131,8 @@ export function useCategoryManagement() {
           const scheduleData = {
             category_id: categoryId,
             day_of_week: day,
-            time_interval: formData.delivery_settings.time_interval || 30,
-            start_time: formData.delivery_settings.start_time || '09:00',
-            end_time: formData.delivery_settings.end_time || '17:00',
-            active
+            active,
+            activated_slots: formData.delivery_settings?.activated_slots || []
           };
           
           if (existingSchedulesByDay.has(day)) {

@@ -1,4 +1,3 @@
-
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,14 +10,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, DeliverySettings, PickupDetail } from './types/category';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function CategoryManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
-  const [selectedCategoryForTimeSlots, setSelectedCategoryForTimeSlots] = useState<{ id: string; name: string } | null>(null);
   const {
     isDialogOpen,
     setIsDialogOpen,
@@ -61,21 +58,23 @@ export function CategoryManagement() {
       }
       
       return data.map(category => {
-        // Extract delivery settings from schedules, or use defaults
+        // Extract delivery settings from schedules
         let delivery_settings: DeliverySettings = {
-          time_interval: 30,
-          start_time: '09:00',
-          end_time: '17:00'
+          activated_slots: [],
         };
         
         const categorySchedules = schedulesByCategory[category.id] || [];
         if (categorySchedules.length > 0) {
-          // Use settings from the first schedule as they should be the same for all days
-          const firstSchedule = categorySchedules[0];
+          // Combine activated slots from all schedules
+          const allSlots = new Set<string>();
+          categorySchedules.forEach(schedule => {
+            if (schedule.activated_slots && Array.isArray(schedule.activated_slots)) {
+              schedule.activated_slots.forEach((slot: string) => allSlots.add(slot));
+            }
+          });
+          
           delivery_settings = {
-            time_interval: firstSchedule.time_interval || 30,
-            start_time: firstSchedule.start_time || '09:00',
-            end_time: firstSchedule.end_time || '17:00'
+            activated_slots: [...allSlots],
           };
         }
         
@@ -216,9 +215,7 @@ export function CategoryManagement() {
                 fulfillment_types: category.fulfillment_types || [],
                 pickup_days: category.pickup_days || [],
                 delivery_settings: category.delivery_settings || {
-                  time_interval: 30,
-                  start_time: '09:00',
-                  end_time: '17:00'
+                  activated_slots: [],
                 }
               });
               setIsDialogOpen(true);

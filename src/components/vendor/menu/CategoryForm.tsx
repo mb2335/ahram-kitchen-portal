@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, Copy, ArrowRight, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Copy, ArrowRight, Clock } from "lucide-react";
 import { CategoryFormData, PickupDetail } from "./types/category";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -18,9 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { formatTime, generateFixedTimeSlots } from "@/types/delivery";
 
 interface CategoryFormProps {
   formData: CategoryFormData;
@@ -35,9 +34,6 @@ export function CategoryForm({
 }: CategoryFormProps) {
   const [dayToCopyFrom, setDayToCopyFrom] = useState<number | null>(null);
   const [dayToCopyTo, setDayToCopyTo] = useState<number | null>(null);
-  
-  const [startTimeOpen, setStartTimeOpen] = useState(false);
-  const [endTimeOpen, setEndTimeOpen] = useState(false);
   
   const { data: categories = [] } = useQuery({
     queryKey: ['copy-pickup-categories'],
@@ -146,13 +142,26 @@ export function CategoryForm({
     });
   };
 
-  const handleDeliverySettingChange = (field: keyof CategoryFormData['delivery_settings'], value: any) => {
-    setFormData({
-      ...formData,
-      delivery_settings: {
-        ...formData.delivery_settings,
-        [field]: value
+  const toggleTimeSlot = (timeSlot: string) => {
+    setFormData(prev => {
+      const currentSlots = prev.delivery_settings?.activated_slots || [];
+      let newSlots;
+      
+      if (currentSlots.includes(timeSlot)) {
+        // Remove the slot
+        newSlots = currentSlots.filter(slot => slot !== timeSlot);
+      } else {
+        // Add the slot
+        newSlots = [...currentSlots, timeSlot].sort();
       }
+      
+      return {
+        ...prev,
+        delivery_settings: {
+          ...prev.delivery_settings,
+          activated_slots: newSlots,
+        }
+      };
     });
   };
 
@@ -188,29 +197,8 @@ export function CategoryForm({
     setDayToCopyTo(null);
   };
 
-  const timeIntervalOptions = [30, 60, 90, 120];
-
-  const generateHourOptions = () => {
-    const options = [];
-    for (let i = 0; i < 24; i++) {
-      const hour = i.toString().padStart(2, '0');
-      options.push(`${hour}:00`);
-    }
-    return options;
-  };
-  
-  const hourOptions = generateHourOptions();
-  
-  const formatTimeDisplay = (time: string) => {
-    if (!time) return "Select time";
-    
-    const hour = parseInt(time.split(':')[0]);
-    const minute = time.split(':')[1] || "00";
-    
-    if (hour === 0) return `12:${minute} AM`;
-    if (hour === 12) return `12:${minute} PM`;
-    return hour < 12 ? `${hour}:${minute} AM` : `${hour - 12}:${minute} PM`;
-  };
+  const allTimeSlots = generateFixedTimeSlots();
+  const activatedSlots = formData.delivery_settings?.activated_slots || [];
 
   return (
     <ScrollArea className="h-[80vh] w-full">
@@ -271,125 +259,31 @@ export function CategoryForm({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Label>Time Interval</Label>
+                    <Label>Available Time Slots</Label>
                   </div>
-                  <Select
-                    value={formData.delivery_settings?.time_interval?.toString() || "30"}
-                    onValueChange={(value) => handleDeliverySettingChange('time_interval', parseInt(value))}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select interval" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <ScrollArea className="max-h-[200px]">
-                        {timeIntervalOptions.map((interval) => (
-                          <SelectItem key={interval} value={interval.toString()}>
-                            {interval === 60 ? "1 hour" : interval === 120 ? "2 hours" : `${interval} minutes`}
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Enhanced Start Time Selector */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Label>Start Time</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Select which time slots are available for delivery.
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {allTimeSlots.map(slot => {
+                      const isActive = activatedSlots.includes(slot);
+                      return (
+                        <Button
+                          key={slot}
+                          type="button"
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleTimeSlot(slot)}
+                          className="w-full"
+                        >
+                          {formatTime(slot)}
+                        </Button>
+                      );
+                    })}
                   </div>
-                  <Popover open={startTimeOpen} onOpenChange={setStartTimeOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={startTimeOpen}
-                        className="w-full justify-between font-normal"
-                      >
-                        {formData.delivery_settings?.start_time 
-                          ? formatTimeDisplay(formData.delivery_settings.start_time)
-                          : "Select start time"}
-                        {startTimeOpen ? (
-                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <ScrollArea className="h-72 rounded-md border">
-                        <div className="grid grid-cols-1 gap-1 p-2">
-                          {hourOptions.map((time) => (
-                            <Button
-                              key={time}
-                              variant="ghost"
-                              className={cn(
-                                "justify-start font-normal",
-                                formData.delivery_settings?.start_time === time && "bg-accent text-accent-foreground"
-                              )}
-                              onClick={() => {
-                                handleDeliverySettingChange('start_time', time);
-                                setStartTimeOpen(false);
-                              }}
-                            >
-                              {formatTimeDisplay(time)}
-                            </Button>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Enhanced End Time Selector */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Label>End Time</Label>
-                  </div>
-                  <Popover open={endTimeOpen} onOpenChange={setEndTimeOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={endTimeOpen}
-                        className="w-full justify-between font-normal"
-                      >
-                        {formData.delivery_settings?.end_time 
-                          ? formatTimeDisplay(formData.delivery_settings.end_time)
-                          : "Select end time"}
-                        {endTimeOpen ? (
-                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <ScrollArea className="h-72 rounded-md border">
-                        <div className="grid grid-cols-1 gap-1 p-2">
-                          {hourOptions
-                            .filter(time => (!formData.delivery_settings?.start_time || time > formData.delivery_settings?.start_time))
-                            .map((time) => (
-                              <Button
-                                key={time}
-                                variant="ghost"
-                                className={cn(
-                                  "justify-start font-normal",
-                                  formData.delivery_settings?.end_time === time && "bg-accent text-accent-foreground"
-                                )}
-                                onClick={() => {
-                                  handleDeliverySettingChange('end_time', time);
-                                  setEndTimeOpen(false);
-                                }}
-                              >
-                                {formatTimeDisplay(time)}
-                              </Button>
-                            ))}
-                        </div>
-                      </ScrollArea>
-                    </PopoverContent>
-                  </Popover>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {activatedSlots.length} time slots selected
+                  </p>
                 </div>
               </div>
             </div>
