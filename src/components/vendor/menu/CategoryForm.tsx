@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,23 +143,21 @@ export function CategoryForm({
   };
 
   const toggleTimeSlot = (timeSlot: string) => {
-    setFormData((prev: CategoryFormData): CategoryFormData => {
-      const currentSlots = prev.delivery_settings.activated_slots || [];
-      let newSlots;
-      
-      if (currentSlots.includes(timeSlot)) {
-        newSlots = currentSlots.filter(slot => slot !== timeSlot);
-      } else {
-        newSlots = [...currentSlots, timeSlot].sort();
+    const currentSlots = formData.delivery_settings.activated_slots || [];
+    let newSlots;
+    
+    if (currentSlots.includes(timeSlot)) {
+      newSlots = currentSlots.filter(slot => slot !== timeSlot);
+    } else {
+      newSlots = [...currentSlots, timeSlot].sort();
+    }
+    
+    setFormData({
+      ...formData,
+      delivery_settings: {
+        ...formData.delivery_settings,
+        activated_slots: newSlots,
       }
-      
-      return {
-        ...prev,
-        delivery_settings: {
-          ...prev.delivery_settings,
-          activated_slots: newSlots,
-        }
-      };
     });
   };
 
