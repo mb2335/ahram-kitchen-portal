@@ -136,9 +136,16 @@ export function PickupSettingsManager({ categories }: { categories: Category[] }
     try {
       setIsSaving(true);
       
+      // Convert PickupDetail[] to plain objects compatible with Supabase JSON type
+      const pickupDetailsJson = pickupDetails.map(detail => ({
+        day: detail.day,
+        time: detail.time,
+        location: detail.location
+      }));
+      
       const categoryData = {
         has_custom_pickup: hasCustomPickup,
-        pickup_details: hasCustomPickup ? pickupDetails : [],
+        pickup_details: hasCustomPickup ? pickupDetailsJson : [],
         pickup_days: pickupDays
       };
       
