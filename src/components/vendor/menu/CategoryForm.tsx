@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,14 +144,12 @@ export function CategoryForm({
 
   const toggleTimeSlot = (timeSlot: string) => {
     setFormData((prev: CategoryFormData) => {
-      const currentSlots = prev.delivery_settings?.activated_slots || [];
+      const currentSlots = prev.delivery_settings.activated_slots || [];
       let newSlots;
       
       if (currentSlots.includes(timeSlot)) {
-        // Remove the slot
         newSlots = currentSlots.filter(slot => slot !== timeSlot);
       } else {
-        // Add the slot
         newSlots = [...currentSlots, timeSlot].sort();
       }
       
@@ -199,7 +196,7 @@ export function CategoryForm({
   };
 
   const allTimeSlots = generateFixedTimeSlots();
-  const activatedSlots = formData.delivery_settings?.activated_slots || [];
+  const activatedSlots = formData.delivery_settings.activated_slots || [];
 
   return (
     <ScrollArea className="h-[80vh] w-full">
