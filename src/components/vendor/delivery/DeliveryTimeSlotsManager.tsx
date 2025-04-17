@@ -101,13 +101,18 @@ export function DeliveryTimeSlotsManager({
           .delete()
           .eq('id', existingBooking.id);
       } else {
-        // Create new booking
+        // Create a temporary order_id for vendor management purposes
+        // In a real system, this would be replaced with actual order IDs when customers book
+        const tempOrderId = `vendor-block-${Date.now()}`;
+        
+        // Create new booking with the required order_id field
         await supabase
           .from('delivery_time_bookings')
           .insert({
             category_id: categoryId,
             delivery_date: formattedDate,
-            time_slot: time
+            time_slot: time,
+            order_id: tempOrderId // Add the required order_id field
           });
       }
     } catch (error) {
