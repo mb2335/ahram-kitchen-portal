@@ -132,7 +132,7 @@ export function useCategoryManagement() {
             category_id: categoryId,
             day_of_week: day,
             active,
-            activated_slots: formData.delivery_settings?.activated_slots || []
+            activated_slots: formData.delivery_settings.activated_slots || []
           };
           
           if (existingSchedulesByDay.has(day)) {
