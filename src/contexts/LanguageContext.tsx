@@ -62,7 +62,7 @@ const translations = {
     'checkout.pickup.title': 'Pickup Details',
     'checkout.pickup.options': 'Pickup Options',
     'checkout.pickup.time': 'Select pickup time and location',
-    'checkout.categories.methods': 'Delivery methods by category',
+    'checkout.categories.methods': 'Delivery Methods by Category',
     'checkout.notes': 'Special Instructions (Optional)',
     'checkout.notes.placeholder': 'Any special requests or dietary requirements?',
     'checkout.payment.title': 'Payment Instructions',
