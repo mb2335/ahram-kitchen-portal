@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
@@ -15,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeliverySettingsManager } from './delivery/DeliverySettingsManager';
 import { PickupSettingsManager } from './delivery/PickupSettingsManager';
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
+import { useQuery } from "@tanstack/react-query";
+import { Category } from './menu/types/category';
 
 export function MenuManagement() {
   const session = useSession();
@@ -34,6 +37,26 @@ export function MenuManagement() {
   } = useMenuItemForm(() => {
     setIsDialogOpen(false);
     loadMenuItems();
+  });
+
+  // Fetch categories data to pass to FulfillmentSettings
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data.map(category => ({
+        ...category,
+        fulfillment_types: category.fulfillment_types || []
+      })) as Category[];
+    },
   });
 
   useEffect(() => {
@@ -125,7 +148,7 @@ export function MenuManagement() {
         </TabsContent>
 
         <TabsContent value="fulfillment">
-          <FulfillmentSettings />
+          <FulfillmentSettings categories={categories} />
         </TabsContent>
       </Tabs>
 
