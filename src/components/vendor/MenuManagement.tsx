@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
@@ -11,12 +12,13 @@ import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function MenuManagement() {
   const session = useSession();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("categories");
   const { menuItems, loading, loadMenuItems, handleDeleteMenuItem } = useMenuItems();
   const {
     selectedImage,
@@ -79,37 +81,46 @@ export function MenuManagement() {
     <div className="space-y-6 h-[calc(100vh-8rem)] overflow-y-auto pr-4">
       <MenuManagementHeader />
       
-      <CategoryManagement />
-
-      <TabsContent value="items">
-        <ItemsHeader 
-          onAddClick={() => {
-            setEditingItem(null);
-            resetForm();
-            setSelectedImage(null);
-            setIsDialogOpen(true);
-          }}
-        />
-        <MenuItemGrid
-          items={menuItems}
-          onEdit={(item) => {
-            setEditingItem(item);
-            setFormData({
-              name: item.name,
-              name_ko: item.name_ko || '',
-              description: item.description || '',
-              description_ko: item.description_ko || '',
-              price: item.price.toString(),
-              quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
-              is_available: item.is_available,
-              category_id: item.category_id || undefined,
-            });
-            setIsDialogOpen(true);
-          }}
-          onDelete={handleDeleteMenuItem}
-          onReorder={updateMenuItemOrder}
-        />
-      </TabsContent>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="items">Items</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="categories">
+          <CategoryManagement />
+        </TabsContent>
+        
+        <TabsContent value="items">
+          <ItemsHeader 
+            onAddClick={() => {
+              setEditingItem(null);
+              resetForm();
+              setSelectedImage(null);
+              setIsDialogOpen(true);
+            }}
+          />
+          <MenuItemGrid
+            items={menuItems}
+            onEdit={(item) => {
+              setEditingItem(item);
+              setFormData({
+                name: item.name,
+                name_ko: item.name_ko || '',
+                description: item.description || '',
+                description_ko: item.description_ko || '',
+                price: item.price.toString(),
+                quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
+                is_available: item.is_available,
+                category_id: item.category_id || undefined,
+              });
+              setIsDialogOpen(true);
+            }}
+            onDelete={handleDeleteMenuItem}
+            onReorder={updateMenuItemOrder}
+          />
+        </TabsContent>
+      </Tabs>
 
       <MenuItemDialog
         isOpen={isDialogOpen}
