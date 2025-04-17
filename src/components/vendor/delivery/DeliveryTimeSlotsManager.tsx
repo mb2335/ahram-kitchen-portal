@@ -24,26 +24,7 @@ export function DeliveryTimeSlotsManager({
   const [timeSlots, setTimeSlots] = useState<{ time: string; isBooked: boolean }[]>([]);
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-  // Fetch schedule and bookings
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
-    queryKey: ['delivery-schedule', categoryId, dayOfWeek],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('delivery_schedules')
-        .select('*')
-        .eq('category_id', categoryId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('active', true)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      return data;
-    },
-  });
-
+  // Fetch bookings for the selected date
   const { data: bookingsData, isLoading: isBookingsLoading } = useQuery({
     queryKey: ['delivery-bookings', categoryId, formattedDate],
     queryFn: async () => {
@@ -59,16 +40,15 @@ export function DeliveryTimeSlotsManager({
   });
 
   useEffect(() => {
-    if (!scheduleData) return;
-
-    const interval = scheduleData.time_interval || 30;
-    const startTime = new Date(`1970-01-01T${scheduleData.start_time}`);
-    const endTime = new Date(`1970-01-01T${scheduleData.end_time}`);
+    // Generate time slots from 9 AM to 6 PM in 30-minute intervals
     const slots: { time: string; isBooked: boolean }[] = [];
+    const startTime = new Date();
+    startTime.setHours(9, 0, 0);
+    const endTime = new Date();
+    endTime.setHours(18, 0, 0);
 
-    let currentTime = new Date(startTime);
-    while (currentTime < endTime) {
-      const timeString = format(currentTime, 'HH:mm');
+    while (startTime < endTime) {
+      const timeString = format(startTime, 'HH:mm');
       const isBooked = bookingsData?.some(
         booking => booking.time_slot === timeString
       ) || false;
@@ -78,11 +58,12 @@ export function DeliveryTimeSlotsManager({
         isBooked 
       });
 
-      currentTime = new Date(currentTime.getTime() + interval * 60000);
+      // Add 30 minutes
+      startTime.setMinutes(startTime.getMinutes() + 30);
     }
 
     setTimeSlots(slots);
-  }, [scheduleData, bookingsData]);
+  }, [bookingsData]);
 
   const handleSlotToggle = async (time: string) => {
     try {
@@ -101,18 +82,16 @@ export function DeliveryTimeSlotsManager({
           .delete()
           .eq('id', existingBooking.id);
       } else {
-        // Create a temporary order_id for vendor management purposes
-        // In a real system, this would be replaced with actual order IDs when customers book
+        // Create a temporary order_id for vendor block
         const tempOrderId = `vendor-block-${Date.now()}`;
         
-        // Create new booking with the required order_id field
         await supabase
           .from('delivery_time_bookings')
           .insert({
             category_id: categoryId,
             delivery_date: formattedDate,
             time_slot: time,
-            order_id: tempOrderId // Add the required order_id field
+            order_id: tempOrderId
           });
       }
     } catch (error) {
@@ -120,7 +99,7 @@ export function DeliveryTimeSlotsManager({
     }
   };
 
-  if (isScheduleLoading || isBookingsLoading) {
+  if (isBookingsLoading) {
     return (
       <div className="space-y-4">
         <Label className="flex items-center gap-1">
@@ -133,17 +112,6 @@ export function DeliveryTimeSlotsManager({
           ))}
         </div>
       </div>
-    );
-  }
-
-  if (!scheduleData) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          No delivery schedule configured for this day.
-        </AlertDescription>
-      </Alert>
     );
   }
 
