@@ -38,34 +38,28 @@ export type Database = {
       }
       delivery_schedules: {
         Row: {
+          activated_slots: string[] | null
           active: boolean
           category_id: string
           created_at: string | null
           day_of_week: number
-          end_time: string
           id: string
-          start_time: string
-          time_interval: number
         }
         Insert: {
+          activated_slots?: string[] | null
           active?: boolean
           category_id: string
           created_at?: string | null
           day_of_week: number
-          end_time: string
           id?: string
-          start_time: string
-          time_interval: number
         }
         Update: {
+          activated_slots?: string[] | null
           active?: boolean
           category_id?: string
           created_at?: string | null
           day_of_week?: number
-          end_time?: string
           id?: string
-          start_time?: string
-          time_interval?: number
         }
         Relationships: [
           {
