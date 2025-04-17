@@ -65,12 +65,12 @@ export function DeliveryTimeSlotSelector({
     );
   }
   
-  if (timeSlots.length === 0) {
+  if (!timeSlots || timeSlots.length === 0) {
     return (
       <Alert className="mt-2">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          No delivery time slots available for this date.
+          No delivery time slots have been set up for this category. Please contact the vendor.
         </AlertDescription>
       </Alert>
     );

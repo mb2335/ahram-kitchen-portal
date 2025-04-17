@@ -49,18 +49,18 @@ export function useTimeSlots({
       setError(null);
       
       try {
-        if (!scheduleData) {
+        if (!scheduleData || !scheduleData.activated_slots) {
           setTimeSlots([]);
           if (dayOfWeek >= 0) {
-            setError(`No delivery times available for this day.`);
+            setError(`No delivery time slots have been set up for this day.`);
           }
           return;
         }
         
-        const slots = scheduleData.activated_slots || [];
+        const slots = scheduleData.activated_slots;
         
         if (slots.length === 0) {
-          setError(`No delivery time slots configured for this day.`);
+          setError(`No delivery time slots have been configured for this day.`);
           setTimeSlots([]);
           return;
         }
