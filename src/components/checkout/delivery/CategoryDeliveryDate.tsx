@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -41,6 +42,7 @@ export function CategoryDeliveryDate({
   const { t, language } = useLanguage();
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
 
+  // Pass time slot selection to parent
   useEffect(() => {
     const timeSlotSelection = selectedDate && selectedTimeSlot ? {
       categoryId: category.id,
@@ -48,6 +50,8 @@ export function CategoryDeliveryDate({
       timeSlot: selectedTimeSlot
     } : null;
     
+    // This is assuming there's a prop for handling time slot changes
+    // We'll need to update the parent component to handle this
     if (window.localStorage) {
       if (timeSlotSelection) {
         window.localStorage.setItem(`timeSlot_${category.id}`, JSON.stringify({
@@ -60,6 +64,7 @@ export function CategoryDeliveryDate({
     }
   }, [category.id, selectedDate, selectedTimeSlot]);
 
+  // Restore selected time slot from localStorage if available
   useEffect(() => {
     if (window.localStorage) {
       const savedData = window.localStorage.getItem(`timeSlot_${category.id}`);
@@ -75,6 +80,7 @@ export function CategoryDeliveryDate({
             ) {
               setSelectedTimeSlot(parsed.timeSlot);
             } else {
+              // Clear saved time slot if date changes
               setSelectedTimeSlot(null);
             }
           }
@@ -85,6 +91,7 @@ export function CategoryDeliveryDate({
     }
   }, [category.id, selectedDate]);
 
+  // Query for blocked dates
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates', category.id],
     queryFn: async () => {
@@ -105,21 +112,26 @@ export function CategoryDeliveryDate({
   
   const categoryName = language === 'en' ? category.name : category.name_ko || category.name;
   
+  // Disable past dates and blocked dates
   const isDateDisabled = (date: Date) => {
+    // Disable past dates
     if (!isAfter(date, addDays(new Date(), 0))) {
       return true;
     }
     
+    // Check if the date is in blocked_dates
     const dateString = format(date, 'yyyy-MM-dd');
     if (blockedDates.includes(dateString)) {
       return true;
     }
     
+    // For pickup, only allow days that are in pickup_days
     if (isPickup) {
       const dayOfWeek = date.getDay();
       return !pickupDays.includes(dayOfWeek);
     }
     
+    // For delivery, disallow days that are in pickup_days
     if (isDelivery) {
       const dayOfWeek = date.getDay();
       return pickupDays.includes(dayOfWeek);
@@ -131,7 +143,7 @@ export function CategoryDeliveryDate({
   return (
     <div className="space-y-4">
       <h3 className="font-medium">
-        {categoryName}
+        {categoryName} - {isPickup ? t('checkout.pickup.date') : t('checkout.delivery.date')}
       </h3>
       
       <div className="grid gap-4 md:grid-cols-2">
@@ -157,6 +169,7 @@ export function CategoryDeliveryDate({
         )}
       </div>
       
+      {/* Add the time slot selector for delivery */}
       {isDelivery && selectedDate && (
         <DeliveryTimeSlotSelector
           categoryId={category.id}
