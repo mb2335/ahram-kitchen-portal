@@ -1,5 +1,4 @@
-
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,12 +7,12 @@ import { DeliveryNotes } from './delivery/DeliveryNotes';
 import { PickupDetail } from '@/types/pickup';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Separator } from '@/components/ui/separator';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
