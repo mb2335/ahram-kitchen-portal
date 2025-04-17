@@ -1,3 +1,4 @@
+
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import { DeliveryNotes } from './delivery/DeliveryNotes';
 import { PickupDetail } from '@/types/pickup';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -86,6 +87,21 @@ export function DeliveryForm({
     categoryFulfillmentTypes,
     itemsByCategory
   );
+
+  // Add missing function to check if categories have custom pickup requirements
+  const hasCustomPickupItems = useMemo(() => {
+    return categories.some(category => 
+      itemsByCategory[category.id] && 
+      category.has_custom_pickup && 
+      categoryFulfillmentTypes[category.id] === FULFILLMENT_TYPE_PICKUP
+    );
+  }, [categories, itemsByCategory, categoryFulfillmentTypes]);
+
+  // Add missing function to check if delivery address is needed
+  const needsDeliveryAddress = () => {
+    return fulfillmentType === FULFILLMENT_TYPE_DELIVERY || 
+      Object.values(categoryFulfillmentTypes).some(type => type === FULFILLMENT_TYPE_DELIVERY);
+  };
 
   useEffect(() => {
     if (!categories.length) return;
