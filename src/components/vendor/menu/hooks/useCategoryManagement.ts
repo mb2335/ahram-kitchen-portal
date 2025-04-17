@@ -40,6 +40,7 @@ export function useCategoryManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting form data:", formData);
 
     try {
       const { data: vendorData } = await supabase
@@ -96,6 +97,7 @@ export function useCategoryManagement() {
 
         if (error) throw error;
         categoryId = editingCategory.id;
+        console.log("Updated category with ID:", categoryId);
       } else {
         const { error, data } = await supabase
           .from('menu_categories')
@@ -105,10 +107,13 @@ export function useCategoryManagement() {
 
         if (error) throw error;
         categoryId = data.id;
+        console.log("Created new category with ID:", categoryId);
       }
 
       // If delivery is a fulfillment type, update or create delivery schedule
       if (formData.fulfillment_types.includes('delivery')) {
+        console.log("Processing delivery settings with activated slots:", formData.delivery_settings.activated_slots);
+        
         // First, check if there's already a schedule for this category
         const { data: existingSchedules } = await supabase
           .from('delivery_schedules')
@@ -137,15 +142,29 @@ export function useCategoryManagement() {
           
           if (existingSchedulesByDay.has(day)) {
             // Update existing schedule
-            await supabase
+            const { error } = await supabase
               .from('delivery_schedules')
               .update(scheduleData)
               .eq('id', existingSchedulesByDay.get(day));
+              
+            if (error) {
+              console.error("Error updating delivery schedule:", error);
+              throw error;
+            }
+            
+            console.log(`Updated delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
           } else {
             // Create new schedule
-            await supabase
+            const { error } = await supabase
               .from('delivery_schedules')
               .insert([scheduleData]);
+              
+            if (error) {
+              console.error("Error creating delivery schedule:", error);
+              throw error;
+            }
+            
+            console.log(`Created delivery schedule for day ${day} with slots:`, formData.delivery_settings.activated_slots);
           }
         }
       }

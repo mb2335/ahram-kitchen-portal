@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Category } from './types/category';
 import { Badge } from '@/components/ui/badge';
+import { formatTime } from '@/types/delivery';
 
 interface CategoryListProps {
   categories: Category[];
@@ -116,7 +117,23 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
                 <div>
                   <h4 className="font-medium mb-1">Delivery Settings</h4>
                   <div className="text-xs space-y-1">
-                    <div>Active Time Slots: {category.delivery_settings.activated_slots?.length || 0} slots</div>
+                    <div>
+                      Active Time Slots: {category.delivery_settings.activated_slots?.length || 0} slots
+                      {category.delivery_settings.activated_slots && category.delivery_settings.activated_slots.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {category.delivery_settings.activated_slots.slice(0, 3).map((slot, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {formatTime(slot)}
+                            </Badge>
+                          ))}
+                          {category.delivery_settings.activated_slots.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{category.delivery_settings.activated_slots.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

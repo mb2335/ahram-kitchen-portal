@@ -1,3 +1,4 @@
+
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -77,6 +78,9 @@ export function CategoryManagement() {
             activated_slots: [...allSlots],
           };
         }
+        
+        console.log(`Category ${category.name} has ${delivery_settings.activated_slots.length} activated slots:`, 
+          delivery_settings.activated_slots);
         
         return {
           ...category,
@@ -206,6 +210,7 @@ export function CategoryManagement() {
           <CategoryList 
             categories={categories || []}
             onEdit={(category) => {
+              console.log("Editing category with delivery settings:", category.delivery_settings);
               setEditingCategory(category);
               setFormData({
                 name: category.name,
@@ -214,8 +219,8 @@ export function CategoryManagement() {
                 pickup_details: category.pickup_details || [],
                 fulfillment_types: category.fulfillment_types || [],
                 pickup_days: category.pickup_days || [],
-                delivery_settings: category.delivery_settings || {
-                  activated_slots: [],
+                delivery_settings: {
+                  activated_slots: category.delivery_settings?.activated_slots || [],
                 }
               });
               setIsDialogOpen(true);

@@ -49,7 +49,7 @@ export function useTimeSlots({
       setError(null);
       
       try {
-        if (!scheduleData || !scheduleData.activated_slots) {
+        if (!scheduleData || !scheduleData.activated_slots || !Array.isArray(scheduleData.activated_slots)) {
           setTimeSlots([]);
           if (dayOfWeek >= 0) {
             setError(`No delivery time slots have been set up for this day.`);
