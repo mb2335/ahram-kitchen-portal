@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -143,7 +144,7 @@ export function CategoryForm({
   };
 
   const toggleTimeSlot = (timeSlot: string) => {
-    setFormData(prev => {
+    setFormData((prev: CategoryFormData) => {
       const currentSlots = prev.delivery_settings?.activated_slots || [];
       let newSlots;
       

@@ -116,8 +116,7 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
                 <div>
                   <h4 className="font-medium mb-1">Delivery Settings</h4>
                   <div className="text-xs space-y-1">
-                    <div>Time Interval: {category.delivery_settings.time_interval || 'N/A'} minutes</div>
-                    <div>Hours: {category.delivery_settings.start_time || 'N/A'} - {category.delivery_settings.end_time || 'N/A'}</div>
+                    <div>Active Time Slots: {category.delivery_settings.activated_slots?.length || 0} slots</div>
                   </div>
                 </div>
               )}

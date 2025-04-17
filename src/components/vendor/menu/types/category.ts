@@ -6,7 +6,7 @@ export interface PickupDetail {
 }
 
 export interface DeliverySettings {
-  activated_slots?: string[];
+  activated_slots: string[];
 }
 
 export interface CategoryFormData {
@@ -16,7 +16,7 @@ export interface CategoryFormData {
   pickup_details: PickupDetail[];
   fulfillment_types: string[];
   pickup_days: number[];
-  delivery_settings?: DeliverySettings;
+  delivery_settings: DeliverySettings;
 }
 
 export interface Category {
@@ -29,5 +29,5 @@ export interface Category {
   pickup_days: number[];
   order_index: number;
   blocked_dates?: string[];
-  delivery_settings?: DeliverySettings;
+  delivery_settings: DeliverySettings;
 }
