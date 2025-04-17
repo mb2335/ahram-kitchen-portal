@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -11,8 +10,8 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-// Define a specific type for the schedule data to avoid circular references
-interface DeliveryScheduleData {
+// Define a specific type for the schedule data
+interface DeliverySchedule {
   id: string;
   vendor_id: string | null;
   day_of_week: number;
@@ -32,7 +31,7 @@ export function useTimeSlots({
   const [error, setError] = useState<string | null>(null);
 
   // Explicitly define the query result type and error type
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliveryScheduleData | null, Error>({
+  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySchedule | null, Error>({
     queryKey: ['delivery-settings', categoryId, dayOfWeek],
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
@@ -52,7 +51,7 @@ export function useTimeSlots({
         }
         
         console.log("Fetched schedule data:", scheduleData);
-        return scheduleData as DeliveryScheduleData | null;
+        return scheduleData;
       } catch (err) {
         console.error("Error in queryFn:", err);
         throw err;

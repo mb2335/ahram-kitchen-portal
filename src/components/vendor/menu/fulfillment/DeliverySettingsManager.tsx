@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ export function DeliverySettingsManager() {
   const [activatedSlots, setActivatedSlots] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Fetch existing delivery settings
   const { data: settings = [], isLoading } = useQuery({
     queryKey: ['delivery-settings', vendorId],
     queryFn: async () => {
