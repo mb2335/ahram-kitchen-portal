@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Category } from './types/category';
 import { Badge } from '@/components/ui/badge';
-import { formatTime } from '@/types/delivery';
 
 interface CategoryListProps {
   categories: Category[];
@@ -28,11 +27,6 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
       default:
         return type;
     }
-  };
-
-  const getDayName = (dayIndex: number) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[dayIndex] || `Day ${dayIndex}`;
   };
 
   return (
@@ -78,65 +72,6 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
                   )}
                 </div>
               </div>
-
-              {category.has_custom_pickup && category.pickup_details && (
-                <div>
-                  <h4 className="font-medium mb-1">Pickup Details</h4>
-                  <div className="space-y-1">
-                    {category.pickup_details.length > 0 ? (
-                      category.pickup_details.map((detail, index) => (
-                        <div key={index} className="flex flex-wrap items-center gap-1 text-xs">
-                          <Badge variant="outline">{getDayName(detail.day)}</Badge>
-                          <span>{detail.time || 'No time specified'}</span>
-                          <span>at</span>
-                          <span className="font-medium">{detail.location || 'No location specified'}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">No pickup details specified</span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {category.pickup_days && category.pickup_days.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-1">Pickup Days</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {category.pickup_days.map((day, index) => (
-                      <Badge key={index} variant="outline">
-                        {getDayName(day)}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Only show delivery settings if delivery is a fulfillment type */}
-              {category.delivery_settings && category.fulfillment_types && category.fulfillment_types.includes('delivery') && (
-                <div>
-                  <h4 className="font-medium mb-1">Delivery Settings</h4>
-                  <div className="text-xs space-y-1">
-                    <div>
-                      Active Time Slots: {category.delivery_settings.activated_slots?.length || 0} slots
-                      {category.delivery_settings.activated_slots && category.delivery_settings.activated_slots.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {category.delivery_settings.activated_slots.slice(0, 3).map((slot, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {formatTime(slot)}
-                            </Badge>
-                          ))}
-                          {category.delivery_settings.activated_slots.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{category.delivery_settings.activated_slots.length - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
