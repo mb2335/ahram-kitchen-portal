@@ -1,4 +1,3 @@
-
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +13,7 @@ import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUnifiedPickup } from '@/hooks/checkout/useUnifiedPickup';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -63,18 +63,29 @@ export function DeliveryForm({
       return data.map(category => ({
         id: category.id,
         name: category.name,
-        name_ko: category.name_ko, // Include Korean name
+        name_ko: category.name_ko,
         has_custom_pickup: category.has_custom_pickup,
-        pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          day: detail.day !== undefined ? detail.day : 0, // Ensure day is always included
-          time: detail.time || '',
-          location: detail.location || ''
-        })),
+        pickup_details: category.pickup_details || [],
         fulfillment_types: category.fulfillment_types || [],
         pickup_days: category.pickup_days || []
       }));
     },
   });
+
+  const itemsByCategory = items.reduce((acc, item) => {
+    const categoryId = item.category_id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = [];
+    }
+    acc[categoryId].push(item);
+    return acc;
+  }, {} as Record<string, typeof items>);
+
+  const { shouldUnify, pickupDays, relevantCategoryIds } = useUnifiedPickup(
+    categories,
+    categoryFulfillmentTypes,
+    itemsByCategory
+  );
 
   useEffect(() => {
     if (!categories.length) return;
@@ -118,20 +129,6 @@ export function DeliveryForm({
     }
   }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
 
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
-
-  const hasCustomPickupItems = categories.some(category => 
-    category.has_custom_pickup && 
-    itemsByCategory[category.id]?.length > 0
-  );
-
   const getPickupCategories = () => {
     const pickupCategoryIds = showMixedCategoryOptions
       ? Object.keys(categoryFulfillmentTypes).filter(id => categoryFulfillmentTypes[id] === FULFILLMENT_TYPE_PICKUP)
@@ -155,30 +152,14 @@ export function DeliveryForm({
 
   const showMixedCategoryOptions = hasMixedDelivery && Object.keys(itemsByCategory).length > 1;
 
-  const pickupCategoryNames = getPickupCategories();
-
-  const needsDeliveryAddress = () => {
-    if (!showMixedCategoryOptions) {
-      return fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
-    }
-
-    return Object.entries(categoryFulfillmentTypes).some(([categoryId, type]) => {
-      const category = categories.find(c => c.id === categoryId);
-      if (category?.fulfillment_types.length === 1 && 
-          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
-        return false;
-      }
-      
-      return type === FULFILLMENT_TYPE_DELIVERY;
+  const handleUnifiedDateChange = (date: Date) => {
+    relevantCategoryIds.forEach(categoryId => {
+      onDateChange(categoryId, date);
     });
   };
 
-  const handleDeliveryDateChange = (categoryId: string, date: Date) => {
-    if (!(date instanceof Date)) {
-      return;
-    }
-    
-    onDateChange(categoryId, date);
+  const handleUnifiedPickupDetailChange = (detail: PickupDetail) => {
+    onPickupDetailChange(detail);
   };
 
   return (
@@ -216,89 +197,58 @@ export function DeliveryForm({
         </div>
       )}
 
-      {showMixedCategoryOptions && (
+      {shouldUnify ? (
         <div className="space-y-4">
-          <h3 className="font-medium">{t('checkout.categories.methods')}</h3>
-          
-          {warning && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{warning}</AlertDescription>
-            </Alert>
-          )}
-          
-          {Object.entries(itemsByCategory).map(([categoryId, categoryItems]) => {
-            const category = categories.find(c => c.id === categoryId);
-            if (!category) return null;
-            
-            if (category.fulfillment_types.length <= 1) {
-              if (category.fulfillment_types.length === 1 && 
-                  category.fulfillment_types[0] !== categoryFulfillmentTypes[categoryId]) {
-                onCategoryFulfillmentTypeChange(categoryId, category.fulfillment_types[0]);
-              }
-              return null;
-            }
-            
-            return (
-              <div key={`fulfillment-${categoryId}`} className="border p-3 rounded space-y-3">
-                <h4 className="font-medium">
-                  {language === 'en' ? category.name : category.name_ko || category.name}
-                </h4>
-                <RadioGroup 
-                  value={categoryFulfillmentTypes[categoryId] || fulfillmentType} 
-                  onValueChange={(value) => onCategoryFulfillmentTypeChange(categoryId, value)}
-                  className="flex flex-col space-y-2"
-                >
-                  {category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY) && (
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={FULFILLMENT_TYPE_DELIVERY} id={`${FULFILLMENT_TYPE_DELIVERY}-${categoryId}`} />
-                      <Label htmlFor={`${FULFILLMENT_TYPE_DELIVERY}-${categoryId}`}>{t('checkout.fulfillment.delivery')}</Label>
-                    </div>
-                  )}
-                  {category.fulfillment_types.includes(FULFILLMENT_TYPE_PICKUP) && (
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={FULFILLMENT_TYPE_PICKUP} id={`${FULFILLMENT_TYPE_PICKUP}-${categoryId}`} />
-                      <Label htmlFor={`${FULFILLMENT_TYPE_PICKUP}-${categoryId}`}>{t('checkout.fulfillment.pickup')}</Label>
-                    </div>
-                  )}
-                </RadioGroup>
-              </div>
-            );
-          })}
-          
+          <CategoryDeliveryDate
+            category={{
+              id: relevantCategoryIds[0],
+              name: t('checkout.unified_pickup'),
+              name_ko: t('checkout.unified_pickup'),
+              has_custom_pickup: false,
+              pickup_details: categories.find(c => c.id === relevantCategoryIds[0])?.pickup_details || [],
+              pickup_days: pickupDays,
+              fulfillment_types: [FULFILLMENT_TYPE_PICKUP]
+            }}
+            selectedDate={deliveryDates[relevantCategoryIds[0]]}
+            onDateChange={handleUnifiedDateChange}
+            selectedPickupDetail={pickupDetail}
+            onPickupDetailChange={handleUnifiedPickupDetailChange}
+            fulfillmentType={FULFILLMENT_TYPE_PICKUP}
+            allPickupCategories={getPickupCategories()}
+          />
           <Separator />
         </div>
+      ) : (
+        categories.map((category) => {
+          if (!itemsByCategory[category.id]) return null;
+          
+          const effectiveFulfillmentType = showMixedCategoryOptions 
+            ? categoryFulfillmentTypes[category.id] || fulfillmentType
+            : (
+              category.fulfillment_types.length === 1 && 
+              category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP
+            ) ? FULFILLMENT_TYPE_PICKUP : fulfillmentType;
+          
+          if (!Array.isArray(category.fulfillment_types) || !category.fulfillment_types.includes(effectiveFulfillmentType)) {
+            return null;
+          }
+          
+          return (
+            <div key={category.id} className="space-y-4">
+              <CategoryDeliveryDate
+                category={category}
+                selectedDate={deliveryDates[category.id]}
+                onDateChange={(date) => onDateChange(category.id, date)}
+                selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
+                onPickupDetailChange={onPickupDetailChange}
+                fulfillmentType={effectiveFulfillmentType}
+                allPickupCategories={getPickupCategories()}
+              />
+              <Separator />
+            </div>
+          );
+        })
       )}
-
-      {categories.map((category) => {
-        if (!itemsByCategory[category.id]) return null;
-        
-        const effectiveFulfillmentType = showMixedCategoryOptions 
-          ? categoryFulfillmentTypes[category.id] || fulfillmentType
-          : (
-            category.fulfillment_types.length === 1 && 
-            category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP
-          ) ? FULFILLMENT_TYPE_PICKUP : fulfillmentType;
-        
-        if (!Array.isArray(category.fulfillment_types) || !category.fulfillment_types.includes(effectiveFulfillmentType)) {
-          return null;
-        }
-        
-        return (
-          <div key={category.id} className="space-y-4">
-            <CategoryDeliveryDate
-              category={category}
-              selectedDate={deliveryDates[category.id]}
-              onDateChange={(date) => handleDeliveryDateChange(category.id, date)}
-              selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
-              onPickupDetailChange={onPickupDetailChange}
-              fulfillmentType={effectiveFulfillmentType}
-              allPickupCategories={pickupCategoryNames}
-            />
-            <Separator />
-          </div>
-        );
-      })}
 
       {needsDeliveryAddress() && (
         <div className="space-y-2">
