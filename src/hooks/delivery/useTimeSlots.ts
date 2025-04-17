@@ -11,7 +11,7 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-// Define a more specific type for the schedule data to avoid circular references
+// Define a specific type for the schedule data to avoid circular references
 interface DeliveryScheduleData {
   id: string;
   vendor_id: string | null;

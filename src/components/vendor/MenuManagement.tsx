@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
