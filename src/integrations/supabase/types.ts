@@ -36,37 +36,37 @@ export type Database = {
         }
         Relationships: []
       }
-      delivery_schedules: {
+      delivery_settings: {
         Row: {
           activated_slots: string[] | null
-          active: boolean
-          category_id: string
+          active: boolean | null
           created_at: string | null
           day_of_week: number
           id: string
+          vendor_id: string | null
         }
         Insert: {
           activated_slots?: string[] | null
-          active?: boolean
-          category_id: string
+          active?: boolean | null
           created_at?: string | null
           day_of_week: number
           id?: string
+          vendor_id?: string | null
         }
         Update: {
           activated_slots?: string[] | null
-          active?: boolean
-          category_id?: string
+          active?: boolean | null
           created_at?: string | null
           day_of_week?: number
           id?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "delivery_schedules_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "delivery_settings_vendor_id_fkey"
+            columns: ["vendor_id"]
             isOneToOne: false
-            referencedRelation: "menu_categories"
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -123,8 +123,6 @@ export type Database = {
           name: string
           name_ko: string
           order_index: number
-          pickup_days: number[] | null
-          pickup_details: Json[] | null
           vendor_id: string | null
         }
         Insert: {
@@ -136,8 +134,6 @@ export type Database = {
           name: string
           name_ko: string
           order_index: number
-          pickup_days?: number[] | null
-          pickup_details?: Json[] | null
           vendor_id?: string | null
         }
         Update: {
@@ -149,8 +145,6 @@ export type Database = {
           name?: string
           name_ko?: string
           order_index?: number
-          pickup_days?: number[] | null
-          pickup_details?: Json[] | null
           vendor_id?: string | null
         }
         Relationships: [
@@ -329,6 +323,41 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pickup_settings: {
+        Row: {
+          created_at: string | null
+          day: number
+          id: string
+          location: string | null
+          time: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day: number
+          id?: string
+          location?: string | null
+          time?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day?: number
+          id?: string
+          location?: string | null
+          time?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_settings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]

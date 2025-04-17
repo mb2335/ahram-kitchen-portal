@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
@@ -13,7 +13,8 @@ import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
+import { DeliverySettingsManager } from './delivery/DeliverySettingsManager';
+import { PickupSettingsManager } from './delivery/PickupSettingsManager';
 
 export function MenuManagement() {
   const session = useSession();
@@ -86,7 +87,8 @@ export function MenuManagement() {
         <TabsList className="mb-4">
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
+          <TabsTrigger value="delivery">Delivery Settings</TabsTrigger>
+          <TabsTrigger value="pickup">Pickup Settings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="categories">
@@ -123,8 +125,12 @@ export function MenuManagement() {
           />
         </TabsContent>
 
-        <TabsContent value="fulfillment">
-          <FulfillmentSettings categories={[]} />
+        <TabsContent value="delivery">
+          <DeliverySettingsManager />
+        </TabsContent>
+
+        <TabsContent value="pickup">
+          <PickupSettingsManager />
         </TabsContent>
       </Tabs>
 
