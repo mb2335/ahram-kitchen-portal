@@ -13,6 +13,7 @@ import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 
 export function MenuManagement() {
   const session = useSession();
@@ -85,10 +86,11 @@ export function MenuManagement() {
         <TabsList className="mb-4">
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
         </TabsList>
         
         <TabsContent value="categories">
-          <CategoryManagement />
+          <CategoryManagement removeTabs={true} />
         </TabsContent>
         
         <TabsContent value="items">
@@ -119,6 +121,10 @@ export function MenuManagement() {
             onDelete={handleDeleteMenuItem}
             onReorder={updateMenuItemOrder}
           />
+        </TabsContent>
+
+        <TabsContent value="fulfillment">
+          <FulfillmentSettings categories={[]} />
         </TabsContent>
       </Tabs>
 

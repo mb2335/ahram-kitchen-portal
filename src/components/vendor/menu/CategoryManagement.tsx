@@ -1,4 +1,3 @@
-
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,7 +13,11 @@ import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 
-export function CategoryManagement() {
+interface CategoryManagementProps {
+  removeTabs?: boolean;
+}
+
+export function CategoryManagement({ removeTabs = false }: CategoryManagementProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
@@ -43,12 +46,10 @@ export function CategoryManagement() {
         throw error;
       }
       
-      // Get the related delivery schedules for all categories
       const { data: deliverySchedules } = await supabase
         .from('delivery_schedules')
         .select('*');
       
-      // Group delivery schedules by category
       const schedulesByCategory: Record<string, any[]> = {};
       if (deliverySchedules) {
         deliverySchedules.forEach(schedule => {
@@ -60,14 +61,12 @@ export function CategoryManagement() {
       }
       
       return data.map(category => {
-        // Extract delivery settings from schedules
         let delivery_settings: DeliverySettings = {
           activated_slots: [],
         };
         
         const categorySchedules = schedulesByCategory[category.id] || [];
         if (categorySchedules.length > 0) {
-          // Combine activated slots from all schedules
           const allSlots = new Set<string>();
           categorySchedules.forEach(schedule => {
             if (schedule.activated_slots && Array.isArray(schedule.activated_slots)) {
@@ -98,7 +97,6 @@ export function CategoryManagement() {
     },
   });
 
-  // Subscribe to real-time changes
   useEffect(() => {
     const categoryChannel = supabase
       .channel('category-changes')
@@ -110,7 +108,6 @@ export function CategoryManagement() {
           table: 'menu_categories' 
         },
         async () => {
-          // Invalidate the cache and immediately refetch
           await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           refetch();
         }
@@ -127,7 +124,6 @@ export function CategoryManagement() {
           table: 'delivery_schedules' 
         },
         async () => {
-          // Invalidate the cache and immediately refetch categories to get updated delivery settings
           await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
           refetch();
         }
@@ -147,7 +143,6 @@ export function CategoryManagement() {
         setCategoryToDelete({ id: categoryId, itemCount });
       } else {
         await deleteCategory(categoryId);
-        // Immediately refetch after deletion
         await refetch();
         toast({
           title: "Success",
@@ -175,7 +170,6 @@ export function CategoryManagement() {
       
       await deleteCategory(categoryToDelete.id);
       
-      // Immediately refetch after deletion
       await refetch();
       
       toast({
@@ -195,14 +189,54 @@ export function CategoryManagement() {
 
   return (
     <div className="mb-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="categories">
+      {!removeTabs ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="items">Items</TabsTrigger>
+            <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="categories">
+            <CategoryHeader
+              onAddClick={() => {
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            />
+            
+            <CategoryList 
+              categories={categories || []}
+              onEdit={(category) => {
+                console.log("Editing category with delivery settings:", category.delivery_settings);
+                setEditingCategory(category);
+                setFormData({
+                  name: category.name,
+                  name_ko: category.name_ko,
+                  fulfillment_types: category.fulfillment_types || []
+                });
+                setIsDialogOpen(true);
+              }}
+              onDelete={handleDelete}
+            />
+          </TabsContent>
+          
+          <TabsContent value="items">
+            <div className="p-4">
+              <h2 className="text-lg font-medium mb-4">Item Management</h2>
+              <p className="text-muted-foreground">
+                Items management has been moved to this tab for better organization.
+                Please use the Menu Management section to add or edit items.
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="fulfillment">
+            <FulfillmentSettings categories={categories} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <>
           <CategoryHeader
             onAddClick={() => {
               resetForm();
@@ -224,23 +258,8 @@ export function CategoryManagement() {
             }}
             onDelete={handleDelete}
           />
-        </TabsContent>
-        
-        <TabsContent value="items">
-          <div className="p-4">
-            {/* This will be where the MenuManagement component would be integrated */}
-            <h2 className="text-lg font-medium mb-4">Item Management</h2>
-            <p className="text-muted-foreground">
-              Items management has been moved to this tab for better organization.
-              Please use the Menu Management section to add or edit items.
-            </p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="fulfillment">
-          <FulfillmentSettings categories={categories} />
-        </TabsContent>
-      </Tabs>
+        </>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
