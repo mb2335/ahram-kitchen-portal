@@ -1,19 +1,10 @@
 
-export interface PickupDetail {
-  day: number;
-  time: string;
-  location: string;
-}
-
-export interface DeliverySettings {
-  activated_slots: string[];
-}
+import { PickupDetail } from "@/types/pickup";
 
 export interface CategoryFormData {
   name: string;
   name_ko: string;
   fulfillment_types: string[];
-  has_custom_pickup?: boolean;
 }
 
 export interface Category {

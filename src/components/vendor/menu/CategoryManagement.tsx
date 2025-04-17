@@ -1,4 +1,4 @@
-
+import { useState } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
-import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 
@@ -22,18 +21,8 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
-  const {
-    isDialogOpen,
-    setIsDialogOpen,
-    editingCategory,
-    setEditingCategory,
-    categoryToDelete,
-    setCategoryToDelete,
-    formData,
-    setFormData,
-    resetForm,
-    handleSubmit,
-  } = useCategoryManagement();
+
+  const { isDialogOpen, setIsDialogOpen, editingCategory, setEditingCategory, categoryToDelete, setCategoryToDelete, formData, setFormData, resetForm, handleSubmit } = useCategoryManagement();
 
   const { data: categories = [], refetch } = useQuery({
     queryKey: ['menu-categories'],
@@ -133,7 +122,6 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
           </TabsList>
           
@@ -158,16 +146,6 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
               }}
               onDelete={handleDelete}
             />
-          </TabsContent>
-          
-          <TabsContent value="items">
-            <div className="p-4">
-              <h2 className="text-lg font-medium mb-4">Item Management</h2>
-              <p className="text-muted-foreground">
-                Items management has been moved to this tab for better organization.
-                Please use the Menu Management section to add or edit items.
-              </p>
-            </div>
           </TabsContent>
           
           <TabsContent value="fulfillment">

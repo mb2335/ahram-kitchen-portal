@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatTime, generateFixedTimeSlots } from "@/types/delivery";
 
 export function DeliverySettingsManager({ categories }: { categories: Category[] }) {
@@ -16,25 +18,24 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
     categories.length > 0 ? categories[0].id : ""
   );
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [activatedSlots, setActivatedSlots] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Find the selected category
-  const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
-  
-  // Update activated slots when category changes
-  useState(() => {
-    if (selectedCategory) {
-      setActivatedSlots([]);
-    } else {
-      setActivatedSlots([]);
-    }
-  });
 
   // Handle category selection change
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
+    setSelectedDays([]);
     setActivatedSlots([]);
+  };
+
+  // Toggle day selection
+  const handleDayChange = (day: number, checked: boolean) => {
+    if (checked) {
+      setSelectedDays([...selectedDays, day]);
+    } else {
+      setSelectedDays(selectedDays.filter(d => d !== day));
+    }
   };
 
   // Toggle time slot selection
@@ -46,67 +47,50 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
     }
   };
 
-  // Save updated time slots
-  const saveTimeSlots = async () => {
-    if (!selectedCategoryId) return;
+  // Save delivery settings
+  const saveDeliverySettings = async () => {
+    if (!selectedCategoryId || selectedDays.length === 0) return;
     
     try {
       setIsSaving(true);
       
-      // First, get existing delivery settings for this category
-      const { data: existingSettings } = await supabase
-        .from('delivery_settings')
-        .select('id, day_of_week')
-        .eq('category_id', selectedCategoryId);
-      
-      const existingSettingsByDay = new Map();
-      if (existingSettings) {
-        existingSettings.forEach((setting: any) => {
-          existingSettingsByDay.set(setting.day_of_week, setting.id);
-        });
-      }
-      
-      // Get pickup days from pickup_settings table instead
-      const { data: pickupSettings } = await supabase
-        .from('pickup_settings')
-        .select('day')
-        .eq('category_id', selectedCategoryId);
-      
-      const pickupDays = pickupSettings ? pickupSettings.map((setting: any) => setting.day) : [];
-      
-      // Update schedules for each day of the week
-      for (let day = 0; day < 7; day++) {
-        const isPickupDay = pickupDays.includes(day);
-        const active = !isPickupDay; // Active for delivery if not a pickup day
-        
-        const scheduleData = {
-          category_id: selectedCategoryId,
-          day_of_week: day,
-          active,
-          activated_slots: activatedSlots
-        };
-        
-        try {
-          if (existingSettingsByDay.has(day)) {
-            // Update existing settings
-            await supabase
-              .from('delivery_settings')
-              .update(scheduleData)
-              .eq('id', existingSettingsByDay.get(day));
-          } else {
-            // Create new settings
-            await supabase
-              .from('delivery_settings')
-              .insert([scheduleData]);
-          }
-        } catch (err) {
-          console.error(`Error handling delivery settings for day ${day}:`, err);
-          throw err;
+      // Update delivery settings for all selected days
+      for (const day of selectedDays) {
+        const { data: existingSettings } = await supabase
+          .from('delivery_settings')
+          .select('id')
+          .eq('category_id', selectedCategoryId)
+          .eq('day_of_week', day)
+          .single();
+
+        if (existingSettings) {
+          await supabase
+            .from('delivery_settings')
+            .update({
+              active: true,
+              activated_slots: activatedSlots
+            })
+            .eq('id', existingSettings.id);
+        } else {
+          await supabase
+            .from('delivery_settings')
+            .insert({
+              category_id: selectedCategoryId,
+              day_of_week: day,
+              active: true,
+              activated_slots: activatedSlots
+            });
         }
       }
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+
+      // Set inactive for non-selected days
+      await supabase
+        .from('delivery_settings')
+        .update({ active: false })
+        .eq('category_id', selectedCategoryId)
+        .not('day_of_week', 'in', `(${selectedDays.join(',')})`);
+
+      queryClient.invalidateQueries({ queryKey: ['delivery-settings'] });
       
       toast({
         title: "Success",
@@ -125,6 +109,7 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
   };
 
   const allTimeSlots = generateFixedTimeSlots();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   return (
     <div className="space-y-6">
@@ -150,53 +135,68 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
       
       <Separator />
       
-      {selectedCategoryId ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <Label>Available Time Slots</Label>
+      {selectedCategoryId && (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label>Select Days Available for Delivery</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {dayNames.map((day, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`day-${index}`}
+                    checked={selectedDays.includes(index)}
+                    onCheckedChange={(checked) => 
+                      handleDayChange(index, checked as boolean)
+                    }
+                  />
+                  <Label htmlFor={`day-${index}`}>{day}</Label>
+                </div>
+              ))}
+            </div>
           </div>
           
-          <p className="text-sm text-muted-foreground mb-2">
-            Select which time slots are available for delivery across all days.
-            Pickup days will automatically be blocked for delivery.
-          </p>
-          
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-            {allTimeSlots.map(slot => {
-              const isActive = activatedSlots.includes(slot);
-              return (
-                <Button
-                  key={slot}
-                  type="button"
-                  variant={isActive ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTimeSlot(slot)}
-                  className="w-full"
-                >
-                  {formatTime(slot)}
-                </Button>
-              );
-            })}
-          </div>
-          
-          <p className="text-xs text-muted-foreground mt-2">
-            {activatedSlots.length} time slots selected
-          </p>
-          
-          <Button 
-            onClick={saveTimeSlots} 
-            className="w-full" 
-            disabled={isSaving}
-          >
-            {isSaving ? "Saving..." : "Save Time Slots"}
-          </Button>
-        </div>
-      ) : (
-        <div className="text-center py-6">
-          <p className="text-muted-foreground">
-            Select a category to configure delivery settings
-          </p>
+          {selectedDays.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Label>Available Time Slots</Label>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-2">
+                Select which time slots are available for delivery on the selected days.
+              </p>
+              
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {allTimeSlots.map(slot => {
+                  const isActive = activatedSlots.includes(slot);
+                  return (
+                    <Button
+                      key={slot}
+                      type="button"
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleTimeSlot(slot)}
+                      className="w-full"
+                    >
+                      {formatTime(slot)}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-2">
+                {activatedSlots.length} time slots selected
+              </p>
+              
+              <Button 
+                onClick={saveDeliverySettings} 
+                className="w-full" 
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Delivery Settings"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
