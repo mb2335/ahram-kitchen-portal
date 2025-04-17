@@ -1,4 +1,3 @@
-
 import { Tables } from "@/integrations/supabase/types/tables";
 
 export type DeliverySchedule = {
@@ -45,6 +44,24 @@ export const DAY_NAMES = [
 export function generateTimeSlots(
   startTime: string = '09:00',
   endTime: string = '18:00',
+  intervalMinutes: number = 30
+): string[] {
+  const slots: string[] = [];
+  let current = new Date(`1970-01-01T${startTime}`);
+  const end = new Date(`1970-01-01T${endTime}`);
+
+  while (current < end) {
+    slots.push(current.toTimeString().substring(0, 5));
+    current = new Date(current.getTime() + intervalMinutes * 60000);
+  }
+
+  return slots;
+}
+
+// Helper to generate predefined time slots
+export function generateFixedTimeSlots(
+  startTime: string = '09:00', 
+  endTime: string = '18:00', 
   intervalMinutes: number = 30
 ): string[] {
   const slots: string[] = [];

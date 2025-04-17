@@ -9,14 +9,22 @@ import { ClockIcon } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { DeliverySchedule, DAY_NAMES, generateTimeSlots, formatTime } from "@/types/delivery";
+import { 
+  DeliverySchedule, 
+  DAY_NAMES, 
+  generateFixedTimeSlots, 
+  formatTime 
+} from "@/types/delivery";
 
 interface DeliveryTimeSlotsProps {
   categoryId: string;
   categoryName: string;
 }
 
-export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlotsProps) {
+export function DeliveryTimeSlots({ 
+  categoryId, 
+  categoryName 
+}: DeliveryTimeSlotsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("0");
@@ -32,14 +40,7 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         .order('day_of_week');
       
       if (error) throw error;
-      return data as Array<{
-        id: string;
-        category_id: string;
-        day_of_week: number;
-        active: boolean;
-        created_at: string;
-        activated_slots: string[];
-      }>;
+      return data as DeliverySchedule[];
     },
   });
 
@@ -62,14 +63,7 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
     
     // Override with existing schedules
     schedules.forEach(schedule => {
-      newSchedulesByDay[schedule.day_of_week] = {
-        id: schedule.id,
-        category_id: schedule.category_id,
-        day_of_week: schedule.day_of_week,
-        active: schedule.active,
-        created_at: schedule.created_at || undefined,
-        activated_slots: schedule.activated_slots || []
-      };
+      newSchedulesByDay[schedule.day_of_week] = schedule;
     });
     
     setSchedulesByDay(newSchedulesByDay);
@@ -78,7 +72,7 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
     if (activeTab === "" && Object.keys(newSchedulesByDay).length) {
       setActiveTab("0");
     }
-  }, [schedules, categoryId, activeTab]);
+  }, [schedules, categoryId]);
 
   const handleSaveSchedule = async (dayOfWeek: number) => {
     try {
@@ -101,16 +95,14 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         if (error) throw error;
       } else {
         // Create new schedule
-        const scheduleData = {
+        const { error } = await supabase
+          .from('delivery_schedules')
+          .insert({
             category_id: categoryId,
             day_of_week: dayOfWeek,
             active: schedule.active,
             activated_slots: schedule.activated_slots || []
-        };
-        
-        const { error } = await supabase
-          .from('delivery_schedules')
-          .insert([scheduleData]);
+          });
           
         if (error) throw error;
       }
@@ -165,7 +157,7 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
   }
   
   // Generate all possible time slots for the day
-  const allTimeSlots = generateTimeSlots('09:00', '18:00', 30);
+  const allTimeSlots = generateFixedTimeSlots();
 
   return (
     <Card className="p-6">
