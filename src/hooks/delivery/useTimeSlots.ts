@@ -11,6 +11,16 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
+// Define a more specific type for the schedule data to avoid circular references
+interface DeliveryScheduleData {
+  id: string;
+  vendor_id: string | null;
+  day_of_week: number;
+  active: boolean | null;
+  activated_slots: string[] | null;
+  created_at: string | null;
+}
+
 export function useTimeSlots({ 
   categoryId, 
   dayOfWeek, 
@@ -41,7 +51,7 @@ export function useTimeSlots({
         }
         
         console.log("Fetched schedule data:", scheduleData);
-        return scheduleData;
+        return scheduleData as DeliveryScheduleData | null;
       } catch (err) {
         console.error("Error in queryFn:", err);
         throw err;
