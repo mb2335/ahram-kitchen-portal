@@ -21,6 +21,7 @@ interface CategoryDeliveryDateProps {
     pickup_details: any[];
     pickup_days: number[] | null;
     fulfillment_types: string[] | null;
+    blocked_dates?: string[] | null;
   };
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
@@ -105,6 +106,28 @@ export function CategoryDeliveryDate({
     },
   });
 
+  // Query for delivery settings
+  const { data: deliverySettings = [] } = useQuery({
+    queryKey: ['delivery-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delivery_settings')
+        .select('*')
+        .order('day_of_week');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Group delivery settings by day_of_week
+  const deliveryDaysByDayOfWeek = deliverySettings.reduce((acc, setting) => {
+    if (setting.active) {
+      acc[setting.day_of_week] = true;
+    }
+    return acc;
+  }, {} as Record<number, boolean>);
+
   const isPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP;
   const isDelivery = fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
   const hasPickupConfig = category.has_custom_pickup;
@@ -131,10 +154,13 @@ export function CategoryDeliveryDate({
       return !pickupDays.includes(dayOfWeek);
     }
     
-    // For delivery, disallow days that are in pickup_days
+    // For delivery, disallow days that are in pickup_days and allow only days with active delivery settings
     if (isDelivery) {
       const dayOfWeek = date.getDay();
-      return pickupDays.includes(dayOfWeek);
+      if (pickupDays.includes(dayOfWeek)) return true;
+      
+      // Only allow days that have active delivery settings
+      return !deliveryDaysByDayOfWeek[dayOfWeek];
     }
     
     return false;

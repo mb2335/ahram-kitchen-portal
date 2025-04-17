@@ -28,9 +28,9 @@ export function DeliveryTimeSlotsManager({
     queryKey: ['delivery-schedule', categoryId, dayOfWeek],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('delivery_schedules')
+        .from('delivery_settings')
         .select('*')
-        .eq('category_id', categoryId)
+        .eq('vendor_id', categoryId)
         .eq('day_of_week', dayOfWeek)
         .eq('active', true)
         .single();
@@ -83,9 +83,9 @@ export function DeliveryTimeSlotsManager({
   const handleSlotToggle = async (time: string) => {
     try {
       const { data: existingSchedule } = await supabase
-        .from('delivery_schedules')
+        .from('delivery_settings')
         .select('activated_slots')
-        .eq('category_id', categoryId)
+        .eq('vendor_id', categoryId)
         .eq('day_of_week', dayOfWeek)
         .single();
 
@@ -98,16 +98,16 @@ export function DeliveryTimeSlotsManager({
           : [...currentSlots, time];
 
         await supabase
-          .from('delivery_schedules')
+          .from('delivery_settings')
           .update({ activated_slots: newActivatedSlots })
-          .eq('category_id', categoryId)
+          .eq('vendor_id', categoryId)
           .eq('day_of_week', dayOfWeek);
       } else {
         newActivatedSlots = [time];
         await supabase
-          .from('delivery_schedules')
+          .from('delivery_settings')
           .insert({
-            category_id: categoryId,
+            vendor_id: categoryId,
             day_of_week: dayOfWeek,
             active: true,
             activated_slots: newActivatedSlots

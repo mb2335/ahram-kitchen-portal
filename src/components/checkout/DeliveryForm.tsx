@@ -1,4 +1,3 @@
-
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -60,21 +59,59 @@ export function DeliveryForm({
         .order('order_index');
       
       if (error) throw error;
-      return data.map(category => ({
-        id: category.id,
-        name: category.name,
-        name_ko: category.name_ko, // Include Korean name
-        has_custom_pickup: category.has_custom_pickup,
-        pickup_details: (category.pickup_details || []).map((detail: any) => ({
-          day: detail.day !== undefined ? detail.day : 0, // Ensure day is always included
-          time: detail.time || '',
-          location: detail.location || ''
-        })),
-        fulfillment_types: category.fulfillment_types || [],
-        pickup_days: category.pickup_days || []
-      }));
+      return data;
     },
   });
+
+  const { data: pickupSettings = [] } = useQuery({
+    queryKey: ['pickup-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pickup_settings')
+        .select('*')
+        .order('day');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const pickupDetailsByDay = pickupSettings.reduce((acc, setting) => {
+    if (!acc[setting.day]) {
+      acc[setting.day] = [];
+    }
+    acc[setting.day].push({
+      day: setting.day,
+      time: setting.time,
+      location: setting.location
+    });
+    return acc;
+  }, {} as Record<number, PickupDetail[]>);
+
+  const itemsByCategory = items.reduce((acc, item) => {
+    const categoryId = item.category_id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = [];
+    }
+    acc[categoryId].push(item);
+    return acc;
+  }, {} as Record<string, typeof items>);
+
+  const hasCustomPickupItems = categories.some(category => 
+    category.has_custom_pickup && 
+    itemsByCategory[category.id]?.length > 0
+  );
+
+  const getPickupCategories = () => {
+    const pickupCategoryIds = showMixedCategoryOptions
+      ? Object.keys(categoryFulfillmentTypes).filter(id => categoryFulfillmentTypes[id] === FULFILLMENT_TYPE_PICKUP)
+      : fulfillmentType === FULFILLMENT_TYPE_PICKUP ? Object.keys(itemsByCategory) : [];
+      
+    return pickupCategoryIds.map(id => {
+      const category = categories.find(c => c.id === id);
+      return category ? { name: category.name, name_ko: category.name_ko } : null;
+    }).filter(Boolean);
+  };
 
   useEffect(() => {
     if (!categories.length) return;
@@ -117,31 +154,6 @@ export function DeliveryForm({
       }
     }
   }, [categories, items, fulfillmentType, onFulfillmentTypeChange]);
-
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
-
-  const hasCustomPickupItems = categories.some(category => 
-    category.has_custom_pickup && 
-    itemsByCategory[category.id]?.length > 0
-  );
-
-  const getPickupCategories = () => {
-    const pickupCategoryIds = showMixedCategoryOptions
-      ? Object.keys(categoryFulfillmentTypes).filter(id => categoryFulfillmentTypes[id] === FULFILLMENT_TYPE_PICKUP)
-      : fulfillmentType === FULFILLMENT_TYPE_PICKUP ? Object.keys(itemsByCategory) : [];
-      
-    return pickupCategoryIds.map(id => {
-      const category = categories.find(c => c.id === id);
-      return category ? { name: category.name, name_ko: category.name_ko } : null;
-    }).filter(Boolean);
-  };
 
   useEffect(() => {
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP && hasCustomPickupItems) {
@@ -284,12 +296,18 @@ export function DeliveryForm({
           return null;
         }
         
+        const pickupDetailsForCategory = Object.values(pickupDetailsByDay).flat();
+        
         return (
           <div key={category.id} className="space-y-4">
             <CategoryDeliveryDate
-              category={category}
+              category={{
+                ...category,
+                pickup_details: pickupDetailsForCategory,
+                pickup_days: Object.keys(pickupDetailsByDay).map(Number)
+              }}
               selectedDate={deliveryDates[category.id]}
-              onDateChange={(date) => handleDeliveryDateChange(category.id, date)}
+              onDateChange={(date) => onDateChange(category.id, date)}
               selectedPickupDetail={effectiveFulfillmentType === FULFILLMENT_TYPE_PICKUP ? pickupDetail : null}
               onPickupDetailChange={onPickupDetailChange}
               fulfillmentType={effectiveFulfillmentType}

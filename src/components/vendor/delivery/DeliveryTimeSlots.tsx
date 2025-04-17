@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,13 +33,12 @@ export function DeliveryTimeSlots({
     queryKey: ['delivery-schedules', categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('delivery_schedules')
+        .from('delivery_settings')
         .select('*')
-        .eq('category_id', categoryId)
         .order('day_of_week');
       
       if (error) throw error;
-      return data as DeliverySchedule[];
+      return data as unknown as DeliverySchedule[];
     },
   });
 
@@ -54,7 +52,7 @@ export function DeliveryTimeSlots({
     for (let i = 0; i < 7; i++) {
       newSchedulesByDay[i] = {
         id: '', // Empty ID means it's a new schedule
-        category_id: categoryId,
+        vendor_id: '', // This will be set when saved
         day_of_week: i,
         active: false,
         activated_slots: []
@@ -85,7 +83,7 @@ export function DeliveryTimeSlots({
       if (schedule.id) {
         // Update existing schedule
         const { error } = await supabase
-          .from('delivery_schedules')
+          .from('delivery_settings')
           .update({
             active: schedule.active,
             activated_slots: schedule.activated_slots || []
@@ -96,9 +94,9 @@ export function DeliveryTimeSlots({
       } else {
         // Create new schedule
         const { error } = await supabase
-          .from('delivery_schedules')
+          .from('delivery_settings')
           .insert({
-            category_id: categoryId,
+            vendor_id: categoryId, // This needs to be updated with the actual vendor ID
             day_of_week: dayOfWeek,
             active: schedule.active,
             activated_slots: schedule.activated_slots || []

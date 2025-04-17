@@ -1,8 +1,9 @@
+
 import { Tables } from "@/integrations/supabase/types/tables";
 
 export type DeliverySchedule = {
   id: string;
-  category_id: string;
+  vendor_id: string;
   day_of_week: number;
   active: boolean;
   created_at?: string;

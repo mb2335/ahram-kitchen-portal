@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
@@ -205,6 +204,27 @@ export function CheckoutForm({
     return true;
   };
 
+  const { data: pickupSettings = [] } = useQuery({
+    queryKey: ['pickup-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pickup_settings')
+        .select('*')
+        .order('day');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const pickupDaysByDay = pickupSettings.reduce((acc, setting) => {
+    if (!acc[setting.day]) {
+      acc[setting.day] = [];
+    }
+    acc[setting.day].push(setting);
+    return acc;
+  }, {} as Record<number, any[]>);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -265,18 +285,18 @@ export function CheckoutForm({
     const dateErrors: string[] = [];
     Array.from(categoriesWithItems).forEach(categoryId => {
       const category = categories.find(cat => cat.id === categoryId);
-      if (!category || !category.pickup_days) return;
+      if (!category) return;
       
       const date = formData.deliveryDates[categoryId];
       if (!date) return;
       
       const dayOfWeek = date.getDay();
-      const isPickupDay = category.pickup_days.includes(dayOfWeek);
+      const hasPickupDay = pickupDaysByDay[dayOfWeek]?.length > 0;
       const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
       
-      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !isPickupDay) {
+      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !hasPickupDay) {
         dateErrors.push(`${category.name}: Pickup is only available on designated pickup days`);
-      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && isPickupDay) {
+      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && hasPickupDay) {
         dateErrors.push(`${category.name}: Delivery is not available on pickup days`);
       }
     });

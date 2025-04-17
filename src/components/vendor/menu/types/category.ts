@@ -13,11 +13,7 @@ export interface CategoryFormData {
   name: string;
   name_ko: string;
   fulfillment_types: string[];
-  // Following fields removed from form but kept in type
   has_custom_pickup?: boolean;
-  pickup_details?: PickupDetail[];
-  pickup_days?: number[];
-  delivery_settings?: DeliverySettings;
 }
 
 export interface Category {
@@ -25,10 +21,9 @@ export interface Category {
   name: string;
   name_ko: string;
   has_custom_pickup: boolean;
-  pickup_details: PickupDetail[];
   fulfillment_types: string[];
-  pickup_days: number[];
   order_index: number;
   blocked_dates?: string[];
-  delivery_settings: DeliverySettings;
+  vendor_id?: string;
+  created_at?: string;
 }

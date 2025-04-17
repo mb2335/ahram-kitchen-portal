@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -96,170 +95,150 @@ export const useOrderSubmission = () => {
             }
           }
           
-          // If we need a time slot but don't have one, check if there are any delivery schedules for this day
+          // If we need a time slot but don't have one, check if there are any delivery settings for this day
           if (!deliveryTimeSlot) {
             const dayOfWeek = deliveryDate.getDay();
             
-            const { data: scheduleData } = await supabase
-              .from('delivery_schedules')
-              .select('id')
-              .eq('category_id', categoryId)
+            const { data: daySettings } = await supabase
+              .from('delivery_settings')
+              .select('*')
               .eq('day_of_week', dayOfWeek)
               .eq('active', true);
-              
-            if (scheduleData && scheduleData.length > 0) {
-              throw new Error(`Please select a delivery time slot.`);
+            
+            if (!daySettings || daySettings.length === 0) {
+              throw new Error(`No delivery times are available for the selected date. Please choose another date.`);
             }
           }
         }
         
         // Create the order
-        const orderData: any = {
-          customer_id: customerId,
-          total_amount: totalAmount,
-          tax_amount: categoryTaxAmount,
-          notes: props.notes,
-          status: 'pending',
-          delivery_date: deliveryDate.toISOString(),
-          payment_proof_url: paymentProofUrl,
-          fulfillment_type: categoryFulfillmentType,
-          delivery_time_slot: deliveryTimeSlot,
-        };
-        
-        // Add pickup details if applicable
-        if (categoryFulfillmentType === 'pickup' && props.pickupDetail) {
-          orderData.pickup_time = props.pickupDetail.time;
-          orderData.pickup_location = props.pickupDetail.location;
-        }
-        
-        // Add delivery address if applicable
-        if (categoryFulfillmentType === 'delivery' && props.customerData.address) {
-          orderData.delivery_address = props.customerData.address;
-        }
-        
-        // Insert the order
-        const { data: order, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabase
           .from('orders')
-          .insert([orderData])
-          .select()
+          .insert({
+            customer_id: customerId,
+            total_amount: totalAmount,
+            tax_amount: categoryTaxAmount,
+            delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
+            notes: props.notes,
+            payment_proof_url: paymentProofUrl,
+            pickup_time: props.pickupDetail?.time,
+            pickup_location: props.pickupDetail?.location,
+            fulfillment_type: categoryFulfillmentType,
+            delivery_address: props.customerData.address,
+            delivery_time_slot: deliveryTimeSlot
+          })
+          .select('id')
           .single();
           
-        if (orderError) throw orderError;
+        if (orderError) {
+          throw new Error(`Failed to create order: ${orderError.message}`);
+        }
         
-        // Store the order ID
-        orderIds.push(order.id);
+        const orderId = orderData.id;
+        orderIds.push(orderId);
         
         // Create order items
-        const orderItems = items.map(item => ({
-          order_id: order.id,
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          unit_price: item.price,
-        }));
+        for (const item of items) {
+          const { error: itemError } = await supabase
+            .from('order_items')
+            .insert({
+              order_id: orderId,
+              menu_item_id: item.id,
+              quantity: item.quantity,
+              unit_price: item.price
+            });
+            
+          if (itemError) {
+            throw new Error(`Failed to create order item: ${itemError.message}`);
+          }
+        }
         
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-          
-        if (itemsError) throw itemsError;
-        
-        // Book the delivery time slot if applicable
-        if (deliveryTimeSlot) {
-          const bookingData = {
-            order_id: order.id,
-            category_id: categoryId,
-            delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
-            time_slot: deliveryTimeSlot,
-          };
-          
+        // If this is a delivery order with a selected time slot, book it
+        if (categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
           const { error: bookingError } = await supabase
             .from('delivery_time_bookings')
-            .insert(bookingData);
+            .insert({
+              order_id: orderId,
+              category_id: categoryId,
+              delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
+              time_slot: deliveryTimeSlot
+            });
             
-          if (bookingError) throw bookingError;
+          if (bookingError) {
+            throw new Error(`Failed to book delivery time slot: ${bookingError.message}`);
+          }
         }
       }
       
-      // Clear any saved time slots
-      if (window.localStorage) {
-        categoryIds.forEach(categoryId => {
-          window.localStorage.removeItem(`timeSlot_${categoryId}`);
-        });
-      }
+      // Call the success callback with the first order ID (or all IDs in the future)
+      props.onOrderSuccess(orderIds[0]);
       
-      // Return the first order ID (for compatibility with existing code)
-      if (orderIds.length) {
-        props.onOrderSuccess(orderIds[0]);
-      }
+      return orderIds[0];
     } catch (error: any) {
-      console.error('Order submission error:', error);
       toast({
-        title: 'Order Submission Error',
-        description: error.message || 'Failed to submit order. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to place order",
+        variant: "destructive",
       });
       throw error;
     } finally {
-      setIsUploading(false);
+      setIsLoading(false);
     }
   };
-  
+
   const getOrCreateCustomer = async (customerData: OrderSubmissionProps['customerData']) => {
-    try {
-      // For logged in users, find their customer record
-      if (session?.user?.id) {
-        const { data: customer, error } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-          
-        if (!error && customer) return customer.id;
+    // If the user is logged in, get their customer ID
+    if (session?.user) {
+      const { data: existingCustomer, error } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single();
         
-        // If customer not found, create one
-        const { data: newCustomer, error: createError } = await supabase
-          .from('customers')
-          .insert([{
-            user_id: session.user.id,
-            full_name: customerData.fullName,
-            email: customerData.email,
-            phone: customerData.phone,
-          }])
-          .select()
-          .single();
-          
-        if (createError) throw createError;
-        return newCustomer.id;
-      } else {
-        // For guest users, find by email
-        const { data: customer, error } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('email', customerData.email)
-          .maybeSingle();
-          
-        if (!error && customer) return customer.id;
-        
-        // Create new customer
-        const { data: newCustomer, error: createError } = await supabase
-          .from('customers')
-          .insert([{
-            full_name: customerData.fullName,
-            email: customerData.email,
-            phone: customerData.phone,
-          }])
-          .select()
-          .single();
-          
-        if (createError) throw createError;
-        return newCustomer.id;
+      if (!error && existingCustomer) {
+        return existingCustomer.id;
       }
-    } catch (error) {
-      console.error('Error getting/creating customer:', error);
-      throw error;
     }
+    
+    // Otherwise check if a customer with this email exists
+    const { data: existingCustomerByEmail } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('email', customerData.email)
+      .single();
+      
+    if (existingCustomerByEmail) {
+      // Update customer info
+      await supabase
+        .from('customers')
+        .update({
+          full_name: customerData.fullName,
+          phone: customerData.phone
+        })
+        .eq('id', existingCustomerByEmail.id);
+        
+      return existingCustomerByEmail.id;
+    }
+    
+    // Create a new customer
+    const { data: newCustomer, error } = await supabase
+      .from('customers')
+      .insert({
+        user_id: session?.user?.id || null,
+        full_name: customerData.fullName,
+        email: customerData.email,
+        phone: customerData.phone
+      })
+      .select('id')
+      .single();
+      
+    if (error) {
+      throw new Error(`Failed to create customer: ${error.message}`);
+    }
+    
+    return newCustomer.id;
   };
-  
+
   return {
     submitOrder,
     isUploading
