@@ -10,6 +10,7 @@ export const useOrderSubmission = () => {
   const { toast } = useToast();
   const session = useSession();
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadPaymentProof } = usePaymentProofUpload();
 
   const submitOrder = async (props: OrderSubmissionProps, paymentProofFile: File) => {
@@ -182,7 +183,7 @@ export const useOrderSubmission = () => {
       });
       throw error;
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
     }
   };
 

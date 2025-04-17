@@ -1,3 +1,4 @@
+
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +9,7 @@ import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItem
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Category, DeliverySettings } from './types/category';
+import { Category } from './types/category';
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
@@ -46,54 +47,10 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
         throw error;
       }
       
-      const { data: deliverySchedules } = await supabase
-        .from('delivery_schedules')
-        .select('*');
-      
-      const schedulesByCategory: Record<string, any[]> = {};
-      if (deliverySchedules) {
-        deliverySchedules.forEach(schedule => {
-          if (!schedulesByCategory[schedule.category_id]) {
-            schedulesByCategory[schedule.category_id] = [];
-          }
-          schedulesByCategory[schedule.category_id].push(schedule);
-        });
-      }
-      
-      return data.map(category => {
-        let delivery_settings: DeliverySettings = {
-          activated_slots: [],
-        };
-        
-        const categorySchedules = schedulesByCategory[category.id] || [];
-        if (categorySchedules.length > 0) {
-          const allSlots = new Set<string>();
-          categorySchedules.forEach(schedule => {
-            if (schedule.activated_slots && Array.isArray(schedule.activated_slots)) {
-              schedule.activated_slots.forEach((slot: string) => allSlots.add(slot));
-            }
-          });
-          
-          delivery_settings = {
-            activated_slots: [...allSlots],
-          };
-        }
-        
-        console.log(`Category ${category.name} has ${delivery_settings.activated_slots.length} activated slots:`, 
-          delivery_settings.activated_slots);
-        
-        return {
-          ...category,
-          pickup_details: (category.pickup_details || []).map((detail: any) => ({
-            day: detail.day !== undefined ? detail.day : 0,
-            time: detail.time || '',
-            location: detail.location || ''
-          })),
-          fulfillment_types: category.fulfillment_types || [],
-          pickup_days: category.pickup_days || [],
-          delivery_settings
-        } as Category;
-      });
+      return data.map(category => ({
+        ...category,
+        fulfillment_types: category.fulfillment_types || []
+      })) as Category[];
     },
   });
 
@@ -114,25 +71,8 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
       )
       .subscribe();
       
-    const scheduleChannel = supabase
-      .channel('schedule-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'delivery_schedules' 
-        },
-        async () => {
-          await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-          refetch();
-        }
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(categoryChannel);
-      supabase.removeChannel(scheduleChannel);
     };
   }, [queryClient, refetch]);
 
@@ -208,7 +148,6 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
             <CategoryList 
               categories={categories || []}
               onEdit={(category) => {
-                console.log("Editing category with delivery settings:", category.delivery_settings);
                 setEditingCategory(category);
                 setFormData({
                   name: category.name,
@@ -247,7 +186,6 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
           <CategoryList 
             categories={categories || []}
             onEdit={(category) => {
-              console.log("Editing category with delivery settings:", category.delivery_settings);
               setEditingCategory(category);
               setFormData({
                 name: category.name,

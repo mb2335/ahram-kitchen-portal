@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,7 +25,7 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
   // Update activated slots when category changes
   useState(() => {
     if (selectedCategory) {
-      setActivatedSlots(selectedCategory.delivery_settings?.activated_slots || []);
+      setActivatedSlots([]);
     } else {
       setActivatedSlots([]);
     }
@@ -35,8 +34,7 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
   // Handle category selection change
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
-    const category = categories.find(cat => cat.id === categoryId);
-    setActivatedSlots(category?.delivery_settings?.activated_slots || []);
+    setActivatedSlots([]);
   };
 
   // Toggle time slot selection
@@ -55,27 +53,26 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
     try {
       setIsSaving(true);
       
-      // First, get existing delivery schedules for this category
-      const { data: existingSchedules } = await supabase
-        .from('delivery_schedules')
+      // First, get existing delivery settings for this category
+      const { data: existingSettings } = await supabase
+        .from('delivery_settings')
         .select('id, day_of_week')
         .eq('category_id', selectedCategoryId);
       
-      const existingSchedulesByDay = new Map();
-      if (existingSchedules) {
-        existingSchedules.forEach(schedule => {
-          existingSchedulesByDay.set(schedule.day_of_week, schedule.id);
+      const existingSettingsByDay = new Map();
+      if (existingSettings) {
+        existingSettings.forEach((setting: any) => {
+          existingSettingsByDay.set(setting.day_of_week, setting.id);
         });
       }
       
-      // Get pickup days for this category to mark them as inactive for delivery
-      const { data: categoryData } = await supabase
-        .from('menu_categories')
-        .select('pickup_days')
-        .eq('id', selectedCategoryId)
-        .single();
+      // Get pickup days from pickup_settings table instead
+      const { data: pickupSettings } = await supabase
+        .from('pickup_settings')
+        .select('day')
+        .eq('category_id', selectedCategoryId);
       
-      const pickupDays = categoryData?.pickup_days || [];
+      const pickupDays = pickupSettings ? pickupSettings.map((setting: any) => setting.day) : [];
       
       // Update schedules for each day of the week
       for (let day = 0; day < 7; day++) {
@@ -90,20 +87,20 @@ export function DeliverySettingsManager({ categories }: { categories: Category[]
         };
         
         try {
-          if (existingSchedulesByDay.has(day)) {
-            // Update existing schedule
+          if (existingSettingsByDay.has(day)) {
+            // Update existing settings
             await supabase
-              .from('delivery_schedules')
+              .from('delivery_settings')
               .update(scheduleData)
-              .eq('id', existingSchedulesByDay.get(day));
+              .eq('id', existingSettingsByDay.get(day));
           } else {
-            // Create new schedule
+            // Create new settings
             await supabase
-              .from('delivery_schedules')
+              .from('delivery_settings')
               .insert([scheduleData]);
           }
         } catch (err) {
-          console.error(`Error handling delivery schedule for day ${day}:`, err);
+          console.error(`Error handling delivery settings for day ${day}:`, err);
           throw err;
         }
       }

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CategoryFormData } from '../types/category';
@@ -47,34 +48,16 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // If editing, preserve existing pickup and delivery settings
-      const categoryData: any = {
+      // Simplified category data
+      const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
         vendor_id: vendorData.id,
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         fulfillment_types: formData.fulfillment_types,
+        has_custom_pickup: false // Simplified to always false as we don't use this field anymore
       };
-
-      // When editing, preserve existing properties not in form
-      if (editingCategory) {
-        // Keep existing settings if editing
-        if (editingCategory.has_custom_pickup !== undefined) {
-          categoryData.has_custom_pickup = editingCategory.has_custom_pickup;
-        }
-        if (editingCategory.pickup_details) {
-          categoryData.pickup_details = editingCategory.pickup_details;
-        }
-        if (editingCategory.pickup_days) {
-          categoryData.pickup_days = editingCategory.pickup_days;
-        }
-      } else {
-        // Set defaults for new categories
-        categoryData.has_custom_pickup = false;
-        categoryData.pickup_details = [];
-        categoryData.pickup_days = [];
-      }
-
+      
       let categoryId: string;
       
       if (editingCategory) {
