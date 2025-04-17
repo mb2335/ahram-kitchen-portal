@@ -1,12 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { PlusIcon, TrashIcon, ClockIcon, TimerIcon } from "lucide-react";
+import { ClockIcon } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,11 +36,9 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         id: string;
         category_id: string;
         day_of_week: number;
-        time_interval: number;
-        start_time: string;
-        end_time: string;
         active: boolean;
         created_at: string;
+        activated_slots: string[];
       }>;
     },
   });
@@ -52,16 +49,14 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
   useEffect(() => {
     const newSchedulesByDay: Record<number, DeliverySchedule> = {};
     
-    // Initialize with default values for all days - now with 30 minutes as default
+    // Initialize with default values for all days
     for (let i = 0; i < 7; i++) {
       newSchedulesByDay[i] = {
         id: '', // Empty ID means it's a new schedule
         category_id: categoryId,
         day_of_week: i,
-        time_interval: 30, // Default to 30 minutes
-        start_time: '09:00',
-        end_time: '17:00',
-        active: false
+        active: false,
+        activated_slots: []
       };
     }
     
@@ -71,11 +66,9 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         id: schedule.id,
         category_id: schedule.category_id,
         day_of_week: schedule.day_of_week,
-        time_interval: schedule.time_interval || 30, // Use 30 minutes if not specified
-        start_time: schedule.start_time,
-        end_time: schedule.end_time,
         active: schedule.active,
-        created_at: schedule.created_at || undefined
+        created_at: schedule.created_at || undefined,
+        activated_slots: schedule.activated_slots || []
       };
     });
     
@@ -95,24 +88,13 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         throw new Error("Schedule not found");
       }
       
-      if (new Date(`1970-01-01T${schedule.start_time}`) >= new Date(`1970-01-01T${schedule.end_time}`)) {
-        toast({
-          title: "Invalid Time Range",
-          description: "End time must be after start time",
-          variant: "destructive",
-        });
-        return;
-      }
-      
       if (schedule.id) {
         // Update existing schedule
         const { error } = await supabase
           .from('delivery_schedules')
           .update({
-            time_interval: schedule.time_interval,
-            start_time: schedule.start_time,
-            end_time: schedule.end_time,
-            active: schedule.active
+            active: schedule.active,
+            activated_slots: schedule.activated_slots || []
           })
           .eq('id', schedule.id);
           
@@ -122,10 +104,8 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
         const scheduleData = {
             category_id: categoryId,
             day_of_week: dayOfWeek,
-            time_interval: schedule.time_interval,
-            start_time: schedule.start_time,
-            end_time: schedule.end_time,
-            active: schedule.active
+            active: schedule.active,
+            activated_slots: schedule.activated_slots || []
         };
         
         const { error } = await supabase
@@ -151,37 +131,6 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
     }
   };
   
-  const handleTimeIntervalChange = (dayOfWeek: number, value: string) => {
-    const interval = parseInt(value, 10);
-    setSchedulesByDay(prev => ({
-      ...prev,
-      [dayOfWeek]: {
-        ...prev[dayOfWeek],
-        time_interval: interval
-      }
-    }));
-  };
-  
-  const handleStartTimeChange = (dayOfWeek: number, value: string) => {
-    setSchedulesByDay(prev => ({
-      ...prev,
-      [dayOfWeek]: {
-        ...prev[dayOfWeek],
-        start_time: value
-      }
-    }));
-  };
-  
-  const handleEndTimeChange = (dayOfWeek: number, value: string) => {
-    setSchedulesByDay(prev => ({
-      ...prev,
-      [dayOfWeek]: {
-        ...prev[dayOfWeek],
-        end_time: value
-      }
-    }));
-  };
-  
   const handleActiveChange = (dayOfWeek: number, value: boolean) => {
     setSchedulesByDay(prev => ({
       ...prev,
@@ -192,19 +141,31 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
     }));
   };
   
+  const toggleTimeSlot = (dayOfWeek: number, timeSlot: string) => {
+    setSchedulesByDay(prev => {
+      const schedule = prev[dayOfWeek];
+      const slots = schedule.activated_slots || [];
+      
+      const newSlots = slots.includes(timeSlot)
+        ? slots.filter(slot => slot !== timeSlot)
+        : [...slots, timeSlot];
+        
+      return {
+        ...prev,
+        [dayOfWeek]: {
+          ...schedule,
+          activated_slots: newSlots
+        }
+      };
+    });
+  };
+  
   if (isLoading) {
     return <div>Loading delivery schedules...</div>;
   }
   
-  const getTimeSlotPreview = (schedule: DeliverySchedule) => {
-    if (!schedule.active) return [];
-    
-    return generateTimeSlots(
-      schedule.start_time,
-      schedule.end_time,
-      schedule.time_interval
-    ).map(formatTime);
-  };
+  // Generate all possible time slots for the day
+  const allTimeSlots = generateTimeSlots('09:00', '18:00', 30);
 
   return (
     <Card className="p-6">
@@ -251,61 +212,31 @@ export function DeliveryTimeSlots({ categoryId, categoryName }: DeliveryTimeSlot
                 </div>
               </div>
               
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor={`${day}-interval`}>Time Interval</Label>
-                  <Select 
-                    value={schedule.time_interval.toString()}
-                    onValueChange={(value) => handleTimeIntervalChange(dayOfWeek, value)}
-                  >
-                    <SelectTrigger id={`${day}-interval`}>
-                      <SelectValue placeholder="Select interval" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 minutes</SelectItem>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`${day}-start`}>Start Time</Label>
-                  <Input
-                    id={`${day}-start`}
-                    type="time"
-                    value={schedule.start_time}
-                    onChange={(e) => handleStartTimeChange(dayOfWeek, e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`${day}-end`}>End Time</Label>
-                  <Input
-                    id={`${day}-end`}
-                    type="time"
-                    value={schedule.end_time}
-                    onChange={(e) => handleEndTimeChange(dayOfWeek, e.target.value)}
-                  />
-                </div>
-              </div>
-              
               {schedule.active && (
                 <div className="mt-6 space-y-2">
                   <h4 className="text-sm font-medium flex items-center">
                     <ClockIcon className="w-4 h-4 mr-2" />
-                    Time Slots Preview
+                    Time Slots
                   </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {getTimeSlotPreview(schedule).map((time, index) => (
-                      <div 
-                        key={index} 
-                        className="px-3 py-1 text-xs bg-secondary rounded-md"
-                      >
-                        {time}
-                      </div>
-                    ))}
+                  <p className="text-sm text-muted-foreground">
+                    Select which time slots are available for customers to choose on {day}s.
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-2">
+                    {allTimeSlots.map((timeSlot) => {
+                      const isActivated = schedule.activated_slots?.includes(timeSlot) || false;
+                      
+                      return (
+                        <Button
+                          key={timeSlot}
+                          variant={isActivated ? "default" : "outline"}
+                          size="sm"
+                          className="w-full"
+                          onClick={() => toggleTimeSlot(dayOfWeek, timeSlot)}
+                        >
+                          {formatTime(timeSlot)}
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

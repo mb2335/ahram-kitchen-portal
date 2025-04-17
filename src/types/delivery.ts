@@ -5,11 +5,9 @@ export type DeliverySchedule = {
   id: string;
   category_id: string;
   day_of_week: number;
-  time_interval: number;
-  start_time: string;
-  end_time: string;
   active: boolean;
   created_at?: string;
+  activated_slots?: string[];
 };
 
 export type DeliveryTimeBooking = {
@@ -45,9 +43,9 @@ export const DAY_NAMES = [
 
 // Helper function to generate time slots
 export function generateTimeSlots(
-  startTime: string,
-  endTime: string,
-  intervalMinutes: number
+  startTime: string = '09:00',
+  endTime: string = '18:00',
+  intervalMinutes: number = 30
 ): string[] {
   const slots: string[] = [];
   let current = new Date(`1970-01-01T${startTime}`);

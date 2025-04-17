@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { TimeSlot, formatTime, generateTimeSlots } from '@/types/delivery';
+import { TimeSlot, formatTime } from '@/types/delivery';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -57,11 +57,9 @@ export function DeliveryTimeSlotSelector({
         id: string;
         category_id: string;
         day_of_week: number;
-        time_interval: number;
-        start_time: string;
-        end_time: string;
         active: boolean;
         created_at: string;
+        activated_slots: string[];
       } | null;
     },
     enabled: dayOfWeek >= 0,
@@ -82,12 +80,7 @@ export function DeliveryTimeSlotSelector({
           return;
         }
         
-        const interval = scheduleData.time_interval || 30;
-        const slots = generateTimeSlots(
-          scheduleData.start_time,
-          scheduleData.end_time,
-          interval
-        );
+        const slots = scheduleData.activated_slots || [];
         
         if (slots.length === 0) {
           setError(`No delivery time slots configured for ${categoryName} on this day.`);
@@ -112,6 +105,9 @@ export function DeliveryTimeSlotSelector({
           time,
           available: !bookedTimes.has(time)
         }));
+        
+        // Sort slots by time
+        availableSlots.sort((a, b) => a.time.localeCompare(b.time));
         
         setTimeSlots(availableSlots);
         

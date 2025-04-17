@@ -41,31 +41,25 @@ export interface Database {
           id: string
           category_id: string
           day_of_week: number
-          time_interval: number
-          start_time: string
-          end_time: string
           active: boolean
           created_at: string | null
+          activated_slots: string[] | null
         }
         Insert: {
           id?: string
           category_id: string
           day_of_week: number
-          time_interval: number
-          start_time: string
-          end_time: string
           active?: boolean
           created_at?: string | null
+          activated_slots?: string[] | null
         }
         Update: {
           id?: string
           category_id?: string
           day_of_week?: number
-          time_interval?: number
-          start_time?: string
-          end_time?: string
           active?: boolean
           created_at?: string | null
+          activated_slots?: string[] | null
         }
       }
       delivery_time_bookings: {
