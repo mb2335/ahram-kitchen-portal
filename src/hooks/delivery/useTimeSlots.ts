@@ -35,7 +35,7 @@ export function useTimeSlots({
   // Explicitly define the query result type
   const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySettingData | null>({
     queryKey: ['delivery-settings', categoryId, dayOfWeek],
-    queryFn: async () => {
+    queryFn: async (): Promise<DeliverySettingData | null> => {
       if (dayOfWeek < 0) return null;
       
       try {
