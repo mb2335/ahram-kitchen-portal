@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,6 +63,7 @@ export function DeliverySettingsManager() {
           .insert({
             vendor_id: vendorId,
             day_of_week: dayOfWeek,
+            active: true,
             activated_slots: newSlots
           });
       }
