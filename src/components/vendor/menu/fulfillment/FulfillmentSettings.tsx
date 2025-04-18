@@ -2,14 +2,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { DeliverySettingsManager } from "./DeliverySettingsManager";
-import { PickupSettingsManager } from "./PickupSettingsManager";
-import { Category } from "../types/category";
+import { PickupSettingsManager } from "@/components/vendor/delivery/PickupSettingsManager";
 
-interface FulfillmentSettingsProps {
-  categories: Category[];
-}
-
-export function FulfillmentSettings({ categories }: FulfillmentSettingsProps) {
+export function FulfillmentSettings() {
   return (
     <div className="space-y-6">
       <div>
@@ -31,7 +26,7 @@ export function FulfillmentSettings({ categories }: FulfillmentSettingsProps) {
           </TabsContent>
           
           <TabsContent value="pickup">
-            <PickupSettingsManager categories={categories} />
+            <PickupSettingsManager />
           </TabsContent>
         </Tabs>
       </Card>
