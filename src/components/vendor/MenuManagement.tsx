@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
@@ -12,6 +13,8 @@ import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DeliverySettingsManager } from './delivery/DeliverySettingsManager';
+import { PickupSettingsManager } from './delivery/PickupSettingsManager';
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 import { useQuery } from "@tanstack/react-query";
 import { Category } from './menu/types/category';
