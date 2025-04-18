@@ -45,7 +45,7 @@ export function DeliverySettingsManager() {
       // Find all unique time slots across all days
       const uniqueSlots = new Set<string>();
       settings.forEach(setting => {
-        if (setting.activated_slots) {
+        if (setting.activated_slots && Array.isArray(setting.activated_slots)) {
           setting.activated_slots.forEach(slot => uniqueSlots.add(slot));
         }
       });
