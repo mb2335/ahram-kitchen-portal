@@ -11,8 +11,8 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-// Define a specific type for the schedule data
-interface DeliverySchedule {
+// Define a specific type for the delivery setting data
+interface DeliverySettingData {
   id: string;
   vendor_id: string | null;
   day_of_week: number;
@@ -33,7 +33,7 @@ export function useTimeSlots({
   const [error, setError] = useState<string | null>(null);
 
   // Explicitly define the query result type
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySchedule | null>({
+  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySettingData | null>({
     queryKey: ['delivery-settings', categoryId, dayOfWeek],
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
@@ -41,7 +41,7 @@ export function useTimeSlots({
       try {
         // Try to find category-specific settings first
         const { data: categorySchedule, error: categoryError } = await supabase
-          .from('delivery_schedules')
+          .from('delivery_settings')
           .select('*')
           .eq('category_id', categoryId)
           .eq('day_of_week', dayOfWeek)
@@ -50,7 +50,7 @@ export function useTimeSlots({
           
         if (categorySchedule) {
           console.log("Found category-specific schedule", categorySchedule);
-          return categorySchedule;
+          return categorySchedule as DeliverySettingData;
         }
         
         // If no category settings, fall back to vendor settings
@@ -62,7 +62,7 @@ export function useTimeSlots({
           .maybeSingle();
           
         console.log("Fetched vendor schedule data:", vendorSettings);
-        return vendorSettings;
+        return vendorSettings as DeliverySettingData;
       } catch (err) {
         console.error("Error in queryFn:", err);
         throw err;
