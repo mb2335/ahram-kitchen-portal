@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
@@ -149,7 +150,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
           </TabsContent>
           
           <TabsContent value="fulfillment">
-            <FulfillmentSettings categories={categories} />
+            <FulfillmentSettings />
           </TabsContent>
         </Tabs>
       ) : (

@@ -29,27 +29,30 @@ export function DeliverySettingsManager() {
         .eq('active', true);
         
       if (error) throw error;
-      
-      // Set initial state from existing settings
-      const uniqueSlots = new Set<string>();
-      const activeDays: number[] = [];
-      
-      data.forEach(setting => {
-        if (setting.activated_slots) {
-          setting.activated_slots.forEach(slot => uniqueSlots.add(slot));
-        }
-        if (setting.day_of_week !== null) {
-          activeDays.push(setting.day_of_week);
-        }
-      });
-      
-      setSelectedDays(activeDays);
-      setActivatedSlots(Array.from(uniqueSlots).sort());
-      
+      console.log("Fetched delivery settings:", data);
       return data;
     },
     enabled: !!vendorId
   });
+
+  // Initialize state from fetched settings
+  useEffect(() => {
+    if (settings && settings.length > 0) {
+      // Extract active days
+      const activeDays = settings.map(setting => setting.day_of_week);
+      setSelectedDays(activeDays);
+      
+      // Find all unique time slots across all days
+      const uniqueSlots = new Set<string>();
+      settings.forEach(setting => {
+        if (setting.activated_slots) {
+          setting.activated_slots.forEach(slot => uniqueSlots.add(slot));
+        }
+      });
+      
+      setActivatedSlots(Array.from(uniqueSlots).sort());
+    }
+  }, [settings]);
 
   const getDayName = (day: number): string => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -93,22 +96,25 @@ export function DeliverySettingsManager() {
       
       // Then create or update settings for selected days
       for (const day of selectedDays) {
-        const { data: existingSettings } = await supabase
+        // Check if setting for this day already exists
+        const { data: existingSetting } = await supabase
           .from('delivery_settings')
           .select('id')
           .eq('vendor_id', vendorId)
           .eq('day_of_week', day)
           .single();
 
-        if (existingSettings) {
+        if (existingSetting) {
+          // Update existing setting
           await supabase
             .from('delivery_settings')
             .update({
               active: true,
               activated_slots: activatedSlots
             })
-            .eq('id', existingSettings.id);
+            .eq('id', existingSetting.id);
         } else {
+          // Create new setting
           await supabase
             .from('delivery_settings')
             .insert({
@@ -120,6 +126,7 @@ export function DeliverySettingsManager() {
         }
       }
       
+      // Refresh data
       queryClient.invalidateQueries({ queryKey: ['delivery-settings'] });
       
       toast({

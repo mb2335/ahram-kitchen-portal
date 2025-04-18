@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PickupDetail } from "@/types/pickup";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,12 @@ import { Plus, Trash2, Copy, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useVendorId } from "@/hooks/useVendorId";
 
 export function PickupSettingsManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { vendorId } = useVendorId();
   const [isSaving, setIsSaving] = useState(false);
   const [pickupDays, setPickupDays] = useState<number[]>([]);
   const [pickupDetails, setPickupDetails] = useState<PickupDetail[]>([]);
@@ -24,39 +26,45 @@ export function PickupSettingsManager() {
   const [dayToCopyTo, setDayToCopyTo] = useState<number | null>(null);
   const [activeDay, setActiveDay] = useState<string>("0");
 
-  // Load pickup days and details from pickup_settings table
-  const fetchPickupSettings = async () => {
-    const { data: vendorData } = await supabase
-      .from('vendors')
-      .select('id')
-      .single();
+  // Fetch pickup settings
+  const { data: pickupSettings, isLoading } = useQuery({
+    queryKey: ['pickup-settings', vendorId],
+    queryFn: async () => {
+      if (!vendorId) return [];
       
-    if (vendorData) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('pickup_settings')
         .select('*')
-        .eq('vendor_id', vendorData.id);
+        .eq('vendor_id', vendorId);
       
-      if (data && data.length > 0) {
-        // Extract unique days
-        const days = Array.from(new Set(data.map(item => item.day)));
-        setPickupDays(days);
-        
-        // Map to pickup details
-        const details = data.map(item => ({
-          day: item.day,
-          time: item.time || '',
-          location: item.location || ''
-        }));
-        setPickupDetails(details);
-        
-        // Set active day
-        if (days.length > 0) {
-          setActiveDay(days[0].toString());
-        }
+      if (error) throw error;
+      console.log("Fetched pickup settings:", data);
+      return data || [];
+    },
+    enabled: !!vendorId
+  });
+
+  // Initialize state from fetched settings
+  useEffect(() => {
+    if (pickupSettings && pickupSettings.length > 0) {
+      // Extract unique days
+      const days = Array.from(new Set(pickupSettings.map(item => item.day)));
+      setPickupDays(days);
+      
+      // Map to pickup details
+      const details = pickupSettings.map(item => ({
+        day: item.day,
+        time: item.time || '',
+        location: item.location || ''
+      }));
+      setPickupDetails(details);
+      
+      // Set active day to first day in the list
+      if (days.length > 0) {
+        setActiveDay(days[0].toString());
       }
     }
-  };
+  }, [pickupSettings]);
 
   const handlePickupDayChange = (day: number, checked: boolean) => {
     let newPickupDays = [...pickupDays];
@@ -131,28 +139,28 @@ export function PickupSettingsManager() {
   };
 
   const savePickupSettings = async () => {
+    if (!vendorId) {
+      toast({
+        title: "Error",
+        description: "Vendor information is missing",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsSaving(true);
-      
-      const { data: vendorData } = await supabase
-        .from('vendors')
-        .select('id')
-        .single();
-      
-      if (!vendorData) {
-        throw new Error('Vendor not found');
-      }
       
       // Delete all existing pickup settings for this vendor
       await supabase
         .from('pickup_settings')
         .delete()
-        .eq('vendor_id', vendorData.id);
+        .eq('vendor_id', vendorId);
       
       // Re-insert pickup settings
       if (pickupDetails.length > 0) {
         const pickupSettingsToInsert = pickupDetails.map(detail => ({
-          vendor_id: vendorData.id,
+          vendor_id: vendorId,
           day: detail.day,
           time: detail.time,
           location: detail.location
@@ -190,6 +198,10 @@ export function PickupSettingsManager() {
   const getPickupDetailsForDay = (day: number): PickupDetail[] => {
     return pickupDetails.filter(detail => detail.day === day);
   };
+
+  if (isLoading) {
+    return <div>Loading pickup settings...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -348,11 +360,10 @@ export function PickupSettingsManager() {
       <Button 
         onClick={savePickupSettings} 
         className="w-full" 
-        disabled={isSaving}
+        disabled={isSaving || pickupDays.length === 0}
       >
         {isSaving ? "Saving..." : "Save Pickup Settings"}
       </Button>
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface DeliverySchedule {
   active: boolean | null;
   activated_slots: string[] | null;
   created_at: string | null;
+  category_id?: string | null;
 }
 
 export function useTimeSlots({ 
@@ -30,28 +32,37 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Explicitly define the query result type and error type
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySchedule | null, Error>({
+  // Explicitly define the query result type
+  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySchedule | null>({
     queryKey: ['delivery-settings', categoryId, dayOfWeek],
     queryFn: async () => {
       if (dayOfWeek < 0) return null;
       
       try {
-        const { data: scheduleData, error } = await supabase
-          .from('delivery_settings')
+        // Try to find category-specific settings first
+        const { data: categorySchedule, error: categoryError } = await supabase
+          .from('delivery_schedules')
           .select('*')
           .eq('category_id', categoryId)
           .eq('day_of_week', dayOfWeek)
           .eq('active', true)
-          .single();
-        
-        if (error && error.code !== 'PGRST116') {
-          console.error("Error fetching delivery schedule:", error);
-          throw error;
+          .maybeSingle();
+          
+        if (categorySchedule) {
+          console.log("Found category-specific schedule", categorySchedule);
+          return categorySchedule;
         }
         
-        console.log("Fetched schedule data:", scheduleData);
-        return scheduleData;
+        // If no category settings, fall back to vendor settings
+        const { data: vendorSettings } = await supabase
+          .from('delivery_settings')
+          .select('*')
+          .eq('day_of_week', dayOfWeek)
+          .eq('active', true)
+          .maybeSingle();
+          
+        console.log("Fetched vendor schedule data:", vendorSettings);
+        return vendorSettings;
       } catch (err) {
         console.error("Error in queryFn:", err);
         throw err;
