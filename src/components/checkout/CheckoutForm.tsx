@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -228,21 +227,17 @@ export function CheckoutForm({
       return;
     }
 
-    if (!validateDates()) {
+    if ((fulfillmentType === FULFILLMENT_TYPE_PICKUP && !formData.deliveryDates[FULFILLMENT_TYPE_PICKUP]) || 
+        (fulfillmentType === FULFILLMENT_TYPE_DELIVERY && !formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY])) {
+      toast({
+        title: t('checkout.error.date'),
+        description: "Please select a date for your order",
+        variant: 'destructive',
+      });
       return;
     }
 
-    const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      
-      if (category?.fulfillment_types.length === 1 && 
-          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
-        return false;
-      }
-      
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
-    });
+    const hasDeliveryItems = fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
     
     if (hasDeliveryItems) {
       if (!formData.deliveryAddress?.trim()) {
@@ -264,7 +259,7 @@ export function CheckoutForm({
       const category = categories.find(cat => cat.id === categoryId);
       if (!category) return;
       
-      const date = formData.deliveryDates[categoryId];
+      const date = formData.deliveryDates[fulfillmentType];
       if (!date) return;
       
       const dayOfWeek = date.getDay();
@@ -288,19 +283,24 @@ export function CheckoutForm({
     }
 
     try {
+      const deliveryDates: Record<string, Date> = {};
+      Array.from(categoriesWithItems).forEach(categoryId => {
+        deliveryDates[categoryId] = formData.deliveryDates[fulfillmentType];
+      });
+
       await submitOrder({
         items,
         total,
         taxAmount,
         notes: formData.notes,
-        deliveryDates: formData.deliveryDates,
+        deliveryDates,
         customerData: {
           ...customerData,
           address: formData.deliveryAddress
         },
         pickupDetail: Object.values(formData.pickupDetails)[0] || null,
         fulfillmentType,
-        categoryFulfillmentTypes,
+        categoryFulfillmentTypes: {},
         timeSlotSelections: formData.deliveryTimeSlotSelections,
         onOrderSuccess
       }, paymentProof);
@@ -326,7 +326,7 @@ export function CheckoutForm({
         onDateChange={handleDateChange}
         onNotesChange={handleNotesTextChange}
         pickupDetail={Object.values(formData.pickupDetails)[0] || null}
-        onPickupDetailChange={(detail) => handlePickupDetailChange(Object.keys(formData.pickupDetails)[0] || 'default', detail)}
+        onPickupDetailChange={(detail) => handlePickupDetailChange('default', detail)}
         fulfillmentType={fulfillmentType}
         onFulfillmentTypeChange={handleFulfillmentTypeChange}
         deliveryAddress={formData.deliveryAddress || ''}

@@ -2,7 +2,6 @@
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CategoryDeliveryDate } from './delivery/CategoryDeliveryDate';
 import { DeliveryNotes } from './delivery/DeliveryNotes';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 import { PickupDetail } from '@/types/pickup';
 import { DeliveryTimeSlotSelection } from '@/types/delivery';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Button } from '@/components/ui/button';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -62,41 +63,30 @@ export function DeliveryForm({
     },
   });
 
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
-
-  const usedFulfillmentTypes = new Set(
-    Object.values(categoryFulfillmentTypes)
-  );
+  // Use the fulfillment types set for tracking what's being used
+  const usedFulfillmentTypes = new Set([fulfillmentType]);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t('checkout.categories.title')}</CardTitle>
+          <CardTitle>{t('checkout.fulfillment.title') || "Fulfillment Method"}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {categories.map((category) => {
-            if (!itemsByCategory[category.id]) return null;
-            const availableTypes = category.fulfillment_types || [];
-            const currentType = categoryFulfillmentTypes[category.id] || fulfillmentType;
-            
-            return (
-              <CategoryDeliveryDate
-                key={category.id}
-                category={category}
-                selectedFulfillmentType={currentType}
-                onFulfillmentTypeChange={(type) => onCategoryFulfillmentTypeChange(category.id, type)}
-                isDisabled={availableTypes.length === 1}
-              />
-            );
-          })}
+        <CardContent>
+          <RadioGroup
+            value={fulfillmentType}
+            onValueChange={onFulfillmentTypeChange}
+            className="flex flex-col space-y-2 mb-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value={FULFILLMENT_TYPE_PICKUP} id="pickup" />
+              <Label htmlFor="pickup">{t('checkout.fulfillment.pickup') || "Pickup"}</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value={FULFILLMENT_TYPE_DELIVERY} id="delivery" />
+              <Label htmlFor="delivery">{t('checkout.fulfillment.delivery') || "Delivery"}</Label>
+            </div>
+          </RadioGroup>
         </CardContent>
       </Card>
 
@@ -117,7 +107,7 @@ export function DeliveryForm({
         usedFulfillmentTypes={usedFulfillmentTypes}
       />
 
-      {usedFulfillmentTypes.has(FULFILLMENT_TYPE_DELIVERY) && (
+      {fulfillmentType === FULFILLMENT_TYPE_DELIVERY && (
         <div className="space-y-2">
           <Label htmlFor="delivery-address">{t('checkout.delivery.address')}</Label>
           <Input 
