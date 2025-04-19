@@ -67,13 +67,16 @@ export function CategoryDeliverySettings({
     return null;
   }
 
+  // Convert TimeSlot objects to string array for the TimeSlotSelector component
+  const availableTimeSlotStrings = timeSlots.map(slot => slot.time);
+
   return (
     <div className="space-y-3">
       <TimeSlotSelector
         categoryId={categoryId}
         categoryName={categoryName}
         selectedDate={selectedDate}
-        availableTimeSlots={timeSlots}
+        availableTimeSlots={availableTimeSlotStrings}
         selectedTimeSlot={selectedTimeSlot}
         onTimeSlotSelect={handleTimeSlotSelect}
       />

@@ -23,6 +23,7 @@ export function useCheckoutForm() {
     }));
   };
 
+  // Updated to accept string directly instead of event
   const handleNotesChange = (notes: string) => {
     setFormData(prev => ({
       ...prev,

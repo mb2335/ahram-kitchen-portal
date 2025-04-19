@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -319,13 +318,17 @@ export function CheckoutForm({
     handleTimeSlotSelectionChange(categoryId, selection);
   };
 
+  const handleNotesTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    handleNotesChange(e.target.value);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <DeliveryForm
         deliveryDates={formData.deliveryDates}
         notes={formData.notes}
         onDateChange={handleDateChange}
-        onNotesChange={handleNotesChange}
+        onNotesChange={handleNotesTextChange}
         pickupDetail={Object.values(formData.pickupDetails)[0] || null}
         onPickupDetailChange={(detail) => handlePickupDetailChange(Object.keys(formData.pickupDetails)[0] || 'default', detail)}
         fulfillmentType={fulfillmentType}
