@@ -1,4 +1,5 @@
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,7 @@ export function FulfillmentSettings({
   selectedTimeSlot,
   usedFulfillmentTypes
 }: FulfillmentSettingsProps) {
-  // Fetch any delivery settings to determine available days
+  // Fetch delivery settings
   const { data: deliverySettings } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
@@ -56,7 +57,7 @@ export function FulfillmentSettings({
     },
   });
 
-  // Fetch all pickup settings to determine available days - no vendor filter for guests
+  // Fetch all pickup settings - no vendor filter for consistency
   const { data: pickupSettings = [] } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {

@@ -30,12 +30,12 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch any delivery settings - no vendor filter for consistency between guest/logged-in users
+  // Fetch delivery settings - no vendor filter for consistency
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       try {
-        // Fetch first available delivery setting with no vendor filter
+        // Get first available delivery settings for consistent experience
         const { data, error } = await supabase
           .from('delivery_settings')
           .select('*')
