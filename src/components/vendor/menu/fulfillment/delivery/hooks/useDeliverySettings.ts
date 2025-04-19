@@ -5,6 +5,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVendorId } from "@/hooks/useVendorId";
 
+// Helper function to normalize time format (HH:MM)
+const normalizeTimeFormat = (timeStr: string): string => {
+  // Extract hours and minutes, ignoring seconds if present
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return timeStr; // Return original if not matching expected format
+  
+  const hours = match[1].padStart(2, '0');
+  const minutes = match[2];
+  
+  return `${hours}:${minutes}`;
+};
+
 export function useDeliverySettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -35,11 +47,16 @@ export function useDeliverySettings() {
   useEffect(() => {
     if (settings) {
       setSelectedDays(settings.active_days || []);
-      // Ensure we're working with a unique set of time slots
-      const uniqueTimeSlots = Array.from(new Set(settings.time_slots || []));
-      setActivatedSlots(uniqueTimeSlots);
+      
+      // Normalize and deduplicate the time slots
+      const normalizedTimeSlots = (settings.time_slots || [])
+        .map(normalizeTimeFormat)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort();
+        
+      setActivatedSlots(normalizedTimeSlots);
       console.log("Initialized selected days:", settings.active_days);
-      console.log("Initialized unique time slots:", uniqueTimeSlots);
+      console.log("Initialized normalized time slots:", normalizedTimeSlots);
     }
   }, [settings]);
 
@@ -55,15 +72,21 @@ export function useDeliverySettings() {
     
     try {
       setIsSaving(true);
-      // Ensure we're saving a unique set of time slots
-      const uniqueTimeSlots = Array.from(new Set(activatedSlots));
+      
+      // Normalize and deduplicate time slots before saving
+      const normalizedTimeSlots = activatedSlots
+        .map(normalizeTimeFormat)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort();
+      
+      console.log("Saving normalized time slots:", normalizedTimeSlots);
       
       const { error } = await supabase
         .from('vendor_delivery_settings')
         .upsert({
           vendor_id: vendorId,
           active_days: selectedDays,
-          time_slots: uniqueTimeSlots,
+          time_slots: normalizedTimeSlots,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'vendor_id'
@@ -73,7 +96,7 @@ export function useDeliverySettings() {
       
       console.log("Successfully saved delivery settings:", {
         active_days: selectedDays,
-        time_slots: uniqueTimeSlots
+        time_slots: normalizedTimeSlots
       });
       
       queryClient.invalidateQueries({ queryKey: ['vendor-delivery-settings'] });

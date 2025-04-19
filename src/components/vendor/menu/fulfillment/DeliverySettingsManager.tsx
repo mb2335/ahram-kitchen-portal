@@ -5,6 +5,18 @@ import { DeliveryDaysSelector } from "./delivery/DeliveryDaysSelector";
 import { TimeSlotSelector } from "./delivery/TimeSlotSelector";
 import { useDeliverySettings } from "./delivery/hooks/useDeliverySettings";
 
+// Helper function to normalize time format (HH:MM)
+const normalizeTimeFormat = (timeStr: string): string => {
+  // Extract hours and minutes, ignoring seconds if present
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return timeStr; // Return original if not matching expected format
+  
+  const hours = match[1].padStart(2, '0');
+  const minutes = match[2];
+  
+  return `${hours}:${minutes}`;
+};
+
 export function DeliverySettingsManager() {
   const {
     selectedDays,
@@ -28,10 +40,17 @@ export function DeliverySettingsManager() {
     console.log(`Toggling time slot: ${timeSlot}`);
     console.log(`Current activated slots before toggle:`, activatedSlots);
     
+    // Normalize the time slot being toggled
+    const normalizedTimeSlot = normalizeTimeFormat(timeSlot);
+    
     setActivatedSlots(prev => {
-      const newSlots = prev.includes(timeSlot)
-        ? prev.filter(slot => slot !== timeSlot)
-        : [...prev, timeSlot].sort();
+      // Check if the normalized version exists in the array
+      const exists = prev.some(slot => normalizeTimeFormat(slot) === normalizedTimeSlot);
+      
+      // Create new array based on existence check
+      const newSlots = exists
+        ? prev.filter(slot => normalizeTimeFormat(slot) !== normalizedTimeSlot)
+        : [...prev, normalizedTimeSlot].sort();
       
       console.log(`Updated activated slots after toggle:`, newSlots);
       return newSlots;
