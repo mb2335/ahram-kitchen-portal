@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { DeliveryForm } from './DeliveryForm';
@@ -8,10 +8,11 @@ import { Upload } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP } from '@/types/order';
-import type { OrderItem } from '@/types/order';
+import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP, OrderItem } from '@/types/order';
 import { PickupDetail } from '@/types/pickup';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
+import { DeliveryTimeSlotSelection } from '@/types/delivery';
 
 interface CheckoutFormProps {
   customerData: {
@@ -23,16 +24,6 @@ interface CheckoutFormProps {
   total: number;
   taxAmount: number;
   items: OrderItem[];
-  formData: {
-    notes: string;
-    deliveryDates: Record<string, Date>;
-    pickupDetail: PickupDetail | null;
-  };
-  setFormData: React.Dispatch<React.SetStateAction<{
-    notes: string;
-    deliveryDates: Record<string, Date>;
-    pickupDetail: PickupDetail | null;
-  }>>;
 }
 
 export function CheckoutForm({
@@ -40,17 +31,23 @@ export function CheckoutForm({
   onOrderSuccess,
   total,
   taxAmount,
-  items,
-  formData,
-  setFormData
+  items
 }: CheckoutFormProps) {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
   const { submitOrder, isUploading } = useOrderSubmission();
+  
+  const { 
+    formData, 
+    handleDateChange, 
+    handleNotesChange, 
+    handlePickupDetailChange,
+    handleDeliveryAddressChange,
+    handleTimeSlotSelectionChange
+  } = useCheckoutForm();
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -115,40 +112,7 @@ export function CheckoutForm({
         setCategoryFulfillmentTypes(newTypes);
       }
     }
-  }, [categories, items, fulfillmentType, categoryFulfillmentTypes, setFormData]);
-
-  const handleDateChange = (categoryId: string, date: Date) => {
-    if (!(date instanceof Date) || isNaN(date.getTime())) {
-      toast({
-        title: t('checkout.error.date'),
-        description: `Please select a valid date for this category`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      deliveryDates: {
-        ...prev.deliveryDates,
-        [categoryId]: date
-      }
-    }));
-  };
-
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      notes: e.target.value
-    }));
-  };
-
-  const handlePickupDetailChange = (detail: PickupDetail) => {
-    setFormData(prev => ({
-      ...prev,
-      pickupDetail: detail
-    }));
-  };
+  }, [categories, items, fulfillmentType, categoryFulfillmentTypes]);
 
   const handleFulfillmentTypeChange = (type: string) => {
     setFulfillmentType(type);
@@ -163,6 +127,13 @@ export function CheckoutForm({
     });
     
     setCategoryFulfillmentTypes(updatedCategoryTypes);
+  };
+
+  const handleCategoryFulfillmentTypeChange = (categoryId: string, type: string) => {
+    setCategoryFulfillmentTypes(prev => ({
+      ...prev,
+      [categoryId]: type
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,6 +166,27 @@ export function CheckoutForm({
         toast({
           title: t('checkout.error.date'),
           description: `The date for ${categoryName} is invalid. Please try selecting it again.`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const validateTimeSlots = (): boolean => {
+    const deliveryCategories = Object.entries(categoryFulfillmentTypes)
+      .filter(([_, type]) => type === FULFILLMENT_TYPE_DELIVERY)
+      .map(([id]) => id);
+    
+    for (const categoryId of deliveryCategories) {
+      const timeSlotSelection = formData.deliveryTimeSlotSelections?.[categoryId];
+      if (!timeSlotSelection || !timeSlotSelection.timeSlot) {
+        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+        toast({
+          title: t('checkout.error.time'),
+          description: `Please select a delivery time slot for ${categoryName}`,
           variant: 'destructive',
         });
         return false;
@@ -253,33 +245,19 @@ export function CheckoutForm({
       return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
     });
     
-    if (hasDeliveryItems && !deliveryAddress.trim()) {
-      toast({
-        title: t('checkout.error.address'),
-        description: t('checkout.error.address'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const pickupCategories = Array.from(categoriesWithItems).filter(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      return categoryFulfillment === FULFILLMENT_TYPE_PICKUP && (category?.has_custom_pickup ?? false);
-    });
-
-    if (pickupCategories.length > 0 && !formData.pickupDetail) {
-      const categoryNames = pickupCategories
-        .map(id => categories.find(cat => cat.id === id)?.name)
-        .filter(Boolean)
-        .join(', ');
+    if (hasDeliveryItems) {
+      if (!formData.deliveryAddress?.trim()) {
+        toast({
+          title: t('checkout.error.address'),
+          description: t('checkout.error.address'),
+          variant: 'destructive',
+        });
+        return;
+      }
       
-      toast({
-        title: t('checkout.error.pickup'),
-        description: `${t('checkout.error.pickup')}: ${categoryNames}`,
-        variant: 'destructive',
-      });
-      return;
+      if (!validateTimeSlots()) {
+        return;
+      }
     }
 
     const dateErrors: string[] = [];
@@ -311,9 +289,6 @@ export function CheckoutForm({
     }
 
     try {
-      const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
-      const uniqueCategoryIds = [...new Set(itemCategoryIds)];
-      
       await submitOrder({
         items,
         total,
@@ -322,11 +297,12 @@ export function CheckoutForm({
         deliveryDates: formData.deliveryDates,
         customerData: {
           ...customerData,
-          address: deliveryAddress
+          address: formData.deliveryAddress
         },
-        pickupDetail: formData.pickupDetail,
+        pickupDetail: Object.values(formData.pickupDetails)[0] || null,
         fulfillmentType,
         categoryFulfillmentTypes,
+        timeSlotSelections: formData.deliveryTimeSlotSelections,
         onOrderSuccess
       }, paymentProof);
     } catch (error: any) {
@@ -339,6 +315,10 @@ export function CheckoutForm({
     }
   };
 
+  const handleDeliveryTimeSlotSelectionChange = (categoryId: string, selection: DeliveryTimeSlotSelection) => {
+    handleTimeSlotSelectionChange(categoryId, selection);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <DeliveryForm
@@ -346,19 +326,16 @@ export function CheckoutForm({
         notes={formData.notes}
         onDateChange={handleDateChange}
         onNotesChange={handleNotesChange}
-        pickupDetail={formData.pickupDetail}
-        onPickupDetailChange={handlePickupDetailChange}
+        pickupDetail={Object.values(formData.pickupDetails)[0] || null}
+        onPickupDetailChange={(detail) => handlePickupDetailChange(Object.keys(formData.pickupDetails)[0] || 'default', detail)}
         fulfillmentType={fulfillmentType}
         onFulfillmentTypeChange={handleFulfillmentTypeChange}
-        deliveryAddress={deliveryAddress}
-        onDeliveryAddressChange={setDeliveryAddress}
+        deliveryAddress={formData.deliveryAddress || ''}
+        onDeliveryAddressChange={handleDeliveryAddressChange}
         categoryFulfillmentTypes={categoryFulfillmentTypes}
-        onCategoryFulfillmentTypeChange={(categoryId, type) => {
-          setCategoryFulfillmentTypes(prev => ({
-            ...prev,
-            [categoryId]: type
-          }));
-        }}
+        onCategoryFulfillmentTypeChange={handleCategoryFulfillmentTypeChange}
+        deliveryTimeSlotSelections={formData.deliveryTimeSlotSelections}
+        onDeliveryTimeSlotSelectionChange={handleDeliveryTimeSlotSelectionChange}
       />
 
       <PaymentInstructions

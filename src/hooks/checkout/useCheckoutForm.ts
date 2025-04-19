@@ -1,12 +1,16 @@
+
 import { useState } from 'react';
 import { CheckoutFormData } from '@/types/checkout';
 import { PickupDetail } from '@/types/pickup';
+import { DeliveryTimeSlotSelection } from '@/types/delivery';
 
 export function useCheckoutForm() {
   const [formData, setFormData] = useState<CheckoutFormData>({
     notes: '',
     deliveryDates: {},
-    pickupDetails: {}
+    pickupDetails: {},
+    deliveryAddress: '',
+    deliveryTimeSlotSelections: {}
   });
 
   const handleDateChange = (categoryId: string, date: Date) => {
@@ -37,10 +41,30 @@ export function useCheckoutForm() {
     }));
   };
 
+  const handleDeliveryAddressChange = (address: string) => {
+    setFormData(prev => ({
+      ...prev,
+      deliveryAddress: address
+    }));
+  };
+
+  const handleTimeSlotSelectionChange = (categoryId: string, selection: DeliveryTimeSlotSelection) => {
+    console.log('[useCheckoutForm] Updating time slot selection:', { categoryId, selection });
+    setFormData(prev => ({
+      ...prev,
+      deliveryTimeSlotSelections: {
+        ...prev.deliveryTimeSlotSelections,
+        [categoryId]: selection
+      }
+    }));
+  };
+
   return {
     formData,
     handleDateChange,
     handleNotesChange,
-    handlePickupDetailChange
+    handlePickupDetailChange,
+    handleDeliveryAddressChange,
+    handleTimeSlotSelectionChange
   };
 }

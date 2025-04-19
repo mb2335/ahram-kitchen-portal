@@ -13,6 +13,8 @@ import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { CategoryDeliverySettings } from './delivery/CategoryDeliverySettings';
+import { DeliveryTimeSlotSelection } from '@/types/delivery';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -27,6 +29,8 @@ interface DeliveryFormProps {
   onDeliveryAddressChange: (address: string) => void;
   categoryFulfillmentTypes: Record<string, string>;
   onCategoryFulfillmentTypeChange: (categoryId: string, type: string) => void;
+  deliveryTimeSlotSelections?: Record<string, DeliveryTimeSlotSelection>;
+  onDeliveryTimeSlotSelectionChange?: (categoryId: string, selection: DeliveryTimeSlotSelection) => void;
 }
 
 export function DeliveryForm({ 
@@ -41,7 +45,9 @@ export function DeliveryForm({
   deliveryAddress,
   onDeliveryAddressChange,
   categoryFulfillmentTypes,
-  onCategoryFulfillmentTypeChange
+  onCategoryFulfillmentTypeChange,
+  deliveryTimeSlotSelections = {},
+  onDeliveryTimeSlotSelectionChange
 }: DeliveryFormProps) {
   const { items } = useCart();
   const { t, language } = useLanguage();
@@ -185,12 +191,10 @@ export function DeliveryForm({
     });
   };
 
-  const handleDeliveryDateChange = (categoryId: string, date: Date) => {
-    if (!(date instanceof Date)) {
-      return;
+  const handleTimeSlotSelectionChange = (categoryId: string) => (selection: DeliveryTimeSlotSelection) => {
+    if (onDeliveryTimeSlotSelectionChange) {
+      onDeliveryTimeSlotSelectionChange(categoryId, selection);
     }
-    
-    onDateChange(categoryId, date);
   };
 
   return (
@@ -313,6 +317,17 @@ export function DeliveryForm({
               fulfillmentType={effectiveFulfillmentType}
               allPickupCategories={pickupCategoryNames}
             />
+            
+            {effectiveFulfillmentType === FULFILLMENT_TYPE_DELIVERY && 
+             deliveryDates[category.id] && 
+             onDeliveryTimeSlotSelectionChange && (
+              <CategoryDeliverySettings 
+                categoryId={category.id}
+                categoryName={language === 'en' ? category.name : category.name_ko || category.name}
+                selectedDate={deliveryDates[category.id]}
+                onTimeSlotSelectionChange={handleTimeSlotSelectionChange(category.id)}
+              />
+            )}
             <Separator />
           </div>
         );

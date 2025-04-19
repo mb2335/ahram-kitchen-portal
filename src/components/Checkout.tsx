@@ -8,8 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
-import { PickupDetail } from '@/types/pickup';
-import { FULFILLMENT_TYPE_PICKUP } from '@/types/order';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 
@@ -22,12 +20,6 @@ export function Checkout() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const taxAmount = total * TAX_RATE;
-
-  const [formData, setFormData] = useState({
-    notes: '',
-    deliveryDates: {} as Record<string, Date>,
-    pickupDetail: null as PickupDetail | null
-  });
 
   const [customerData, setCustomerData] = useState({
     fullName: '',
@@ -107,9 +99,6 @@ export function Checkout() {
           taxAmount: taxAmount,
           total: total,
           createdAt: new Date().toISOString(),
-          pickupTime: formData.pickupDetail?.time || null,
-          pickupLocation: formData.pickupDetail?.location || null,
-          paymentProofUrl: null
         }
       },
       replace: true
@@ -154,8 +143,6 @@ export function Checkout() {
           />
         )}
         <CheckoutForm
-          formData={formData}
-          setFormData={setFormData}
           customerData={customerData}
           onOrderSuccess={handleOrderSuccess}
           total={total}
