@@ -11,7 +11,7 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-interface VendorDeliverySettings {
+interface VendorDeliverySetting {
   id: string;
   vendor_id: string;
   active_days: number[];
@@ -40,7 +40,7 @@ export function useTimeSlots({
         .maybeSingle();
 
       if (error) throw error;
-      return data as VendorDeliverySettings;
+      return data as VendorDeliverySetting | null;
     },
     enabled: !!categoryId,
   });

@@ -8,12 +8,16 @@ import { ClockIcon } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { 
-  DeliverySchedule, 
-  DAY_NAMES, 
-  generateFixedTimeSlots, 
-  formatTime 
-} from "@/types/delivery";
+import { DAY_NAMES, generateFixedTimeSlots, formatTime } from "@/types/delivery";
+
+interface VendorDeliverySetting {
+  id: string;
+  vendor_id: string;
+  active_days: number[];
+  time_slots: string[];
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface DeliveryTimeSlotsProps {
   categoryId: string;
@@ -27,50 +31,54 @@ export function DeliveryTimeSlots({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("0");
+  
+  const [schedulesByDay, setSchedulesByDay] = useState<Record<number, {
+    active: boolean;
+    time_slots: string[];
+  }>>({});
 
-  // Load existing schedules
-  const { data: schedules = [], isLoading } = useQuery({
-    queryKey: ['delivery-schedules', categoryId],
+  const { data: vendorSettings, isLoading } = useQuery({
+    queryKey: ['vendor-delivery-settings', categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('delivery_settings')
+        .from('vendor_delivery_settings')
         .select('*')
-        .order('day_of_week');
+        .eq('vendor_id', categoryId)
+        .maybeSingle();
       
-      if (error) throw error;
-      return data as unknown as DeliverySchedule[];
+      if (error && error.code !== 'PGRST116') throw error;
+      return data as VendorDeliverySetting | null;
     },
   });
 
-  // Create default schedules for days that don't have one
-  const [schedulesByDay, setSchedulesByDay] = useState<Record<number, DeliverySchedule>>({});
-
   useEffect(() => {
-    const newSchedulesByDay: Record<number, DeliverySchedule> = {};
+    const newSchedulesByDay: Record<number, {
+      active: boolean;
+      time_slots: string[];
+    }> = {};
     
-    // Initialize with default values for all days
     for (let i = 0; i < 7; i++) {
       newSchedulesByDay[i] = {
-        id: '', // Empty ID means it's a new schedule
-        vendor_id: '', // This will be set when saved
-        day_of_week: i,
         active: false,
-        activated_slots: []
+        time_slots: []
       };
     }
     
-    // Override with existing schedules
-    schedules.forEach(schedule => {
-      newSchedulesByDay[schedule.day_of_week] = schedule;
-    });
+    if (vendorSettings) {
+      for (const day of vendorSettings.active_days) {
+        newSchedulesByDay[day] = {
+          active: true,
+          time_slots: vendorSettings.time_slots || []
+        };
+      }
+    }
     
     setSchedulesByDay(newSchedulesByDay);
     
-    // If we don't have an active tab yet, set it to the first day
     if (activeTab === "" && Object.keys(newSchedulesByDay).length) {
       setActiveTab("0");
     }
-  }, [schedules, categoryId]);
+  }, [vendorSettings, categoryId, activeTab]);
 
   const handleSaveSchedule = async (dayOfWeek: number) => {
     try {
@@ -80,38 +88,56 @@ export function DeliveryTimeSlots({
         throw new Error("Schedule not found");
       }
       
-      if (schedule.id) {
-        // Update existing schedule
-        const { error } = await supabase
-          .from('delivery_settings')
-          .update({
-            active: schedule.active,
-            activated_slots: schedule.activated_slots || []
-          })
-          .eq('id', schedule.id);
-          
-        if (error) throw error;
+      const { data: currentSettings } = await supabase
+        .from('vendor_delivery_settings')
+        .select('*')
+        .eq('vendor_id', categoryId)
+        .maybeSingle();
+      
+      let newActiveDays = currentSettings?.active_days || [];
+      const newTimeSlots = new Set<string>();
+      
+      if (schedule.active) {
+        if (!newActiveDays.includes(dayOfWeek)) {
+          newActiveDays = [...newActiveDays, dayOfWeek].sort();
+        }
+        
+        schedule.time_slots.forEach(slot => newTimeSlots.add(slot));
+        
+        for (const day of newActiveDays) {
+          if (day !== dayOfWeek && schedulesByDay[day]?.active) {
+            schedulesByDay[day].time_slots.forEach(slot => newTimeSlots.add(slot));
+          }
+        }
       } else {
-        // Create new schedule
-        const { error } = await supabase
-          .from('delivery_settings')
-          .insert({
-            vendor_id: categoryId, // This needs to be updated with the actual vendor ID
-            day_of_week: dayOfWeek,
-            active: schedule.active,
-            activated_slots: schedule.activated_slots || []
-          });
-          
-        if (error) throw error;
+        newActiveDays = newActiveDays.filter(d => d !== dayOfWeek);
+        
+        for (const day of newActiveDays) {
+          if (schedulesByDay[day]?.active) {
+            schedulesByDay[day].time_slots.forEach(slot => newTimeSlots.add(slot));
+          }
+        }
       }
+      
+      const { error } = await supabase
+        .from('vendor_delivery_settings')
+        .upsert({
+          vendor_id: categoryId,
+          active_days: newActiveDays,
+          time_slots: Array.from(newTimeSlots),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'vendor_id'
+        });
+        
+      if (error) throw error;
       
       toast({
         title: "Success",
         description: `Delivery schedule for ${DAY_NAMES[dayOfWeek]} has been saved.`,
       });
       
-      // Invalidate delivery schedules query to refetch data
-      queryClient.invalidateQueries({ queryKey: ['delivery-schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-delivery-settings'] });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -134,7 +160,7 @@ export function DeliveryTimeSlots({
   const toggleTimeSlot = (dayOfWeek: number, timeSlot: string) => {
     setSchedulesByDay(prev => {
       const schedule = prev[dayOfWeek];
-      const slots = schedule.activated_slots || [];
+      const slots = schedule.time_slots || [];
       
       const newSlots = slots.includes(timeSlot)
         ? slots.filter(slot => slot !== timeSlot)
@@ -144,7 +170,7 @@ export function DeliveryTimeSlots({
         ...prev,
         [dayOfWeek]: {
           ...schedule,
-          activated_slots: newSlots
+          time_slots: newSlots
         }
       };
     });
@@ -154,7 +180,6 @@ export function DeliveryTimeSlots({
     return <div>Loading delivery schedules...</div>;
   }
   
-  // Generate all possible time slots for the day
   const allTimeSlots = generateFixedTimeSlots();
 
   return (
@@ -213,7 +238,7 @@ export function DeliveryTimeSlots({
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-2">
                     {allTimeSlots.map((timeSlot) => {
-                      const isActivated = schedule.activated_slots?.includes(timeSlot) || false;
+                      const isActivated = schedule.time_slots?.includes(timeSlot) || false;
                       
                       return (
                         <Button

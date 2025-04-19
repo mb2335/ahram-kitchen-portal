@@ -16,6 +16,15 @@ interface DeliveryTimeSlotsManagerProps {
   dayOfWeek: number;
 }
 
+interface VendorDeliverySetting {
+  id: string;
+  vendor_id: string;
+  active_days: number[];
+  time_slots: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
 export function DeliveryTimeSlotsManager({ 
   categoryId, 
   selectedDate, 
@@ -23,23 +32,21 @@ export function DeliveryTimeSlotsManager({
 }: DeliveryTimeSlotsManagerProps) {
   const [timeSlots, setTimeSlots] = useState<{ time: string; isActivated: boolean; isBooked: boolean }[]>([]);
 
-  // Fetch schedule and bookings
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
-    queryKey: ['delivery-schedule', categoryId, dayOfWeek],
+  // Fetch vendor delivery settings
+  const { data: vendorSettings, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ['vendor-delivery-settings', categoryId, dayOfWeek],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('delivery_settings')
+        .from('vendor_delivery_settings')
         .select('*')
         .eq('vendor_id', categoryId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('active', true)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      return data;
+      return data as VendorDeliverySetting | null;
     },
   });
 
@@ -62,11 +69,15 @@ export function DeliveryTimeSlotsManager({
     const startHour = 9;
     const endHour = 18;
     
+    // Check if this day is in the active days and the vendor has time slots
+    const isDayActive = vendorSettings?.active_days?.includes(dayOfWeek) || false;
+    const availableTimeSlots = vendorSettings?.time_slots || [];
+    
     // Generate fixed 30-minute slots from 9 AM to 6 PM
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute of [0, 30]) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const isActivated = scheduleData?.activated_slots?.includes(timeString) || false;
+        const isActivated = isDayActive && availableTimeSlots.includes(timeString);
         const isBooked = bookingsData?.some(booking => booking.time_slot === timeString) || false;
         
         slots.push({ 
@@ -78,47 +89,47 @@ export function DeliveryTimeSlotsManager({
     }
 
     setTimeSlots(slots);
-  }, [scheduleData, bookingsData]);
+  }, [vendorSettings, bookingsData, dayOfWeek]);
 
   const handleSlotToggle = async (time: string) => {
     try {
-      const { data: existingSchedule } = await supabase
-        .from('delivery_settings')
-        .select('activated_slots')
+      // Get current vendor settings
+      const { data: currentSettings } = await supabase
+        .from('vendor_delivery_settings')
+        .select('*')
         .eq('vendor_id', categoryId)
-        .eq('day_of_week', dayOfWeek)
-        .single();
-
-      let newActivatedSlots: string[];
+        .maybeSingle();
       
-      if (existingSchedule) {
-        const currentSlots = existingSchedule.activated_slots || [];
-        newActivatedSlots = currentSlots.includes(time)
-          ? currentSlots.filter(slot => slot !== time)
-          : [...currentSlots, time];
-
-        await supabase
-          .from('delivery_settings')
-          .update({ activated_slots: newActivatedSlots })
-          .eq('vendor_id', categoryId)
-          .eq('day_of_week', dayOfWeek);
-      } else {
-        newActivatedSlots = [time];
-        await supabase
-          .from('delivery_settings')
-          .insert({
-            vendor_id: categoryId,
-            day_of_week: dayOfWeek,
-            active: true,
-            activated_slots: newActivatedSlots
-          });
+      let newActiveDays = currentSettings?.active_days || [];
+      let newTimeSlots = currentSettings?.time_slots || [];
+      
+      // Make sure this day is in the active days
+      if (!newActiveDays.includes(dayOfWeek)) {
+        newActiveDays = [...newActiveDays, dayOfWeek].sort();
       }
+      
+      // Toggle the time slot
+      newTimeSlots = newTimeSlots.includes(time)
+        ? newTimeSlots.filter(slot => slot !== time)
+        : [...newTimeSlots, time].sort();
+      
+      // Update vendor delivery settings
+      await supabase
+        .from('vendor_delivery_settings')
+        .upsert({
+          vendor_id: categoryId,
+          active_days: newActiveDays,
+          time_slots: newTimeSlots,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'vendor_id'
+        });
     } catch (error) {
       console.error('Error toggling time slot:', error);
     }
   };
 
-  if (isScheduleLoading || isBookingsLoading) {
+  if (isSettingsLoading || isBookingsLoading) {
     return (
       <div className="space-y-4">
         <Label className="flex items-center gap-1">
