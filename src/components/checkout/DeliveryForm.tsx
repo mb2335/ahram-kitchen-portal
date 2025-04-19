@@ -1,3 +1,4 @@
+
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,8 @@ import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/orde
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
+import { PickupDetail } from '@/types/pickup';
+import { DeliveryTimeSlotSelection } from '@/types/delivery';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
