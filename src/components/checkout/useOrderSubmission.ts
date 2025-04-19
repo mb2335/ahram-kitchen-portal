@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -96,17 +97,17 @@ export const useOrderSubmission = () => {
             }
           }
           
-          // If we need a time slot but don't have one, check if there are any delivery settings for this day
+          // If we need a time slot but don't have one, check if there are any delivery slots available
           if (!deliveryTimeSlot) {
             const dayOfWeek = deliveryDate.getDay();
             
-            const { data: daySettings } = await supabase
-              .from('delivery_settings')
-              .select('*')
-              .eq('day_of_week', dayOfWeek)
-              .eq('active', true);
+            // Fetch vendor delivery settings
+            const { data: vendorSettings } = await supabase
+              .from('vendor_delivery_settings')
+              .select('active_days, time_slots')
+              .maybeSingle();
             
-            if (!daySettings || daySettings.length === 0) {
+            if (!vendorSettings || !vendorSettings.active_days.includes(dayOfWeek) || vendorSettings.time_slots.length === 0) {
               throw new Error(`No delivery times are available for the selected date. Please choose another date.`);
             }
           }

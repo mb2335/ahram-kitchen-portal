@@ -2,7 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { DeliverySettingsManager } from "./DeliverySettingsManager";
-import { PickupSettingsManager } from "@/components/vendor/delivery/PickupSettingsManager";
+import { PickupSettingsManager } from "@/components/vendor/menu/fulfillment/PickupSettingsManager";
 
 export function FulfillmentSettings() {
   return (

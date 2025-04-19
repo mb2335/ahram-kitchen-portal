@@ -106,27 +106,25 @@ export function CategoryDeliveryDate({
     },
   });
 
-  // Query for delivery settings
-  const { data: deliverySettings = [] } = useQuery({
-    queryKey: ['delivery-settings'],
+  // Query for vendor delivery settings
+  const { data: vendorDeliverySettings = null } = useQuery({
+    queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('delivery_settings')
-        .select('*')
-        .order('day_of_week');
+        .from('vendor_delivery_settings')
+        .select('*');
       
       if (error) throw error;
-      return data;
+      return data[0] || null; // Assuming there's only one setting per vendor for now
     },
   });
 
-  // Group delivery settings by day_of_week
-  const deliveryDaysByDayOfWeek = deliverySettings.reduce((acc, setting) => {
-    if (setting.active) {
-      acc[setting.day_of_week] = true;
-    }
-    return acc;
-  }, {} as Record<number, boolean>);
+  // Create a structure of active days based on the vendor_delivery_settings
+  const activeDays = vendorDeliverySettings?.active_days || [];
+  const deliveryDaysByDayOfWeek: Record<number, boolean> = {};
+  activeDays.forEach(day => {
+    deliveryDaysByDayOfWeek[day] = true;
+  });
 
   const isPickup = fulfillmentType === FULFILLMENT_TYPE_PICKUP;
   const isDelivery = fulfillmentType === FULFILLMENT_TYPE_DELIVERY;
