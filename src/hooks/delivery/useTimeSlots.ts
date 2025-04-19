@@ -31,18 +31,16 @@ export function useTimeSlots({
   const [error, setError] = useState<string | null>(null);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
-    queryKey: ['vendor-delivery-settings', categoryId],
+    queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('delivery_settings')
         .select('*')
-        .eq('vendor_id', categoryId)
         .maybeSingle();
 
       if (error) throw error;
       return data as DeliverySetting | null;
     },
-    enabled: !!categoryId,
   });
 
   useEffect(() => {
@@ -51,16 +49,17 @@ export function useTimeSlots({
       setError(null);
       
       try {
-        if (!settings || !settings.time_slots || !settings.active_days.includes(dayOfWeek)) {
+        // First check if the selected day is even valid for delivery
+        if (!settings || !settings.active_days || !settings.active_days.includes(dayOfWeek)) {
           setTimeSlots([]);
           if (dayOfWeek >= 0) {
-            setError(`No delivery time slots have been set up for this day.`);
+            setError(`Delivery is not available on the selected day.`);
           }
           return;
         }
         
-        const slots = settings.time_slots;
-        console.log("Time slots from database:", slots);
+        // Then check if this day has any time slots configured
+        const slots = settings.time_slots || [];
         
         if (slots.length === 0) {
           setError(`No delivery time slots have been configured for this day.`);
@@ -68,10 +67,22 @@ export function useTimeSlots({
           return;
         }
         
+        // Normalize time format for consistency (remove seconds)
+        const normalizedSlots = slots.map(slot => {
+          // Extract hours and minutes only
+          const match = slot.match(/^(\d{1,2}):(\d{2})/);
+          if (match) {
+            return `${match[1].padStart(2, '0')}:${match[2]}`;
+          }
+          return slot;
+        });
+
+        console.log("Available time slots from settings:", normalizedSlots);
+        
+        // Then check which slots are already booked
         const { data: bookingsData, error: bookingError } = await supabase
           .from('delivery_time_bookings')
           .select('time_slot')
-          .eq('category_id', categoryId)
           .eq('delivery_date', formattedDate);
           
         if (bookingError) {
@@ -79,15 +90,32 @@ export function useTimeSlots({
           throw bookingError;
         }
         
-        const bookedTimes = new Set((bookingsData || []).map(booking => booking.time_slot));
+        // Create a set of booked times for faster lookups
+        const bookedTimes = new Set();
+        if (bookingsData) {
+          bookingsData.forEach(booking => {
+            // Normalize each booked time as well
+            const match = booking.time_slot.match(/^(\d{1,2}):(\d{2})/);
+            if (match) {
+              bookedTimes.add(`${match[1].padStart(2, '0')}:${match[2]}`);
+            } else {
+              bookedTimes.add(booking.time_slot);
+            }
+          });
+        }
         
-        const availableSlots: TimeSlot[] = slots.map(time => ({
+        console.log("Booked times:", Array.from(bookedTimes));
+        
+        // Create the final available time slots
+        const availableSlots: TimeSlot[] = normalizedSlots.map(time => ({
           time,
           available: !bookedTimes.has(time)
         }));
         
+        // Sort by time
         availableSlots.sort((a, b) => a.time.localeCompare(b.time));
-        console.log("Processed available slots:", availableSlots);
+        
+        console.log("Final available slots:", availableSlots);
         setTimeSlots(availableSlots);
         
       } catch (err) {

@@ -5,6 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PickupDetail } from '@/types/pickup';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface PickupLocationSelectorProps {
   category: {
@@ -12,8 +16,7 @@ interface PickupLocationSelectorProps {
     name: string;
     name_ko: string;
     has_custom_pickup: boolean | null;
-    pickup_details: PickupDetail[];
-  };
+  } | null;
   selectedDate: Date;
   selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (detail: PickupDetail) => void;
@@ -30,17 +33,51 @@ export function PickupLocationSelector({
   const { language } = useLanguage();
   const [availablePickupDetails, setAvailablePickupDetails] = useState<PickupDetail[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch pickup settings
+  const { data: pickupSettings = [], isLoading } = useQuery({
+    queryKey: ['pickup-settings', selectedDate?.getDay()],
+    queryFn: async () => {
+      if (!selectedDate) return [];
+      
+      const dayOfWeek = selectedDate.getDay();
+      
+      const { data, error } = await supabase
+        .from('pickup_settings')
+        .select('*')
+        .eq('day', dayOfWeek);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedDate,
+  });
 
   useEffect(() => {
-    if (!category?.pickup_details || !selectedDate) {
+    if (!selectedDate) {
       setAvailablePickupDetails([]);
+      setError("Please select a pickup date first");
       return;
     }
 
     const dayOfWeek = selectedDate.getDay();
-    const details = category.pickup_details.filter(detail => detail.day === dayOfWeek);
+    
+    if (pickupSettings.length === 0) {
+      setAvailablePickupDetails([]);
+      setError(`No pickup locations are available for this date. Please select another date.`);
+      return;
+    }
+    
+    // Map pickup settings to pickup details
+    const details = pickupSettings.map(setting => ({
+      day: setting.day,
+      time: setting.time || '',
+      location: setting.location || ''
+    }));
     
     setAvailablePickupDetails(details);
+    setError(null);
     
     // Reset selection if current selection is not available
     if (selectedPickupDetail) {
@@ -57,7 +94,7 @@ export function PickupLocationSelector({
         });
       }
     }
-  }, [category, selectedDate, selectedPickupDetail, onPickupDetailChange]);
+  }, [selectedDate, pickupSettings, selectedPickupDetail, onPickupDetailChange]);
 
   const handleLocationSelect = (value: string) => {
     setSelectedLocation(value);
@@ -75,9 +112,26 @@ export function PickupLocationSelector({
     }
   };
 
-  if (availablePickupDetails.length === 0) {
+  if (isLoading) {
     return (
       <div className="text-sm text-muted-foreground">
+        Loading pickup locations...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="warning">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (availablePickupDetails.length === 0) {
+    return (
+      <div className="text-sm text-red-500">
         No pickup locations available for this date.
       </div>
     );

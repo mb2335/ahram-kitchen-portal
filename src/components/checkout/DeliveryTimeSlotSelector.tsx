@@ -1,18 +1,17 @@
 
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Clock } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useTimeSlots } from '@/hooks/delivery/useTimeSlots';
 import { TimeSlotGrid } from './delivery/TimeSlotGrid';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface DeliveryTimeSlotSelectorProps {
   categoryId: string;
   categoryName: string;
-  selectedDate: Date;
+  selectedDate: Date | null;
   selectedTimeSlot: string | null;
-  onTimeSlotChange: (timeSlot: string | null) => void;
+  onTimeSlotChange?: (timeSlot: string) => void;
 }
 
 export function DeliveryTimeSlotSelector({
@@ -22,40 +21,42 @@ export function DeliveryTimeSlotSelector({
   selectedTimeSlot,
   onTimeSlotChange
 }: DeliveryTimeSlotSelectorProps) {
-  const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
-  const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+  const [formattedDate, setFormattedDate] = useState<string>('');
+  const [dayOfWeek, setDayOfWeek] = useState<number>(-1);
+  
+  // Update formatted date and day of week when selected date changes
+  useEffect(() => {
+    if (selectedDate) {
+      setFormattedDate(format(selectedDate, 'yyyy-MM-dd'));
+      setDayOfWeek(selectedDate.getDay());
+    } else {
+      setFormattedDate('');
+      setDayOfWeek(-1);
+    }
+  }, [selectedDate]);
 
+  // Fetch time slots based on vendor settings and existing bookings
   const { timeSlots, isLoading, error } = useTimeSlots({
-    categoryId,
+    categoryId: 'global', // For now using global, but could be category specific
     dayOfWeek,
     formattedDate,
     selectedDate
   });
 
+  const handleTimeSlotChange = (timeSlot: string) => {
+    if (onTimeSlotChange) {
+      onTimeSlotChange(timeSlot);
+    }
+  };
+
   if (!selectedDate) {
-    return (
-      <Alert className="mt-2">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Please select a delivery date first.
-        </AlertDescription>
-      </Alert>
-    );
+    return null;
   }
-  
+
   if (isLoading) {
-    return (
-      <div className="mt-4 space-y-2">
-        <Label className="mb-2 block">Select Delivery Time Slot</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <Skeleton key={i} className="h-10 w-full rounded-md" />
-          ))}
-        </div>
-      </div>
-    );
+    return <div className="text-sm">Loading available time slots...</div>;
   }
-  
+
   if (error) {
     return (
       <Alert variant="destructive" className="mt-2">
@@ -64,29 +65,25 @@ export function DeliveryTimeSlotSelector({
       </Alert>
     );
   }
-  
-  if (!timeSlots || timeSlots.length === 0) {
+
+  const availableTimeSlots = timeSlots.filter(slot => slot.available);
+
+  if (availableTimeSlots.length === 0) {
     return (
-      <Alert className="mt-2">
+      <Alert variant="warning" className="mt-2">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          No delivery time slots have been set up for this category. Please contact the vendor.
+          No delivery time slots are available for this date. Please select another date or choose pickup instead.
         </AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="mt-4">
-      <Label className="mb-2 block flex items-center gap-1">
-        <Clock className="h-4 w-4" /> 
-        Select Delivery Time Slot
-      </Label>
-      <TimeSlotGrid
-        timeSlots={timeSlots}
-        selectedTimeSlot={selectedTimeSlot}
-        onTimeSlotChange={onTimeSlotChange}
-      />
-    </div>
+    <TimeSlotGrid 
+      timeSlots={timeSlots} 
+      selectedTimeSlot={selectedTimeSlot} 
+      onTimeSlotChange={handleTimeSlotChange} 
+    />
   );
 }
