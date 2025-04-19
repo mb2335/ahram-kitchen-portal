@@ -124,6 +124,11 @@ export function DeliverySettingsManager() {
     return <div>Loading delivery settings...</div>;
   }
 
+  // Helper function to check if a time slot is activated
+  const isTimeSlotActivated = (timeSlot: string): boolean => {
+    return activatedSlots.includes(timeSlot);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -157,7 +162,7 @@ export function DeliverySettingsManager() {
           {allTimeSlots.map((slot) => (
             <Button
               key={slot}
-              variant={activatedSlots.includes(slot) ? "default" : "outline"}
+              variant={isTimeSlotActivated(slot) ? "default" : "outline"}
               size="sm"
               className="w-full"
               onClick={() => toggleTimeSlot(slot)}
