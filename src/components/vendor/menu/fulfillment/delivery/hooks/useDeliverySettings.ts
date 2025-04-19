@@ -31,11 +31,14 @@ export function useDeliverySettings() {
     enabled: !!vendorId
   });
 
+  // Initialize the state when settings are loaded or changed
   useEffect(() => {
     if (settings) {
       setSelectedDays(settings.active_days || []);
+      // Ensure we're working with a unique set of time slots
       const uniqueTimeSlots = Array.from(new Set(settings.time_slots || []));
       setActivatedSlots(uniqueTimeSlots);
+      console.log("Initialized selected days:", settings.active_days);
       console.log("Initialized unique time slots:", uniqueTimeSlots);
     }
   }, [settings]);
@@ -52,6 +55,7 @@ export function useDeliverySettings() {
     
     try {
       setIsSaving(true);
+      // Ensure we're saving a unique set of time slots
       const uniqueTimeSlots = Array.from(new Set(activatedSlots));
       
       const { error } = await supabase
@@ -66,6 +70,11 @@ export function useDeliverySettings() {
         });
       
       if (error) throw error;
+      
+      console.log("Successfully saved delivery settings:", {
+        active_days: selectedDays,
+        time_slots: uniqueTimeSlots
+      });
       
       queryClient.invalidateQueries({ queryKey: ['vendor-delivery-settings'] });
       

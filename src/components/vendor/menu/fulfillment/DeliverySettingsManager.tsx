@@ -25,11 +25,17 @@ export function DeliverySettingsManager() {
   };
 
   const toggleTimeSlot = (timeSlot: string) => {
-    setActivatedSlots(prev => 
-      prev.includes(timeSlot)
+    console.log(`Toggling time slot: ${timeSlot}`);
+    console.log(`Current activated slots before toggle:`, activatedSlots);
+    
+    setActivatedSlots(prev => {
+      const newSlots = prev.includes(timeSlot)
         ? prev.filter(slot => slot !== timeSlot)
-        : [...prev, timeSlot].sort()
-    );
+        : [...prev, timeSlot].sort();
+      
+      console.log(`Updated activated slots after toggle:`, newSlots);
+      return newSlots;
+    });
   };
 
   if (isLoading) {

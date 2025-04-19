@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
+import { useEffect, useState } from "react";
 
 interface TimeSlotSelectorProps {
   timeSlots: string[];
@@ -15,8 +16,29 @@ export function TimeSlotSelector({
   onTimeSlotToggle, 
   isSaving 
 }: TimeSlotSelectorProps) {
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  
+  // Initialize selected slots from activatedSlots when component mounts
+  // or when activatedSlots changes
+  useEffect(() => {
+    console.log("Activated slots updated in TimeSlotSelector:", activatedSlots);
+    setSelectedSlots(activatedSlots);
+  }, [activatedSlots]);
+
   const isTimeSlotActivated = (timeSlot: string): boolean => {
-    return activatedSlots.includes(timeSlot);
+    return selectedSlots.includes(timeSlot);
+  };
+
+  const handleTimeSlotToggle = (slot: string) => {
+    // Update local state first for immediate UI feedback
+    setSelectedSlots(prev => 
+      prev.includes(slot)
+        ? prev.filter(s => s !== slot)
+        : [...prev, slot]
+    );
+    
+    // Then call the parent handler
+    onTimeSlotToggle(slot);
   };
 
   return (
@@ -35,7 +57,7 @@ export function TimeSlotSelector({
             variant={isTimeSlotActivated(slot) ? "default" : "outline"}
             size="sm"
             className="w-full"
-            onClick={() => onTimeSlotToggle(slot)}
+            onClick={() => handleTimeSlotToggle(slot)}
             disabled={isSaving}
           >
             {format(new Date(`2000-01-01T${slot}`), 'h:mm a')}
@@ -44,7 +66,7 @@ export function TimeSlotSelector({
       </div>
       
       <p className="text-xs text-muted-foreground mt-2">
-        {activatedSlots.length} time slots selected
+        {selectedSlots.length} time slots selected
       </p>
     </div>
   );
