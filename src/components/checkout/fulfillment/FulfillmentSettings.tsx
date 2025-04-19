@@ -59,16 +59,22 @@ export function FulfillmentSettings({
         .select('*')
         .order('day');
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching pickup settings:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} pickup settings`);
+      return data || [];
     },
   });
 
   // Create sets of available days for each fulfillment type
-  const availablePickupDays = useMemo(() => 
-    new Set(pickupSettings.map(setting => setting.day)),
-    [pickupSettings]
-  );
+  const availablePickupDays = useMemo(() => {
+    const days = new Set(pickupSettings.map(setting => setting.day));
+    console.log("Available pickup days:", Array.from(days));
+    return days;
+  }, [pickupSettings]);
 
   const availableDeliveryDays = useMemo(() => 
     new Set(deliverySettings?.active_days || []),
@@ -113,6 +119,23 @@ export function FulfillmentSettings({
             break;
           }
         }
+      } else if (!currentPickupDate && availablePickupDays.size > 0) {
+        // Auto-select first available date if none selected
+        const today = new Date();
+        let foundDate = false;
+        
+        for (let i = 0; i < 14; i++) {
+          const checkDate = addDays(today, i);
+          if (isDateAvailable(checkDate, FULFILLMENT_TYPE_PICKUP)) {
+            onDateChange(FULFILLMENT_TYPE_PICKUP, checkDate);
+            foundDate = true;
+            break;
+          }
+        }
+        
+        if (!foundDate) {
+          console.warn("No available pickup dates found in the next 14 days");
+        }
       }
     }
 
@@ -128,9 +151,26 @@ export function FulfillmentSettings({
             break;
           }
         }
+      } else if (!currentDeliveryDate && availableDeliveryDays.size > 0) {
+        // Auto-select first available date if none selected
+        const today = new Date();
+        let foundDate = false;
+        
+        for (let i = 0; i < 14; i++) {
+          const checkDate = addDays(today, i);
+          if (isDateAvailable(checkDate, FULFILLMENT_TYPE_DELIVERY)) {
+            onDateChange(FULFILLMENT_TYPE_DELIVERY, checkDate);
+            foundDate = true;
+            break;
+          }
+        }
+        
+        if (!foundDate) {
+          console.warn("No available delivery dates found in the next 14 days");
+        }
       }
     }
-  }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates]);
+  }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates, onDateChange]);
 
   return (
     <div className="space-y-6">

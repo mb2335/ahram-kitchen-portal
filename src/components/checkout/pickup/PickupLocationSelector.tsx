@@ -50,8 +50,13 @@ export function PickupLocationSelector({
         .select('*')
         .eq('day', dayOfWeek);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching pickup settings:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched pickup settings for day ${dayOfWeek}:`, data?.length || 0);
+      return data || [];
     },
     enabled: !!selectedDate,
   });
@@ -78,6 +83,7 @@ export function PickupLocationSelector({
       location: setting.location || ''
     }));
     
+    console.log(`Found ${details.length} pickup details for day ${dayOfWeek}`);
     setAvailablePickupDetails(details);
     setError(null);
     
