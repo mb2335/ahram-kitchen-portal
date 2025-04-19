@@ -111,7 +111,7 @@ export function CategoryDeliveryDate({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*');
       
       if (error) throw error;

@@ -103,7 +103,7 @@ export const useOrderSubmission = () => {
             
             // Fetch vendor delivery settings
             const { data: vendorSettings } = await supabase
-              .from('vendor_delivery_settings')
+              .from('delivery_settings')
               .select('active_days, time_slots')
               .maybeSingle();
             

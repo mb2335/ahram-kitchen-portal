@@ -11,7 +11,7 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-interface VendorDeliverySetting {
+interface DeliverySetting {
   id: string;
   vendor_id: string;
   active_days: number[];
@@ -34,13 +34,13 @@ export function useTimeSlots({
     queryKey: ['vendor-delivery-settings', categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', categoryId)
         .maybeSingle();
 
       if (error) throw error;
-      return data as VendorDeliverySetting | null;
+      return data as DeliverySetting | null;
     },
     enabled: !!categoryId,
   });

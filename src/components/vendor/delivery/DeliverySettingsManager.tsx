@@ -30,7 +30,7 @@ export function DeliverySettingsManager() {
       if (!vendorId) return null;
       
       const { data, error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', vendorId)
         .maybeSingle();
@@ -174,7 +174,7 @@ export function DeliverySettingsManager() {
     
     // Update vendor delivery settings
     const { error } = await supabase
-      .from('vendor_delivery_settings')
+      .from('delivery_settings')
       .upsert({
         vendor_id: vendorId,
         active_days: days,

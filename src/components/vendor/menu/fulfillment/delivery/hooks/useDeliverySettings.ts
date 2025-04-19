@@ -31,7 +31,7 @@ export function useDeliverySettings() {
       if (!vendorId) return null;
       
       const { data, error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', vendorId)
         .maybeSingle();
@@ -82,7 +82,7 @@ export function useDeliverySettings() {
       console.log("Saving normalized time slots:", normalizedTimeSlots);
       
       const { error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .upsert({
           vendor_id: vendorId,
           active_days: selectedDays,

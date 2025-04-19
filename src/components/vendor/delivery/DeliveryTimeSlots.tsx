@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DAY_NAMES, generateFixedTimeSlots, formatTime } from "@/types/delivery";
 
-interface VendorDeliverySetting {
+interface DeliverySetting {
   id: string;
   vendor_id: string;
   active_days: number[];
@@ -41,13 +42,13 @@ export function DeliveryTimeSlots({
     queryKey: ['vendor-delivery-settings', categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', categoryId)
         .maybeSingle();
       
       if (error && error.code !== 'PGRST116') throw error;
-      return data as VendorDeliverySetting | null;
+      return data as DeliverySetting | null;
     },
   });
 
@@ -89,7 +90,7 @@ export function DeliveryTimeSlots({
       }
       
       const { data: currentSettings } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', categoryId)
         .maybeSingle();
@@ -120,7 +121,7 @@ export function DeliveryTimeSlots({
       }
       
       const { error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .upsert({
           vendor_id: categoryId,
           active_days: newActiveDays,
