@@ -36,41 +36,6 @@ export type Database = {
         }
         Relationships: []
       }
-      delivery_settings: {
-        Row: {
-          activated_slots: string[] | null
-          active: boolean | null
-          created_at: string | null
-          day_of_week: number
-          id: string
-          vendor_id: string | null
-        }
-        Insert: {
-          activated_slots?: string[] | null
-          active?: boolean | null
-          created_at?: string | null
-          day_of_week: number
-          id?: string
-          vendor_id?: string | null
-        }
-        Update: {
-          activated_slots?: string[] | null
-          active?: boolean | null
-          created_at?: string | null
-          day_of_week?: number
-          id?: string
-          vendor_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "temp_delivery_settings_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       delivery_time_bookings: {
         Row: {
           category_id: string

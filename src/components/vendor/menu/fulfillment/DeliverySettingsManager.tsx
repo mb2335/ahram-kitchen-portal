@@ -16,7 +16,7 @@ export function DeliverySettingsManager() {
   const [activatedSlots, setActivatedSlots] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch existing delivery settings
+  // Fetch existing delivery settings from vendor_delivery_settings
   const { data: settings, isLoading } = useQuery({
     queryKey: ['vendor-delivery-settings', vendorId],
     queryFn: async () => {
@@ -69,10 +69,10 @@ export function DeliverySettingsManager() {
   };
 
   const saveDeliverySettings = async () => {
-    if (!vendorId || selectedDays.length === 0) {
+    if (!vendorId) {
       toast({
         title: "Error",
-        description: "Please select at least one day for delivery",
+        description: "Vendor ID is required",
         variant: "destructive",
       });
       return;
@@ -81,7 +81,7 @@ export function DeliverySettingsManager() {
     try {
       setIsSaving(true);
       
-      // Update or create vendor delivery settings
+      // Upsert vendor delivery settings
       const { error } = await supabase
         .from('vendor_delivery_settings')
         .upsert({
@@ -171,7 +171,7 @@ export function DeliverySettingsManager() {
         <Button 
           onClick={saveDeliverySettings} 
           className="w-full" 
-          disabled={isSaving || selectedDays.length === 0}
+          disabled={isSaving}
         >
           {isSaving ? "Saving..." : "Save Delivery Settings"}
         </Button>
@@ -179,3 +179,4 @@ export function DeliverySettingsManager() {
     </div>
   );
 }
+
