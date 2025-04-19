@@ -12,17 +12,19 @@ import { format, isAfter, addDays } from 'date-fns';
 import { DeliveryTimeSlotSelector } from '../DeliveryTimeSlotSelector';
 import { DeliveryTimeSlotSelection } from '@/types/delivery';
 
+interface Category {
+  id: string;
+  name: string;
+  name_ko: string;
+  has_custom_pickup: boolean | null;
+  pickup_details: any[];
+  pickup_days: number[] | null;
+  fulfillment_types: string[] | null;
+  blocked_dates?: string[] | null;
+}
+
 interface CategoryDeliveryDateProps {
-  category: {
-    id: string;
-    name: string;
-    name_ko: string;
-    has_custom_pickup: boolean | null;
-    pickup_details: any[];
-    pickup_days: number[] | null;
-    fulfillment_types: string[] | null;
-    blocked_dates?: string[] | null;
-  };
+  category: Category;
   selectedDate: Date | undefined;
   onDateChange: (date: Date) => void;
   selectedPickupDetail: PickupDetail | null;

@@ -1,3 +1,4 @@
+
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +16,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { CategoryDeliverySettings } from './delivery/CategoryDeliverySettings';
 import { DeliveryTimeSlotSelection } from '@/types/delivery';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PickupDetail } from '@/types/pickup';
 
 interface DeliveryFormProps {
   deliveryDates: Record<string, Date>;
@@ -79,9 +81,16 @@ export function DeliveryForm({
     type => type === FULFILLMENT_TYPE_DELIVERY
   );
 
+  // Process categories to add required properties
+  const processedCategories = categories.map(category => ({
+    ...category,
+    pickup_details: [],
+    pickup_days: category.has_custom_pickup ? [0, 1, 2, 3, 4, 5, 6] : [] // Default to all days if has_custom_pickup is true
+  }));
+
   return (
     <div className="space-y-6">
-      {categories.map((category) => {
+      {processedCategories.map((category) => {
         if (!itemsByCategory[category.id]) return null;
         const availableTypes = category.fulfillment_types || [];
         const currentType = categoryFulfillmentTypes[category.id] || fulfillmentType;
