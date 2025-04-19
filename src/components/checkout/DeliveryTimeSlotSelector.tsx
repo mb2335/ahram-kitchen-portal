@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useTimeSlots } from '@/hooks/delivery/useTimeSlots';
@@ -11,6 +12,7 @@ interface DeliveryTimeSlotSelectorProps {
   selectedDate: Date | null;
   selectedTimeSlot: string | null;
   onTimeSlotChange?: (timeSlot: string) => void;
+  className?: string;
 }
 
 export function DeliveryTimeSlotSelector({
@@ -18,7 +20,8 @@ export function DeliveryTimeSlotSelector({
   categoryName,
   selectedDate,
   selectedTimeSlot,
-  onTimeSlotChange
+  onTimeSlotChange,
+  className
 }: DeliveryTimeSlotSelectorProps) {
   const [formattedDate, setFormattedDate] = useState<string>('');
   const [dayOfWeek, setDayOfWeek] = useState<number>(-1);
@@ -77,10 +80,12 @@ export function DeliveryTimeSlotSelector({
   }
 
   return (
-    <TimeSlotGrid 
-      timeSlots={timeSlots} 
-      selectedTimeSlot={selectedTimeSlot} 
-      onTimeSlotChange={handleTimeSlotChange} 
-    />
+    <div className={className}>
+      <TimeSlotGrid 
+        timeSlots={timeSlots} 
+        selectedTimeSlot={selectedTimeSlot} 
+        onTimeSlotChange={handleTimeSlotChange} 
+      />
+    </div>
   );
 }

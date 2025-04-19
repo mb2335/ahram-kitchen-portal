@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, isSameDay } from "date-fns";
 import { useEffect, useMemo } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Package, Truck } from "lucide-react";
 import { PickupDetail } from "@/types/pickup";
 
 interface FulfillmentSettingsProps {
@@ -161,19 +160,19 @@ export function FulfillmentSettings({
                       date={selectedDates[FULFILLMENT_TYPE_PICKUP]}
                       onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_PICKUP, date)}
                       disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_PICKUP)}
-                      className="border-primary/50 hover:border-primary transition-colors"
                     />
                   )}
                 </div>
                 {selectedDates[FULFILLMENT_TYPE_PICKUP] && (
-                  <PickupLocationSelector
-                    selectedDate={selectedDates[FULFILLMENT_TYPE_PICKUP]}
-                    selectedPickupDetail={selectedPickupDetail}
-                    onPickupDetailChange={onPickupDetailChange}
-                    category={null}
-                    allPickupCategories={[]}
-                    className="border-l border-secondary/30 pl-4"
-                  />
+                  <div className="border-l border-secondary/30 pl-4">
+                    <PickupLocationSelector
+                      selectedDate={selectedDates[FULFILLMENT_TYPE_PICKUP]}
+                      selectedPickupDetail={selectedPickupDetail}
+                      onPickupDetailChange={onPickupDetailChange}
+                      category={null}
+                      allPickupCategories={[]}
+                    />
+                  </div>
                 )}
               </div>
               <Separator className="my-4 bg-secondary/50" />
@@ -200,19 +199,19 @@ export function FulfillmentSettings({
                       date={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
                       onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_DELIVERY, date)}
                       disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_DELIVERY)}
-                      className="border-primary/50 hover:border-primary transition-colors"
                     />
                   )}
                 </div>
                 {selectedDates[FULFILLMENT_TYPE_DELIVERY] && (
-                  <DeliveryTimeSlotSelector
-                    categoryId="global"
-                    categoryName="Delivery"
-                    selectedDate={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
-                    selectedTimeSlot={selectedTimeSlot || null}
-                    onTimeSlotChange={onDeliveryTimeSlotChange}
-                    className="border-l border-accent/30 pl-4"
-                  />
+                  <div className="border-l border-accent/30 pl-4">
+                    <DeliveryTimeSlotSelector
+                      categoryId="global"
+                      categoryName="Delivery"
+                      selectedDate={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
+                      selectedTimeSlot={selectedTimeSlot || null}
+                      onTimeSlotChange={onDeliveryTimeSlotChange}
+                    />
+                  </div>
                 )}
               </div>
             </div>

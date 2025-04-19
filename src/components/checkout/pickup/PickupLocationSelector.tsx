@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +21,7 @@ interface PickupLocationSelectorProps {
   selectedPickupDetail: PickupDetail | null;
   onPickupDetailChange: (detail: PickupDetail) => void;
   allPickupCategories: { name: string; name_ko: string }[] | null[];
+  className?: string;
 }
 
 export function PickupLocationSelector({
@@ -28,6 +30,7 @@ export function PickupLocationSelector({
   selectedPickupDetail,
   onPickupDetailChange,
   allPickupCategories,
+  className
 }: PickupLocationSelectorProps) {
   const { language } = useLanguage();
   const [availablePickupDetails, setAvailablePickupDetails] = useState<PickupDetail[]>([]);
@@ -140,7 +143,7 @@ export function PickupLocationSelector({
   }
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${className || ''}`}>
       <Label>Pickup Location & Time</Label>
       <Select 
         value={selectedLocation} 
