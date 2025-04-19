@@ -47,7 +47,42 @@ export const useOrderSubmission = () => {
       
       console.log(`Items grouped by ${Object.keys(itemsByCategory).length} categories`);
       
+      // Get all category IDs from the items
       const categoryIds = Object.keys(itemsByCategory);
+      console.log("Category IDs from items:", categoryIds);
+      console.log("Available delivery dates:", props.deliveryDates);
+      
+      // Fill in missing dates for any categories that don't have dates
+      // This is a crucial fix - if any category doesn't have a date, copy from the first available date
+      const updatedDeliveryDates = { ...props.deliveryDates };
+      let anyValidDate = null;
+      
+      // First find any valid date to use as fallback
+      for (const dateKey in updatedDeliveryDates) {
+        if (updatedDeliveryDates[dateKey] instanceof Date && 
+            !isNaN(updatedDeliveryDates[dateKey].getTime())) {
+          anyValidDate = updatedDeliveryDates[dateKey];
+          break;
+        }
+      }
+      
+      // If we have no valid dates at all, create a default one 3 days from now
+      if (!anyValidDate) {
+        anyValidDate = new Date();
+        anyValidDate.setDate(anyValidDate.getDate() + 3);
+        console.log("No valid dates found, created default date:", anyValidDate);
+      }
+      
+      // Make sure all categories have a date
+      for (const categoryId of categoryIds) {
+        if (!updatedDeliveryDates[categoryId] || 
+            !(updatedDeliveryDates[categoryId] instanceof Date) || 
+            isNaN(updatedDeliveryDates[categoryId].getTime())) {
+          console.log(`Assigning default date for category ${categoryId}:`, anyValidDate);
+          updatedDeliveryDates[categoryId] = anyValidDate;
+        }
+      }
+      
       const orderIds: string[] = [];
       
       // Create one order per category
@@ -56,41 +91,9 @@ export const useOrderSubmission = () => {
         
         console.log(`Processing category ${categoryId} with ${items.length} items`);
         
-        // Handle delivery date - ultra defensive with multiple fallbacks
-        let deliveryDate: Date;
-        
-        // First try - get category specific date
-        if (props.deliveryDates[categoryId] && props.deliveryDates[categoryId] instanceof Date) {
-          deliveryDate = props.deliveryDates[categoryId];
-          console.log(`Using category-specific date for ${categoryId}:`, deliveryDate);
-        }
-        // Second try - use any available date
-        else if (Object.values(props.deliveryDates).length > 0) {
-          const firstAvailableDate = Object.values(props.deliveryDates).find(date => date instanceof Date);
-          if (firstAvailableDate) {
-            deliveryDate = firstAvailableDate;
-            console.log(`Using fallback date for ${categoryId} from other categories:`, deliveryDate);
-          }
-          // Third try - create a new date
-          else {
-            deliveryDate = new Date();
-            deliveryDate.setDate(deliveryDate.getDate() + 3); // Default to 3 days from now
-            console.log(`Created emergency date for ${categoryId}:`, deliveryDate);
-          }
-        }
-        // Last fallback - just use a date 3 days from now
-        else {
-          deliveryDate = new Date();
-          deliveryDate.setDate(deliveryDate.getDate() + 3);
-          console.log(`No dates available, using default date for ${categoryId}:`, deliveryDate);
-        }
-        
-        // Ensure we have a valid date format
-        if (!(deliveryDate instanceof Date) || isNaN(deliveryDate.getTime())) {
-          console.log(`Invalid date detected for ${categoryId}, creating new one`);
-          deliveryDate = new Date();
-          deliveryDate.setDate(deliveryDate.getDate() + 3);
-        }
+        // Use the updated delivery dates that now has a valid date for every category
+        const deliveryDate = updatedDeliveryDates[categoryId];
+        console.log(`Using delivery date for ${categoryId}:`, deliveryDate);
         
         // Determine fulfillment type for this category
         const categoryFulfillmentType = props.categoryFulfillmentTypes?.[categoryId] || props.fulfillmentType || 'pickup';
@@ -228,14 +231,6 @@ export const useOrderSubmission = () => {
       setIsSubmitting(false);
     }
   };
-
-  // This local duplicate function needs to be removed as we're now importing it
-  // from customerManagement.ts
-  /*
-  const getOrCreateCustomer = async (customerData: OrderSubmissionProps['customerData']) => {
-    // This function has been moved to customerManagement.ts
-  };
-  */
 
   return {
     submitOrder,
