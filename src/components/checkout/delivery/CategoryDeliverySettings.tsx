@@ -24,14 +24,15 @@ export function CategoryDeliverySettings({
   const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
 
+  // Now using the global delivery settings
   const { timeSlots, isLoading, error } = useTimeSlots({
     categoryId,
     dayOfWeek,
     formattedDate,
-    selectedDate
+    selectedDate,
+    useGlobalSettings: true
   });
 
-  // Try to restore time slot from localStorage on mount
   useEffect(() => {
     const timeSlotId = `timeSlot_${categoryId}`;
     try {
@@ -40,7 +41,6 @@ export function CategoryDeliverySettings({
         const { timeSlot, date } = JSON.parse(savedData);
         if (date === format(selectedDate, 'yyyy-MM-dd')) {
           setSelectedTimeSlot(timeSlot);
-          
           onTimeSlotSelectionChange({
             categoryId,
             date: selectedDate,
@@ -55,7 +55,6 @@ export function CategoryDeliverySettings({
 
   const handleTimeSlotSelect = (timeSlot: string) => {
     setSelectedTimeSlot(timeSlot);
-    
     onTimeSlotSelectionChange({
       categoryId,
       date: selectedDate,
@@ -67,7 +66,6 @@ export function CategoryDeliverySettings({
     return null;
   }
 
-  // Convert TimeSlot objects to string array for the TimeSlotSelector component
   const availableTimeSlotStrings = timeSlots.map(slot => slot.time);
 
   return (
