@@ -37,123 +37,115 @@ export const useOrderSubmission = () => {
       const categoryIds = Object.keys(itemsByCategory);
       const orderIds: string[] = [];
       
-      // Create one order per category
-      for (const categoryId of categoryIds) {
-        const items = itemsByCategory[categoryId];
-        const deliveryDate = props.deliveryDates[categoryId];
-        
-        if (!deliveryDate) {
-          throw new Error(`Missing delivery date for category ${categoryId}`);
-        }
-        
-        // Determine fulfillment type for this category
-        const categoryFulfillmentType = props.categoryFulfillmentTypes?.[categoryId] || props.fulfillmentType;
-        
-        // Calculate total for this category
-        const categoryTotal = items.reduce((sum, item) => {
-          const price = item.price;
-          let itemTotal = price * item.quantity;
+      // Get the main fulfillment type date
+      const deliveryDate = 
+        props.fulfillmentType === 'delivery' 
+          ? props.deliveryDates['delivery'] 
+          : props.deliveryDates['pickup'];
           
-          if (item.discount_percentage) {
-            const discountAmount = itemTotal * (item.discount_percentage / 100);
-            itemTotal -= discountAmount;
-          }
+      if (!deliveryDate) {
+        throw new Error('Missing delivery or pickup date');
+      }
+      
+      // For delivery orders, we need a time slot
+      let deliveryTimeSlot = null;
+      if (props.fulfillmentType === 'delivery') {
+        const timeSlotSelection = props.timeSlotSelections?.global;
+        
+        if (timeSlotSelection?.timeSlot) {
+          deliveryTimeSlot = timeSlotSelection.timeSlot;
           
-          return sum + itemTotal;
-        }, 0);
-        
-        const categoryTaxAmount = (categoryTotal / props.total) * props.taxAmount;
-        const totalAmount = categoryTotal + categoryTaxAmount;
-        
-        // Check if we need to book a delivery time slot
-        let deliveryTimeSlot = null;
-        if (categoryFulfillmentType === 'delivery') {
-          // Get the selected time slot
-          const timeSlotSelection = props.timeSlotSelections?.[categoryId] || props.timeSlotSelections?.global;
+          // Verify time slot is still available
+          const deliveryDateStr = format(deliveryDate, 'yyyy-MM-dd');
           
-          if (timeSlotSelection?.timeSlot) {
-            deliveryTimeSlot = timeSlotSelection.timeSlot;
-            
-            // Verify time slot is still available
-            const deliveryDateStr = format(deliveryDate, 'yyyy-MM-dd');
-            
-            const { data: existingBookings } = await supabase
-              .from('delivery_time_bookings')
-              .select('id')
-              .eq('category_id', categoryId)
-              .eq('delivery_date', deliveryDateStr)
-              .eq('time_slot', deliveryTimeSlot);
-            
-            if (existingBookings && existingBookings.length > 0) {
-              throw new Error(`The selected delivery time slot is no longer available. Please select another time.`);
-            }
-          } else {
-            // If no time slot selected but delivery is required
-            throw new Error(`Please select a delivery time slot for this order.`);
-          }
-        }
-        
-        // Create the order
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            customer_id: customerId,
-            total_amount: totalAmount,
-            tax_amount: categoryTaxAmount,
-            delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
-            notes: props.notes,
-            payment_proof_url: paymentProofUrl,
-            pickup_time: props.pickupDetail?.time,
-            pickup_location: props.pickupDetail?.location,
-            fulfillment_type: categoryFulfillmentType,
-            delivery_address: props.customerData.address,
-            delivery_time_slot: deliveryTimeSlot,
-            status: 'pending'
-          })
-          .select('id')
-          .single();
-          
-        if (orderError) {
-          throw new Error(`Failed to create order: ${orderError.message}`);
-        }
-        
-        const orderId = orderData.id;
-        orderIds.push(orderId);
-        
-        // Create order items
-        for (const item of items) {
-          const { error: itemError } = await supabase
-            .from('order_items')
-            .insert({
-              order_id: orderId,
-              menu_item_id: item.id,
-              quantity: item.quantity,
-              unit_price: item.price
-            });
-            
-          if (itemError) {
-            throw new Error(`Failed to create order item: ${itemError.message}`);
-          }
-        }
-        
-        // If this is a delivery order with a selected time slot, book it
-        if (categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
-          const { error: bookingError } = await supabase
+          const { data: existingBookings } = await supabase
             .from('delivery_time_bookings')
-            .insert({
-              order_id: orderId,
-              category_id: categoryId,
-              delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
-              time_slot: deliveryTimeSlot
-            });
-            
-          if (bookingError) {
-            throw new Error(`Failed to book delivery time slot: ${bookingError.message}`);
+            .select('id')
+            .eq('delivery_date', deliveryDateStr)
+            .eq('time_slot', deliveryTimeSlot);
+          
+          if (existingBookings && existingBookings.length > 0) {
+            throw new Error(`The selected delivery time slot is no longer available. Please select another time.`);
           }
+        } else {
+          // If no time slot selected but delivery is required
+          throw new Error(`Please select a delivery time slot for this order.`);
         }
       }
       
-      // Call the success callback with the first order ID (or all IDs in the future)
+      // Calculate total for all items
+      const categoryTotal = props.items.reduce((sum, item) => {
+        const price = item.price;
+        let itemTotal = price * item.quantity;
+        
+        if (item.discount_percentage) {
+          const discountAmount = itemTotal * (item.discount_percentage / 100);
+          itemTotal -= discountAmount;
+        }
+        
+        return sum + itemTotal;
+      }, 0);
+      
+      // Create a single order for all items
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_id: customerId,
+          total_amount: props.total,
+          tax_amount: props.taxAmount,
+          delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
+          notes: props.notes,
+          payment_proof_url: paymentProofUrl,
+          pickup_time: props.pickupDetail?.time,
+          pickup_location: props.pickupDetail?.location,
+          fulfillment_type: props.fulfillmentType,
+          delivery_address: props.customerData.address,
+          delivery_time_slot: deliveryTimeSlot,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+        
+      if (orderError) {
+        throw new Error(`Failed to create order: ${orderError.message}`);
+      }
+      
+      const orderId = orderData.id;
+      orderIds.push(orderId);
+      
+      // Create order items for all items
+      const orderItems = props.items.map(item => ({
+        order_id: orderId,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price
+      }));
+      
+      const { error: itemError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+          
+      if (itemError) {
+        throw new Error(`Failed to create order items: ${itemError.message}`);
+      }
+      
+      // If this is a delivery order with a selected time slot, book it
+      if (props.fulfillmentType === 'delivery' && deliveryTimeSlot) {
+        const { error: bookingError } = await supabase
+          .from('delivery_time_bookings')
+          .insert({
+            order_id: orderId,
+            category_id: 'global',
+            delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
+            time_slot: deliveryTimeSlot
+          });
+          
+        if (bookingError) {
+          throw new Error(`Failed to book delivery time slot: ${bookingError.message}`);
+        }
+      }
+      
+      // Call the success callback with the first order ID
       props.onOrderSuccess(orderIds[0]);
       
       return orderIds[0];
