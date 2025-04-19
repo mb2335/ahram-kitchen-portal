@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -122,7 +121,7 @@ export function PickupLocationSelector({
 
   if (error) {
     return (
-      <Alert variant="warning">
+      <Alert variant="default">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>{error}</AlertDescription>
       </Alert>
@@ -131,9 +130,12 @@ export function PickupLocationSelector({
 
   if (availablePickupDetails.length === 0) {
     return (
-      <div className="text-sm text-red-500">
-        No pickup locations available for this date.
-      </div>
+      <Alert variant="default">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No pickup locations available for this date.
+        </AlertDescription>
+      </Alert>
     );
   }
 
