@@ -362,6 +362,41 @@ export type Database = {
           },
         ]
       }
+      vendor_delivery_settings: {
+        Row: {
+          active_days: number[]
+          created_at: string | null
+          id: string
+          time_slots: string[]
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          active_days?: number[]
+          created_at?: string | null
+          id?: string
+          time_slots?: string[]
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          active_days?: number[]
+          created_at?: string | null
+          id?: string
+          time_slots?: string[]
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_delivery_settings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           business_name: string

@@ -11,13 +11,13 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-interface DeliverySettingData {
+interface VendorDeliverySettings {
   id: string;
-  vendor_id: string | null;
-  day_of_week: number;
-  active: boolean;
-  activated_slots: string[] | null;
+  vendor_id: string;
+  active_days: number[];
+  time_slots: string[];
   created_at: string | null;
+  updated_at: string | null;
 }
 
 export function useTimeSlots({ 
@@ -30,34 +30,19 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
-    queryKey: ['delivery-settings', categoryId, dayOfWeek],
+  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ['vendor-delivery-settings', categoryId],
     queryFn: async () => {
-      if (dayOfWeek < 0) return null;
-      
-      try {
-        const { data: categorySettings, error: categoryError } = await supabase
-          .from('delivery_settings')
-          .select('*')
-          .eq('vendor_id', categoryId)
-          .eq('day_of_week', dayOfWeek)
-          .eq('active', true)
-          .single();
-          
-        if (categoryError && categoryError.code !== 'PGRST116') throw categoryError;
-        
-        if (categorySettings) {
-          console.log("Found settings:", categorySettings);
-          return categorySettings as DeliverySettingData;
-        }
-        
-        return null;
-      } catch (err) {
-        console.error("Error in queryFn:", err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from('vendor_delivery_settings')
+        .select('*')
+        .eq('vendor_id', categoryId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as VendorDeliverySettings;
     },
-    enabled: dayOfWeek >= 0,
+    enabled: !!categoryId,
   });
 
   useEffect(() => {
@@ -66,7 +51,7 @@ export function useTimeSlots({
       setError(null);
       
       try {
-        if (!scheduleData || !scheduleData.activated_slots || !Array.isArray(scheduleData.activated_slots)) {
+        if (!settings || !settings.time_slots || !settings.active_days.includes(dayOfWeek)) {
           setTimeSlots([]);
           if (dayOfWeek >= 0) {
             setError(`No delivery time slots have been set up for this day.`);
@@ -74,7 +59,7 @@ export function useTimeSlots({
           return;
         }
         
-        const slots = scheduleData.activated_slots;
+        const slots = settings.time_slots;
         console.log("Time slots from database:", slots);
         
         if (slots.length === 0) {
@@ -118,11 +103,11 @@ export function useTimeSlots({
     } else {
       setTimeSlots([]);
     }
-  }, [scheduleData, categoryId, selectedDate, formattedDate, dayOfWeek]);
+  }, [settings, categoryId, selectedDate, formattedDate, dayOfWeek]);
 
   return {
     timeSlots,
-    isLoading: isLoading || isScheduleLoading,
+    isLoading: isLoading || isSettingsLoading,
     error
   };
 }
