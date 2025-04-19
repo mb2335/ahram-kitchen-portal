@@ -16,7 +16,7 @@ interface DeliveryTimeSlotsManagerProps {
   dayOfWeek: number;
 }
 
-interface VendorDeliverySetting {
+interface DeliverySetting {
   id: string;
   vendor_id: string;
   active_days: number[];
@@ -37,7 +37,7 @@ export function DeliveryTimeSlotsManager({
     queryKey: ['vendor-delivery-settings', categoryId, dayOfWeek],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', categoryId)
         .maybeSingle();
@@ -46,7 +46,7 @@ export function DeliveryTimeSlotsManager({
         throw error;
       }
 
-      return data as VendorDeliverySetting | null;
+      return data as DeliverySetting | null;
     },
   });
 
@@ -95,7 +95,7 @@ export function DeliveryTimeSlotsManager({
     try {
       // Get current vendor settings
       const { data: currentSettings } = await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .select('*')
         .eq('vendor_id', categoryId)
         .maybeSingle();
@@ -115,7 +115,7 @@ export function DeliveryTimeSlotsManager({
       
       // Update vendor delivery settings
       await supabase
-        .from('vendor_delivery_settings')
+        .from('delivery_settings')
         .upsert({
           vendor_id: categoryId,
           active_days: newActiveDays,
