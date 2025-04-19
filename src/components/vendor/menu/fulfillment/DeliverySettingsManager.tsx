@@ -41,9 +41,10 @@ export function DeliverySettingsManager() {
       // Extract active days from settings
       setSelectedDays(settings.active_days || []);
       
-      // Set activated time slots
-      setActivatedSlots(settings.time_slots || []);
-      console.log("Initialized time slots:", settings.time_slots);
+      // Set activated time slots - ensure we have no duplicates
+      const uniqueTimeSlots = Array.from(new Set(settings.time_slots || []));
+      setActivatedSlots(uniqueTimeSlots);
+      console.log("Initialized unique time slots:", uniqueTimeSlots);
     }
   }, [settings]);
 
@@ -81,13 +82,16 @@ export function DeliverySettingsManager() {
     try {
       setIsSaving(true);
       
+      // Ensure we have no duplicate time slots before saving
+      const uniqueTimeSlots = Array.from(new Set(activatedSlots));
+      
       // Upsert vendor delivery settings
       const { error } = await supabase
         .from('vendor_delivery_settings')
         .upsert({
           vendor_id: vendorId,
           active_days: selectedDays,
-          time_slots: activatedSlots,
+          time_slots: uniqueTimeSlots,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'vendor_id'
