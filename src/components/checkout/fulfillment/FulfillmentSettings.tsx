@@ -134,17 +134,21 @@ export function FulfillmentSettings({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Fulfillment Settings</CardTitle>
+      <Card className="shadow-md border-opacity-50 hover:shadow-lg transition-shadow duration-300">
+        <CardHeader className="bg-secondary/20 py-4">
+          <CardTitle className="text-xl font-semibold text-primary">
+            Fulfillment Settings
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6">
           {usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP) && (
-            <div className="space-y-4">
-              <h3 className="font-medium">Pickup Settings</h3>
+            <div className="space-y-4 bg-secondary/10 p-4 rounded-lg">
+              <h3 className="font-medium text-primary text-lg flex items-center gap-2">
+                <Package className="h-5 w-5" /> Pickup Settings
+              </h3>
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label>Pickup Date</Label>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Pickup Date</Label>
                   {availablePickupDays.size === 0 ? (
                     <Alert variant="destructive" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
@@ -157,6 +161,7 @@ export function FulfillmentSettings({
                       date={selectedDates[FULFILLMENT_TYPE_PICKUP]}
                       onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_PICKUP, date)}
                       disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_PICKUP)}
+                      className="border-primary/50 hover:border-primary transition-colors"
                     />
                   )}
                 </div>
@@ -167,19 +172,22 @@ export function FulfillmentSettings({
                     onPickupDetailChange={onPickupDetailChange}
                     category={null}
                     allPickupCategories={[]}
+                    className="border-l border-secondary/30 pl-4"
                   />
                 )}
               </div>
-              <Separator />
+              <Separator className="my-4 bg-secondary/50" />
             </div>
           )}
 
           {usedFulfillmentTypes.has(FULFILLMENT_TYPE_DELIVERY) && (
-            <div className="space-y-4">
-              <h3 className="font-medium">Delivery Settings</h3>
+            <div className="space-y-4 bg-accent/10 p-4 rounded-lg">
+              <h3 className="font-medium text-primary text-lg flex items-center gap-2">
+                <Truck className="h-5 w-5" /> Delivery Settings
+              </h3>
               <div className="grid gap-4">
-                <div>
-                  <Label>Delivery Date</Label>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Delivery Date</Label>
                   {availableDeliveryDays.size === 0 ? (
                     <Alert variant="destructive" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
@@ -192,6 +200,7 @@ export function FulfillmentSettings({
                       date={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
                       onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_DELIVERY, date)}
                       disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_DELIVERY)}
+                      className="border-primary/50 hover:border-primary transition-colors"
                     />
                   )}
                 </div>
@@ -202,6 +211,7 @@ export function FulfillmentSettings({
                     selectedDate={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
                     selectedTimeSlot={selectedTimeSlot || null}
                     onTimeSlotChange={onDeliveryTimeSlotChange}
+                    className="border-l border-accent/30 pl-4"
                   />
                 )}
               </div>
