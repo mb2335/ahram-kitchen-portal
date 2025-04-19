@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, isSameDay } from "date-fns";
 import { useEffect, useMemo } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Package, Truck } from "lucide-react";
+import { AlertCircle, Package as PackageIcon, Truck as TruckIcon } from "lucide-react";
 import { PickupDetail } from "@/types/pickup";
 
 interface FulfillmentSettingsProps {
@@ -143,35 +144,39 @@ export function FulfillmentSettings({
           {usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP) && (
             <div className="space-y-4 bg-secondary/10 p-4 rounded-lg">
               <h3 className="font-medium text-primary text-lg flex items-center gap-2">
-                <Package className="h-5 w-5" /> Pickup Settings
+                <PackageIcon className="h-5 w-5" /> Pickup Settings
               </h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Pickup Date</Label>
                   {availablePickupDays.size === 0 ? (
-                    <Alert variant="destructive" className="mt-2">
+                    <Alert variant="default" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
                         No pickup days are currently available. Please contact the vendor.
                       </AlertDescription>
                     </Alert>
                   ) : (
-                    <DatePicker
-                      date={selectedDates[FULFILLMENT_TYPE_PICKUP]}
-                      onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_PICKUP, date)}
-                      disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_PICKUP)}
-                    />
+                    <div>
+                      <DatePicker
+                        date={selectedDates[FULFILLMENT_TYPE_PICKUP]}
+                        onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_PICKUP, date)}
+                        disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_PICKUP)}
+                      />
+                    </div>
                   )}
                 </div>
                 {selectedDates[FULFILLMENT_TYPE_PICKUP] && (
                   <div className="border-l border-secondary/30 pl-4">
-                    <PickupLocationSelector
-                      selectedDate={selectedDates[FULFILLMENT_TYPE_PICKUP]}
-                      selectedPickupDetail={selectedPickupDetail}
-                      onPickupDetailChange={onPickupDetailChange}
-                      category={null}
-                      allPickupCategories={[]}
-                    />
+                    <div>
+                      <PickupLocationSelector
+                        selectedDate={selectedDates[FULFILLMENT_TYPE_PICKUP]}
+                        selectedPickupDetail={selectedPickupDetail}
+                        onPickupDetailChange={onPickupDetailChange}
+                        category={null}
+                        allPickupCategories={[]}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -182,35 +187,39 @@ export function FulfillmentSettings({
           {usedFulfillmentTypes.has(FULFILLMENT_TYPE_DELIVERY) && (
             <div className="space-y-4 bg-accent/10 p-4 rounded-lg">
               <h3 className="font-medium text-primary text-lg flex items-center gap-2">
-                <Truck className="h-5 w-5" /> Delivery Settings
+                <TruckIcon className="h-5 w-5" /> Delivery Settings
               </h3>
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Delivery Date</Label>
                   {availableDeliveryDays.size === 0 ? (
-                    <Alert variant="destructive" className="mt-2">
+                    <Alert variant="default" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
                         No delivery days are currently available. Please contact the vendor.
                       </AlertDescription>
                     </Alert>
                   ) : (
-                    <DatePicker
-                      date={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
-                      onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_DELIVERY, date)}
-                      disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_DELIVERY)}
-                    />
+                    <div>
+                      <DatePicker
+                        date={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
+                        onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_DELIVERY, date)}
+                        disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_DELIVERY)}
+                      />
+                    </div>
                   )}
                 </div>
                 {selectedDates[FULFILLMENT_TYPE_DELIVERY] && (
                   <div className="border-l border-accent/30 pl-4">
-                    <DeliveryTimeSlotSelector
-                      categoryId="global"
-                      categoryName="Delivery"
-                      selectedDate={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
-                      selectedTimeSlot={selectedTimeSlot || null}
-                      onTimeSlotChange={onDeliveryTimeSlotChange}
-                    />
+                    <div>
+                      <DeliveryTimeSlotSelector
+                        categoryId="global"
+                        categoryName="Delivery"
+                        selectedDate={selectedDates[FULFILLMENT_TYPE_DELIVERY]}
+                        selectedTimeSlot={selectedTimeSlot || null}
+                        onTimeSlotChange={onDeliveryTimeSlotChange}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

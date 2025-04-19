@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
-import { Upload } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,7 +38,7 @@ export function CheckoutForm({
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
-  const { submitOrder, isUploading } = useOrderSubmission();
+  const { submitOrder, isUploading, isSubmitting } = useOrderSubmission();
   
   const { 
     formData, 
@@ -179,17 +180,16 @@ export function CheckoutForm({
       .filter(([_, type]) => type === FULFILLMENT_TYPE_DELIVERY)
       .map(([id]) => id);
     
-    for (const categoryId of deliveryCategories) {
-      const timeSlotSelection = formData.deliveryTimeSlotSelections?.[categoryId];
-      if (!timeSlotSelection || !timeSlotSelection.timeSlot) {
-        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
-        toast({
-          title: t('checkout.error.time'),
-          description: `Please select a delivery time slot for ${categoryName}`,
-          variant: 'destructive',
-        });
-        return false;
-      }
+    // If we have delivery categories but no global time slot
+    if (deliveryCategories.length > 0 && 
+        (!formData.deliveryTimeSlotSelections?.global || 
+         !formData.deliveryTimeSlotSelections.global.timeSlot)) {
+      toast({
+        title: t('checkout.error.time'),
+        description: "Please select a delivery time slot",
+        variant: 'destructive',
+      });
+      return false;
     }
     
     return true;
@@ -306,11 +306,7 @@ export function CheckoutForm({
       }, paymentProof);
     } catch (error: any) {
       console.error('Order submission error:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to submit order. Please try again.',
-        variant: 'destructive',
-      });
+      // The toast is already shown in the submitOrder function
     }
   };
 
@@ -346,10 +342,14 @@ export function CheckoutForm({
         onFileChange={handleFileChange}
       />
 
-      <Button type="submit" className="w-full" disabled={isUploading}>
-        {isUploading ? (
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={isUploading || isSubmitting}
+      >
+        {(isUploading || isSubmitting) ? (
           <>
-            <Upload className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             {t('checkout.processing')}
           </>
         ) : (

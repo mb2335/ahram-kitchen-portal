@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -17,6 +16,7 @@ export const useOrderSubmission = () => {
   const submitOrder = async (props: OrderSubmissionProps, paymentProofFile: File) => {
     try {
       setIsUploading(true);
+      setIsSubmitting(true);
       
       // Upload payment proof
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
@@ -68,48 +68,28 @@ export const useOrderSubmission = () => {
         // Check if we need to book a delivery time slot
         let deliveryTimeSlot = null;
         if (categoryFulfillmentType === 'delivery') {
-          // Get the selected time slot for this category
-          const timeSlotId = `timeSlot_${categoryId}`;
-          const timeSlotData = window.localStorage?.getItem(timeSlotId);
+          // Get the selected time slot
+          const timeSlotSelection = props.timeSlotSelections?.[categoryId] || props.timeSlotSelections?.global;
           
-          if (timeSlotData) {
-            try {
-              const { timeSlot } = JSON.parse(timeSlotData);
-              if (timeSlot) {
-                // Check if time slot is available
-                const deliveryDateStr = format(deliveryDate, 'yyyy-MM-dd');
-                
-                const { data: existingBookings } = await supabase
-                  .from('delivery_time_bookings')
-                  .select('id')
-                  .eq('category_id', categoryId)
-                  .eq('delivery_date', deliveryDateStr)
-                  .eq('time_slot', timeSlot);
-                
-                if (existingBookings && existingBookings.length > 0) {
-                  throw new Error(`The selected delivery time slot is no longer available. Please select another time.`);
-                }
-                
-                deliveryTimeSlot = timeSlot;
-              }
-            } catch (err) {
-              console.error('Error parsing time slot data', err);
-            }
-          }
-          
-          // If we need a time slot but don't have one, check if there are any delivery slots available
-          if (!deliveryTimeSlot) {
-            const dayOfWeek = deliveryDate.getDay();
+          if (timeSlotSelection?.timeSlot) {
+            deliveryTimeSlot = timeSlotSelection.timeSlot;
             
-            // Fetch vendor delivery settings
-            const { data: vendorSettings } = await supabase
-              .from('delivery_settings')
-              .select('active_days, time_slots')
-              .maybeSingle();
+            // Verify time slot is still available
+            const deliveryDateStr = format(deliveryDate, 'yyyy-MM-dd');
             
-            if (!vendorSettings || !vendorSettings.active_days.includes(dayOfWeek) || vendorSettings.time_slots.length === 0) {
-              throw new Error(`No delivery times are available for the selected date. Please choose another date.`);
+            const { data: existingBookings } = await supabase
+              .from('delivery_time_bookings')
+              .select('id')
+              .eq('category_id', categoryId)
+              .eq('delivery_date', deliveryDateStr)
+              .eq('time_slot', deliveryTimeSlot);
+            
+            if (existingBookings && existingBookings.length > 0) {
+              throw new Error(`The selected delivery time slot is no longer available. Please select another time.`);
             }
+          } else {
+            // If no time slot selected but delivery is required
+            throw new Error(`Please select a delivery time slot for this order.`);
           }
         }
         
@@ -127,7 +107,8 @@ export const useOrderSubmission = () => {
             pickup_location: props.pickupDetail?.location,
             fulfillment_type: categoryFulfillmentType,
             delivery_address: props.customerData.address,
-            delivery_time_slot: deliveryTimeSlot
+            delivery_time_slot: deliveryTimeSlot,
+            status: 'pending'
           })
           .select('id')
           .single();
@@ -185,6 +166,7 @@ export const useOrderSubmission = () => {
       throw error;
     } finally {
       setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -243,6 +225,7 @@ export const useOrderSubmission = () => {
 
   return {
     submitOrder,
-    isUploading
+    isUploading,
+    isSubmitting
   };
 };
