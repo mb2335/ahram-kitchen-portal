@@ -3,8 +3,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { DeliverySettingsManager } from "./DeliverySettingsManager";
 import { PickupSettingsManager } from "@/components/vendor/menu/fulfillment/PickupSettingsManager";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Category } from "@/components/vendor/menu/types/category";
 
 export function FulfillmentSettings() {
+  // Fetch categories for the PickupSettingsManager
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      
+      return data as Category[];
+    },
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -26,7 +44,7 @@ export function FulfillmentSettings() {
           </TabsContent>
           
           <TabsContent value="pickup">
-            <PickupSettingsManager />
+            <PickupSettingsManager categories={categories} />
           </TabsContent>
         </Tabs>
       </Card>

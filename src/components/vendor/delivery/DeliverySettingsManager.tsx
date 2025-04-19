@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +42,7 @@ export function DeliverySettingsManager() {
   });
 
   // Initialize state from fetched settings
-  useState(() => {
+  useEffect(() => {
     if (vendorSettings) {
       setActiveDays(vendorSettings.active_days || []);
       
