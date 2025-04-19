@@ -17,16 +17,16 @@ export function DeliverySettingsManager() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch existing delivery settings
-  const { data: settings = [], isLoading } = useQuery({
-    queryKey: ['delivery-settings', vendorId],
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['vendor-delivery-settings', vendorId],
     queryFn: async () => {
-      if (!vendorId) return [];
+      if (!vendorId) return null;
       
       const { data, error } = await supabase
-        .from('delivery_settings')
+        .from('vendor_delivery_settings')
         .select('*')
         .eq('vendor_id', vendorId)
-        .eq('active', true);
+        .maybeSingle();
         
       if (error) throw error;
       console.log("Fetched delivery settings:", data);
@@ -37,20 +37,13 @@ export function DeliverySettingsManager() {
 
   // Initialize state from fetched settings
   useEffect(() => {
-    if (settings && settings.length > 0) {
-      // Extract active days
-      const activeDays = settings.map(setting => setting.day_of_week);
-      setSelectedDays(activeDays);
+    if (settings) {
+      // Extract active days from settings
+      setSelectedDays(settings.active_days || []);
       
-      // Find all unique time slots across all days
-      const uniqueSlots = new Set<string>();
-      settings.forEach(setting => {
-        if (setting.activated_slots && Array.isArray(setting.activated_slots)) {
-          setting.activated_slots.forEach(slot => uniqueSlots.add(slot));
-        }
-      });
-      
-      setActivatedSlots(Array.from(uniqueSlots).sort());
+      // Set activated time slots
+      setActivatedSlots(settings.time_slots || []);
+      console.log("Initialized time slots:", settings.time_slots);
     }
   }, [settings]);
 
@@ -88,46 +81,22 @@ export function DeliverySettingsManager() {
     try {
       setIsSaving(true);
       
-      // First, deactivate all existing settings
-      await supabase
-        .from('delivery_settings')
-        .update({ active: false })
-        .eq('vendor_id', vendorId);
+      // Update or create vendor delivery settings
+      const { error } = await supabase
+        .from('vendor_delivery_settings')
+        .upsert({
+          vendor_id: vendorId,
+          active_days: selectedDays,
+          time_slots: activatedSlots,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'vendor_id'
+        });
       
-      // Then create or update settings for selected days
-      for (const day of selectedDays) {
-        // Check if setting for this day already exists
-        const { data: existingSetting } = await supabase
-          .from('delivery_settings')
-          .select('id')
-          .eq('vendor_id', vendorId)
-          .eq('day_of_week', day)
-          .single();
-
-        if (existingSetting) {
-          // Update existing setting
-          await supabase
-            .from('delivery_settings')
-            .update({
-              active: true,
-              activated_slots: activatedSlots
-            })
-            .eq('id', existingSetting.id);
-        } else {
-          // Create new setting
-          await supabase
-            .from('delivery_settings')
-            .insert({
-              vendor_id: vendorId,
-              day_of_week: day,
-              active: true,
-              activated_slots: activatedSlots
-            });
-        }
-      }
+      if (error) throw error;
       
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ['delivery-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-delivery-settings'] });
       
       toast({
         title: "Success",
