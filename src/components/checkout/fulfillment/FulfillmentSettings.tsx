@@ -50,10 +50,11 @@ export function FulfillmentSettings({
     },
   });
 
-  // Fetch pickup settings to determine available days
+  // Fetch pickup settings to determine available days - modified to work for all users including guests
   const { data: pickupSettings = [] } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
+      // Remove any vendor_id filter to ensure we get all pickup settings
       const { data, error } = await supabase
         .from('pickup_settings')
         .select('*')

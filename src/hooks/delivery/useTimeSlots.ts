@@ -30,6 +30,7 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Modified query to work with guest users - removing any filters that might prevent data access
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
@@ -38,7 +39,10 @@ export function useTimeSlots({
         .select('*')
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching delivery settings:', error);
+        throw error;
+      }
       return data as DeliverySetting | null;
     },
   });

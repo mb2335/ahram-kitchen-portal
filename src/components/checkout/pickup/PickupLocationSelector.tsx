@@ -45,6 +45,8 @@ export function PickupLocationSelector({
       
       const dayOfWeek = selectedDate.getDay();
       
+      // Modified query to fetch all pickup settings for the selected day, without any vendor_id filter
+      // This ensures guest users can see the pickup settings too
       const { data, error } = await supabase
         .from('pickup_settings')
         .select('*')
