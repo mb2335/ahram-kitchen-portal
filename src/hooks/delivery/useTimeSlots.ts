@@ -30,12 +30,12 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch any delivery settings for all users - a simplified approach that works for both guest and logged in users
+  // Fetch any delivery settings - no vendor filter for consistency between guest/logged-in users
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       try {
-        // Fetch first available delivery setting
+        // Fetch first available delivery setting with no vendor filter
         const { data, error } = await supabase
           .from('delivery_settings')
           .select('*')
@@ -57,6 +57,12 @@ export function useTimeSlots({
 
   useEffect(() => {
     const loadAvailableTimeSlots = async () => {
+      // Only proceed if we have a valid selected date
+      if (!selectedDate || dayOfWeek < 0) {
+        setTimeSlots([]);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       
@@ -138,11 +144,7 @@ export function useTimeSlots({
       }
     };
     
-    if (selectedDate && dayOfWeek >= 0) {
-      loadAvailableTimeSlots();
-    } else {
-      setTimeSlots([]);
-    }
+    loadAvailableTimeSlots();
   }, [settings, categoryId, selectedDate, formattedDate, dayOfWeek]);
 
   return {

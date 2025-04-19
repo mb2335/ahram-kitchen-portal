@@ -37,13 +37,13 @@ export function PickupLocationSelector({
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
+  const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
+
   // Simple query to fetch all pickup settings for the selected day
   const { data: pickupSettings = [], isLoading } = useQuery({
-    queryKey: ['pickup-settings', selectedDate?.getDay()],
+    queryKey: ['pickup-settings', dayOfWeek],
     queryFn: async () => {
       if (!selectedDate) return [];
-      
-      const dayOfWeek = selectedDate.getDay();
       
       console.log(`Fetching pickup settings for day ${dayOfWeek}`);
       
@@ -66,18 +66,11 @@ export function PickupLocationSelector({
         return [];
       }
     },
-    enabled: !!selectedDate,
+    enabled: dayOfWeek >= 0,
   });
 
+  // Process pickup settings once they're loaded - this fixes the infinite loop
   useEffect(() => {
-    if (!selectedDate) {
-      setAvailablePickupDetails([]);
-      setError("Please select a pickup date first");
-      return;
-    }
-
-    const dayOfWeek = selectedDate.getDay();
-    
     if (pickupSettings.length === 0) {
       setAvailablePickupDetails([]);
       setError(`No pickup locations are available for this date. Please select another date.`);
@@ -91,26 +84,31 @@ export function PickupLocationSelector({
       location: setting.location || ''
     }));
     
-    console.log(`Found ${details.length} pickup details for day ${dayOfWeek}`);
     setAvailablePickupDetails(details);
     setError(null);
     
-    // Reset selection if current selection is not available
+    // If we have a selected pickup detail, check if it's still valid
     if (selectedPickupDetail) {
       const stillAvailable = details.some(
-        d => d.location === selectedPickupDetail.location && d.time === selectedPickupDetail.time
+        d => d.location === selectedPickupDetail.location && 
+             d.time === selectedPickupDetail.time &&
+             d.day === selectedPickupDetail.day
       );
       
-      if (!stillAvailable) {
+      if (!stillAvailable && details.length > 0) {
+        // Auto-select the first available option if current selection is invalid
+        handleLocationSelect(`${details[0].location}-${details[0].time}`);
+      } else if (!stillAvailable) {
         setSelectedLocation('');
-        onPickupDetailChange({
-          day: dayOfWeek,
-          time: '',
-          location: ''
-        });
+      } else {
+        // Ensure the selection is reflected in the UI
+        setSelectedLocation(`${selectedPickupDetail.location}-${selectedPickupDetail.time}`);
       }
+    } else if (details.length > 0) {
+      // Auto-select the first option if none is selected yet
+      handleLocationSelect(`${details[0].location}-${details[0].time}`);
     }
-  }, [selectedDate, pickupSettings, selectedPickupDetail, onPickupDetailChange]);
+  }, [pickupSettings, selectedDate]);
 
   const handleLocationSelect = (value: string) => {
     setSelectedLocation(value);

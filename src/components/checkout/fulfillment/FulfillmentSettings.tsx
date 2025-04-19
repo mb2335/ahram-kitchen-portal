@@ -56,11 +56,12 @@ export function FulfillmentSettings({
     },
   });
 
-  // Fetch all pickup settings to determine available days
+  // Fetch all pickup settings to determine available days - no vendor filter for guests
   const { data: pickupSettings = [] } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
       try {
+        console.log('Fetching all pickup settings');
         // Query all pickup settings without any vendor filter
         const { data, error } = await supabase
           .from('pickup_settings')
@@ -119,7 +120,7 @@ export function FulfillmentSettings({
 
   // Make sure selected dates are still valid based on vendor settings
   useEffect(() => {
-    if (usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP)) {
+    if (usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP) && pickupSettings.length > 0) {
       const currentPickupDate = selectedDates[FULFILLMENT_TYPE_PICKUP];
       if (currentPickupDate && !isDateAvailable(currentPickupDate, FULFILLMENT_TYPE_PICKUP)) {
         // Find the next available pickup date
@@ -182,7 +183,7 @@ export function FulfillmentSettings({
         }
       }
     }
-  }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates, onDateChange]);
+  }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates, onDateChange, pickupSettings.length]);
 
   return (
     <div className="space-y-6">
