@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -143,33 +142,54 @@ export function CheckoutForm({
   };
 
   const validateDates = (): boolean => {
-    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
-    const uniqueCategoryIds = [...new Set(itemCategoryIds)];
+    // First check if we have global fulfillment type dates set
+    const hasPickupDate = formData.deliveryDates[FULFILLMENT_TYPE_PICKUP] instanceof Date && 
+                        !isNaN(formData.deliveryDates[FULFILLMENT_TYPE_PICKUP].getTime());
     
-    for (const categoryId of uniqueCategoryIds) {
-      const hasDate = formData.deliveryDates[categoryId] !== undefined;
+    const hasDeliveryDate = formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY] instanceof Date && 
+                          !isNaN(formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY].getTime());
+    
+    // Group items by category and their fulfillment types
+    const fulfillmentTypesByCategoryId: Record<string, string> = {};
+    
+    // Get the fulfillment type for each category that has items
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      fulfillmentTypesByCategoryId[categoryId] = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+    });
+    
+    // Check if we're missing required dates
+    let missingFulfillmentTypeDate = false;
+    let missingDateCategoryName = '';
+    
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      const categoryFulfillmentType = fulfillmentTypesByCategoryId[categoryId];
       
-      if (!hasDate) {
-        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
-        toast({
-          title: t('checkout.error.date'),
-          description: `Please select a date for ${categoryName}`,
-          variant: 'destructive',
-        });
-        return false;
+      // Check if the category has an explicit date set
+      const hasCategorySpecificDate = formData.deliveryDates[categoryId] instanceof Date && 
+                                    !isNaN(formData.deliveryDates[categoryId].getTime());
+      
+      // If category doesn't have its own date, it must use the fulfillment type date
+      if (!hasCategorySpecificDate) {
+        if (categoryFulfillmentType === FULFILLMENT_TYPE_PICKUP && !hasPickupDate) {
+          missingFulfillmentTypeDate = true;
+          const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+          missingDateCategoryName = categoryName;
+        } else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY && !hasDeliveryDate) {
+          missingFulfillmentTypeDate = true;
+          const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+          missingDateCategoryName = categoryName;
+        }
       }
-      
-      const date = formData.deliveryDates[categoryId];
-      
-      if (!(date instanceof Date) || isNaN(date.getTime())) {
-        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
-        toast({
-          title: t('checkout.error.date'),
-          description: `The date for ${categoryName} is invalid. Please try selecting it again.`,
-          variant: 'destructive',
-        });
-        return false;
-      }
+    });
+    
+    // Show error if we're missing a required fulfillment type date
+    if (missingFulfillmentTypeDate) {
+      toast({
+        title: t('checkout.error.date'),
+        description: `Please select a date for ${missingDateCategoryName}`,
+        variant: 'destructive',
+      });
+      return false;
     }
     
     return true;

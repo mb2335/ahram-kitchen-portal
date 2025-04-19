@@ -24,7 +24,9 @@ export const useOrderSubmission = () => {
       console.log("Starting order submission process with data:", { 
         customerData: props.customerData,
         itemCount: props.items.length,
-        deliveryDatesAvailable: Object.keys(props.deliveryDates).length
+        deliveryDatesAvailable: Object.keys(props.deliveryDates).length,
+        fulfillmentType: props.fulfillmentType,
+        categoryFulfillmentTypes: props.categoryFulfillmentTypes || {}
       });
       
       // Upload payment proof
@@ -52,36 +54,69 @@ export const useOrderSubmission = () => {
       console.log("Category IDs from items:", categoryIds);
       console.log("Available delivery dates:", props.deliveryDates);
       
-      // Fill in missing dates for any categories that don't have dates
-      // This is a crucial fix - if any category doesn't have a date, copy from the first available date
-      const updatedDeliveryDates = { ...props.deliveryDates };
-      let anyValidDate = null;
+      // Map fulfillment types to their respective dates
+      const fulfillmentTypeDates: Record<string, Date> = {};
       
-      // First find any valid date to use as fallback
-      for (const dateKey in updatedDeliveryDates) {
-        if (updatedDeliveryDates[dateKey] instanceof Date && 
-            !isNaN(updatedDeliveryDates[dateKey].getTime())) {
-          anyValidDate = updatedDeliveryDates[dateKey];
+      // First, gather explicit fulfillment type dates
+      for (const [key, date] of Object.entries(props.deliveryDates)) {
+        if (key === 'pickup' || key === 'delivery') {
+          fulfillmentTypeDates[key] = date;
+        }
+      }
+      
+      console.log("Fulfillment type dates:", fulfillmentTypeDates);
+      
+      // Create a map to track which dates to use for each category
+      const categoryToDateMap: Record<string, Date> = {};
+      
+      // First pass - use category-specific dates if available
+      for (const categoryId of categoryIds) {
+        if (props.deliveryDates[categoryId] &&
+            props.deliveryDates[categoryId] instanceof Date &&
+            !isNaN(props.deliveryDates[categoryId].getTime())) {
+          categoryToDateMap[categoryId] = props.deliveryDates[categoryId];
+        }
+      }
+      
+      // Second pass - use fulfillment type dates for categories that don't have specific dates
+      for (const categoryId of categoryIds) {
+        if (!categoryToDateMap[categoryId]) {
+          const categoryFulfillmentType = props.categoryFulfillmentTypes?.[categoryId] || props.fulfillmentType || 'pickup';
+          if (fulfillmentTypeDates[categoryFulfillmentType] && 
+              fulfillmentTypeDates[categoryFulfillmentType] instanceof Date &&
+              !isNaN(fulfillmentTypeDates[categoryFulfillmentType].getTime())) {
+            categoryToDateMap[categoryId] = fulfillmentTypeDates[categoryFulfillmentType];
+          }
+        }
+      }
+      
+      // Third pass - use any valid date as a fallback
+      let anyValidDate: Date | null = null;
+      
+      // Try to find any valid date from explicit category dates or fulfillment type dates
+      for (const date of [...Object.values(categoryToDateMap), ...Object.values(fulfillmentTypeDates)]) {
+        if (date instanceof Date && !isNaN(date.getTime())) {
+          anyValidDate = date;
           break;
         }
       }
       
-      // If we have no valid dates at all, create a default one 3 days from now
+      // If still no valid date, create one
       if (!anyValidDate) {
         anyValidDate = new Date();
         anyValidDate.setDate(anyValidDate.getDate() + 3);
         console.log("No valid dates found, created default date:", anyValidDate);
       }
       
-      // Make sure all categories have a date
+      // Final pass - ensure all categories have a date
       for (const categoryId of categoryIds) {
-        if (!updatedDeliveryDates[categoryId] || 
-            !(updatedDeliveryDates[categoryId] instanceof Date) || 
-            isNaN(updatedDeliveryDates[categoryId].getTime())) {
+        if (!categoryToDateMap[categoryId]) {
+          categoryToDateMap[categoryId] = anyValidDate;
           console.log(`Assigning default date for category ${categoryId}:`, anyValidDate);
-          updatedDeliveryDates[categoryId] = anyValidDate;
         }
       }
+      
+      console.log("Final category date mapping:", categoryToDateMap);
       
       const orderIds: string[] = [];
       
@@ -91,8 +126,8 @@ export const useOrderSubmission = () => {
         
         console.log(`Processing category ${categoryId} with ${items.length} items`);
         
-        // Use the updated delivery dates that now has a valid date for every category
-        const deliveryDate = updatedDeliveryDates[categoryId];
+        // Use the category-specific date from our mapping
+        const deliveryDate = categoryToDateMap[categoryId];
         console.log(`Using delivery date for ${categoryId}:`, deliveryDate);
         
         // Determine fulfillment type for this category
