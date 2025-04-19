@@ -24,13 +24,11 @@ export function CategoryDeliverySettings({
   const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
 
-  // Now using the global delivery settings
   const { timeSlots, isLoading, error } = useTimeSlots({
     categoryId,
     dayOfWeek,
     formattedDate,
-    selectedDate,
-    useGlobalSettings: true
+    selectedDate
   });
 
   useEffect(() => {
