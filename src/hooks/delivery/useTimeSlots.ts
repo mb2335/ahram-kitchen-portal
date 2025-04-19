@@ -30,35 +30,28 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Modified query to work with guest users - fetching the first available settings
+  // Fetch any delivery settings for all users - a simplified approach that works for both guest and logged in users
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
-      // Fetch any delivery settings without filtering by vendor_id
-      const { data, error } = await supabase
-        .from('delivery_settings')
-        .select('*')
-        .limit(1)
-        .single();
-
-      if (error) {
-        console.error('Error fetching delivery settings:', error);
-        // Try to get any settings as a fallback
-        const fallbackQuery = await supabase
+      try {
+        // Fetch first available delivery setting
+        const { data, error } = await supabase
           .from('delivery_settings')
           .select('*')
           .limit(1);
           
-        if (fallbackQuery.error) {
-          console.error('Error fetching delivery settings (fallback):', fallbackQuery.error);
-          throw error;
+        if (error || !data || data.length === 0) {
+          console.error('Error or no data when fetching delivery settings:', error);
+          return null;
         }
         
-        return fallbackQuery.data?.[0] as DeliverySetting || null;
+        console.log("Fetched delivery settings:", data[0]);
+        return data[0] as DeliverySetting;
+      } catch (err) {
+        console.error("Exception fetching delivery settings:", err);
+        return null;
       }
-      
-      console.log("Fetched delivery settings:", data);
-      return data as DeliverySetting | null;
     },
   });
 

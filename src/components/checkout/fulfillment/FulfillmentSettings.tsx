@@ -33,52 +33,51 @@ export function FulfillmentSettings({
   selectedTimeSlot,
   usedFulfillmentTypes
 }: FulfillmentSettingsProps) {
-  // Fetch vendor delivery settings to determine available days
+  // Fetch any delivery settings to determine available days
   const { data: deliverySettings } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('delivery_settings')
-        .select('*')
-        .limit(1)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching delivery settings:', error);
-        // Try to get any settings as a fallback
-        const fallbackQuery = await supabase
+      try {
+        const { data, error } = await supabase
           .from('delivery_settings')
           .select('*')
           .limit(1);
           
-        if (fallbackQuery.error) {
-          console.error('Error fetching delivery settings (fallback):', fallbackQuery.error);
+        if (error || !data || data.length === 0) {
+          console.error('Error or no data when fetching delivery settings:', error);
           return null;
         }
         
-        return fallbackQuery.data?.[0] || null;
+        return data[0];
+      } catch (err) {
+        console.error('Exception fetching delivery settings:', err);
+        return null;
       }
-      return data;
     },
   });
 
-  // Fetch all pickup settings to determine available days - works for all users including guests
+  // Fetch all pickup settings to determine available days
   const { data: pickupSettings = [] } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
-      // Query all pickup settings without any vendor filter to ensure guest access
-      const { data, error } = await supabase
-        .from('pickup_settings')
-        .select('*')
-        .order('day');
-      
-      if (error) {
-        console.error('Error fetching pickup settings:', error);
-        throw error;
+      try {
+        // Query all pickup settings without any vendor filter
+        const { data, error } = await supabase
+          .from('pickup_settings')
+          .select('*')
+          .order('day');
+        
+        if (error) {
+          console.error('Error fetching pickup settings:', error);
+          return [];
+        }
+        
+        console.log(`Fetched ${data?.length || 0} pickup settings`);
+        return data || [];
+      } catch (err) {
+        console.error('Exception fetching pickup settings:', err);
+        return [];
       }
-      
-      console.log(`Fetched ${data?.length || 0} pickup settings`);
-      return data || [];
     },
   });
 

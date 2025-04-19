@@ -37,7 +37,7 @@ export function PickupLocationSelector({
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch pickup settings - Removed all filters to ensure guest users can access the data
+  // Simple query to fetch all pickup settings for the selected day
   const { data: pickupSettings = [], isLoading } = useQuery({
     queryKey: ['pickup-settings', selectedDate?.getDay()],
     queryFn: async () => {
@@ -47,19 +47,24 @@ export function PickupLocationSelector({
       
       console.log(`Fetching pickup settings for day ${dayOfWeek}`);
       
-      // Query to fetch all pickup settings for the selected day
-      const { data, error } = await supabase
-        .from('pickup_settings')
-        .select('*')
-        .eq('day', dayOfWeek);
-      
-      if (error) {
-        console.error(`Error fetching pickup settings for day ${dayOfWeek}:`, error);
-        throw error;
+      try {
+        // Fetch all pickup settings for the selected day without any vendor filtering
+        const { data, error } = await supabase
+          .from('pickup_settings')
+          .select('*')
+          .eq('day', dayOfWeek);
+        
+        if (error) {
+          console.error(`Error fetching pickup settings for day ${dayOfWeek}:`, error);
+          return [];
+        }
+        
+        console.log(`Found ${data?.length || 0} pickup settings for day ${dayOfWeek}`);
+        return data || [];
+      } catch (err) {
+        console.error(`Exception fetching pickup settings:`, err);
+        return [];
       }
-      
-      console.log(`Found ${data?.length || 0} pickup settings for day ${dayOfWeek}`);
-      return data || [];
     },
     enabled: !!selectedDate,
   });
