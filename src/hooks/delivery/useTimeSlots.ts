@@ -11,15 +11,13 @@ interface UseTimeSlotsProps {
   selectedDate: Date | null;
 }
 
-// Define a specific type for the delivery setting data
 interface DeliverySettingData {
   id: string;
   vendor_id: string | null;
   day_of_week: number;
-  active: boolean | null;
+  active: boolean;
   activated_slots: string[] | null;
   created_at: string | null;
-  category_id?: string | null;
 }
 
 export function useTimeSlots({ 
@@ -32,37 +30,28 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Explicitly define the query result type
-  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery<DeliverySettingData | null>({
+  const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
     queryKey: ['delivery-settings', categoryId, dayOfWeek],
-    queryFn: async (): Promise<DeliverySettingData | null> => {
+    queryFn: async () => {
       if (dayOfWeek < 0) return null;
       
       try {
-        // Try to find category-specific settings first
-        const { data: categorySchedule, error: categoryError } = await supabase
+        const { data: categorySettings, error: categoryError } = await supabase
           .from('delivery_settings')
           .select('*')
-          .eq('category_id', categoryId)
+          .eq('vendor_id', categoryId)
           .eq('day_of_week', dayOfWeek)
           .eq('active', true)
-          .maybeSingle();
+          .single();
           
-        if (categorySchedule) {
-          console.log("Found category-specific schedule", categorySchedule);
-          return categorySchedule as DeliverySettingData;
+        if (categoryError && categoryError.code !== 'PGRST116') throw categoryError;
+        
+        if (categorySettings) {
+          console.log("Found settings:", categorySettings);
+          return categorySettings as DeliverySettingData;
         }
         
-        // If no category settings, fall back to vendor settings
-        const { data: vendorSettings } = await supabase
-          .from('delivery_settings')
-          .select('*')
-          .eq('day_of_week', dayOfWeek)
-          .eq('active', true)
-          .maybeSingle();
-          
-        console.log("Fetched vendor schedule data:", vendorSettings);
-        return vendorSettings as DeliverySettingData;
+        return null;
       } catch (err) {
         console.error("Error in queryFn:", err);
         throw err;

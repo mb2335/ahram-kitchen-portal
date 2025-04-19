@@ -63,7 +63,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "delivery_settings_vendor_id_fkey"
+            foreignKeyName: "temp_delivery_settings_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendors"
