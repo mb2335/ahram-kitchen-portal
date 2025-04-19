@@ -229,58 +229,13 @@ export const useOrderSubmission = () => {
     }
   };
 
+  // This local duplicate function needs to be removed as we're now importing it
+  // from customerManagement.ts
+  /*
   const getOrCreateCustomer = async (customerData: OrderSubmissionProps['customerData']) => {
-    // If the user is logged in, get their customer ID
-    if (session?.user) {
-      const { data: existingCustomer, error } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single();
-        
-      if (!error && existingCustomer) {
-        return existingCustomer.id;
-      }
-    }
-    
-    // Otherwise check if a customer with this email exists
-    const { data: existingCustomerByEmail } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('email', customerData.email)
-      .maybeSingle();
-      
-    if (existingCustomerByEmail) {
-      // Update customer info
-      await supabase
-        .from('customers')
-        .update({
-          full_name: customerData.fullName,
-          phone: customerData.phone
-        })
-        .eq('id', existingCustomerByEmail.id);
-        
-      return existingCustomerByEmail.id;
-    }
-    
-    // Create a new customer
-    const { data: newCustomer, error } = await supabase
-      .from('customers')
-      .insert({
-        user_id: session?.user?.id || null,
-        full_name: customerData.fullName,
-        email: customerData.email,
-        phone: customerData.phone
-      })
-      .select('id')
-      .single();
-      
-    if (error) {
-      throw new Error(`Failed to create customer: ${error.message}`);
-    }
-    
-    return newCustomer.id;
+    // This function has been moved to customerManagement.ts
   };
+  */
 
   return {
     submitOrder,
