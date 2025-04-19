@@ -142,67 +142,54 @@ export function CheckoutForm({
     }
   };
 
-  const validateForm = (): boolean => {
-    // Check for payment proof
-    if (!paymentProof) {
+  const validateDates = (): boolean => {
+    const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
+    const uniqueCategoryIds = [...new Set(itemCategoryIds)];
+    
+    for (const categoryId of uniqueCategoryIds) {
+      const hasDate = formData.deliveryDates[categoryId] !== undefined;
+      
+      if (!hasDate) {
+        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+        toast({
+          title: t('checkout.error.date'),
+          description: `Please select a date for ${categoryName}`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+      
+      const date = formData.deliveryDates[categoryId];
+      
+      if (!(date instanceof Date) || isNaN(date.getTime())) {
+        const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
+        toast({
+          title: t('checkout.error.date'),
+          description: `The date for ${categoryName} is invalid. Please try selecting it again.`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const validateTimeSlots = (): boolean => {
+    const deliveryCategories = Object.entries(categoryFulfillmentTypes)
+      .filter(([_, type]) => type === FULFILLMENT_TYPE_DELIVERY)
+      .map(([id]) => id);
+    
+    // If we have delivery categories but no global time slot
+    if (deliveryCategories.length > 0 && 
+        (!formData.deliveryTimeSlotSelections?.global || 
+         !formData.deliveryTimeSlotSelections.global.timeSlot)) {
       toast({
-        title: t('checkout.error.payment'),
-        description: t('checkout.error.payment'),
+        title: t('checkout.error.time'),
+        description: "Please select a delivery time slot",
         variant: 'destructive',
       });
       return false;
-    }
-    
-    // Check for fulfillment-specific requirements
-    if (fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
-      // For pickup, check if we have date and pickup details
-      if (!formData.deliveryDates[FULFILLMENT_TYPE_PICKUP]) {
-        toast({
-          title: t('checkout.error.date'),
-          description: "Please select a pickup date",
-          variant: 'destructive',
-        });
-        return false;
-      }
-      
-      const pickupDetail = Object.values(formData.pickupDetails)[0];
-      if (!pickupDetail || !pickupDetail.time || !pickupDetail.location) {
-        toast({
-          title: t('checkout.error.pickup'),
-          description: "Please select a pickup location and time",
-          variant: 'destructive',
-        });
-        return false;
-      }
-    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
-      // For delivery, check if we have date, address and time slot
-      if (!formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY]) {
-        toast({
-          title: t('checkout.error.date'),
-          description: "Please select a delivery date",
-          variant: 'destructive',
-        });
-        return false;
-      }
-      
-      if (!formData.deliveryAddress?.trim()) {
-        toast({
-          title: t('checkout.error.address'),
-          description: "Please provide a delivery address",
-          variant: 'destructive',
-        });
-        return false;
-      }
-      
-      const timeSlot = formData.deliveryTimeSlotSelections?.global?.timeSlot;
-      if (!timeSlot) {
-        toast({
-          title: t('checkout.error.time'),
-          description: "Please select a delivery time slot",
-          variant: 'destructive',
-        });
-        return false;
-      }
     }
     
     return true;
@@ -232,7 +219,71 @@ export function CheckoutForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!paymentProof) {
+      toast({
+        title: t('checkout.error.payment'),
+        description: t('checkout.error.payment'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!validateDates()) {
+      return;
+    }
+
+    const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      
+      if (category?.fulfillment_types.length === 1 && 
+          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
+        return false;
+      }
+      
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
+    });
+    
+    if (hasDeliveryItems) {
+      if (!formData.deliveryAddress?.trim()) {
+        toast({
+          title: t('checkout.error.address'),
+          description: t('checkout.error.address'),
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (!validateTimeSlots()) {
+        return;
+      }
+    }
+
+    const dateErrors: string[] = [];
+    Array.from(categoriesWithItems).forEach(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (!category) return;
+      
+      const date = formData.deliveryDates[categoryId];
+      if (!date) return;
+      
+      const dayOfWeek = date.getDay();
+      const hasPickupDay = pickupDaysByDay[dayOfWeek]?.length > 0;
+      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
+      
+      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !hasPickupDay) {
+        dateErrors.push(`${category.name}: Pickup is only available on designated pickup days`);
+      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && hasPickupDay) {
+        dateErrors.push(`${category.name}: Delivery is not available on pickup days`);
+      }
+    });
+    
+    if (dateErrors.length > 0) {
+      toast({
+        title: t('checkout.error.date'),
+        description: dateErrors.join('\n'),
+        variant: 'destructive',
+      });
       return;
     }
 

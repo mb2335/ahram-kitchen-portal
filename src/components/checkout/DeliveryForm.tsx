@@ -72,36 +72,31 @@ export function DeliveryForm({
   }, {} as Record<string, typeof items>);
 
   const usedFulfillmentTypes = new Set(
-    Object.values(categoryFulfillmentTypes).length > 0
-      ? Object.values(categoryFulfillmentTypes)
-      : [fulfillmentType]
+    Object.values(categoryFulfillmentTypes)
   );
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t('checkout.fulfillment.title')}</CardTitle>
+          <CardTitle>{t('checkout.categories.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col space-y-2">
-            <div className="flex flex-row space-x-4">
-              <button
-                type="button"
-                onClick={() => onFulfillmentTypeChange(FULFILLMENT_TYPE_PICKUP)}
-                className={`flex-1 py-2 px-4 rounded-md ${fulfillmentType === FULFILLMENT_TYPE_PICKUP ? 'bg-primary text-white' : 'bg-gray-100'}`}
-              >
-                {t('checkout.pickup')}
-              </button>
-              <button
-                type="button"
-                onClick={() => onFulfillmentTypeChange(FULFILLMENT_TYPE_DELIVERY)}
-                className={`flex-1 py-2 px-4 rounded-md ${fulfillmentType === FULFILLMENT_TYPE_DELIVERY ? 'bg-primary text-white' : 'bg-gray-100'}`}
-              >
-                {t('checkout.delivery')}
-              </button>
-            </div>
-          </div>
+          {categories.map((category) => {
+            if (!itemsByCategory[category.id]) return null;
+            const availableTypes = category.fulfillment_types || [];
+            const currentType = categoryFulfillmentTypes[category.id] || fulfillmentType;
+            
+            return (
+              <CategoryDeliveryDate
+                key={category.id}
+                category={category}
+                selectedFulfillmentType={currentType}
+                onFulfillmentTypeChange={(type) => onCategoryFulfillmentTypeChange(category.id, type)}
+                isDisabled={availableTypes.length === 1}
+              />
+            );
+          })}
         </CardContent>
       </Card>
 
