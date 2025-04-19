@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -167,8 +168,9 @@ export const useOrderSubmission = () => {
           }
         }
         
+        let orderResult = null;
         try {
-          const createdOrder = await createOrder({
+          orderResult = await createOrder({
             customerId,
             categoryId,
             deliveryDate,
@@ -184,9 +186,9 @@ export const useOrderSubmission = () => {
             deliveryTimeSlot
           });
           
-          if (createdOrder) {
-            orderIds.push(createdOrder.id);
-            console.log(`Order created with ID ${createdOrder.id}`);
+          if (orderResult) {
+            orderIds.push(orderResult.id);
+            console.log(`Order created with ID ${orderResult.id}`);
           }
         } catch (orderError) {
           console.error(`Error creating order for category ${categoryId}:`, orderError);
@@ -194,12 +196,12 @@ export const useOrderSubmission = () => {
         }
         
         // If this is a delivery order with a selected time slot, book it
-        if (categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
+        if (orderResult && categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
           try {
             const { error: bookingError } = await supabase
               .from('delivery_time_bookings')
               .insert({
-                order_id: createdOrder.id,
+                order_id: orderResult.id,
                 category_id: categoryId,
                 delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
                 time_slot: deliveryTimeSlot
@@ -208,7 +210,7 @@ export const useOrderSubmission = () => {
             if (bookingError) {
               console.warn(`Failed to book delivery time slot, but continuing:`, bookingError);
             } else {
-              console.log(`Booked delivery time slot ${deliveryTimeSlot} for order ${createdOrder.id}`);
+              console.log(`Booked delivery time slot ${deliveryTimeSlot} for order ${orderResult.id}`);
             }
           } catch (bookingErr) {
             console.warn("Error in delivery time booking, but continuing with order:", bookingErr);
