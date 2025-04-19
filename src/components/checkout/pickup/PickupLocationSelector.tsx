@@ -43,7 +43,7 @@ export function PickupLocationSelector({
   const { data: pickupSettings = [], isLoading } = useQuery({
     queryKey: ['pickup-settings', dayOfWeek],
     queryFn: async () => {
-      if (!selectedDate) return [];
+      if (dayOfWeek < 0) return [];
       
       console.log(`Fetching pickup settings for day ${dayOfWeek}`);
       
@@ -69,8 +69,14 @@ export function PickupLocationSelector({
     enabled: dayOfWeek >= 0,
   });
 
-  // Process pickup settings once they're loaded - this fixes the infinite loop
+  // Process pickup settings once they're loaded
   useEffect(() => {
+    if (!selectedDate) {
+      setAvailablePickupDetails([]);
+      setError(null);
+      return;
+    }
+    
     if (pickupSettings.length === 0) {
       setAvailablePickupDetails([]);
       setError(`No pickup locations are available for this date. Please select another date.`);
@@ -108,7 +114,7 @@ export function PickupLocationSelector({
       // Auto-select the first option if none is selected yet
       handleLocationSelect(`${details[0].location}-${details[0].time}`);
     }
-  }, [pickupSettings, selectedDate]);
+  }, [pickupSettings, selectedDate, selectedPickupDetail]);
 
   const handleLocationSelect = (value: string) => {
     setSelectedLocation(value);

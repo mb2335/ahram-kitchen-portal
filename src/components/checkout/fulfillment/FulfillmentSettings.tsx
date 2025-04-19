@@ -65,8 +65,7 @@ export function FulfillmentSettings({
         // Query all pickup settings without any vendor filter
         const { data, error } = await supabase
           .from('pickup_settings')
-          .select('*')
-          .order('day');
+          .select('*');
         
         if (error) {
           console.error('Error fetching pickup settings:', error);
