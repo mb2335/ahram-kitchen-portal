@@ -30,19 +30,34 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Modified query to work with guest users - removing any filters that might prevent data access
+  // Modified query to work with guest users - fetching the first available settings
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
+      // Fetch any delivery settings without filtering by vendor_id
       const { data, error } = await supabase
         .from('delivery_settings')
         .select('*')
-        .maybeSingle();
+        .limit(1)
+        .single();
 
       if (error) {
         console.error('Error fetching delivery settings:', error);
-        throw error;
+        // Try to get any settings as a fallback
+        const fallbackQuery = await supabase
+          .from('delivery_settings')
+          .select('*')
+          .limit(1);
+          
+        if (fallbackQuery.error) {
+          console.error('Error fetching delivery settings (fallback):', fallbackQuery.error);
+          throw error;
+        }
+        
+        return fallbackQuery.data?.[0] as DeliverySetting || null;
       }
+      
+      console.log("Fetched delivery settings:", data);
       return data as DeliverySetting | null;
     },
   });

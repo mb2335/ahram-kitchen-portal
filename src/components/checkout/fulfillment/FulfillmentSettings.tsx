@@ -40,21 +40,33 @@ export function FulfillmentSettings({
       const { data, error } = await supabase
         .from('delivery_settings')
         .select('*')
-        .maybeSingle();
+        .limit(1)
+        .single();
         
       if (error) {
         console.error('Error fetching delivery settings:', error);
-        throw error;
+        // Try to get any settings as a fallback
+        const fallbackQuery = await supabase
+          .from('delivery_settings')
+          .select('*')
+          .limit(1);
+          
+        if (fallbackQuery.error) {
+          console.error('Error fetching delivery settings (fallback):', fallbackQuery.error);
+          return null;
+        }
+        
+        return fallbackQuery.data?.[0] || null;
       }
       return data;
     },
   });
 
-  // Fetch pickup settings to determine available days - modified to work for all users including guests
+  // Fetch all pickup settings to determine available days - works for all users including guests
   const { data: pickupSettings = [] } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
-      // Remove any vendor_id filter to ensure we get all pickup settings
+      // Query all pickup settings without any vendor filter to ensure guest access
       const { data, error } = await supabase
         .from('pickup_settings')
         .select('*')
