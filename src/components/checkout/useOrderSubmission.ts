@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -8,6 +7,7 @@ import { usePaymentProofUpload } from '@/hooks/order/usePaymentProofUpload';
 import { format } from 'date-fns';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
+import { createOrder } from '@/hooks/order/useOrderCreation';
 
 export const useOrderSubmission = () => {
   const { toast } = useToast();
@@ -29,6 +29,11 @@ export const useOrderSubmission = () => {
         categoryFulfillmentTypes: props.categoryFulfillmentTypes || {}
       });
       
+      // Validate required customer data for guest checkout
+      if (!props.customerData.fullName || !props.customerData.email) {
+        throw new Error("Customer name and email are required");
+      }
+      
       // Upload payment proof
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
       console.log("Payment proof uploaded successfully");
@@ -46,8 +51,6 @@ export const useOrderSubmission = () => {
         acc[categoryId].push(item);
         return acc;
       }, {} as Record<string, typeof props.items>);
-      
-      console.log(`Items grouped by ${Object.keys(itemsByCategory).length} categories`);
       
       // Get all category IDs from the items
       const categoryIds = Object.keys(itemsByCategory);
@@ -164,58 +167,31 @@ export const useOrderSubmission = () => {
           }
         }
         
-        // Prepare order data with all necessary details
-        const orderData = {
-          customer_id: customerId,
-          total_amount: totalAmount,
-          tax_amount: categoryTaxAmount,
-          delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
-          notes: props.notes,
-          payment_proof_url: paymentProofUrl,
-          pickup_time: props.pickupDetail?.time || null,
-          pickup_location: props.pickupDetail?.location || null,
-          fulfillment_type: categoryFulfillmentType,
-          delivery_address: props.customerData.address || null,
-          delivery_time_slot: deliveryTimeSlot,
-          status: 'pending'
-        };
-        
-        console.log(`Creating order for category ${categoryId} with data:`, orderData);
-        
-        // Create the order
-        const { data: createdOrder, error: orderError } = await supabase
-          .from('orders')
-          .insert(orderData)
-          .select('id')
-          .single();
+        try {
+          const createdOrder = await createOrder({
+            customerId,
+            categoryId,
+            deliveryDate,
+            items,
+            total: props.total,
+            taxAmount: props.taxAmount,
+            notes: props.notes,
+            paymentProofUrl,
+            pickupTime: props.pickupDetail?.time || null,
+            pickupLocation: props.pickupDetail?.location || null,
+            fulfillmentType: categoryFulfillmentType,
+            deliveryAddress: props.customerData.address || null,
+            deliveryTimeSlot
+          });
           
-        if (orderError) {
+          if (createdOrder) {
+            orderIds.push(createdOrder.id);
+            console.log(`Order created with ID ${createdOrder.id}`);
+          }
+        } catch (orderError) {
           console.error(`Error creating order for category ${categoryId}:`, orderError);
           throw new Error(`Failed to create order: ${orderError.message}`);
         }
-        
-        const orderId = createdOrder.id;
-        orderIds.push(orderId);
-        console.log(`Order created with ID ${orderId}`);
-        
-        // Create order items
-        const orderItems = items.map(item => ({
-          order_id: orderId,
-          menu_item_id: item.id,
-          quantity: item.quantity,
-          unit_price: item.price
-        }));
-        
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-            
-        if (itemsError) {
-          console.error(`Error creating order items for order ${orderId}:`, itemsError);
-          throw new Error(`Failed to create order items: ${itemsError.message}`);
-        }
-        
-        console.log(`Created ${items.length} order items for order ${orderId}`);
         
         // If this is a delivery order with a selected time slot, book it
         if (categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
@@ -223,7 +199,7 @@ export const useOrderSubmission = () => {
             const { error: bookingError } = await supabase
               .from('delivery_time_bookings')
               .insert({
-                order_id: orderId,
+                order_id: createdOrder.id,
                 category_id: categoryId,
                 delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
                 time_slot: deliveryTimeSlot
@@ -232,7 +208,7 @@ export const useOrderSubmission = () => {
             if (bookingError) {
               console.warn(`Failed to book delivery time slot, but continuing:`, bookingError);
             } else {
-              console.log(`Booked delivery time slot ${deliveryTimeSlot} for order ${orderId}`);
+              console.log(`Booked delivery time slot ${deliveryTimeSlot} for order ${createdOrder.id}`);
             }
           } catch (bookingErr) {
             console.warn("Error in delivery time booking, but continuing with order:", bookingErr);

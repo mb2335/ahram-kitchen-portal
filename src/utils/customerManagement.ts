@@ -6,6 +6,11 @@ export async function getOrCreateCustomer(customerData: CustomerData, sessionUse
   try {
     console.log("Getting or creating customer with data:", customerData);
     
+    if (!customerData.email || !customerData.fullName) {
+      console.error("Missing required customer data:", customerData);
+      throw new Error("Customer email and name are required");
+    }
+    
     // First, try to find an existing customer with this email
     const { data: existingCustomer, error: fetchError } = await supabase
       .from('customers')
@@ -22,20 +27,12 @@ export async function getOrCreateCustomer(customerData: CustomerData, sessionUse
     if (existingCustomer) {
       console.log("Found existing customer:", existingCustomer.id);
       
-      // If the customer is associated with a user and we're not that user
-      if (existingCustomer.user_id && sessionUserId !== existingCustomer.user_id) {
-        console.warn("Email associated with different account");
-        // Instead of throwing an error, just use the existing customer
-        // This is a more permissive approach to ensure order submission works
-        return existingCustomer.id;
-      }
-      
       // Update the existing customer's information
       const { data: updatedCustomer, error: updateError } = await supabase
         .from('customers')
         .update({
           full_name: customerData.fullName,
-          phone: customerData.phone,
+          phone: customerData.phone || existingCustomer.phone,
           // Only update user_id if we have a session and the customer doesn't already have one
           ...(sessionUserId && !existingCustomer.user_id ? { user_id: sessionUserId } : {})
         })
@@ -54,13 +51,13 @@ export async function getOrCreateCustomer(customerData: CustomerData, sessionUse
     }
 
     // If no existing customer found, create a new one
-    console.log("Creating new customer");
+    console.log("Creating new customer for guest checkout");
     const { data: newCustomer, error: createError } = await supabase
       .from('customers')
       .insert({
         full_name: customerData.fullName,
         email: customerData.email,
-        phone: customerData.phone,
+        phone: customerData.phone || null,
         user_id: sessionUserId || null
       })
       .select()

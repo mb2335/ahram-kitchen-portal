@@ -63,7 +63,7 @@ export function Checkout() {
         .from('customers')
         .select('*')
         .eq('user_id', session?.user?.id)
-        .single();
+        .maybeSingle();
 
       if (customer) {
         setCustomerData({

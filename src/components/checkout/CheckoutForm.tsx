@@ -142,33 +142,27 @@ export function CheckoutForm({
   };
 
   const validateDates = (): boolean => {
-    // First check if we have global fulfillment type dates set
     const hasPickupDate = formData.deliveryDates[FULFILLMENT_TYPE_PICKUP] instanceof Date && 
                         !isNaN(formData.deliveryDates[FULFILLMENT_TYPE_PICKUP].getTime());
     
     const hasDeliveryDate = formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY] instanceof Date && 
                           !isNaN(formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY].getTime());
     
-    // Group items by category and their fulfillment types
     const fulfillmentTypesByCategoryId: Record<string, string> = {};
     
-    // Get the fulfillment type for each category that has items
     Array.from(categoriesWithItems).forEach(categoryId => {
       fulfillmentTypesByCategoryId[categoryId] = categoryFulfillmentTypes[categoryId] || fulfillmentType;
     });
     
-    // Check if we're missing required dates
     let missingFulfillmentTypeDate = false;
     let missingDateCategoryName = '';
     
     Array.from(categoriesWithItems).forEach(categoryId => {
       const categoryFulfillmentType = fulfillmentTypesByCategoryId[categoryId];
       
-      // Check if the category has an explicit date set
       const hasCategorySpecificDate = formData.deliveryDates[categoryId] instanceof Date && 
                                     !isNaN(formData.deliveryDates[categoryId].getTime());
       
-      // If category doesn't have its own date, it must use the fulfillment type date
       if (!hasCategorySpecificDate) {
         if (categoryFulfillmentType === FULFILLMENT_TYPE_PICKUP && !hasPickupDate) {
           missingFulfillmentTypeDate = true;
@@ -182,7 +176,6 @@ export function CheckoutForm({
       }
     });
     
-    // Show error if we're missing a required fulfillment type date
     if (missingFulfillmentTypeDate) {
       toast({
         title: t('checkout.error.date'),
@@ -200,7 +193,6 @@ export function CheckoutForm({
       .filter(([_, type]) => type === FULFILLMENT_TYPE_DELIVERY)
       .map(([id]) => id);
     
-    // If we have delivery categories but no global time slot
     if (deliveryCategories.length > 0 && 
         (!formData.deliveryTimeSlotSelections?.global || 
          !formData.deliveryTimeSlotSelections.global.timeSlot)) {
@@ -238,6 +230,15 @@ export function CheckoutForm({
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!customerData.fullName || !customerData.email) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide your name and email address",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!paymentProof) {
       toast({
@@ -308,6 +309,7 @@ export function CheckoutForm({
     }
 
     try {
+      console.log("Submitting order with customer data:", customerData);
       await submitOrder({
         items,
         total,

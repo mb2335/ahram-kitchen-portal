@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types/order';
 
@@ -10,6 +11,11 @@ interface CreateOrderParams {
   taxAmount: number;
   notes: string;
   paymentProofUrl: string;
+  pickupTime?: string | null;
+  pickupLocation?: string | null;
+  fulfillmentType?: string;
+  deliveryAddress?: string | null;
+  deliveryTimeSlot?: string | null;
 }
 
 export async function createOrder({
@@ -21,12 +27,36 @@ export async function createOrder({
   taxAmount,
   notes,
   paymentProofUrl,
+  pickupTime,
+  pickupLocation,
+  fulfillmentType,
+  deliveryAddress,
+  deliveryTimeSlot,
 }: CreateOrderParams) {
+  if (!customerId) {
+    console.error("Missing customer ID");
+    throw new Error("Customer ID is required");
+  }
+  
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
 
   const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const categoryTaxAmount = categoryTotal * (taxAmount / total);
+
+  console.log("Creating order with data:", {
+    customer_id: customerId,
+    total_amount: categoryTotal + categoryTaxAmount,
+    tax_amount: categoryTaxAmount,
+    notes,
+    delivery_date: deliveryDate.toISOString(),
+    payment_proof_url: paymentProofUrl,
+    pickup_time: pickupTime,
+    pickup_location: pickupLocation,
+    fulfillment_type: fulfillmentType || 'pickup',
+    delivery_address: deliveryAddress,
+    delivery_time_slot: deliveryTimeSlot
+  });
 
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
@@ -39,12 +69,20 @@ export async function createOrder({
         status: 'pending',
         delivery_date: deliveryDate.toISOString(),
         payment_proof_url: paymentProofUrl,
+        pickup_time: pickupTime,
+        pickup_location: pickupLocation,
+        fulfillment_type: fulfillmentType || 'pickup',
+        delivery_address: deliveryAddress,
+        delivery_time_slot: deliveryTimeSlot
       },
     ])
     .select()
     .single();
 
-  if (orderError) throw orderError;
+  if (orderError) {
+    console.error("Error creating order:", orderError);
+    throw orderError;
+  }
 
   const orderItems = categoryItems.map((item) => ({
     order_id: orderData.id,
@@ -57,7 +95,11 @@ export async function createOrder({
     .from('order_items')
     .insert(orderItems);
 
-  if (orderItemsError) throw orderItemsError;
+  if (orderItemsError) {
+    console.error("Error creating order items:", orderItemsError);
+    throw orderItemsError;
+  }
 
+  console.log("Successfully created order:", orderData.id);
   return orderData;
 }
