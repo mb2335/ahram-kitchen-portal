@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, isSameDay } from "date-fns";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Package as PackageIcon, Truck as TruckIcon } from "lucide-react";
 import { PickupDetail } from "@/types/pickup";
@@ -34,6 +34,8 @@ export function FulfillmentSettings({
   selectedTimeSlot,
   usedFulfillmentTypes
 }: FulfillmentSettingsProps) {
+  const [isLoading, setIsLoading] = useState(true);
+
   // Fetch delivery settings
   const { data: deliverySettings } = useQuery({
     queryKey: ['vendor-delivery-settings'],
@@ -49,6 +51,7 @@ export function FulfillmentSettings({
           return null;
         }
         
+        console.log("Fetched delivery settings:", data[0]);
         return data[0];
       } catch (err) {
         console.error('Exception fetching delivery settings:', err);
@@ -57,8 +60,8 @@ export function FulfillmentSettings({
     },
   });
 
-  // Fetch all pickup settings - no vendor filter for consistency
-  const { data: pickupSettings = [] } = useQuery({
+  // Fetch all pickup settings without vendor filter
+  const { data: pickupSettings = [], isLoading: isLoadingPickup } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
       try {
@@ -73,11 +76,13 @@ export function FulfillmentSettings({
           return [];
         }
         
-        console.log(`Fetched ${data?.length || 0} pickup settings`);
+        console.log(`Fetched ${data?.length || 0} pickup settings:`, data);
         return data || [];
       } catch (err) {
         console.error('Exception fetching pickup settings:', err);
         return [];
+      } finally {
+        setIsLoading(false);
       }
     },
   });
@@ -120,6 +125,8 @@ export function FulfillmentSettings({
 
   // Make sure selected dates are still valid based on vendor settings
   useEffect(() => {
+    if (isLoading) return;
+    
     if (usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP) && pickupSettings.length > 0) {
       const currentPickupDate = selectedDates[FULFILLMENT_TYPE_PICKUP];
       if (currentPickupDate && !isDateAvailable(currentPickupDate, FULFILLMENT_TYPE_PICKUP)) {
@@ -183,7 +190,23 @@ export function FulfillmentSettings({
         }
       }
     }
-  }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates, onDateChange, pickupSettings.length]);
+  }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates, onDateChange, pickupSettings.length, isLoading]);
+
+  if (isLoading || isLoadingPickup) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-md border-opacity-50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center h-40">
+              <div className="text-center">
+                <p className="text-muted-foreground">Loading fulfillment options...</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

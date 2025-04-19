@@ -60,7 +60,7 @@ export function PickupLocationSelector({
           return [];
         }
         
-        console.log(`Found ${data?.length || 0} pickup settings for day ${dayOfWeek}`);
+        console.log(`Found ${data?.length || 0} pickup settings for day ${dayOfWeek}`, data);
         return data || [];
       } catch (err) {
         console.error(`Exception fetching pickup settings:`, err);
