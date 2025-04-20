@@ -1,11 +1,10 @@
-
 import { Card } from '@/components/ui/card';
 import { OrderStatusSection } from './OrderStatusSection';
 import { CustomerSection } from './CustomerSection';
 import { OrderItemsList } from './OrderItemsList';
 import { OrderNotes } from './OrderNotes';
 import { DeliveryInfo } from './DeliveryInfo';
-import { MapPin, Clock, ChevronDown, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, ChevronDown, ChevronRight, Calendar, Truck } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { PaymentProof } from '@/components/vendor/order/PaymentProof';
 import { OrderSummary } from '@/components/shared/OrderSummary';
@@ -22,12 +21,10 @@ export function OrderDetails({ order }: OrderDetailsProps) {
   const [relatedOrders, setRelatedOrders] = useState<any[]>([]);
   const [showRelatedOrders, setShowRelatedOrders] = useState(false);
   
-  // Load related orders if any
   useEffect(() => {
     const loadRelatedOrders = async () => {
       if (!order || !order.id) return;
       
-      // Find other orders with same customer and created within 1 minute
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -69,7 +66,6 @@ export function OrderDetails({ order }: OrderDetailsProps) {
     loadRelatedOrders();
   }, [order]);
 
-  // Calculate total discount from order items
   const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
     const originalPrice = item.unit_price * item.quantity;
     const discountAmount = item.menu_item?.discount_percentage 
@@ -87,7 +83,6 @@ export function OrderDetails({ order }: OrderDetailsProps) {
     category: item.menu_item?.category
   })) || [];
 
-  // Check if this is a multi-fulfillment order
   const isMultiFulfillment = relatedOrders.length > 0;
 
   return (
@@ -111,35 +106,60 @@ export function OrderDetails({ order }: OrderDetailsProps) {
       />
 
       <div className="space-y-4">
-        <DeliveryInfo 
-          deliveryDate={order.delivery_date} 
-          fulfillmentType={order.fulfillment_type}
-          deliveryAddress={order.delivery_address}
-        />
-
-        {(order.pickup_time || order.pickup_location) && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <h3 className="font-medium">Pickup Details</h3>
-              {order.pickup_time && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  <span>{order.pickup_time}</span>
-                </div>
-              )}
-              {order.pickup_location && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4" />
-                  <span>{order.pickup_location}</span>
-                </div>
-              )}
+        <div className="border-t pt-4">
+          <h4 className="font-medium mb-2">
+            {order.fulfillment_type === 'pickup'
+              ? 'Pickup Details'
+              : order.fulfillment_type === 'delivery'
+                ? 'Delivery Details'
+                : 'Order Details'}
+          </h4>
+          <div className="space-y-3 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>{new Date(order.delivery_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
-          </>
-        )}
+            
+            {order.fulfillment_type === 'pickup' && (
+              <>
+                {order.pickup_time && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{order.pickup_time}</span>
+                  </div>
+                )}
+                {order.pickup_location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>{order.pickup_location}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {order.fulfillment_type === 'delivery' && (
+              <>
+                <div className="flex items-start gap-2">
+                  <Truck className="h-4 w-4 mt-1" />
+                  <div>
+                    <div className="font-medium">Delivery Address:</div>
+                    <div className="whitespace-pre-line">
+                      {order.delivery_address || "No address provided"}
+                    </div>
+                  </div>
+                </div>
+                {order.delivery_time_slot && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Delivery Time: {order.delivery_time_slot}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Show related orders section if this is a multi-fulfillment order */}
       {isMultiFulfillment && (
         <div className="mt-4">
           <Separator className="my-4" />

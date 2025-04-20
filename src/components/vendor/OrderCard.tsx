@@ -52,6 +52,9 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
         pickupDate={order.delivery_date}
         pickupTime={order.pickup_time}
         pickupLocation={order.pickup_location}
+        fulfillmentType={order.fulfillment_type}
+        deliveryAddress={order.delivery_address}
+        deliveryTimeSlot={order.delivery_time_slot}
       />
       
       <PaymentProof paymentProofUrl={order.payment_proof_url} />

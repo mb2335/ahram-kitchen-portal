@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -39,7 +38,7 @@ export const useOrderSubmission = () => {
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
       console.log("Payment proof uploaded successfully");
       
-      // Get customer ID - use customer management utility for better code organization
+      // Get or create customer for guest checkout/signed-in user
       const customerId = await getOrCreateCustomer(props.customerData, session?.user?.id);
       console.log("Customer ID obtained:", customerId);
       
@@ -185,7 +184,7 @@ export const useOrderSubmission = () => {
             deliveryAddress: props.customerData.address || null,
             deliveryTimeSlot
           });
-          
+
           if (orderResult) {
             orderIds.push(orderResult.id);
             console.log(`Order created with ID ${orderResult.id}`);
@@ -194,8 +193,8 @@ export const useOrderSubmission = () => {
           console.error(`Error creating order for category ${categoryId}:`, orderError);
           throw new Error(`Failed to create order: ${orderError.message}`);
         }
-        
-        // If this is a delivery order with a selected time slot, book it
+
+        // Book delivery time slot if necessary
         if (orderResult && categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
           try {
             const { error: bookingError } = await supabase
@@ -206,7 +205,7 @@ export const useOrderSubmission = () => {
                 delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
                 time_slot: deliveryTimeSlot
               });
-              
+
             if (bookingError) {
               console.warn(`Failed to book delivery time slot, but continuing:`, bookingError);
             } else {
