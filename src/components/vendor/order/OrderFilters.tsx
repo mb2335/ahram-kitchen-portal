@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -30,12 +29,12 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const handleFilterChange = (key: keyof OrderFilters, value: any) => {
-    // If value is "all", set it to undefined in the external filter state
-    const newValue = value === "all" ? undefined : value;
-    const newFilters = { ...filters, [key]: value }; // Keep "all" value in internal state
+    console.log(`Filter changed: ${key} = ${value}`);
+    // Keep "all" value in internal state
+    const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     
-    // Create external filters object with correct values
+    // Create external filters object with correct values - we only pass non-"all" values
     const externalFilters: OrderFilters = {};
     
     // Only add properties to externalFilters if they aren't "all"
@@ -55,6 +54,9 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
     if (dateRange?.from) {
       externalFilters.date = dateRange.from;
     }
+    
+    // Log the filters being applied
+    console.log('Applied filters:', externalFilters);
     
     onFilterChange(externalFilters);
   };

@@ -65,7 +65,15 @@ export function OrderManagement() {
       // Date filtering - compare only the date portion, not time
       if (filters.date) {
         const selectedDate = new Date(filters.date);
+        // Make sure we're working with a date object for the order
         const orderDate = new Date(order.delivery_date);
+        
+        // Log for debugging
+        console.log('Comparing dates:', {
+          selectedDate: `${selectedDate.getFullYear()}-${selectedDate.getMonth()+1}-${selectedDate.getDate()}`,
+          orderDate: `${orderDate.getFullYear()}-${orderDate.getMonth()+1}-${orderDate.getDate()}`,
+          order: order.id
+        });
         
         // Compare year, month, and day only
         if (
@@ -77,8 +85,21 @@ export function OrderManagement() {
         }
       }
 
+      // Pickup location filtering - if a location is selected, only show pickup orders with that location
+      if (filters.pickupLocation && filters.pickupLocation !== 'all') {
+        // If this is a delivery order, it doesn't match a pickup location filter
+        if (order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY) {
+          return false;
+        }
+        
+        // For pickup orders, check if location matches
+        if (order.pickup_location !== filters.pickupLocation) {
+          return false;
+        }
+      }
+
       // Category filtering - check if any item in the order belongs to the selected category
-      if (filters.categoryId) {
+      if (filters.categoryId && filters.categoryId !== 'all') {
         const hasCategory = order.order_items?.some(item => 
           item.menu_item?.category?.id === filters.categoryId
         );
@@ -86,12 +107,8 @@ export function OrderManagement() {
       }
 
       // Fulfillment type filtering
-      if (filters.fulfillmentType && order.fulfillment_type !== filters.fulfillmentType) {
-        return false;
-      }
-
-      // Pickup location filtering
-      if (filters.pickupLocation && order.pickup_location !== filters.pickupLocation) {
+      if (filters.fulfillmentType && filters.fulfillmentType !== 'all' && 
+          order.fulfillment_type !== filters.fulfillmentType) {
         return false;
       }
 
@@ -233,4 +250,3 @@ export function OrderManagement() {
     </div>
   );
 }
-
