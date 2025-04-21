@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,12 +17,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 
 interface SendSMSDialogProps {
-  orders: Array<any>;
-  categories: Array<{ id: string; name: string }>;
-  pickupLocations: Array<string>;
+  orders?: Array<any>;
+  categories?: Array<{ id: string; name: string }>;
+  pickupLocations?: Array<string>;
+  recipients?: Array<{ phone: string; name: string }>;
 }
 
-export function SendSMSDialog({ orders, categories, pickupLocations }: SendSMSDialogProps) {
+export function SendSMSDialog({ orders = [], categories = [], pickupLocations = [], recipients }: SendSMSDialogProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -67,6 +67,10 @@ export function SendSMSDialog({ orders, categories, pickupLocations }: SendSMSDi
   };
 
   const getRecipients = () => {
+    if (recipients && recipients.length > 0) {
+      return recipients;
+    }
+    
     const filteredOrders = filterOrders(orders);
     return filteredOrders
       .filter(order => order.customer?.phone)
@@ -77,14 +81,14 @@ export function SendSMSDialog({ orders, categories, pickupLocations }: SendSMSDi
   };
 
   const handleSendSMS = async () => {
-    const recipients = getRecipients();
-    if (!message.trim() || recipients.length === 0) return;
+    const finalRecipients = getRecipients();
+    if (!message.trim() || finalRecipients.length === 0) return;
 
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
-          phoneNumbers: recipients.map(r => r.phone),
+          phoneNumbers: finalRecipients.map(r => r.phone),
           message: message.trim()
         }
       });
@@ -121,12 +125,13 @@ export function SendSMSDialog({ orders, categories, pickupLocations }: SendSMSDi
   };
 
   const recipientCount = getRecipients().length;
+  const buttonLabel = recipients?.length ? `Send SMS (${recipients.length})` : `Send SMS (${orders.length})`;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          Send SMS ({orders.length})
+          {buttonLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-xl">
@@ -134,91 +139,93 @@ export function SendSMSDialog({ orders, categories, pickupLocations }: SendSMSDi
           <DialogTitle>Send SMS</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Order Status</Label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {!recipients && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Order Status</Label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <DatePicker
-                date={filters.date}
-                onSelect={(date) => setFilters(prev => ({ ...prev, date }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <DatePicker
+                  date={filters.date}
+                  onSelect={(date) => setFilters(prev => ({ ...prev, date }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select
-                value={filters.categoryId}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={filters.categoryId}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Fulfillment Type</Label>
-              <Select
-                value={filters.fulfillmentType}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, fulfillmentType: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
-                  <SelectItem value={FULFILLMENT_TYPE_PICKUP}>Pickup</SelectItem>
-                  <SelectItem value={FULFILLMENT_TYPE_DELIVERY}>Delivery</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label>Fulfillment Type</Label>
+                <Select
+                  value={filters.fulfillmentType}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, fulfillmentType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All types</SelectItem>
+                    <SelectItem value={FULFILLMENT_TYPE_PICKUP}>Pickup</SelectItem>
+                    <SelectItem value={FULFILLMENT_TYPE_DELIVERY}>Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Pickup Location</Label>
-              <Select
-                value={filters.pickupLocation}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, pickupLocation: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All locations</SelectItem>
-                  {pickupLocations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Pickup Location</Label>
+                <Select
+                  value={filters.pickupLocation}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, pickupLocation: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All locations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All locations</SelectItem>
+                    {pickupLocations.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="text-sm text-gray-500">
             Recipients: {recipientCount} customer{recipientCount !== 1 ? 's' : ''}
