@@ -60,13 +60,13 @@ export function FulfillmentSettings({
     },
   });
 
-  // Fetch all pickup settings without vendor filter
+  // Fetch all pickup settings - without filtering by vendor_id
   const { data: pickupSettings = [], isLoading: isLoadingPickup } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
       try {
         console.log('Fetching all pickup settings');
-        // Query all pickup settings without any vendor filter
+        
         const { data, error } = await supabase
           .from('pickup_settings')
           .select('*');

@@ -49,11 +49,13 @@ export function PickupLocationSelector({
       console.log(`Fetching pickup settings for day ${dayOfWeek}`);
       
       try {
-        // Fetch pickup settings for the selected day - no vendor filtering
-        const { data, error } = await supabase
+        // Fetch pickup settings for the selected day without vendor filtering
+        let query = supabase
           .from('pickup_settings')
           .select('*')
           .eq('day', dayOfWeek);
+        
+        const { data, error } = await query;
         
         if (error) {
           console.error(`Error fetching pickup settings for day ${dayOfWeek}:`, error);
@@ -78,7 +80,7 @@ export function PickupLocationSelector({
       return;
     }
     
-    if (pickupSettings.length === 0) {
+    if (!pickupSettings || pickupSettings.length === 0) {
       setAvailablePickupDetails([]);
       setError(`No pickup locations are available for this date. Please select another date.`);
       return;

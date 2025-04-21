@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Category } from "@/components/vendor/menu/types/category";
 import { DaySelector } from "./pickup/DaySelector";
+import { useVendorId } from "@/hooks/useVendorId";
 
 // Day names array for display purposes
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -27,6 +28,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { vendorId } = useVendorId();
 
   // Save pickup setting
   const handleSavePickupSetting = async () => {
@@ -42,14 +44,14 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
     setIsLoading(true);
 
     try {
-      // We'll use the vendor's ID if available, but the important thing is 
-      // to make sure pickup settings are created consistently
+      // Include vendor_id when creating pickup settings
       const { error } = await supabase
         .from('pickup_settings')
         .insert({
           day: selectedDay,
           time: pickupTime,
-          location: location
+          location: location,
+          vendor_id: vendorId
         });
 
       if (error) throw error;
