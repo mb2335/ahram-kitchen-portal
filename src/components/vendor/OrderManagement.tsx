@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
@@ -94,6 +95,33 @@ export function OrderManagement() {
     const statusFiltered = orders?.filter(order => order.status === status) || [];
     return filterOrders(statusFiltered);
   };
+
+  // Extract unique categories from orders
+  const uniqueCategories = new Set();
+  const categories = orders?.flatMap(order => 
+    order.order_items?.map(item => {
+      const category = item.menu_item?.category;
+      if (category && !uniqueCategories.has(category.id)) {
+        uniqueCategories.add(category.id);
+        return {
+          id: category.id,
+          name: category.name,
+          name_ko: category.name_ko
+        };
+      }
+      return null;
+    })
+  )
+  .filter(Boolean) || [];
+
+  // Extract unique pickup locations from orders
+  const pickupLocations = Array.from(new Set(
+    orders?.map(order => order.pickup_location).filter(Boolean) || []
+  ));
+
+  // Count orders by fulfillment type
+  const pickupCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length || 0;
+  const deliveryCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length || 0;
 
   const getSMSRecipients = (orders: Order[]) => {
     return orders
