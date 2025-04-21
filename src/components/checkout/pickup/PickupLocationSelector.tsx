@@ -115,7 +115,7 @@ export function PickupLocationSelector({
       // Auto-select the first option if none is selected yet
       handleLocationSelect(`${details[0].location}-${details[0].time}`);
     }
-  }, [pickupSettings, selectedDate, selectedPickupDetail]);
+  }, [pickupSettings, selectedDate]);  // Removed selectedPickupDetail from dependencies to avoid infinite loop
 
   const handleLocationSelect = (value: string) => {
     setSelectedLocation(value);

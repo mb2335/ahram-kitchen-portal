@@ -89,6 +89,11 @@ export function FulfillmentSettings({
 
   // Create sets of available days for each fulfillment type
   const availablePickupDays = useMemo(() => {
+    if (!pickupSettings || pickupSettings.length === 0) {
+      console.log("No pickup settings found, returning empty set");
+      return new Set();
+    }
+    
     const days = new Set(pickupSettings.map(setting => setting.day));
     console.log("Available pickup days:", Array.from(days));
     return days;
@@ -128,6 +133,7 @@ export function FulfillmentSettings({
     if (isLoading) return;
     
     if (usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP) && pickupSettings.length > 0) {
+      console.log("Updating pickup dates based on settings:", pickupSettings.length);
       const currentPickupDate = selectedDates[FULFILLMENT_TYPE_PICKUP];
       if (currentPickupDate && !isDateAvailable(currentPickupDate, FULFILLMENT_TYPE_PICKUP)) {
         // Find the next available pickup date
