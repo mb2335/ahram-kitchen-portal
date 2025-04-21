@@ -81,7 +81,7 @@ const translations = {
     'checkout.thankyou.vieworders': 'View Order History',
     'orders.page.title': 'Order History',
     'orders.loading': 'Loading your orders...',
-    'orders.empty': "You haven't placed any orders yet.",
+    'category.settings.title': 'Category Settings',
     'profile.page.title': 'Customer Profile',
     'profile.fullName': 'Full Name',
     'profile.email': 'Email',
@@ -107,7 +107,6 @@ const translations = {
     'auth.hasAccount': 'Already have an account?',
     'auth.processing': 'Creating Account...',
     'auth.signingIn': 'Signing in...',
-    'category.settings.title': 'Category Settings',
   },
   ko: {
     'nav.menu': '메뉴',
@@ -180,7 +179,7 @@ const translations = {
     'checkout.thankyou.vieworders': '주문 내역 보기',
     'orders.page.title': '주문 내역',
     'orders.loading': '주문을 불러오는 중...',
-    'orders.empty': '아직 주문 내역이 없습니다.',
+    'category.settings.title': '카테고리 설정',
     'profile.page.title': '고객 프로필',
     'profile.fullName': '이름',
     'profile.email': '이메일',
@@ -206,7 +205,6 @@ const translations = {
     'auth.hasAccount': '이미 계정이 있으신가요?',
     'auth.processing': '계정 생성 중...',
     'auth.signingIn': '로그인 중...',
-    'category.settings.title': '카테고리 설정',
   },
 };
 
