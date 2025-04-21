@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
@@ -16,26 +15,46 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { OrderFilters } from './OrderFilters';
 
 interface SendSMSDialogProps {
   orders?: Array<any>;
   categories?: Array<{ id: string; name: string }>;
   pickupLocations?: Array<string>;
-  recipients?: Array<{ phone: string; name: string }>;
+  currentFilters?: OrderFilters;
 }
 
-export function SendSMSDialog({ orders = [], categories = [], pickupLocations = [], recipients }: SendSMSDialogProps) {
+export function SendSMSDialog({ 
+  orders = [], 
+  categories = [], 
+  pickupLocations = [],
+  currentFilters
+}: SendSMSDialogProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [filters, setFilters] = useState({
-    date: null as Date | null,
-    categoryId: 'all',
-    pickupLocation: 'all',
-    fulfillmentType: 'all',
+    date: currentFilters?.date || null as Date | null,
+    categoryId: currentFilters?.categoryId || 'all',
+    pickupLocation: currentFilters?.pickupLocation || 'all',
+    fulfillmentType: currentFilters?.fulfillmentType || 'all',
     status: 'all'
   });
   const { toast } = useToast();
+
+  // Update filters when currentFilters change
+  useEffect(() => {
+    if (currentFilters) {
+      setFilters(prev => ({
+        ...prev,
+        date: currentFilters.date || null,
+        categoryId: currentFilters.categoryId || 'all',
+        pickupLocation: currentFilters.pickupLocation || 'all',
+        fulfillmentType: currentFilters.fulfillmentType || 'all'
+      }));
+    }
+  }, [currentFilters]);
 
   const filterOrders = (orders: any[]) => {
     return orders.filter(order => {
@@ -68,10 +87,6 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
   };
 
   const getRecipients = () => {
-    if (recipients && recipients.length > 0) {
-      return recipients;
-    }
-    
     const filteredOrders = filterOrders(orders);
     return filteredOrders
       .filter(order => order.customer?.phone)
@@ -125,8 +140,8 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
     }
   };
 
-  const recipientCount = getRecipients().length;
-  const buttonLabel = recipients?.length ? `Send SMS (${recipients.length})` : `Send SMS (${orders.length})`;
+  const recipients = getRecipients();
+  const buttonLabel = `Send SMS (${recipients.length})`;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -228,8 +243,15 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
             </div>
           )}
 
-          <div className="text-sm text-gray-500">
-            Recipients: {recipientCount} customer{recipientCount !== 1 ? 's' : ''}
+          <div className="space-y-2">
+            <Label>Recipients ({recipients.length})</Label>
+            <ScrollArea className="h-[100px] w-full rounded-md border p-2">
+              {recipients.map((recipient, index) => (
+                <div key={index} className="py-1">
+                  {recipient.name} ({recipient.phone})
+                </div>
+              ))}
+            </ScrollArea>
           </div>
 
           <Textarea
@@ -250,7 +272,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
             </Button>
             <Button
               onClick={handleSendSMS}
-              disabled={sending || !message.trim() || recipientCount === 0}
+              disabled={sending || !message.trim() || recipients.length === 0}
             >
               {sending ? (
                 <>
@@ -258,7 +280,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                   Sending...
                 </>
               ) : (
-                `Send SMS (${recipientCount})`
+                `Send SMS (${recipients.length})`
               )}
             </Button>
           </div>

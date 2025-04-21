@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
@@ -62,20 +61,11 @@ export function OrderManagement() {
 
   const filterOrders = (orders: Order[]) => {
     return orders?.filter(order => {
-      // Date filtering - compare only the date portion, not time
+      // Date filtering
       if (filters.date) {
         const selectedDate = new Date(filters.date);
-        // Make sure we're working with a date object for the order
         const orderDate = new Date(order.delivery_date);
         
-        // Log for debugging
-        console.log('Comparing dates:', {
-          selectedDate: `${selectedDate.getFullYear()}-${selectedDate.getMonth()+1}-${selectedDate.getDate()}`,
-          orderDate: `${orderDate.getFullYear()}-${orderDate.getMonth()+1}-${orderDate.getDate()}`,
-          order: order.id
-        });
-        
-        // Compare year, month, and day only
         if (
           selectedDate.getFullYear() !== orderDate.getFullYear() ||
           selectedDate.getMonth() !== orderDate.getMonth() ||
@@ -85,31 +75,29 @@ export function OrderManagement() {
         }
       }
 
-      // Pickup location filtering - if a location is selected, only show pickup orders with that location
-      if (filters.pickupLocation && filters.pickupLocation !== 'all') {
-        // If this is a delivery order, it doesn't match a pickup location filter
-        if (order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY) {
+      // Fulfillment type filtering - must be checked before pickup location
+      if (filters.fulfillmentType && filters.fulfillmentType !== 'all') {
+        if (order.fulfillment_type !== filters.fulfillmentType) {
           return false;
         }
-        
-        // For pickup orders, check if location matches
+      }
+
+      // Pickup location filtering - only applied to pickup orders
+      if (filters.pickupLocation && filters.pickupLocation !== 'all') {
+        if (order.fulfillment_type !== FULFILLMENT_TYPE_PICKUP) {
+          return false;
+        }
         if (order.pickup_location !== filters.pickupLocation) {
           return false;
         }
       }
 
-      // Category filtering - check if any item in the order belongs to the selected category
+      // Category filtering
       if (filters.categoryId && filters.categoryId !== 'all') {
         const hasCategory = order.order_items?.some(item => 
           item.menu_item?.category?.id === filters.categoryId
         );
         if (!hasCategory) return false;
-      }
-
-      // Fulfillment type filtering
-      if (filters.fulfillmentType && filters.fulfillmentType !== 'all' && 
-          order.fulfillment_type !== filters.fulfillmentType) {
-        return false;
       }
 
       return true;
