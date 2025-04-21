@@ -158,7 +158,9 @@ export function OrderManagement() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Orders</h2>
         <SendSMSDialog 
-          recipients={getSMSRecipients(filterOrders(orders || []))}
+          orders={filterOrders(orders || [])}
+          categories={categories}
+          pickupLocations={pickupLocations}
         />
       </div>
       
