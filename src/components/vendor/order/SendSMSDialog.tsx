@@ -181,8 +181,8 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                   <SelectContent>
                     <SelectItem value="all">All categories</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                      <SelectItem key={category.id || "unknown"} value={category.id || "unknown"}>
+                        {category.name || "Unnamed category"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -218,7 +218,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                   <SelectContent>
                     <SelectItem value="all">All locations</SelectItem>
                     {pickupLocations.map((location) => (
-                      <SelectItem key={location || "unknown"} value={location || "unknown"}>
+                      <SelectItem key={location || "unknown-location"} value={location || "unknown-location"}>
                         {location || "Unspecified location"}
                       </SelectItem>
                     ))}
