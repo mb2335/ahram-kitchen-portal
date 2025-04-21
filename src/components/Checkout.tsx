@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderSummary } from './checkout/OrderSummary';
 import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/hooks/useLanguage';
 import { useQuery } from '@tanstack/react-query';
 
 const TAX_RATE = 0.1;

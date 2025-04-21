@@ -8,6 +8,7 @@ import { SignUpForm } from './auth/SignUpForm';
 import { ResetPasswordForm } from './auth/ResetPasswordForm';
 import { RequestPasswordResetForm } from './auth/RequestPasswordResetForm';
 import { useToast } from './ui/use-toast';
+import { useLanguage } from '@/hooks/useLanguage';
 
 // Define an interface for hash parameters
 interface HashParams {
@@ -27,6 +28,7 @@ export function Auth() {
   const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const { toast } = useToast();
   const processedTokenRef = useRef(false);
+  const { t } = useLanguage();
 
   // Process URL hash parameters once
   useEffect(() => {
