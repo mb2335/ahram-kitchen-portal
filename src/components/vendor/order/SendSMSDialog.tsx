@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -151,7 +152,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
@@ -178,7 +179,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
@@ -198,7 +199,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All types</SelectItem>
+                    <SelectItem value="all">All types</SelectItem>
                     <SelectItem value={FULFILLMENT_TYPE_PICKUP}>Pickup</SelectItem>
                     <SelectItem value={FULFILLMENT_TYPE_DELIVERY}>Delivery</SelectItem>
                   </SelectContent>
@@ -215,10 +216,10 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                     <SelectValue placeholder="All locations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All locations</SelectItem>
+                    <SelectItem value="all">All locations</SelectItem>
                     {pickupLocations.map((location) => (
-                      <SelectItem key={location} value={location}>
-                        {location}
+                      <SelectItem key={location} value={location || "unknown"}>
+                        {location || "Unspecified location"}
                       </SelectItem>
                     ))}
                   </SelectContent>

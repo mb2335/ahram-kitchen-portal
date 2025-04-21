@@ -117,8 +117,8 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
             <SelectContent>
               <SelectItem value="all">All locations</SelectItem>
               {pickupLocations.map((location) => (
-                <SelectItem key={location} value={location}>
-                  {location}
+                <SelectItem key={location} value={location || "unknown"}>
+                  {location || "Unspecified location"}
                 </SelectItem>
               ))}
             </SelectContent>
