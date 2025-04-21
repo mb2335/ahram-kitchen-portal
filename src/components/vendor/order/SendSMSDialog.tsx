@@ -30,10 +30,10 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
   const [sending, setSending] = useState(false);
   const [filters, setFilters] = useState({
     date: null as Date | null,
-    categoryId: '',
-    pickupLocation: '',
-    fulfillmentType: '',
-    status: ''
+    categoryId: 'all',
+    pickupLocation: 'all',
+    fulfillmentType: 'all',
+    status: 'all'
   });
   const { toast } = useToast();
 
@@ -44,22 +44,22 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
         if (orderDate.toDateString() !== filters.date.toDateString()) return false;
       }
 
-      if (filters.categoryId) {
+      if (filters.categoryId && filters.categoryId !== 'all') {
         const hasCategory = order.order_items?.some((item: any) => 
           item.menu_item?.category?.id === filters.categoryId
         );
         if (!hasCategory) return false;
       }
 
-      if (filters.fulfillmentType && order.fulfillment_type !== filters.fulfillmentType) {
+      if (filters.fulfillmentType && filters.fulfillmentType !== 'all' && order.fulfillment_type !== filters.fulfillmentType) {
         return false;
       }
 
-      if (filters.pickupLocation && order.pickup_location !== filters.pickupLocation) {
+      if (filters.pickupLocation && filters.pickupLocation !== 'all' && order.pickup_location !== filters.pickupLocation) {
         return false;
       }
 
-      if (filters.status && order.status !== filters.status) {
+      if (filters.status && filters.status !== 'all' && order.status !== filters.status) {
         return false;
       }
 
@@ -109,10 +109,10 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
       setMessage('');
       setFilters({
         date: null,
-        categoryId: '',
-        pickupLocation: '',
-        fulfillmentType: '',
-        status: ''
+        categoryId: 'all',
+        pickupLocation: 'all',
+        fulfillmentType: 'all',
+        status: 'all'
       });
     } catch (error: any) {
       toast({
@@ -218,7 +218,7 @@ export function SendSMSDialog({ orders = [], categories = [], pickupLocations = 
                   <SelectContent>
                     <SelectItem value="all">All locations</SelectItem>
                     {pickupLocations.map((location) => (
-                      <SelectItem key={location} value={location || "unknown"}>
+                      <SelectItem key={location || "unknown"} value={location || "unknown"}>
                         {location || "Unspecified location"}
                       </SelectItem>
                     ))}

@@ -22,19 +22,35 @@ export interface OrderFilters {
 }
 
 export function OrderFilters({ onFilterChange, categories, pickupLocations }: OrderFiltersProps) {
-  const [filters, setFilters] = useState<OrderFilters>({});
+  const [filters, setFilters] = useState<OrderFilters>({
+    categoryId: 'all',
+    pickupLocation: 'all',
+    fulfillmentType: 'all'
+  });
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const handleFilterChange = (key: keyof OrderFilters, value: any) => {
-    // If value is "all", set it to undefined to clear the filter
+    // If value is "all", set it to undefined in the external filter state
     const newValue = value === "all" ? undefined : value;
-    const newFilters = { ...filters, [key]: newValue };
+    const newFilters = { ...filters, [key]: value }; // Keep "all" value in internal state
     setFilters(newFilters);
-    onFilterChange(newFilters);
+    
+    // Send undefined for "all" values to parent component
+    const externalFilters = { ...newFilters };
+    if (value === "all") {
+      externalFilters[key] = undefined;
+    }
+    
+    onFilterChange(externalFilters);
   };
 
   const clearFilters = () => {
-    setFilters({});
+    const clearedFilters = {
+      categoryId: 'all',
+      pickupLocation: 'all',
+      fulfillmentType: 'all'
+    };
+    setFilters(clearedFilters);
     setDateRange(undefined);
     onFilterChange({});
   };
@@ -71,7 +87,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         <div className="space-y-2">
           <Label>Category</Label>
           <Select
-            value={filters.categoryId || "all"}
+            value={filters.categoryId}
             onValueChange={(value) => handleFilterChange('categoryId', value)}
           >
             <SelectTrigger>
@@ -91,7 +107,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         <div className="space-y-2">
           <Label>Fulfillment Type</Label>
           <Select
-            value={filters.fulfillmentType || "all"}
+            value={filters.fulfillmentType}
             onValueChange={(value) => handleFilterChange('fulfillmentType', value)}
           >
             <SelectTrigger>
@@ -108,7 +124,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
         <div className="space-y-2">
           <Label>Pickup Location</Label>
           <Select
-            value={filters.pickupLocation || "all"}
+            value={filters.pickupLocation}
             onValueChange={(value) => handleFilterChange('pickupLocation', value)}
           >
             <SelectTrigger>
@@ -117,7 +133,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
             <SelectContent>
               <SelectItem value="all">All locations</SelectItem>
               {pickupLocations.map((location) => (
-                <SelectItem key={location} value={location || "unknown"}>
+                <SelectItem key={location || "unknown"} value={location || "unknown"}>
                   {location || "Unspecified location"}
                 </SelectItem>
               ))}
