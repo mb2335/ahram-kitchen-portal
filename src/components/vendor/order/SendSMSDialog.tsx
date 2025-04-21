@@ -18,8 +18,14 @@ import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/orde
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OrderFilters } from './OrderFilters';
 
-interface SendSMSDialogProps {
+interface Recipient {
+  phone: string;
+  name: string;
+}
+
+export interface SendSMSDialogProps {
   orders?: Array<any>;
+  recipients?: Array<Recipient>;
   categories?: Array<{ id: string; name: string }>;
   pickupLocations?: Array<string>;
   currentFilters?: OrderFilters;
@@ -27,6 +33,7 @@ interface SendSMSDialogProps {
 
 export function SendSMSDialog({ 
   orders = [], 
+  recipients: initialRecipients,
   categories = [], 
   pickupLocations = [],
   currentFilters
@@ -74,8 +81,9 @@ export function SendSMSDialog({
         return false;
       }
 
-      if (filters.pickupLocation && filters.pickupLocation !== 'all' && order.pickup_location !== filters.pickupLocation) {
-        return false;
+      if (filters.pickupLocation && filters.pickupLocation !== 'all') {
+        if (order.fulfillment_type !== 'pickup') return false;
+        if (order.pickup_location !== filters.pickupLocation) return false;
       }
 
       if (filters.status && filters.status !== 'all' && order.status !== filters.status) {
@@ -87,6 +95,12 @@ export function SendSMSDialog({
   };
 
   const getRecipients = () => {
+    // If we have direct recipients passed, use those
+    if (initialRecipients && initialRecipients.length > 0) {
+      return initialRecipients;
+    }
+    
+    // Otherwise extract recipients from filtered orders
     const filteredOrders = filterOrders(orders);
     return filteredOrders
       .filter(order => order.customer?.phone)
@@ -155,7 +169,7 @@ export function SendSMSDialog({
           <DialogTitle>Send SMS</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 pt-4">
-          {!recipients && (
+          {!initialRecipients && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Order Status</Label>
@@ -196,7 +210,7 @@ export function SendSMSDialog({
                   <SelectContent>
                     <SelectItem value="all">All categories</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category.id || "unknown"} value={category.id || "unknown"}>
+                      <SelectItem key={category.id || "unknown-category"} value={category.id || "unknown-category"}>
                         {category.name || "Unnamed category"}
                       </SelectItem>
                     ))}
