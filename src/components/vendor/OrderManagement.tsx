@@ -46,7 +46,6 @@ export function OrderManagement() {
           title: 'Success',
           description: 'Order deleted successfully',
         });
-        // Immediately refetch orders after successful deletion
         await refetch();
       } else {
         throw new Error(result.error);
@@ -65,14 +64,12 @@ export function OrderManagement() {
       const selectedDate = filters.date ? new Date(filters.date) : null;
       const orderDate = new Date(order.delivery_date);
 
-      // Date filter
       if (selectedDate) {
         const orderDateString = orderDate.toDateString();
         const selectedDateString = selectedDate.toDateString();
         if (orderDateString !== selectedDateString) return false;
       }
 
-      // Category filter
       if (filters.categoryId) {
         const hasCategory = order.order_items?.some(item => 
           item.menu_item?.category?.id === filters.categoryId
@@ -80,12 +77,10 @@ export function OrderManagement() {
         if (!hasCategory) return false;
       }
 
-      // Fulfillment type filter
       if (filters.fulfillmentType && order.fulfillment_type !== filters.fulfillmentType) {
         return false;
       }
 
-      // Pickup location filter
       if (filters.pickupLocation && order.pickup_location !== filters.pickupLocation) {
         return false;
       }
@@ -100,32 +95,14 @@ export function OrderManagement() {
     return filterOrders(statusFiltered);
   };
 
-  // Extract unique categories from orders
-  const uniqueCategories = new Set();
-  const categories = orders?.flatMap(order => 
-    order.order_items?.map(item => {
-      const category = item.menu_item?.category;
-      if (category && !uniqueCategories.has(category.id)) {
-        uniqueCategories.add(category.id);
-        return {
-          id: category.id,
-          name: category.name,
-          name_ko: category.name_ko
-        };
-      }
-      return null;
-    })
-  )
-  .filter(Boolean) || [];
-
-  // Extract unique pickup locations from orders
-  const pickupLocations = Array.from(new Set(
-    orders?.map(order => order.pickup_location).filter(Boolean) || []
-  ));
-
-  // Count orders by fulfillment type
-  const pickupCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length || 0;
-  const deliveryCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length || 0;
+  const getSMSRecipients = (orders: Order[]) => {
+    return orders
+      .filter(order => order.customer?.phone)
+      .map(order => ({
+        phone: order.customer!.phone!,
+        name: order.customer!.full_name
+      }));
+  };
 
   const renderOrdersList = (filteredOrders: Order[]) => {
     if (filteredOrders.length === 0) {
@@ -146,16 +123,6 @@ export function OrderManagement() {
         />
       </OrderCard>
     ));
-  };
-
-  // Get SMS recipients from filtered orders
-  const getSMSRecipients = (orders: Order[]) => {
-    return orders
-      .filter(order => order.customer?.phone)
-      .map(order => ({
-        phone: order.customer!.phone!,
-        name: order.customer!.full_name
-      }));
   };
 
   return (

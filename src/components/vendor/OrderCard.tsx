@@ -6,6 +6,7 @@ import { OrderActions } from './order/OrderActions';
 import { PickupDetails } from './order/PickupDetails';
 import { PaymentProof } from './order/PaymentProof';
 import { OrderSummary } from '@/components/shared/OrderSummary';
+import { SendSMSDialog } from './order/SendSMSDialog';
 
 interface OrderCardProps {
   order: Order;
@@ -31,6 +32,11 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
     discount_percentage: item.menu_item?.discount_percentage,
     category: item.menu_item?.category
   })) || [];
+
+  const smsRecipient = order.customer?.phone ? [{
+    phone: order.customer.phone,
+    name: order.customer.full_name
+  }] : [];
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
@@ -64,12 +70,18 @@ export function OrderCard({ order, onDelete, children }: OrderCardProps) {
         rejectionReason={order.rejection_reason} 
       />
 
-      <OrderActions 
-        onDelete={onDelete} 
-        orderId={order.id}
-      >
-        {children}
-      </OrderActions>
+      <div className="flex justify-between items-center">
+        <OrderActions 
+          onDelete={onDelete} 
+          orderId={order.id}
+        >
+          {children}
+        </OrderActions>
+        
+        {order.customer?.phone && (
+          <SendSMSDialog recipients={smsRecipient} />
+        )}
+      </div>
     </div>
   );
 }
