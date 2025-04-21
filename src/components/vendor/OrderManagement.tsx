@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
@@ -9,6 +8,7 @@ import { useVendorOrders } from '@/hooks/useOrders';
 import { OrderFilters } from './order/OrderFilters';
 import type { OrderFilters as OrderFiltersType } from './order/OrderFilters';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
+import { SendSMSDialog } from './order/SendSMSDialog';
 
 export function OrderManagement() {
   const [rejectionReason, setRejectionReason] = useState('');
@@ -148,9 +148,24 @@ export function OrderManagement() {
     ));
   };
 
+  // Get SMS recipients from filtered orders
+  const getSMSRecipients = (orders: Order[]) => {
+    return orders
+      .filter(order => order.customer?.phone)
+      .map(order => ({
+        phone: order.customer!.phone!,
+        name: order.customer!.full_name
+      }));
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Orders</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Orders</h2>
+        <SendSMSDialog 
+          recipients={getSMSRecipients(filterOrders(orders || []))}
+        />
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-muted/30 rounded-lg p-4 text-center">
