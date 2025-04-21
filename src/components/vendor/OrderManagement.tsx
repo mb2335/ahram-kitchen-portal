@@ -62,15 +62,22 @@ export function OrderManagement() {
 
   const filterOrders = (orders: Order[]) => {
     return orders?.filter(order => {
-      const selectedDate = filters.date ? new Date(filters.date) : null;
-      const orderDate = new Date(order.delivery_date);
-
-      if (selectedDate) {
-        const orderDateString = orderDate.toDateString();
-        const selectedDateString = selectedDate.toDateString();
-        if (orderDateString !== selectedDateString) return false;
+      // Date filtering - compare only the date portion, not time
+      if (filters.date) {
+        const selectedDate = new Date(filters.date);
+        const orderDate = new Date(order.delivery_date);
+        
+        // Compare year, month, and day only
+        if (
+          selectedDate.getFullYear() !== orderDate.getFullYear() ||
+          selectedDate.getMonth() !== orderDate.getMonth() ||
+          selectedDate.getDate() !== orderDate.getDate()
+        ) {
+          return false;
+        }
       }
 
+      // Category filtering - check if any item in the order belongs to the selected category
       if (filters.categoryId) {
         const hasCategory = order.order_items?.some(item => 
           item.menu_item?.category?.id === filters.categoryId
@@ -78,16 +85,18 @@ export function OrderManagement() {
         if (!hasCategory) return false;
       }
 
+      // Fulfillment type filtering
       if (filters.fulfillmentType && order.fulfillment_type !== filters.fulfillmentType) {
         return false;
       }
 
+      // Pickup location filtering
       if (filters.pickupLocation && order.pickup_location !== filters.pickupLocation) {
         return false;
       }
 
       return true;
-    });
+    }) || [];
   };
 
   const getFilteredOrders = (status: string) => {
@@ -224,3 +233,4 @@ export function OrderManagement() {
     </div>
   );
 }
+

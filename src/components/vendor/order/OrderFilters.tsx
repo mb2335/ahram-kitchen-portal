@@ -35,10 +35,25 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
     const newFilters = { ...filters, [key]: value }; // Keep "all" value in internal state
     setFilters(newFilters);
     
-    // Send undefined for "all" values to parent component
-    const externalFilters = { ...newFilters };
-    if (value === "all") {
-      externalFilters[key] = undefined;
+    // Create external filters object with correct values
+    const externalFilters: OrderFilters = {};
+    
+    // Only add properties to externalFilters if they aren't "all"
+    if (newFilters.categoryId && newFilters.categoryId !== 'all') {
+      externalFilters.categoryId = newFilters.categoryId;
+    }
+    
+    if (newFilters.pickupLocation && newFilters.pickupLocation !== 'all') {
+      externalFilters.pickupLocation = newFilters.pickupLocation;
+    }
+    
+    if (newFilters.fulfillmentType && newFilters.fulfillmentType !== 'all') {
+      externalFilters.fulfillmentType = newFilters.fulfillmentType;
+    }
+    
+    // Add date separately as it's handled differently
+    if (dateRange?.from) {
+      externalFilters.date = dateRange.from;
     }
     
     onFilterChange(externalFilters);
@@ -77,7 +92,21 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
             date={dateRange}
             onSelect={(newDateRange: DateRange | undefined) => {
               setDateRange(newDateRange);
-              handleFilterChange('date', newDateRange?.from);
+              if (newDateRange?.from) {
+                handleFilterChange('date', newDateRange.from);
+              } else {
+                // If date is cleared, update filters
+                const newFilters = { ...filters };
+                delete newFilters.date;
+                setFilters(newFilters);
+                
+                // Create new external filters without the date
+                const externalFilters: OrderFilters = {};
+                if (filters.categoryId && filters.categoryId !== 'all') externalFilters.categoryId = filters.categoryId;
+                if (filters.pickupLocation && filters.pickupLocation !== 'all') externalFilters.pickupLocation = filters.pickupLocation;
+                if (filters.fulfillmentType && filters.fulfillmentType !== 'all') externalFilters.fulfillmentType = filters.fulfillmentType;
+                onFilterChange(externalFilters);
+              }
             }}
             mode="single"
             className="w-full"
@@ -96,7 +125,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id || "unknown-category"}>
+                <SelectItem key={category.id || "unknown-category"} value={category.id || "unknown-category"}>
                   {category.name || "Unnamed category"}
                 </SelectItem>
               ))}
