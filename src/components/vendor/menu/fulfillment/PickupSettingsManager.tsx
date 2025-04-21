@@ -41,26 +41,38 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
       return;
     }
 
+    if (!vendorId) {
+      toast({
+        title: "Cannot Create Setting",
+        description: "Vendor ID is required to create pickup settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Include vendor_id when creating pickup settings
+      console.log("Creating global pickup setting with vendor_id:", vendorId);
+      
+      // Always include vendor_id when creating pickup settings
       const { error } = await supabase
         .from('pickup_settings')
         .insert({
           day: selectedDay,
           time: pickupTime,
           location: location,
-          vendor_id: vendorId
+          vendor_id: vendorId // Associate with the vendor but settings are global for checkout
         });
 
       if (error) throw error;
 
+      // Invalidate both the vendor-specific and global pickup settings queries
       queryClient.invalidateQueries({ queryKey: ['pickup-settings'] });
 
       toast({
         title: "Success",
-        description: `Pickup setting for ${dayNames[selectedDay]} has been saved.`
+        description: `Pickup setting for ${dayNames[selectedDay]} has been saved and will be available to all customers.`
       });
 
       // Reset the form
@@ -83,7 +95,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
         <CardContent className="pt-6">
           <h3 className="text-lg font-medium mb-4">Pickup Configuration</h3>
           <p className="text-sm text-muted-foreground mb-6">
-            Configure your pickup days, times, and locations. These settings will apply to all items that have pickup as a fulfillment option.
+            Configure your pickup days, times, and locations. These settings will apply globally to all customers during checkout.
           </p>
 
           <div className="space-y-6">

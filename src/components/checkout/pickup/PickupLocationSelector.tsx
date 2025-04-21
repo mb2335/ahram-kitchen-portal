@@ -40,7 +40,7 @@ export function PickupLocationSelector({
   // Calculate day of week from selected date
   const dayOfWeek = selectedDate ? selectedDate.getDay() : -1;
   
-  // Query pickup settings for the selected day
+  // Query pickup settings for the selected day - globally without vendor filtering
   const { data: pickupSettings = [], isLoading } = useQuery({
     queryKey: ['pickup-settings', dayOfWeek],
     queryFn: async () => {
@@ -49,13 +49,11 @@ export function PickupLocationSelector({
       console.log(`Fetching pickup settings for day ${dayOfWeek}`);
       
       try {
-        // Fetch pickup settings for the selected day without vendor filtering
-        let query = supabase
+        // Fetch ALL pickup settings for the selected day without any vendor filtering
+        const { data, error } = await supabase
           .from('pickup_settings')
           .select('*')
           .eq('day', dayOfWeek);
-        
-        const { data, error } = await query;
         
         if (error) {
           console.error(`Error fetching pickup settings for day ${dayOfWeek}:`, error);
@@ -86,7 +84,7 @@ export function PickupLocationSelector({
       return;
     }
     
-    // Map pickup settings to pickup details
+    // Map pickup settings to pickup details - using all available settings
     const details = pickupSettings.map(setting => ({
       day: setting.day,
       time: setting.time || '',
