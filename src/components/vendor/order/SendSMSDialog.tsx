@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +10,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -82,7 +84,7 @@ export function SendSMSDialog({
       }
 
       if (filters.pickupLocation && filters.pickupLocation !== 'all') {
-        if (order.fulfillment_type !== 'pickup') return false;
+        if (order.fulfillment_type !== FULFILLMENT_TYPE_PICKUP) return false;
         if (order.pickup_location !== filters.pickupLocation) return false;
       }
 
@@ -123,7 +125,14 @@ export function SendSMSDialog({
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error invoking edge function:', error);
+        throw new Error(error.message || 'Failed to send SMS notifications');
+      }
+
+      if (!data || !data.results) {
+        throw new Error('Invalid response from server');
+      }
 
       const successCount = data.results.filter((r: any) => r.success).length;
       const failCount = data.results.filter((r: any) => !r.success).length;
@@ -144,6 +153,7 @@ export function SendSMSDialog({
         status: 'all'
       });
     } catch (error: any) {
+      console.error('SMS sending error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to send SMS notifications',
@@ -167,6 +177,9 @@ export function SendSMSDialog({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Send SMS</DialogTitle>
+          <DialogDescription>
+            Send SMS notifications to customers based on your filters or selected recipients.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 pt-4">
           {!initialRecipients && (
@@ -260,11 +273,17 @@ export function SendSMSDialog({
           <div className="space-y-2">
             <Label>Recipients ({recipients.length})</Label>
             <ScrollArea className="h-[100px] w-full rounded-md border p-2">
-              {recipients.map((recipient, index) => (
-                <div key={index} className="py-1">
-                  {recipient.name} ({recipient.phone})
+              {recipients.length > 0 ? (
+                recipients.map((recipient, index) => (
+                  <div key={index} className="py-1">
+                    {recipient.name} ({recipient.phone})
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-4">
+                  No recipients match the selected filters
                 </div>
-              ))}
+              )}
             </ScrollArea>
           </div>
 
