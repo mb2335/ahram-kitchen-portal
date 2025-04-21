@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface CustomerProfile {
   id: string;
@@ -18,6 +19,7 @@ interface CustomerProfile {
 }
 
 export function CustomerProfile() {
+  const { t } = useLanguage();
   const session = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -131,11 +133,11 @@ export function CustomerProfile() {
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h2 className="text-2xl font-bold">Customer Profile</h2>
+      <h2 className="text-2xl font-bold">{t('profile.page.title')}</h2>
       <Card className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name</Label>
+            <Label htmlFor="full_name">{t('profile.fullName')}</Label>
             <Input
               id="full_name"
               value={formData.full_name}
@@ -145,7 +147,7 @@ export function CustomerProfile() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('profile.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -156,7 +158,7 @@ export function CustomerProfile() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">{t('profile.phone')}</Label>
             <Input
               id="phone"
               type="tel"
@@ -169,10 +171,10 @@ export function CustomerProfile() {
             {updating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {t('profile.saving')}
               </>
             ) : (
-              'Save Changes'
+              t('profile.save')
             )}
           </Button>
         </form>

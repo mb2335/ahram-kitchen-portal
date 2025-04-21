@@ -1,4 +1,3 @@
-
 import { useCart } from '@/contexts/CartContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -79,7 +78,7 @@ export function DeliveryForm({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t('checkout.categories.title')}</CardTitle>
+          <CardTitle>{t('category.settings.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {categories.map((category) => {

@@ -142,12 +142,12 @@ export function Auth() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-center mb-4">
             {isResetPassword 
-              ? 'Reset Your Password'
+              ? t('auth.reset')
               : isRequestingReset
-              ? 'Request Password Reset'
+              ? t('auth.request')
               : location.state?.returnTo === '/checkout' 
-                ? 'Sign in to Complete Your Order' 
-                : isSignUp ? 'Create an Account' : 'Welcome Back'}
+                ? t('auth.checkout')
+                : isSignUp ? t('auth.signup') : t('auth.signin')}
           </h2>
         </div>
 

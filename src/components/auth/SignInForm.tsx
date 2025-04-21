@@ -1,8 +1,8 @@
-
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { AuthFormField } from './AuthFormField';
 import { useAuthForm } from '@/hooks/useAuthForm';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface SignInFormProps {
   onToggleForm: () => void;
@@ -10,6 +10,7 @@ interface SignInFormProps {
 }
 
 export function SignInForm({ onToggleForm, onResetPassword }: SignInFormProps) {
+  const { t } = useLanguage();
   const {
     isLoading,
     formData,
@@ -21,7 +22,7 @@ export function SignInForm({ onToggleForm, onResetPassword }: SignInFormProps) {
     <form onSubmit={handleSignIn} className="space-y-4">
       <AuthFormField
         id="email"
-        label="Email"
+        label={t('auth.email')}
         type="email"
         value={formData.email}
         onChange={(value) => setFormData({ ...formData, email: value })}
@@ -31,7 +32,7 @@ export function SignInForm({ onToggleForm, onResetPassword }: SignInFormProps) {
 
       <AuthFormField
         id="password"
-        label="Password"
+        label={t('auth.password')}
         type="password"
         value={formData.password}
         onChange={(value) => setFormData({ ...formData, password: value })}
@@ -43,10 +44,10 @@ export function SignInForm({ onToggleForm, onResetPassword }: SignInFormProps) {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Signing in...
+            {t('auth.signingIn')}
           </>
         ) : (
-          'Sign In'
+          t('auth.signin')
         )}
       </Button>
 
@@ -57,19 +58,19 @@ export function SignInForm({ onToggleForm, onResetPassword }: SignInFormProps) {
           className="text-sm text-primary hover:underline"
           disabled={isLoading}
         >
-          Forgot password?
+          {t('auth.forgot')}
         </button>
       </div>
 
       <p className="text-center text-sm text-gray-600">
-        Don't have an account?{' '}
+        {t('auth.noAccount')}{' '}
         <button
           type="button"
           onClick={onToggleForm}
           className="text-primary hover:underline"
           disabled={isLoading}
         >
-          Sign Up
+          {t('auth.signup')}
         </button>
       </p>
     </form>

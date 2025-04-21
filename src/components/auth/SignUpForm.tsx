@@ -2,12 +2,14 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { AuthFormField } from './AuthFormField';
 import { useAuthForm } from '@/hooks/useAuthForm';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface SignUpFormProps {
   onToggleForm: () => void;
 }
 
 export function SignUpForm({ onToggleForm }: SignUpFormProps) {
+  const { t } = useLanguage();
   const {
     isLoading,
     formData,
@@ -21,7 +23,7 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
     <form onSubmit={handleSignUp} className="space-y-4">
       <AuthFormField
         id="fullName"
-        label="Full Name"
+        label={t('auth.fullName')}
         value={formData.fullName || ''}
         onChange={(value) => setFormData({ ...formData, fullName: value })}
         required
@@ -30,7 +32,7 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
 
       <AuthFormField
         id="email"
-        label="Email"
+        label={t('auth.email')}
         type="email"
         value={formData.email}
         onChange={(value) => setFormData({ ...formData, email: value })}
@@ -41,7 +43,7 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
       <div>
         <AuthFormField
           id="password"
-          label="Password"
+          label={t('auth.password')}
           type="password"
           value={formData.password}
           onChange={(value) => {
@@ -58,7 +60,7 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
 
       <AuthFormField
         id="phone"
-        label="Phone Number"
+        label={t('auth.phone')}
         type="tel"
         value={formData.phone || ''}
         onChange={(value) => setFormData({ ...formData, phone: value })}
@@ -70,22 +72,22 @@ export function SignUpForm({ onToggleForm }: SignUpFormProps) {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating Account...
+            {t('auth.processing')}
           </>
         ) : (
-          'Sign Up'
+          t('auth.signup')
         )}
       </Button>
 
       <p className="text-center text-sm text-gray-600">
-        Already have an account?{' '}
+        {t('auth.hasAccount')}{' '}
         <button
           type="button"
           onClick={onToggleForm}
           className="text-primary hover:underline"
           disabled={isLoading}
         >
-          Sign In
+          {t('auth.signin')}
         </button>
       </p>
     </form>
