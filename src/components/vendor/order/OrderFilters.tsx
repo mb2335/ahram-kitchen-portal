@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
+import { DatePicker } from '@/components/ui/date-picker';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 
 interface OrderFiltersProps {
@@ -26,7 +27,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
     pickupLocation: 'all',
     fulfillmentType: 'all'
   });
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   const handleFilterChange = (key: keyof OrderFilters, value: any) => {
     console.log(`Filter changed: ${key} = ${value}`);
@@ -51,8 +52,8 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
     }
     
     // Add date separately as it's handled differently
-    if (dateRange?.from) {
-      externalFilters.date = dateRange.from;
+    if (selectedDate) {
+      externalFilters.date = selectedDate;
     }
     
     // Log the filters being applied
@@ -68,7 +69,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
       fulfillmentType: 'all'
     };
     setFilters(clearedFilters);
-    setDateRange(undefined);
+    setSelectedDate(undefined);
     onFilterChange({});
   };
 
@@ -89,28 +90,13 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label>Date</Label>
-          <DatePickerWithRange
-            date={dateRange}
-            onSelect={(newDateRange: DateRange | undefined) => {
-              setDateRange(newDateRange);
-              if (newDateRange?.from) {
-                handleFilterChange('date', newDateRange.from);
-              } else {
-                // If date is cleared, update filters
-                const newFilters = { ...filters };
-                delete newFilters.date;
-                setFilters(newFilters);
-                
-                // Create new external filters without the date
-                const externalFilters: OrderFilters = {};
-                if (filters.categoryId && filters.categoryId !== 'all') externalFilters.categoryId = filters.categoryId;
-                if (filters.pickupLocation && filters.pickupLocation !== 'all') externalFilters.pickupLocation = filters.pickupLocation;
-                if (filters.fulfillmentType && filters.fulfillmentType !== 'all') externalFilters.fulfillmentType = filters.fulfillmentType;
-                onFilterChange(externalFilters);
-              }
+          <Label>Fulfillment Date</Label>
+          <DatePicker
+            date={selectedDate}
+            onSelect={(date) => {
+              setSelectedDate(date);
+              handleFilterChange('date', date);
             }}
-            mode="single"
             className="w-full"
           />
         </div>
