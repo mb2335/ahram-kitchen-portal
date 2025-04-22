@@ -61,15 +61,16 @@ export function OrderManagement() {
 
   const filterOrders = (orders: Order[]) => {
     return orders?.filter(order => {
-      // Date filtering
+      // DATE FILTERING - always use delivery_date, not created_at
       if (filters.date) {
+        // Ensure comparison is based on delivery_date only
         const selectedDate = new Date(filters.date);
-        const orderDate = new Date(order.delivery_date);
-        
+        const orderDeliveryDate = new Date(order.delivery_date);
+
         if (
-          selectedDate.getFullYear() !== orderDate.getFullYear() ||
-          selectedDate.getMonth() !== orderDate.getMonth() ||
-          selectedDate.getDate() !== orderDate.getDate()
+          selectedDate.getFullYear() !== orderDeliveryDate.getFullYear() ||
+          selectedDate.getMonth() !== orderDeliveryDate.getMonth() ||
+          selectedDate.getDate() !== orderDeliveryDate.getDate()
         ) {
           return false;
         }
