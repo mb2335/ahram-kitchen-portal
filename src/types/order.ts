@@ -22,6 +22,7 @@ export interface OrderSubmissionProps {
     fullName: string;
     email: string;
     phone: string;
+    smsOptIn: boolean;
     address?: string; // For delivery orders
   };
   pickupDetail: PickupDetail | null;

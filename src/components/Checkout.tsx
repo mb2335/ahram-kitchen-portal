@@ -25,6 +25,7 @@ export function Checkout() {
     fullName: '',
     email: '',
     phone: '',
+    smsOptIn: false,
   });
 
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
@@ -70,6 +71,7 @@ export function Checkout() {
           fullName: customer.full_name,
           email: customer.email,
           phone: customer.phone || '',
+          smsOptIn: customer.sms_opt_in || false,
         });
       }
     } catch (error) {
@@ -137,9 +139,11 @@ export function Checkout() {
             fullName={customerData.fullName}
             email={customerData.email}
             phone={customerData.phone}
+            smsOptIn={customerData.smsOptIn}
             onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
             onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
             onPhoneChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
+            onSmsOptInChange={(checked) => setCustomerData({ ...customerData, smsOptIn: checked })}
           />
         )}
         <CheckoutForm

@@ -2,14 +2,17 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface CustomerFormProps {
   fullName: string;
   email: string;
   phone: string;
+  smsOptIn: boolean;
   onFullNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onEmailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSmsOptInChange: (checked: boolean) => void;
   isReadOnly?: boolean;
 }
 
@@ -17,9 +20,11 @@ export function CustomerForm({
   fullName,
   email,
   phone,
+  smsOptIn,
   onFullNameChange,
   onEmailChange,
   onPhoneChange,
+  onSmsOptInChange,
   isReadOnly = false,
 }: CustomerFormProps) {
   const { t } = useLanguage();
@@ -64,6 +69,20 @@ export function CustomerForm({
           className={isReadOnly ? "bg-gray-100" : ""}
         />
       </div>
+
+      {!isReadOnly && (
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="sms-opt-in" 
+            checked={smsOptIn} 
+            onCheckedChange={onSmsOptInChange} 
+            required
+          />
+          <Label htmlFor="sms-opt-in" className="text-sm font-medium">
+            I agree to receive SMS updates about my order. This is required to place an order.
+          </Label>
+        </div>
+      )}
     </div>
   );
 }

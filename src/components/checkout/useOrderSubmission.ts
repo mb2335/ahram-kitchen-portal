@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -33,13 +34,22 @@ export const useOrderSubmission = () => {
       if (!props.customerData.fullName || !props.customerData.email) {
         throw new Error("Customer name and email are required");
       }
+
+      // Validate SMS opt-in
+      if (!props.customerData.smsOptIn) {
+        throw new Error("You must agree to receive SMS updates to place an order");
+      }
       
       // Upload payment proof
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
       console.log("Payment proof uploaded successfully");
       
-      // Get or create customer for guest checkout/signed-in user
-      const customerId = await getOrCreateCustomer(props.customerData, session?.user?.id);
+      // Get or create customer for guest checkout/signed-in user and ensure sms_opt_in is set to true
+      const customerId = await getOrCreateCustomer({
+        ...props.customerData,
+        smsOptIn: true // Ensure this is set to true
+      }, session?.user?.id);
+      
       console.log("Customer ID obtained:", customerId);
       
       // Group items by category
@@ -223,6 +233,26 @@ export const useOrderSubmission = () => {
         console.log("Menu item quantities updated successfully");
       } catch (qtyError) {
         console.warn("Error updating menu item quantities, but order was created:", qtyError);
+      }
+
+      // Send order confirmation SMS
+      if (orderIds.length > 0 && props.customerData.phone) {
+        try {
+          const sendSmsResponse = await supabase.functions.invoke('send-sms', {
+            body: {
+              phoneNumbers: [props.customerData.phone],
+              message: `Thanks for your order! We'll text you updates here as your order status changes. Your order ID is ${orderIds[0]}.`
+            }
+          });
+
+          if (sendSmsResponse.error) {
+            console.warn("Error sending confirmation SMS, but order was created:", sendSmsResponse.error);
+          } else {
+            console.log("Order confirmation SMS sent successfully");
+          }
+        } catch (smsError) {
+          console.warn("Error sending confirmation SMS, but order was created:", smsError);
+        }
       }
       
       // Call the success callback with the first order ID

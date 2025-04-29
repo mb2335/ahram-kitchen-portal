@@ -16,6 +16,7 @@ export type Database = {
           full_name: string
           id: string
           phone: string | null
+          sms_opt_in: boolean | null
           user_id: string | null
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           full_name: string
           id?: string
           phone?: string | null
+          sms_opt_in?: boolean | null
           user_id?: string | null
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          sms_opt_in?: boolean | null
           user_id?: string | null
         }
         Relationships: []

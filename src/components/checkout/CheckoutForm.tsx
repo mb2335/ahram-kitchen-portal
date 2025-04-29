@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -12,12 +13,15 @@ import { PickupDetail } from '@/types/pickup';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
 import { DeliveryTimeSlotSelection } from '@/types/delivery';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface CheckoutFormProps {
   customerData: {
     fullName: string;
     email: string;
     phone: string;
+    smsOptIn: boolean;
   };
   onOrderSuccess: (orderId: string) => void;
   total: number;
@@ -37,6 +41,7 @@ export function CheckoutForm({
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
+  const [showSmsWarning, setShowSmsWarning] = useState(false);
   const { submitOrder, isUploading, isSubmitting } = useOrderSubmission();
   
   const { 
@@ -239,6 +244,12 @@ export function CheckoutForm({
       });
       return;
     }
+
+    // Check if SMS opt-in is enabled
+    if (!customerData.smsOptIn) {
+      setShowSmsWarning(true);
+      return;
+    }
     
     if (!paymentProof) {
       toast({
@@ -342,6 +353,16 @@ export function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {showSmsWarning && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>SMS Opt-in Required</AlertTitle>
+          <AlertDescription>
+            You must agree to receive SMS updates to place an order. This allows us to send you important updates about your order status.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <DeliveryForm
         deliveryDates={formData.deliveryDates}
         notes={formData.notes}

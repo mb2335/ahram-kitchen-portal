@@ -1,76 +1,123 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { CustomerData } from "@/types/customer";
+import { supabase } from '@/integrations/supabase/client';
 
-export async function getOrCreateCustomer(customerData: CustomerData, sessionUserId?: string) {
+interface CustomerData {
+  fullName: string;
+  email: string;
+  phone?: string;
+  smsOptIn?: boolean;
+}
+
+export async function getOrCreateCustomer(customerData: CustomerData, userId?: string): Promise<string> {
   try {
-    console.log("Getting or creating customer with data:", customerData);
-    
-    if (!customerData.email || !customerData.fullName) {
-      console.error("Missing required customer data:", customerData);
-      throw new Error("Customer email and name are required");
-    }
-    
-    // First, try to find an existing customer with this email
-    const { data: existingCustomer, error: fetchError } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('email', customerData.email)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.warn("Error fetching customer:", fetchError);
-      throw fetchError;
-    }
-
-    // If we found an existing customer
-    if (existingCustomer) {
-      console.log("Found existing customer:", existingCustomer.id);
-      
-      // Update the existing customer's information
-      const { data: updatedCustomer, error: updateError } = await supabase
+    // If user is logged in, get or create customer linked to this user
+    if (userId) {
+      // Check if customer exists for this user
+      const { data: existingCustomer, error: fetchError } = await supabase
         .from('customers')
-        .update({
-          full_name: customerData.fullName,
-          phone: customerData.phone || existingCustomer.phone,
-          // Only update user_id if we have a session and the customer doesn't already have one
-          ...(sessionUserId && !existingCustomer.user_id ? { user_id: sessionUserId } : {})
-        })
-        .eq('id', existingCustomer.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.warn("Error updating customer:", updateError);
-        // If we can't update, still return the existing ID to avoid blocking
+        .select('id, sms_opt_in')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (fetchError) {
+        console.error('Error fetching customer:', fetchError);
+        throw fetchError;
+      }
+      
+      if (existingCustomer) {
+        // Update existing customer if smsOptIn has changed
+        if (customerData.smsOptIn !== undefined && existingCustomer.sms_opt_in !== customerData.smsOptIn) {
+          const { error: updateError } = await supabase
+            .from('customers')
+            .update({ 
+              full_name: customerData.fullName,
+              email: customerData.email,
+              phone: customerData.phone,
+              sms_opt_in: customerData.smsOptIn 
+            })
+            .eq('id', existingCustomer.id);
+          
+          if (updateError) {
+            console.error('Error updating customer:', updateError);
+            throw updateError;
+          }
+        }
+        
         return existingCustomer.id;
       }
       
-      console.log("Updated customer:", updatedCustomer.id);
-      return updatedCustomer.id;
+      // If no customer exists for this user, create one
+      const { data: newCustomer, error: insertError } = await supabase
+        .from('customers')
+        .insert({
+          user_id: userId,
+          full_name: customerData.fullName,
+          email: customerData.email,
+          phone: customerData.phone || null,
+          sms_opt_in: customerData.smsOptIn || false
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error creating customer:', insertError);
+        throw insertError;
+      }
+      
+      return newCustomer.id;
+    } 
+    // For guest checkout, check if a customer already exists with this email
+    else {
+      const { data: existingCustomer, error: fetchError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('email', customerData.email)
+        .maybeSingle();
+      
+      if (fetchError) {
+        console.error('Error fetching guest customer:', fetchError);
+        throw fetchError;
+      }
+      
+      if (existingCustomer) {
+        // Update existing customer if necessary
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update({
+            full_name: customerData.fullName,
+            phone: customerData.phone || null,
+            sms_opt_in: customerData.smsOptIn || false
+          })
+          .eq('id', existingCustomer.id);
+        
+        if (updateError) {
+          console.error('Error updating guest customer:', updateError);
+          throw updateError;
+        }
+        
+        return existingCustomer.id;
+      }
+      
+      // Create a new customer record
+      const { data: newCustomer, error: insertError } = await supabase
+        .from('customers')
+        .insert({
+          full_name: customerData.fullName,
+          email: customerData.email,
+          phone: customerData.phone || null,
+          sms_opt_in: customerData.smsOptIn || false
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error creating guest customer:', insertError);
+        throw insertError;
+      }
+      
+      return newCustomer.id;
     }
-
-    // If no existing customer found, create a new one
-    console.log("Creating new customer for guest checkout");
-    const { data: newCustomer, error: createError } = await supabase
-      .from('customers')
-      .insert({
-        full_name: customerData.fullName,
-        email: customerData.email,
-        phone: customerData.phone || null,
-        user_id: sessionUserId || null
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      console.error("Error creating customer:", createError);
-      throw createError;
-    }
-    
-    console.log("Created new customer:", newCustomer.id);
-    return newCustomer.id;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in getOrCreateCustomer:', error);
     throw error;
   }
