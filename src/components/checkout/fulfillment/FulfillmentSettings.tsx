@@ -12,8 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, isSameDay } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Package as PackageIcon, Truck as TruckIcon } from "lucide-react";
+import { AlertCircle, Package as PackageIcon, Truck as TruckIcon, RefreshCcw } from "lucide-react";
 import { PickupDetail } from "@/types/pickup";
+import { Button } from "@/components/ui/button";
 
 interface FulfillmentSettingsProps {
   selectedDates: Record<string, Date>;
@@ -35,9 +36,21 @@ export function FulfillmentSettings({
   usedFulfillmentTypes
 }: FulfillmentSettingsProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Set a timeout to prevent infinite loading
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setLoadingTimeout(true);
+      }
+    }, 8000); // 8 seconds timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading]);
 
   // Fetch delivery settings
-  const { data: deliverySettings } = useQuery({
+  const { data: deliverySettings, refetch: refetchDeliverySettings, isError: isDeliveryError } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       try {
@@ -46,8 +59,13 @@ export function FulfillmentSettings({
           .select('*')
           .limit(1);
           
-        if (error || !data || data.length === 0) {
-          console.error('Error or no data when fetching delivery settings:', error);
+        if (error) {
+          console.error('Error when fetching delivery settings:', error);
+          return null;
+        }
+        
+        if (!data || data.length === 0) {
+          console.log("No delivery settings found");
           return null;
         }
         
@@ -61,7 +79,12 @@ export function FulfillmentSettings({
   });
 
   // Fetch ALL pickup settings globally - without ANY vendor filtering
-  const { data: pickupSettings = [], isLoading: isLoadingPickup } = useQuery({
+  const { 
+    data: pickupSettings = [], 
+    isLoading: isLoadingPickup, 
+    refetch: refetchPickupSettings,
+    isError: isPickupError
+  } = useQuery({
     queryKey: ['pickup-settings'],
     queryFn: async () => {
       try {
@@ -76,8 +99,13 @@ export function FulfillmentSettings({
           return [];
         }
         
-        console.log(`Fetched ${data?.length || 0} global pickup settings:`, data);
-        return data || [];
+        if (!data || data.length === 0) {
+          console.log("No pickup settings found");
+          return [];
+        }
+        
+        console.log(`Fetched ${data.length} global pickup settings:`, data);
+        return data;
       } catch (err) {
         console.error('Exception fetching pickup settings:', err);
         return [];
@@ -85,7 +113,17 @@ export function FulfillmentSettings({
         setIsLoading(false);
       }
     },
+    retry: 2, // Retry failed requests up to 2 times
+    staleTime: 60000, // Consider data fresh for 1 minute
   });
+
+  // Function to retry fetching data when failed
+  const handleRetryFetch = () => {
+    setIsLoading(true);
+    setLoadingTimeout(false);
+    refetchDeliverySettings();
+    refetchPickupSettings();
+  };
 
   // Create sets of available days for each fulfillment type
   const availablePickupDays = useMemo(() => {
@@ -203,10 +241,53 @@ export function FulfillmentSettings({
       <div className="space-y-6">
         <Card className="shadow-md border-opacity-50">
           <CardContent className="p-6">
-            <div className="flex items-center justify-center h-40">
-              <div className="text-center">
-                <p className="text-muted-foreground">Loading fulfillment options...</p>
-              </div>
+            <div className="flex items-center justify-center h-40 flex-col gap-4">
+              {loadingTimeout ? (
+                <>
+                  <p className="text-muted-foreground">Failed to load fulfillment options</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleRetryFetch}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                    Retry
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent mb-4 mx-auto"></div>
+                  <p className="text-muted-foreground">Loading fulfillment options...</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state if both queries failed and we have no data
+  if ((isDeliveryError || isPickupError) && availablePickupDays.size === 0 && availableDeliveryDays.size === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-md border-opacity-50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center h-40 flex-col gap-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load fulfillment options. Please try again.
+                </AlertDescription>
+              </Alert>
+              <Button 
+                variant="outline" 
+                onClick={handleRetryFetch}
+                className="flex items-center gap-2"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Retry
+              </Button>
             </div>
           </CardContent>
         </Card>
