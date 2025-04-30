@@ -62,50 +62,58 @@ export async function createOrder({
     customer_phone: customerPhone
   });
 
-  // Create the order record
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      customer_id: customerId,
-      total_amount: categoryTotal + categoryTaxAmount,
-      tax_amount: categoryTaxAmount,
-      notes: notes,
-      status: 'pending',
-      delivery_date: deliveryDate.toISOString(),
-      payment_proof_url: paymentProofUrl,
-      pickup_time: pickupTime,
-      pickup_location: pickupLocation,
-      fulfillment_type: fulfillmentType || 'pickup',
-      delivery_address: deliveryAddress,
-      delivery_time_slot: deliveryTimeSlot,
-      customer_name: customerName,
-      customer_email: customerEmail,
-      customer_phone: customerPhone
-    })
-    .select()
-    .single();
+  try {
+    // Create the order record - simplified insert approach
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        customer_id: customerId,
+        total_amount: categoryTotal + categoryTaxAmount,
+        tax_amount: categoryTaxAmount,
+        notes: notes,
+        status: 'pending',
+        delivery_date: deliveryDate.toISOString(),
+        payment_proof_url: paymentProofUrl,
+        pickup_time: pickupTime,
+        pickup_location: pickupLocation,
+        fulfillment_type: fulfillmentType || 'pickup',
+        delivery_address: deliveryAddress,
+        delivery_time_slot: deliveryTimeSlot,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone
+      })
+      .select()
+      .single();
 
-  if (orderError) {
-    console.error("Error creating order:", orderError);
-    throw orderError;
+    if (orderError) {
+      console.error("Error creating order:", orderError);
+      throw orderError;
+    }
+
+    console.log("Successfully created order record:", orderData);
+
+    // Create the order items
+    const orderItems = categoryItems.map((item) => ({
+      order_id: orderData.id,
+      menu_item_id: item.id,
+      quantity: item.quantity,
+      unit_price: item.price,
+    }));
+
+    const { error: orderItemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (orderItemsError) {
+      console.error("Error creating order items:", orderItemsError);
+      throw orderItemsError;
+    }
+
+    console.log("Successfully created order:", orderData.id);
+    return orderData;
+  } catch (error) {
+    console.error("Error in createOrder:", error);
+    throw error;
   }
-
-  const orderItems = categoryItems.map((item) => ({
-    order_id: orderData.id,
-    menu_item_id: item.id,
-    quantity: item.quantity,
-    unit_price: item.price,
-  }));
-
-  const { error: orderItemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
-  if (orderItemsError) {
-    console.error("Error creating order items:", orderItemsError);
-    throw orderItemsError;
-  }
-
-  console.log("Successfully created order:", orderData.id);
-  return orderData;
 }

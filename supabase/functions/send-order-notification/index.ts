@@ -18,7 +18,21 @@ interface WebhookPayload {
   old_record: any;
 }
 
+// CORS headers to ensure the function can be called from any origin
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
+
   try {
     // Create Supabase client
     const supabaseClient = createClient(
@@ -34,6 +48,7 @@ serve(async (req) => {
     if (payload.table !== "orders") {
       return new Response(JSON.stringify({ message: "Not an order event" }), {
         status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -47,6 +62,7 @@ serve(async (req) => {
     if (!isNewOrder && !isStatusChange) {
       return new Response(JSON.stringify({ message: "No notification needed" }), {
         status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -63,10 +79,14 @@ serve(async (req) => {
     // Send SMS if we have a phone number and SMS function URL
     if (order.customer_phone) {
       try {
+        const customerMessage = isNewOrder 
+          ? `Thank you for your order! Your order ID is: ${order.id.substring(0, 8)}. We'll keep you updated on its status.`
+          : `Your order status has been updated to: ${order.status.toUpperCase()}. Thank you for your business!`;
+          
         const smsResponse = await supabaseClient.functions.invoke("send-sms", {
           body: {
             phoneNumbers: [order.customer_phone],
-            message: `Your order status has been updated to: ${order.status.toUpperCase()}. Thank you for your business!`
+            message: customerMessage
           }
         });
         
@@ -78,13 +98,13 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, message: "Notifications sent" }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Error processing webhook:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
