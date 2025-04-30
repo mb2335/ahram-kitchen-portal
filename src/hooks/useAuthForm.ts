@@ -106,6 +106,70 @@ export function useAuthForm(isSignUp: boolean) {
     }
   };
 
+  const linkCustomerRecordToUser = async (userId: string, email: string, fullName?: string, phone?: string) => {
+    try {
+      console.log('Checking for existing customer record with email:', email);
+      
+      // First, try to find an existing customer record with this email that has no user_id
+      const { data: existingCustomer, error: findError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('email', email)
+        .is('user_id', null)
+        .maybeSingle();
+      
+      if (findError) {
+        console.error('Error checking for existing customer:', findError);
+        return false;
+      }
+      
+      if (existingCustomer) {
+        console.log('Found existing customer record, updating with user_id:', existingCustomer.id);
+        
+        // Update the existing customer record with the user_id
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update({ 
+            user_id: userId,
+            full_name: fullName || existingCustomer.full_name,
+            phone: phone || existingCustomer.phone
+          })
+          .eq('id', existingCustomer.id);
+        
+        if (updateError) {
+          console.error('Error updating existing customer record:', updateError);
+          return false;
+        }
+        
+        console.log('Successfully linked customer record to user account');
+        return true;
+      } else {
+        console.log('No existing customer record found, creating new one');
+        
+        // If no existing customer record, create a new one
+        const { error: insertError } = await supabase
+          .from('customers')
+          .insert({
+            user_id: userId,
+            full_name: fullName || '',
+            email: email,
+            phone: phone || null
+          });
+        
+        if (insertError) {
+          console.error('Error creating customer record:', insertError);
+          return false;
+        }
+        
+        console.log('Successfully created new customer record');
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Error in linkCustomerRecordToUser:', error);
+      return false;
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -116,28 +180,6 @@ export function useAuthForm(isSignUp: boolean) {
     console.log('Attempting sign up with:', { email: formData.email, fullName: formData.fullName });
 
     try {
-      // First, check if a customer with this email already exists
-      const { data: existingCustomer, error: customerCheckError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('email', formData.email)
-        .maybeSingle();
-
-      if (customerCheckError) {
-        console.error('Error checking existing customer:', customerCheckError);
-        throw customerCheckError;
-      }
-
-      if (existingCustomer) {
-        toast({
-          title: "Error",
-          description: "An account with this email already exists. Please sign in instead.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
       // Sign up the user with metadata
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
@@ -153,17 +195,17 @@ export function useAuthForm(isSignUp: boolean) {
       if (signUpError) throw signUpError;
 
       if (user) {
-        // Create the customer profile
-        const { error: customerError } = await supabase
-          .from('customers')
-          .insert({
-            user_id: user.id,
-            full_name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone
-          });
-
-        if (customerError) throw customerError;
+        // Link or create customer record for this user
+        const success = await linkCustomerRecordToUser(
+          user.id,
+          formData.email,
+          formData.fullName,
+          formData.phone
+        );
+        
+        if (!success) {
+          console.warn('Note: Customer profile creation/linking failed, but user was created successfully');
+        }
       }
 
       toast({
@@ -173,11 +215,21 @@ export function useAuthForm(isSignUp: boolean) {
       
     } catch (error: any) {
       console.error('Error during sign up:', error);
-      toast({
-        title: "Error creating account",
-        description: error.message,
-        variant: "destructive",
-      });
+      
+      // Handle specific error for duplicate email
+      if (error.message.includes('unique constraint') || error.message.includes('already exists')) {
+        toast({
+          title: "Email already in use",
+          description: "An account with this email already exists. Please sign in instead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error creating account",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
