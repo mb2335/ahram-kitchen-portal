@@ -19,6 +19,7 @@ interface CustomerFormProps {
   isReadOnly?: boolean;
   isPreviouslyOptedIn?: boolean;
   showSmsWarning?: boolean;
+  showOptInCheckbox?: boolean; // New prop to explicitly control checkbox visibility
 }
 
 export function CustomerForm({
@@ -33,12 +34,20 @@ export function CustomerForm({
   isReadOnly = false,
   isPreviouslyOptedIn = false,
   showSmsWarning = false,
+  showOptInCheckbox, // Default undefined means we'll use the legacy behavior
 }: CustomerFormProps) {
   const { t } = useLanguage();
   const [showOptIn, setShowOptIn] = useState(true);
   
-  // If the user has previously opted in, hide the checkbox
+  // Calculate whether to show the opt-in checkbox
   useEffect(() => {
+    // If showOptInCheckbox is explicitly provided, use it
+    if (showOptInCheckbox !== undefined) {
+      setShowOptIn(showOptInCheckbox);
+      return;
+    }
+    
+    // Legacy behavior: hide checkbox if previously opted in
     if (isPreviouslyOptedIn) {
       setShowOptIn(false);
       // Make sure smsOptIn is true if they previously opted in
@@ -48,7 +57,7 @@ export function CustomerForm({
     } else {
       setShowOptIn(true);
     }
-  }, [isPreviouslyOptedIn, smsOptIn, onSmsOptInChange]);
+  }, [isPreviouslyOptedIn, smsOptIn, onSmsOptInChange, showOptInCheckbox]);
 
   return (
     <div className="space-y-4">
@@ -105,7 +114,7 @@ export function CustomerForm({
         </div>
       )}
 
-      {isPreviouslyOptedIn && !isReadOnly && (
+      {isPreviouslyOptedIn && !showOptIn && (
         <div className="text-sm text-muted-foreground">
           You have previously opted in to receive SMS updates.
         </div>
