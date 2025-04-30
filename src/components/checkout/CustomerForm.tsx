@@ -37,7 +37,7 @@ export function CustomerForm({
   const { t } = useLanguage();
   const [showOptIn, setShowOptIn] = useState(true);
   
-  // If the user has previously opted in, hide the checkbox
+  // Update the SMS opt-in visibility based on the user's previous opt-in status
   useEffect(() => {
     if (isPreviouslyOptedIn) {
       setShowOptIn(false);
@@ -91,7 +91,8 @@ export function CustomerForm({
         />
       </div>
 
-      {!isReadOnly && showOptIn && (
+      {/* Show opt-in checkbox only if the customer hasn't already opted in */}
+      {showOptIn && (
         <div className="flex items-center space-x-2">
           <Checkbox 
             id="sms-opt-in" 
@@ -105,7 +106,8 @@ export function CustomerForm({
         </div>
       )}
 
-      {isPreviouslyOptedIn && !isReadOnly && (
+      {/* Show a message if they've previously opted in */}
+      {isPreviouslyOptedIn && (
         <div className="text-sm text-muted-foreground">
           You have previously opted in to receive SMS updates.
         </div>

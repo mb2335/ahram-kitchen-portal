@@ -112,8 +112,11 @@ export function Checkout() {
           smsOptIn: customer.sms_opt_in || false,
         });
         
-        // Set previously opted in if the customer has already opted in
+        // Set previously opted in flag based on database value
         setIsPreviouslyOptedIn(customer.sms_opt_in || false);
+      } else {
+        // If no customer record exists for this user, set previously opted in to false
+        setIsPreviouslyOptedIn(false);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -175,25 +178,27 @@ export function Checkout() {
       <h1 className="text-2xl font-bold mb-6">{t('checkout.title')}</h1>
       <div className="space-y-6">
         <OrderSummary />
-        {!session && (
-          <CustomerForm
-            fullName={customerData.fullName}
-            email={customerData.email}
-            phone={customerData.phone}
-            smsOptIn={customerData.smsOptIn}
-            onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
-            onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
-            onPhoneChange={(e) => {
-              setCustomerData({ ...customerData, phone: e.target.value });
-            }}
-            onSmsOptInChange={(checked) => {
-              setCustomerData({ ...customerData, smsOptIn: checked });
-              setShowSmsWarning(false); // Hide warning when they check the box
-            }}
-            isPreviouslyOptedIn={isPreviouslyOptedIn}
-            showSmsWarning={showSmsWarning}
-          />
-        )}
+        
+        {/* Always render the CustomerForm but with different properties based on session */}
+        <CustomerForm
+          fullName={customerData.fullName}
+          email={customerData.email}
+          phone={customerData.phone}
+          smsOptIn={customerData.smsOptIn}
+          onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
+          onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
+          onPhoneChange={(e) => {
+            setCustomerData({ ...customerData, phone: e.target.value });
+          }}
+          onSmsOptInChange={(checked) => {
+            setCustomerData({ ...customerData, smsOptIn: checked });
+            setShowSmsWarning(false); // Hide warning when they check the box
+          }}
+          isPreviouslyOptedIn={isPreviouslyOptedIn}
+          showSmsWarning={showSmsWarning}
+          isReadOnly={!!session} // Make fields read-only for signed-in users
+        />
+        
         <CheckoutForm
           customerData={customerData}
           onOrderSuccess={handleOrderSuccess}
