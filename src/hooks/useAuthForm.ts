@@ -54,6 +54,53 @@ export function useAuthForm(isSignUp: boolean) {
     return true;
   };
 
+  // Check if email and/or phone is already in use
+  const checkForDuplicates = async () => {
+    const checks = [];
+    
+    // Check for duplicate email
+    checks.push(
+      supabase
+        .from('customers')
+        .select('id')
+        .eq('email', formData.email)
+        .maybeSingle()
+    );
+    
+    // Check for duplicate phone if provided
+    if (formData.phone && formData.phone.trim()) {
+      checks.push(
+        supabase
+          .from('customers')
+          .select('id')
+          .eq('phone', formData.phone)
+          .maybeSingle()
+      );
+    }
+    
+    const [emailResult, phoneResult] = await Promise.all(checks);
+    
+    if (emailResult.data) {
+      toast({
+        title: "Email already in use",
+        description: "This email address is already registered. Please sign in instead.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (phoneResult?.data) {
+      toast({
+        title: "Phone number already in use",
+        description: "This phone number is already registered with another account.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -180,6 +227,13 @@ export function useAuthForm(isSignUp: boolean) {
     console.log('Attempting sign up with:', { email: formData.email, fullName: formData.fullName });
 
     try {
+      // First check for duplicate email or phone
+      const isUnique = await checkForDuplicates();
+      if (!isUnique) {
+        setIsLoading(false);
+        return;
+      }
+      
       // Sign up the user with metadata
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,

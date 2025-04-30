@@ -25,6 +25,25 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       }
       
       if (existingCustomerByUserId) {
+        // Check if phone is being updated and if it's already used by someone else
+        if (customerData.phone) {
+          const { data: phoneCheck, error: phoneCheckError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('phone', customerData.phone)
+            .neq('id', existingCustomerByUserId.id)
+            .maybeSingle();
+          
+          if (phoneCheckError && !phoneCheckError.message.includes('No rows found')) {
+            console.error('Error checking phone uniqueness:', phoneCheckError);
+            throw phoneCheckError;
+          }
+          
+          if (phoneCheck) {
+            throw new Error('Phone number is already in use by another account');
+          }
+        }
+        
         // Update existing customer data
         const { error: updateError } = await supabase
           .from('customers')
@@ -58,6 +77,25 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       }
       
       if (existingCustomerByEmail) {
+        // Check if phone is provided and if it's already used by someone else
+        if (customerData.phone) {
+          const { data: phoneCheck, error: phoneCheckError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('phone', customerData.phone)
+            .neq('id', existingCustomerByEmail.id)
+            .maybeSingle();
+          
+          if (phoneCheckError && !phoneCheckError.message.includes('No rows found')) {
+            console.error('Error checking phone uniqueness:', phoneCheckError);
+            throw phoneCheckError;
+          }
+          
+          if (phoneCheck) {
+            throw new Error('Phone number is already in use by another account');
+          }
+        }
+        
         // Update the existing guest customer record to link it to this user
         const { error: linkError } = await supabase
           .from('customers')
@@ -75,6 +113,24 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
         }
         
         return existingCustomerByEmail.id;
+      }
+      
+      // Before creating a new record, check if phone is already used
+      if (customerData.phone) {
+        const { data: phoneCheck, error: phoneCheckError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('phone', customerData.phone)
+          .maybeSingle();
+        
+        if (phoneCheckError && !phoneCheckError.message.includes('No rows found')) {
+          console.error('Error checking phone uniqueness:', phoneCheckError);
+          throw phoneCheckError;
+        }
+        
+        if (phoneCheck) {
+          throw new Error('Phone number is already in use by another account');
+        }
       }
       
       // If no customer exists at all for this user, create one
@@ -113,6 +169,25 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       
       // If customer exists with this email, update their details
       if (existingCustomer) {
+        // Check if phone is being updated and if it's already used by someone else
+        if (customerData.phone) {
+          const { data: phoneCheck, error: phoneCheckError } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('phone', customerData.phone)
+            .neq('id', existingCustomer.id)
+            .maybeSingle();
+          
+          if (phoneCheckError && !phoneCheckError.message.includes('No rows found')) {
+            console.error('Error checking phone uniqueness:', phoneCheckError);
+            throw phoneCheckError;
+          }
+          
+          if (phoneCheck) {
+            throw new Error('Phone number is already in use by another account');
+          }
+        }
+        
         // Don't change user_id if it exists - preserve the link to a user account
         const { error: updateError } = await supabase
           .from('customers')
@@ -129,6 +204,24 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
         }
         
         return existingCustomer.id;
+      }
+      
+      // Before creating a new record, check if phone is already used
+      if (customerData.phone) {
+        const { data: phoneCheck, error: phoneCheckError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('phone', customerData.phone)
+          .maybeSingle();
+        
+        if (phoneCheckError && !phoneCheckError.message.includes('No rows found')) {
+          console.error('Error checking phone uniqueness:', phoneCheckError);
+          throw phoneCheckError;
+        }
+        
+        if (phoneCheck) {
+          throw new Error('Phone number is already in use by another account');
+        }
       }
       
       // Create a new customer record for guest
