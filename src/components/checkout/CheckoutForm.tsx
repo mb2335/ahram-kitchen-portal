@@ -43,6 +43,7 @@ export function CheckoutForm({
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
   const { submitOrder, isUploading, isSubmitting } = useOrderSubmission();
+  const [showSmsWarning, setShowSmsWarning] = useState(false);
   
   const { 
     formData, 
@@ -250,7 +251,10 @@ export function CheckoutForm({
       if (onSmsOptInRequired) {
         onSmsOptInRequired();
       }
+      setShowSmsWarning(true);
       return;
+    } else {
+      setShowSmsWarning(false);
     }
     
     if (!paymentProof) {
