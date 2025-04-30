@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types/order';
 
@@ -61,29 +62,26 @@ export async function createOrder({
     customer_phone: customerPhone
   });
 
-  // Use a service role call here to bypass RLS if necessary
-  // Otherwise, ensure our RLS policies allow this insertion
+  // Create the order record
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
-    .insert([
-      {
-        customer_id: customerId,
-        total_amount: categoryTotal + categoryTaxAmount,
-        tax_amount: categoryTaxAmount,
-        notes: notes,
-        status: 'pending',
-        delivery_date: deliveryDate.toISOString(),
-        payment_proof_url: paymentProofUrl,
-        pickup_time: pickupTime,
-        pickup_location: pickupLocation,
-        fulfillment_type: fulfillmentType || 'pickup',
-        delivery_address: deliveryAddress,
-        delivery_time_slot: deliveryTimeSlot,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone
-      },
-    ])
+    .insert({
+      customer_id: customerId,
+      total_amount: categoryTotal + categoryTaxAmount,
+      tax_amount: categoryTaxAmount,
+      notes: notes,
+      status: 'pending',
+      delivery_date: deliveryDate.toISOString(),
+      payment_proof_url: paymentProofUrl,
+      pickup_time: pickupTime,
+      pickup_location: pickupLocation,
+      fulfillment_type: fulfillmentType || 'pickup',
+      delivery_address: deliveryAddress,
+      delivery_time_slot: deliveryTimeSlot,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone
+    })
     .select()
     .single();
 
