@@ -25,22 +25,21 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       }
       
       if (existingCustomer) {
-        // Update existing customer if smsOptIn has changed
-        if (customerData.smsOptIn !== undefined && existingCustomer.sms_opt_in !== customerData.smsOptIn) {
-          const { error: updateError } = await supabase
-            .from('customers')
-            .update({ 
-              full_name: customerData.fullName,
-              email: customerData.email,
-              phone: customerData.phone,
-              sms_opt_in: customerData.smsOptIn 
-            })
-            .eq('id', existingCustomer.id);
-          
-          if (updateError) {
-            console.error('Error updating customer:', updateError);
-            throw updateError;
-          }
+        // Update existing customer if smsOptIn has changed or other fields need updating
+        // We need to ensure phone is updated if provided, even for existing users
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update({ 
+            full_name: customerData.fullName,
+            email: customerData.email,
+            phone: customerData.phone || null,
+            sms_opt_in: customerData.smsOptIn !== undefined ? customerData.smsOptIn : existingCustomer.sms_opt_in
+          })
+          .eq('id', existingCustomer.id);
+        
+        if (updateError) {
+          console.error('Error updating customer:', updateError);
+          throw updateError;
         }
         
         return existingCustomer.id;
@@ -66,27 +65,51 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       
       return newCustomer.id;
     } 
-    // For guest checkout, check if a customer already exists with this email
+    // For guest checkout, check if a customer already exists with this email or phone
     else {
-      const { data: existingCustomer, error: fetchError } = await supabase
+      let existingCustomer = null;
+      
+      // First try to find by email
+      const { data: customerByEmail, error: emailFetchError } = await supabase
         .from('customers')
-        .select('id')
+        .select('id, sms_opt_in')
         .eq('email', customerData.email)
         .maybeSingle();
       
-      if (fetchError) {
-        console.error('Error fetching guest customer:', fetchError);
-        throw fetchError;
+      if (emailFetchError) {
+        console.error('Error fetching customer by email:', emailFetchError);
       }
       
+      // Then try to find by phone if provided
+      let customerByPhone = null;
+      if (customerData.phone) {
+        const { data: phoneCustomer, error: phoneFetchError } = await supabase
+          .from('customers')
+          .select('id, sms_opt_in')
+          .eq('phone', customerData.phone)
+          .maybeSingle();
+        
+        if (phoneFetchError) {
+          console.error('Error fetching customer by phone:', phoneFetchError);
+        } else {
+          customerByPhone = phoneCustomer;
+        }
+      }
+      
+      // Prioritize phone match over email match for SMS opt-in status
+      existingCustomer = customerByPhone || customerByEmail;
+      
       if (existingCustomer) {
-        // Update existing customer if necessary
+        // Update existing customer - important to preserve their SMS opt-in status if they previously opted in
+        const smsOptIn = customerData.smsOptIn !== undefined ? customerData.smsOptIn : existingCustomer.sms_opt_in;
+        
         const { error: updateError } = await supabase
           .from('customers')
           .update({
             full_name: customerData.fullName,
+            email: customerData.email,
             phone: customerData.phone || null,
-            sms_opt_in: customerData.smsOptIn || false
+            sms_opt_in: smsOptIn
           })
           .eq('id', existingCustomer.id);
         

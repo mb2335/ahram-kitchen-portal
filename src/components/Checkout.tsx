@@ -59,6 +59,42 @@ export function Checkout() {
     }
   }, [session, items, navigate]);
 
+  // Effect to check if a customer with the given phone number has previously opted in
+  // This runs whenever the phone number changes
+  useEffect(() => {
+    if (!session && customerData.phone) {
+      checkPhoneOptInStatus(customerData.phone);
+    }
+  }, [customerData.phone, session]);
+
+  const checkPhoneOptInStatus = async (phone: string) => {
+    if (!phone || phone.trim().length < 10) return; // Only check valid phone numbers
+    
+    try {
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('sms_opt_in')
+        .eq('phone', phone)
+        .maybeSingle();
+      
+      if (existingCustomer) {
+        setIsPreviouslyOptedIn(existingCustomer.sms_opt_in || false);
+        
+        // If they previously opted in, ensure smsOptIn is set to true
+        if (existingCustomer.sms_opt_in) {
+          setCustomerData(prev => ({
+            ...prev,
+            smsOptIn: true
+          }));
+        }
+      } else {
+        setIsPreviouslyOptedIn(false);
+      }
+    } catch (error) {
+      console.error('Error checking phone opt-in status:', error);
+    }
+  };
+
   const loadUserData = async () => {
     setIsLoadingUserData(true);
     try {
@@ -147,7 +183,9 @@ export function Checkout() {
             smsOptIn={customerData.smsOptIn}
             onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
             onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
-            onPhoneChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
+            onPhoneChange={(e) => {
+              setCustomerData({ ...customerData, phone: e.target.value });
+            }}
             onSmsOptInChange={(checked) => {
               setCustomerData({ ...customerData, smsOptIn: checked });
               setShowSmsWarning(false); // Hide warning when they check the box
