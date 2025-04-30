@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+
 interface CustomerFormProps {
   fullName: string;
   email: string;
@@ -68,19 +69,19 @@ export function CustomerForm({
       {/* Show opt-in checkbox only if the customer hasn't already opted in */}
       {showOptIn && <div className="flex items-center space-x-2">
           <Checkbox id="sms-opt-in" checked={smsOptIn} onCheckedChange={onSmsOptInChange} required />
-          <Label htmlFor="sms-opt-in" className="text-sm font-medium">I agree to receive SMS updates about my order.</Label>
+          <Label htmlFor="sms-opt-in" className="text-sm font-medium">{t('checkout.customer.smsOptIn')}</Label>
         </div>}
 
       {/* Show a message if they've previously opted in */}
       {isPreviouslyOptedIn && <div className="text-sm text-muted-foreground">
-          You have previously opted in to receive SMS updates.
+          {t('checkout.customer.previouslyOptedIn')}
         </div>}
 
       {showSmsWarning && <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>SMS Opt-in Required</AlertTitle>
+          <AlertTitle>{t('checkout.customer.smsRequired.title')}</AlertTitle>
           <AlertDescription>
-            You must agree to receive SMS updates to place an order. This allows us to send you important updates about your order status.
+            {t('checkout.customer.smsRequired.description')}
           </AlertDescription>
         </Alert>}
     </div>;
