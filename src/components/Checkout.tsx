@@ -194,27 +194,6 @@ export function Checkout() {
             showSmsWarning={showSmsWarning}
           />
         )}
-        {session && (
-          <CustomerForm
-            fullName={customerData.fullName}
-            email={customerData.email}
-            phone={customerData.phone}
-            smsOptIn={customerData.smsOptIn}
-            onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
-            onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
-            onPhoneChange={(e) => {
-              setCustomerData({ ...customerData, phone: e.target.value });
-            }}
-            onSmsOptInChange={(checked) => {
-              setCustomerData({ ...customerData, smsOptIn: checked });
-              setShowSmsWarning(false); // Hide warning when they check the box
-            }}
-            isReadOnly={true}
-            isPreviouslyOptedIn={isPreviouslyOptedIn}
-            showSmsWarning={showSmsWarning}
-            showOptInCheckbox={!isPreviouslyOptedIn} // Only show checkbox if not previously opted in
-          />
-        )}
         <CheckoutForm
           customerData={customerData}
           onOrderSuccess={handleOrderSuccess}

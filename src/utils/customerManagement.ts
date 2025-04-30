@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerData {
@@ -24,17 +25,15 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       }
       
       if (existingCustomer) {
-        // Update existing customer - preserve opt-in status if it's true in either the database or the current form
-        // This ensures we never accidentally "un-opt-in" someone who was previously opted in
-        const updatedSmsOptIn = customerData.smsOptIn || existingCustomer.sms_opt_in || false;
-        
+        // Update existing customer if smsOptIn has changed or other fields need updating
+        // We need to ensure phone is updated if provided, even for existing users
         const { error: updateError } = await supabase
           .from('customers')
           .update({ 
             full_name: customerData.fullName,
             email: customerData.email,
             phone: customerData.phone || null,
-            sms_opt_in: updatedSmsOptIn
+            sms_opt_in: customerData.smsOptIn !== undefined ? customerData.smsOptIn : existingCustomer.sms_opt_in
           })
           .eq('id', existingCustomer.id);
         
@@ -101,9 +100,8 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
       existingCustomer = customerByPhone || customerByEmail;
       
       if (existingCustomer) {
-        // Update existing customer - important to preserve their SMS opt-in status
-        // We want the most permissive option (if they've ever opted in, keep it that way)
-        const updatedSmsOptIn = customerData.smsOptIn || existingCustomer.sms_opt_in || false;
+        // Update existing customer - important to preserve their SMS opt-in status if they previously opted in
+        const smsOptIn = customerData.smsOptIn !== undefined ? customerData.smsOptIn : existingCustomer.sms_opt_in;
         
         const { error: updateError } = await supabase
           .from('customers')
@@ -111,7 +109,7 @@ export async function getOrCreateCustomer(customerData: CustomerData, userId?: s
             full_name: customerData.fullName,
             email: customerData.email,
             phone: customerData.phone || null,
-            sms_opt_in: updatedSmsOptIn
+            sms_opt_in: smsOptIn
           })
           .eq('id', existingCustomer.id);
         
