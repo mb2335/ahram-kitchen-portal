@@ -29,6 +29,8 @@ export function Checkout() {
   });
 
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
+  const [isPreviouslyOptedIn, setIsPreviouslyOptedIn] = useState(false);
+  const [showSmsWarning, setShowSmsWarning] = useState(false);
 
   // Fetch categories to include with items
   const { data: categories = [] } = useQuery({
@@ -73,6 +75,9 @@ export function Checkout() {
           phone: customer.phone || '',
           smsOptIn: customer.sms_opt_in || false,
         });
+        
+        // Set previously opted in if the customer has already opted in
+        setIsPreviouslyOptedIn(customer.sms_opt_in || false);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -143,7 +148,12 @@ export function Checkout() {
             onFullNameChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
             onEmailChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
             onPhoneChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
-            onSmsOptInChange={(checked) => setCustomerData({ ...customerData, smsOptIn: checked })}
+            onSmsOptInChange={(checked) => {
+              setCustomerData({ ...customerData, smsOptIn: checked });
+              setShowSmsWarning(false); // Hide warning when they check the box
+            }}
+            isPreviouslyOptedIn={isPreviouslyOptedIn}
+            showSmsWarning={showSmsWarning}
           />
         )}
         <CheckoutForm
@@ -152,6 +162,7 @@ export function Checkout() {
           total={total}
           taxAmount={taxAmount}
           items={checkoutItems}
+          onSmsOptInRequired={() => setShowSmsWarning(true)}
         />
       </div>
     </div>

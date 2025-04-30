@@ -4,4 +4,5 @@ export interface CustomerData {
   email: string;
   phone: string;
   smsOptIn: boolean;
+  address?: string;
 }

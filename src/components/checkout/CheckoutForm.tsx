@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +26,7 @@ interface CheckoutFormProps {
   total: number;
   taxAmount: number;
   items: OrderItem[];
+  onSmsOptInRequired?: () => void;
 }
 
 export function CheckoutForm({
@@ -34,14 +34,14 @@ export function CheckoutForm({
   onOrderSuccess,
   total,
   taxAmount,
-  items
+  items,
+  onSmsOptInRequired
 }: CheckoutFormProps) {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [fulfillmentType, setFulfillmentType] = useState<string>('');
   const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
-  const [showSmsWarning, setShowSmsWarning] = useState(false);
   const { submitOrder, isUploading, isSubmitting } = useOrderSubmission();
   
   const { 
@@ -247,7 +247,9 @@ export function CheckoutForm({
 
     // Check if SMS opt-in is enabled
     if (!customerData.smsOptIn) {
-      setShowSmsWarning(true);
+      if (onSmsOptInRequired) {
+        onSmsOptInRequired();
+      }
       return;
     }
     
@@ -329,7 +331,8 @@ export function CheckoutForm({
         deliveryDates: formData.deliveryDates,
         customerData: {
           ...customerData,
-          address: formData.deliveryAddress
+          address: formData.deliveryAddress,
+          smsOptIn: true // Ensure smsOptIn is true when submitting
         },
         pickupDetail: Object.values(formData.pickupDetails)[0] || null,
         fulfillmentType,
