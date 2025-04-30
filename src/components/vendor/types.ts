@@ -7,7 +7,7 @@ export interface Order {
   customer_phone?: string;
   total_amount: number;
   tax_amount: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'rejected';
+  status: OrderStatus;
   delivery_date: string;
   notes?: string;
   payment_proof_url: string;
@@ -46,7 +46,7 @@ export interface OrderItem {
 
 export interface OrderSummary {
   id: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'rejected';
+  status: OrderStatus;
   total_amount: number;
   created_at: string;
 }
@@ -59,3 +59,5 @@ export interface MenuCategory {
   fulfillment_types?: string[];
   blocked_dates?: string[];
 }
+
+export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
