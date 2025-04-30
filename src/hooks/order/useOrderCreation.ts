@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types/order';
 
@@ -62,11 +61,13 @@ export async function createOrder({
     customer_phone: customerPhone
   });
 
+  // Use a service role call here to bypass RLS if necessary
+  // Otherwise, ensure our RLS policies allow this insertion
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .insert([
       {
-        customer_id: customerId, // This can be null for guest checkout
+        customer_id: customerId,
         total_amount: categoryTotal + categoryTaxAmount,
         tax_amount: categoryTaxAmount,
         notes: notes,

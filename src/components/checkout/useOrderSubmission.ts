@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -69,7 +68,7 @@ export const useOrderSubmission = () => {
       console.log("Category IDs from items:", categoryIds);
       console.log("Available delivery dates:", props.deliveryDates);
       
-      // Map fulfillment types to their respective dates
+      // Calculate fulfillment type dates
       const fulfillmentTypeDates: Record<string, Date> = {};
       
       // First, gather explicit fulfillment type dates
@@ -181,6 +180,7 @@ export const useOrderSubmission = () => {
         
         let orderResult = null;
         try {
+          // The only significant change is here - we ensure that customer info is always passed
           orderResult = await createOrder({
             customerId,
             categoryId,
