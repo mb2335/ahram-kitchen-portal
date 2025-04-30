@@ -1,88 +1,62 @@
 
+import React from 'react';
+import { Card } from '@/components/ui/card';
+import { format } from 'date-fns';
 import { Order } from './types';
-import { OrderHeader } from './order/OrderHeader';
 import { CustomerDetails } from './order/CustomerDetails';
-import { OrderNotes } from './order/OrderNotes';
+import { OrderItems } from './order/OrderItems';
+import { OrderDetails } from './order/OrderDetails';
 import { OrderActions } from './order/OrderActions';
-import { PickupDetails } from './order/PickupDetails';
-import { PaymentProof } from './order/PaymentProof';
-import { OrderSummary } from '@/components/shared/OrderSummary';
-import { SendSMSDialog } from './order/SendSMSDialog';
+import { formatCurrency } from '@/utils/formatters';
 
 interface OrderCardProps {
   order: Order;
-  onDelete?: (orderId: string) => void;
   children?: React.ReactNode;
+  onDelete?: (id: string) => void;
 }
 
-export function OrderCard({ order, onDelete, children }: OrderCardProps) {
-  // Calculate total discount from order items
-  const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
-    const originalPrice = item.unit_price * item.quantity;
-    const discountAmount = item.menu_item?.discount_percentage 
-      ? (originalPrice * (item.menu_item.discount_percentage / 100))
-      : 0;
-    return acc + discountAmount;
-  }, 0) || 0;
-
-  const orderItems = order.order_items?.map(item => ({
-    name: item.menu_item?.name || '',
-    nameKo: item.menu_item?.name_ko || '',
-    quantity: item.quantity,
-    price: item.unit_price,
-    discount_percentage: item.menu_item?.discount_percentage,
-    category: item.menu_item?.category
-  })) || [];
-
-  const smsRecipient = order.customer?.phone ? [{
-    phone: order.customer.phone,
-    name: order.customer.full_name
-  }] : [];
-
+export function OrderCard({ order, children, onDelete }: OrderCardProps) {
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
-      <OrderHeader order={order} />
-      
-      {order.customer && (
-        <CustomerDetails customer={order.customer} />
-      )}
+    <Card className="overflow-hidden">
+      <div className="p-6">
+        <div className="flex flex-col md:flex-row justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium">
+              Order #{order.id.substring(0, 8)}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {format(new Date(order.created_at), 'PPpp')}
+            </p>
+          </div>
+          <div className="mt-2 md:mt-0">
+            <p className="text-lg font-bold">
+              {formatCurrency(order.total_amount)}
+            </p>
+          </div>
+        </div>
 
-      <OrderSummary 
-        items={orderItems}
-        subtotal={order.total_amount - order.tax_amount + totalDiscount}
-        taxAmount={order.tax_amount}
-        total={order.total_amount}
-        discountAmount={totalDiscount}
-      />
-      
-      <PickupDetails 
-        pickupDate={order.delivery_date}
-        pickupTime={order.pickup_time}
-        pickupLocation={order.pickup_location}
-        fulfillmentType={order.fulfillment_type}
-        deliveryAddress={order.delivery_address}
-        deliveryTimeSlot={order.delivery_time_slot}
-      />
-      
-      <PaymentProof paymentProofUrl={order.payment_proof_url} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <CustomerDetails 
+            customer={order.customer} 
+            customerName={order.customer_name}
+            customerEmail={order.customer_email}
+            customerPhone={order.customer_phone}
+          />
+          <OrderDetails order={order} />
+        </div>
 
-      <OrderNotes 
-        notes={order.notes} 
-        rejectionReason={order.rejection_reason} 
-      />
+        <OrderItems items={order.order_items} />
 
-      <div className="flex justify-between items-center">
-        <OrderActions 
-          onDelete={onDelete} 
-          orderId={order.id}
-        >
+        <div className="mt-4 border-t pt-4">
           {children}
-        </OrderActions>
-        
-        {order.customer?.phone && (
-          <SendSMSDialog recipients={smsRecipient} />
-        )}
+          
+          {onDelete && (
+            <div className="mt-4">
+              <OrderActions orderId={order.id} onDelete={onDelete} />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }

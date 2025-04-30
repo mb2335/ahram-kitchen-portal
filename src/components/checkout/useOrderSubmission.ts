@@ -30,7 +30,7 @@ export const useOrderSubmission = () => {
         categoryFulfillmentTypes: props.categoryFulfillmentTypes || {}
       });
       
-      // Validate required customer data for guest checkout
+      // Validate required customer data for checkout
       if (!props.customerData.fullName || !props.customerData.email) {
         throw new Error("Customer name and email are required");
       }
@@ -44,11 +44,13 @@ export const useOrderSubmission = () => {
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
       console.log("Payment proof uploaded successfully");
       
-      // Get or create customer for guest checkout/signed-in user and ensure sms_opt_in is set to true
-      const customerId = await getOrCreateCustomer({
-        ...props.customerData,
-        smsOptIn: true // Ensure this is set to true
-      }, session?.user?.id);
+      // For authenticated users, get or create customer record
+      // For guests, this will return null
+      const customerId = session?.user?.id ? 
+        await getOrCreateCustomer({
+          ...props.customerData,
+          smsOptIn: true // Ensure this is set to true
+        }, session.user.id) : null;
       
       console.log("Customer ID obtained:", customerId);
       
@@ -192,7 +194,10 @@ export const useOrderSubmission = () => {
             pickupLocation: props.pickupDetail?.location || null,
             fulfillmentType: categoryFulfillmentType,
             deliveryAddress: props.customerData.address || null,
-            deliveryTimeSlot
+            deliveryTimeSlot,
+            customerName: props.customerData.fullName,
+            customerEmail: props.customerData.email,
+            customerPhone: props.customerData.phone || null
           });
 
           if (orderResult) {

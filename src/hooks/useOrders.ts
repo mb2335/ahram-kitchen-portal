@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/components/vendor/types';
@@ -18,46 +19,56 @@ export const useOrders = () => {
     queryKey: session?.user?.id ? orderKeys.all : null,
     queryFn: async () => {
       try {
-        const { data: customerData } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('user_id', session?.user?.id)
-          .single();
+        // For authenticated users, get orders by user_id
+        if (session?.user?.id) {
+          // First, check if the user has a customer record
+          const { data: customerData } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .single();
 
-        if (!customerData) return [];
-
-        const { data: orders, error } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            customer:customers (
-              id,
-              full_name,
-              email,
-              phone
-            ),
-            order_items (
-              id,
-              menu_item_id,
-              quantity,
-              unit_price,
-              menu_item:menu_items (
+          // Fetch orders based on either the customer_id (if it exists)
+          // or by matching email in the orders table
+          const { data: orders, error } = await supabase
+            .from('orders')
+            .select(`
+              *,
+              customer:customers (
                 id,
-                name,
-                name_ko,
-                category:menu_categories (
+                full_name,
+                email,
+                phone
+              ),
+              order_items (
+                id,
+                menu_item_id,
+                quantity,
+                unit_price,
+                menu_item:menu_items (
                   id,
                   name,
-                  name_ko
+                  name_ko,
+                  category:menu_categories (
+                    id,
+                    name,
+                    name_ko
+                  )
                 )
               )
+            `)
+            .or(
+              customerData 
+                ? `customer_id.eq.${customerData.id},customer_email.eq.${session.user.email}` 
+                : `customer_email.eq.${session.user.email}`
             )
-          `)
-          .eq('customer_id', customerData.id)
-          .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return orders as unknown as Order[];
+          if (error) throw error;
+          return orders as unknown as Order[];
+        }
+        
+        return [];
       } catch (error: any) {
         toast({
           title: 'Error fetching orders',
@@ -179,7 +190,6 @@ export const useVendorOrders = () => {
 
       console.log('Successfully deleted order');
 
-      // Immediately refetch to update the UI
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.all }),
         queryClient.invalidateQueries({ queryKey: orderKeys.vendor }),

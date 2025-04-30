@@ -271,7 +271,10 @@ export type Database = {
       orders: {
         Row: {
           created_at: string | null
-          customer_id: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           delivery_address: string | null
           delivery_date: string
           delivery_time_slot: string | null
@@ -288,7 +291,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          customer_id: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           delivery_address?: string | null
           delivery_date: string
           delivery_time_slot?: string | null
@@ -305,7 +311,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          customer_id?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           delivery_address?: string | null
           delivery_date?: string
           delivery_time_slot?: string | null

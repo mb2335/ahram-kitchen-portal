@@ -1,18 +1,41 @@
 
-export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
+export interface Order {
+  id: string;
+  customer_id?: string | null;
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  total_amount: number;
+  tax_amount: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'rejected';
+  delivery_date: string;
+  notes?: string;
+  payment_proof_url: string;
+  created_at: string;
+  rejection_reason?: string;
+  pickup_time?: string;
+  pickup_location?: string;
+  fulfillment_type?: string;
+  delivery_address?: string;
+  delivery_time_slot?: string;
+  customer?: {
+    id: string;
+    full_name: string;
+    email: string;
+    phone?: string;
+  } | null;
+  order_items: OrderItem[];
+}
 
 export interface OrderItem {
   id: string;
-  order_id: string;
   menu_item_id: string;
   quantity: number;
   unit_price: number;
-  menu_item: {
+  menu_item?: {
     id: string;
     name: string;
     name_ko: string;
-    category_id?: string;
-    discount_percentage?: number;
     category?: {
       id: string;
       name: string;
@@ -21,27 +44,18 @@ export interface OrderItem {
   };
 }
 
-export interface Order {
+export interface OrderSummary {
   id: string;
-  customer_id: string;
-  customer?: {
-    id: string;
-    full_name: string;
-    email: string;
-    phone?: string;
-  };
+  status: 'pending' | 'confirmed' | 'completed' | 'rejected';
   total_amount: number;
-  tax_amount: number;
-  status: OrderStatus;
-  notes?: string | null;
-  delivery_date: string;
-  payment_proof_url: string;
-  rejection_reason?: string | null;
-  created_at?: string;
-  pickup_time?: string;
-  pickup_location?: string;
-  fulfillment_type?: string;
-  order_items?: OrderItem[];
-  delivery_address?: string;
-  delivery_time_slot?: string;  // Added this property to fix the error
+  created_at: string;
+}
+
+export interface MenuCategory {
+  id: string;
+  name: string;
+  name_ko: string;
+  order_index: number;
+  fulfillment_types?: string[];
+  blocked_dates?: string[];
 }

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types/order';
 
 interface CreateOrderParams {
-  customerId: string;
+  customerId?: string | null;
   categoryId: string;
   deliveryDate: Date;
   items: OrderItem[];
@@ -16,6 +16,9 @@ interface CreateOrderParams {
   fulfillmentType?: string;
   deliveryAddress?: string | null;
   deliveryTimeSlot?: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
 }
 
 export async function createOrder({
@@ -32,12 +35,10 @@ export async function createOrder({
   fulfillmentType,
   deliveryAddress,
   deliveryTimeSlot,
+  customerName,
+  customerEmail,
+  customerPhone
 }: CreateOrderParams) {
-  if (!customerId) {
-    console.error("Missing customer ID");
-    throw new Error("Customer ID is required");
-  }
-  
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
 
@@ -55,14 +56,17 @@ export async function createOrder({
     pickup_location: pickupLocation,
     fulfillment_type: fulfillmentType || 'pickup',
     delivery_address: deliveryAddress,
-    delivery_time_slot: deliveryTimeSlot
+    delivery_time_slot: deliveryTimeSlot,
+    customer_name: customerName,
+    customer_email: customerEmail,
+    customer_phone: customerPhone
   });
 
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .insert([
       {
-        customer_id: customerId,
+        customer_id: customerId, // This can be null for guest checkout
         total_amount: categoryTotal + categoryTaxAmount,
         tax_amount: categoryTaxAmount,
         notes: notes,
@@ -73,7 +77,10 @@ export async function createOrder({
         pickup_location: pickupLocation,
         fulfillment_type: fulfillmentType || 'pickup',
         delivery_address: deliveryAddress,
-        delivery_time_slot: deliveryTimeSlot
+        delivery_time_slot: deliveryTimeSlot,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone
       },
     ])
     .select()

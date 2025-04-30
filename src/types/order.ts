@@ -38,7 +38,7 @@ export interface OrderData {
   status: string;
   delivery_date: string;
   notes?: string;
-  customer_id: string;
+  customer_id?: string | null;
   pickup_time?: string;
   pickup_location?: string;
   payment_proof_url: string;
@@ -46,9 +46,12 @@ export interface OrderData {
   fulfillment_type?: string;
   created_at: string;
   rejection_reason?: string;
-  delivery_address?: string; // Added for delivery orders
-  delivery_time_slot?: string; // Added for time slot selection
-  relatedOrderIds?: string[]; // Added for multi-fulfillment orders
+  delivery_address?: string;
+  delivery_time_slot?: string;
+  relatedOrderIds?: string[];
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
 }
 
 export interface OrderHistoryItem {
@@ -61,9 +64,12 @@ export interface OrderHistoryItem {
   pickup_time?: string;
   pickup_location?: string;
   fulfillment_type?: string;
-  delivery_address?: string; // Added for delivery orders
-  delivery_time_slot?: string; // Added for time slot selection
-  relatedOrderIds?: string[]; // Added for multi-fulfillment orders
+  delivery_address?: string;
+  delivery_time_slot?: string;
+  relatedOrderIds?: string[];
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
 }
 
 // Fulfillment types
