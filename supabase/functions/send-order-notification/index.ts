@@ -74,9 +74,9 @@ serve(async (req) => {
       message = `Order ${order.id.substring(0, 8)} status updated to: ${order.status.toUpperCase()}`;
     }
 
-    console.log("Sending notification:", message);
+    console.log("Preparing to send notification:", message);
 
-    // Send SMS if we have a phone number and SMS function URL
+    // Send SMS if we have a phone number
     if (order.customer_phone) {
       try {
         const customerMessage = isNewOrder 

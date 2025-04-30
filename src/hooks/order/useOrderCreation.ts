@@ -63,7 +63,7 @@ export async function createOrder({
   });
 
   try {
-    // Create the order record - simplified insert approach
+    // Create the order record
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -110,7 +110,7 @@ export async function createOrder({
       throw orderItemsError;
     }
 
-    console.log("Successfully created order:", orderData.id);
+    console.log("Successfully created order items:", orderItems.length);
     return orderData;
   } catch (error) {
     console.error("Error in createOrder:", error);
