@@ -9,6 +9,7 @@ import { MapPin, Clock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { PaymentProof } from '@/components/vendor/order/PaymentProof';
 import { OrderSummary } from '@/components/shared/OrderSummary';
+import { useSession } from '@supabase/auth-helpers-react';
 
 interface OrderDetails {
   id: string;
@@ -27,15 +28,17 @@ interface OrderDetails {
   taxAmount: number;
   subtotal: number;
   createdAt: string;
-  pickupTime: string | null;
-  pickupLocation: string | null;
-  paymentProofUrl: string;
+  pickupTime?: string | null;
+  pickupLocation?: string | null;
+  paymentProofUrl?: string;
 }
 
 export function OrderThankYou() {
   const location = useLocation();
   const orderDetails = location.state?.orderDetails as OrderDetails | undefined;
   const { language, t } = useLanguage();
+  const session = useSession();
+  const isAuthenticated = !!session;
 
   if (!orderDetails) {
     return <Navigate to="/" replace />;
@@ -115,9 +118,13 @@ export function OrderThankYou() {
           <Link to="/">
             <Button variant="outline">{t('checkout.thankyou.return')}</Button>
           </Link>
-          <Link to="/orders">
-            <Button>{t('checkout.thankyou.vieworders')}</Button>
-          </Link>
+          
+          {/* Only show View Orders button for authenticated users */}
+          {isAuthenticated && (
+            <Link to="/orders">
+              <Button>{t('checkout.thankyou.vieworders')}</Button>
+            </Link>
+          )}
         </div>
       </Card>
     </div>

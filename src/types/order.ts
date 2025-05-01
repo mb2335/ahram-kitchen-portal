@@ -29,7 +29,7 @@ export interface OrderSubmissionProps {
   fulfillmentType: string;
   categoryFulfillmentTypes?: Record<string, string>; // For mixed delivery types
   timeSlotSelections?: Record<string, DeliveryTimeSlotSelection>;
-  onOrderSuccess: (orderId: string) => void;
+  onOrderSuccess: (orderId: string, isAuthenticated: boolean) => void;
 }
 
 export interface OrderData {

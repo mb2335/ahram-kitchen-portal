@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -260,9 +261,12 @@ export const useOrderSubmission = () => {
         }
       }
       
-      // Call the success callback with the first order ID
+      // Determine if user is authenticated before calling success callback
+      const isAuthenticated = !!session?.user;
+      
+      // Call the success callback with the first order ID and auth state
       console.log(`Order submission completed successfully. Calling success callback with order ID ${orderIds[0]}`);
-      props.onOrderSuccess(orderIds[0]);
+      props.onOrderSuccess(orderIds[0], isAuthenticated);
       
       return orderIds[0];
     } catch (error: any) {

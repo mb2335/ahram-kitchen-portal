@@ -125,34 +125,46 @@ export function Checkout() {
     }
   };
 
-  const handleOrderSuccess = async (orderId: string) => {
+  const handleOrderSuccess = async (orderId: string, isAuthenticated: boolean) => {
     clearCart();
+
+    // Get order details for the thank you page
+    const orderDetails = {
+      id: orderId,
+      items: checkoutItems.map(item => {
+        const category = categories.find(cat => cat.id === item.category_id);
+        return {
+          ...item,
+          category: category ? {
+            name: category.name,
+            name_ko: category.name_ko
+          } : undefined
+        };
+      }),
+      subtotal: total - taxAmount,
+      taxAmount: taxAmount,
+      total: total,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Redirect to the appropriate page based on authentication status
     navigate('/thank-you', {
-      state: {
-        orderDetails: {
-          id: orderId,
-          items: checkoutItems.map(item => {
-            const category = categories.find(cat => cat.id === item.category_id);
-            return {
-              ...item,
-              category: category ? {
-                name: category.name,
-                name_ko: category.name_ko
-              } : undefined
-            };
-          }),
-          subtotal: total - taxAmount,
-          taxAmount: taxAmount,
-          total: total,
-          createdAt: new Date().toISOString(),
-        }
-      },
+      state: { orderDetails },
       replace: true
     });
-    toast({
-      title: "Order Placed Successfully",
-      description: "Your order has been confirmed. You can track its status in your order history.",
-    });
+
+    // Show different toast messages based on authentication status
+    if (isAuthenticated) {
+      toast({
+        title: "Order Placed Successfully",
+        description: "Your order has been confirmed. You can track its status in your order history.",
+      });
+    } else {
+      toast({
+        title: "Order Placed Successfully",
+        description: "Your order has been confirmed. You'll receive SMS updates about your order status.",
+      });
+    }
   };
 
   if (isLoadingUserData) {

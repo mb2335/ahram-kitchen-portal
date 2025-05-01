@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +23,7 @@ interface CheckoutFormProps {
     phone: string;
     smsOptIn: boolean;
   };
-  onOrderSuccess: (orderId: string) => void;
+  onOrderSuccess: (orderId: string, isAuthenticated: boolean) => void;
   total: number;
   taxAmount: number;
   items: OrderItem[];
