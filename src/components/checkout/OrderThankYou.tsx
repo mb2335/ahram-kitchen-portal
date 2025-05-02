@@ -1,11 +1,12 @@
 
 import { useLocation, Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { MapPin, Clock } from 'lucide-react';
+import { useSession } from '@supabase/auth-helpers-react';
 
 interface OrderDetails {
   id: string;
@@ -29,6 +30,8 @@ export function OrderThankYou() {
   const location = useLocation();
   const { language, t } = useLanguage();
   const orderDetails = location.state?.orderDetails as OrderDetails | undefined;
+  const session = useSession();
+  const isAuthenticated = !!session;
 
   if (!orderDetails) {
     return <Navigate to="/" replace />;
@@ -129,9 +132,13 @@ export function OrderThankYou() {
           <Link to="/">
             <Button variant="outline">{t('checkout.thankyou.return')}</Button>
           </Link>
-          <Link to="/orders">
-            <Button>{t('checkout.thankyou.vieworders')}</Button>
-          </Link>
+          
+          {/* Only show View Orders button for authenticated users */}
+          {isAuthenticated && (
+            <Link to="/orders">
+              <Button>{t('checkout.thankyou.vieworders')}</Button>
+            </Link>
+          )}
         </div>
       </Card>
     </div>
