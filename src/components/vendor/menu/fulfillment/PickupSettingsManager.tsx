@@ -1,17 +1,17 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { CalendarIcon, Clock, MapPinIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Category } from "@/components/vendor/menu/types/category";
 import { DaySelector } from "./pickup/DaySelector";
 import { useVendorId } from "@/hooks/useVendorId";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Day names array for display purposes
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -25,10 +25,59 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   const [pickupTime, setPickupTime] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [existingSettings, setExistingSettings] = useState<{[key: number]: {time: string, location: string}[]}>({});
+  const [isExistingSettingsOpen, setIsExistingSettingsOpen] = useState<{[key: number]: boolean}>({});
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { vendorId } = useVendorId();
+
+  // Fetch existing pickup settings
+  const { data: pickupSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['pickup-settings', vendorId],
+    queryFn: async () => {
+      if (!vendorId) return [];
+      
+      const { data, error } = await supabase
+        .from('pickup_settings')
+        .select('*')
+        .eq('vendor_id', vendorId);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!vendorId
+  });
+
+  // Organize pickup settings by day
+  useEffect(() => {
+    if (pickupSettings && pickupSettings.length > 0) {
+      const settingsByDay: {[key: number]: {time: string, location: string}[]} = {};
+      
+      pickupSettings.forEach(setting => {
+        if (!settingsByDay[setting.day]) {
+          settingsByDay[setting.day] = [];
+        }
+        
+        if (setting.time && setting.location) {
+          settingsByDay[setting.day].push({
+            time: setting.time,
+            location: setting.location
+          });
+        }
+      });
+      
+      setExistingSettings(settingsByDay);
+      
+      // Initialize collapsible state for each day
+      const initialCollapseState: {[key: number]: boolean} = {};
+      Object.keys(settingsByDay).forEach(day => {
+        initialCollapseState[parseInt(day)] = false;
+      });
+      
+      setIsExistingSettingsOpen(initialCollapseState);
+    }
+  }, [pickupSettings]);
 
   // Save pickup setting
   const handleSavePickupSetting = async () => {
@@ -89,6 +138,14 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
     }
   };
 
+  // Toggle collapsible state for a day
+  const toggleCollapsible = (day: number) => {
+    setIsExistingSettingsOpen(prev => ({
+      ...prev,
+      [day]: !prev[day]
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -98,6 +155,58 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
             Configure your pickup days, times, and locations. These settings will apply globally to all customers during checkout.
           </p>
 
+          {/* Summary of enabled days */}
+          <div className="mb-6">
+            <Label className="mb-2 block">Currently Enabled Pickup Days</Label>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(existingSettings).length > 0 ? (
+                Object.keys(existingSettings).map((day) => (
+                  <Badge key={day} variant="outline" className="px-3 py-1">
+                    {dayNames[parseInt(day)]} ({existingSettings[parseInt(day)].length} {existingSettings[parseInt(day)].length === 1 ? 'option' : 'options'})
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No pickup days configured yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Existing pickup settings */}
+          {!isLoadingSettings && Object.keys(existingSettings).length > 0 && (
+            <div className="mb-6 space-y-3 border p-4 rounded-md">
+              <h4 className="font-medium">Existing Pickup Settings</h4>
+              {Object.keys(existingSettings).map((day) => (
+                <Collapsible 
+                  key={day} 
+                  open={isExistingSettingsOpen[parseInt(day)]} 
+                  onOpenChange={() => toggleCollapsible(parseInt(day))}
+                  className="border rounded-md p-2"
+                >
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex justify-between w-full">
+                      <span>{dayNames[parseInt(day)]}</span>
+                      <Badge>{existingSettings[parseInt(day)].length} {existingSettings[parseInt(day)].length === 1 ? 'option' : 'options'}</Badge>
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="px-4 pt-2 pb-4 space-y-2">
+                    {existingSettings[parseInt(day)].map((setting, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span>{setting.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPinIcon className="h-4 w-4 text-muted-foreground" />
+                          <span>{setting.location}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
+            </div>
+          )}
+          
           <div className="space-y-6">
             <div>
               <Label className="flex items-center gap-1 mb-2">
