@@ -241,26 +241,8 @@ export const useOrderSubmission = () => {
         console.warn("Error updating menu item quantities, but order was created:", qtyError);
       }
 
-      // Send order confirmation SMS
-      if (orderIds.length > 0 && props.customerData.phone) {
-        try {
-          const sendSmsResponse = await supabase.functions.invoke('send-sms', {
-            body: {
-              phoneNumbers: [props.customerData.phone],
-              message: `Thanks for your order! We'll text you updates here as your order status changes. Your order ID is ${orderIds[0]}.`
-            }
-          });
+      // Removed: SMS confirmation code that was here previously
 
-          if (sendSmsResponse.error) {
-            console.warn("Error sending confirmation SMS, but order was created:", sendSmsResponse.error);
-          } else {
-            console.log("Order confirmation SMS sent successfully");
-          }
-        } catch (smsError) {
-          console.warn("Error sending confirmation SMS, but order was created:", smsError);
-        }
-      }
-      
       // Determine if user is authenticated before calling success callback
       const isAuthenticated = !!session?.user;
       

@@ -76,27 +76,10 @@ serve(async (req) => {
 
     console.log("Preparing to send notification:", message);
 
-    // Send SMS if we have a phone number
-    if (order.customer_phone) {
-      try {
-        const customerMessage = isNewOrder 
-          ? `Thank you for your order! Your order ID is: ${order.id.substring(0, 8)}. We'll keep you updated on its status.`
-          : `Your order status has been updated to: ${order.status.toUpperCase()}. Thank you for your business!`;
-          
-        const smsResponse = await supabaseClient.functions.invoke("send-sms", {
-          body: {
-            phoneNumbers: [order.customer_phone],
-            message: customerMessage
-          }
-        });
-        
-        console.log("SMS notification result:", smsResponse);
-      } catch (smsError) {
-        console.error("Error sending SMS notification:", smsError);
-      }
-    }
+    // NOTE: We've removed the automated SMS sending functionality
+    // The vendor will now be responsible for sending SMS notifications manually
 
-    return new Response(JSON.stringify({ success: true, message: "Notifications sent" }), {
+    return new Response(JSON.stringify({ success: true, message: "Order processed, no automatic notifications sent" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

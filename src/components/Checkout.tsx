@@ -162,7 +162,7 @@ export function Checkout() {
     } else {
       toast({
         title: "Order Placed Successfully",
-        description: "Your order has been confirmed. You'll receive SMS updates about your order status.",
+        description: "Your order has been confirmed.",
       });
     }
   };
