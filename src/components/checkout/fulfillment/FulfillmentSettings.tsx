@@ -146,8 +146,13 @@ export function FulfillmentSettings({
   const isDateAvailable = (date: Date, fulfillmentType: string) => {
     const dayOfWeek = date.getDay();
     
-    // Don't allow dates in the past
-    if (date < new Date(new Date().setHours(0, 0, 0, 0))) {
+    // Get tomorrow's date (to prevent same-day orders)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    // Don't allow dates in the past or today (same-day)
+    if (date < tomorrow) {
       return false;
     }
     
@@ -173,28 +178,36 @@ export function FulfillmentSettings({
     if (usedFulfillmentTypes.has(FULFILLMENT_TYPE_PICKUP) && pickupSettings.length > 0) {
       console.log("Updating pickup dates based on settings:", pickupSettings.length);
       const currentPickupDate = selectedDates[FULFILLMENT_TYPE_PICKUP];
-      if (currentPickupDate && !isDateAvailable(currentPickupDate, FULFILLMENT_TYPE_PICKUP)) {
-        // Find the next available pickup date
+      
+      // Get tomorrow's date (to prevent same-day orders)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      if (currentPickupDate && (!isDateAvailable(currentPickupDate, FULFILLMENT_TYPE_PICKUP) || currentPickupDate < tomorrow)) {
+        // Find the next available pickup date (starting from tomorrow)
         let nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
         for (let i = 0; i < 14; i++) {
-          nextDate = addDays(nextDate, 1);
           if (isDateAvailable(nextDate, FULFILLMENT_TYPE_PICKUP)) {
             onDateChange(FULFILLMENT_TYPE_PICKUP, nextDate);
             break;
           }
+          nextDate = addDays(nextDate, 1);
         }
       } else if (!currentPickupDate && availablePickupDays.size > 0) {
-        // Auto-select first available date if none selected
-        const today = new Date();
+        // Auto-select first available date if none selected (starting from tomorrow)
+        let nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
         let foundDate = false;
         
         for (let i = 0; i < 14; i++) {
-          const checkDate = addDays(today, i);
-          if (isDateAvailable(checkDate, FULFILLMENT_TYPE_PICKUP)) {
-            onDateChange(FULFILLMENT_TYPE_PICKUP, checkDate);
+          if (isDateAvailable(nextDate, FULFILLMENT_TYPE_PICKUP)) {
+            onDateChange(FULFILLMENT_TYPE_PICKUP, nextDate);
             foundDate = true;
             break;
           }
+          nextDate = addDays(nextDate, 1);
         }
         
         if (!foundDate) {
@@ -205,28 +218,36 @@ export function FulfillmentSettings({
 
     if (usedFulfillmentTypes.has(FULFILLMENT_TYPE_DELIVERY)) {
       const currentDeliveryDate = selectedDates[FULFILLMENT_TYPE_DELIVERY];
-      if (currentDeliveryDate && !isDateAvailable(currentDeliveryDate, FULFILLMENT_TYPE_DELIVERY)) {
-        // Find the next available delivery date
+      
+      // Get tomorrow's date (to prevent same-day orders)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      if (currentDeliveryDate && (!isDateAvailable(currentDeliveryDate, FULFILLMENT_TYPE_DELIVERY) || currentDeliveryDate < tomorrow)) {
+        // Find the next available delivery date (starting from tomorrow)
         let nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
         for (let i = 0; i < 14; i++) {
-          nextDate = addDays(nextDate, 1);
           if (isDateAvailable(nextDate, FULFILLMENT_TYPE_DELIVERY)) {
             onDateChange(FULFILLMENT_TYPE_DELIVERY, nextDate);
             break;
           }
+          nextDate = addDays(nextDate, 1);
         }
       } else if (!currentDeliveryDate && availableDeliveryDays.size > 0) {
-        // Auto-select first available date if none selected
-        const today = new Date();
+        // Auto-select first available date if none selected (starting from tomorrow)
+        let nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
         let foundDate = false;
         
         for (let i = 0; i < 14; i++) {
-          const checkDate = addDays(today, i);
-          if (isDateAvailable(checkDate, FULFILLMENT_TYPE_DELIVERY)) {
-            onDateChange(FULFILLMENT_TYPE_DELIVERY, checkDate);
+          if (isDateAvailable(nextDate, FULFILLMENT_TYPE_DELIVERY)) {
+            onDateChange(FULFILLMENT_TYPE_DELIVERY, nextDate);
             foundDate = true;
             break;
           }
+          nextDate = addDays(nextDate, 1);
         }
         
         if (!foundDate) {
@@ -312,6 +333,12 @@ export function FulfillmentSettings({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Pickup Date</Label>
+                  <Alert variant="default" className="mt-2 bg-amber-50 border-amber-200 text-amber-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Same-day pickup is not available. Please select a future date.
+                    </AlertDescription>
+                  </Alert>
                   {availablePickupDays.size === 0 ? (
                     <Alert variant="default" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
@@ -355,6 +382,12 @@ export function FulfillmentSettings({
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Delivery Date</Label>
+                  <Alert variant="default" className="mt-2 bg-amber-50 border-amber-200 text-amber-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Same-day delivery is not available. Please select a future date.
+                    </AlertDescription>
+                  </Alert>
                   {availableDeliveryDays.size === 0 ? (
                     <Alert variant="default" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
