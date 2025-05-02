@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { CalendarIcon, Clock, MapPinIcon } from "lucide-react";
+import { CalendarIcon, Clock, MapPinIcon, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -12,6 +13,16 @@ import { DaySelector } from "./pickup/DaySelector";
 import { useVendorId } from "@/hooks/useVendorId";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 
 // Day names array for display purposes
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -25,8 +36,10 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   const [pickupTime, setPickupTime] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [existingSettings, setExistingSettings] = useState<{[key: number]: {time: string, location: string}[]}>({});
+  const [existingSettings, setExistingSettings] = useState<{[key: number]: {id: string, time: string, location: string}[]}>({});
   const [isExistingSettingsOpen, setIsExistingSettingsOpen] = useState<{[key: number]: boolean}>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [settingToDelete, setSettingToDelete] = useState<{id: string, day: number} | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -52,7 +65,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   // Organize pickup settings by day
   useEffect(() => {
     if (pickupSettings && pickupSettings.length > 0) {
-      const settingsByDay: {[key: number]: {time: string, location: string}[]} = {};
+      const settingsByDay: {[key: number]: {id: string, time: string, location: string}[]} = {};
       
       pickupSettings.forEach(setting => {
         if (!settingsByDay[setting.day]) {
@@ -61,6 +74,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
         
         if (setting.time && setting.location) {
           settingsByDay[setting.day].push({
+            id: setting.id,
             time: setting.time,
             location: setting.location
           });
@@ -138,6 +152,45 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
     }
   };
 
+  // Delete pickup setting
+  const handleDeleteSetting = async () => {
+    if (!settingToDelete || !vendorId) return;
+
+    try {
+      const { error } = await supabase
+        .from('pickup_settings')
+        .delete()
+        .eq('id', settingToDelete.id)
+        .eq('vendor_id', vendorId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['pickup-settings'] });
+
+      toast({
+        title: "Success",
+        description: `Pickup setting for ${dayNames[settingToDelete.day]} has been deleted.`
+      });
+
+      // Close the dialog and reset the setting to delete
+      setDeleteDialogOpen(false);
+      setSettingToDelete(null);
+
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: `Failed to delete pickup setting: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Open delete confirmation dialog
+  const confirmDelete = (id: string, day: number) => {
+    setSettingToDelete({ id, day });
+    setDeleteDialogOpen(true);
+  };
+
   // Toggle collapsible state for a day
   const toggleCollapsible = (day: number) => {
     setIsExistingSettingsOpen(prev => ({
@@ -195,10 +248,19 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span>{setting.time}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 mx-4">
                           <MapPinIcon className="h-4 w-4 text-muted-foreground" />
                           <span>{setting.location}</span>
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:bg-destructive/10"
+                          onClick={() => confirmDelete(setting.id, parseInt(day))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
                       </div>
                     ))}
                   </CollapsibleContent>
@@ -249,6 +311,27 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Pickup Setting</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this pickup setting? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSettingToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteSetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
