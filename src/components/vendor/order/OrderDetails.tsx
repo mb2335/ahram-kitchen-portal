@@ -22,6 +22,14 @@ export function OrderDetails({ order }: OrderDetailsProps) {
           <p className="text-sm">Type: <span className="capitalize">{order.fulfillment_type}</span></p>
         )}
 
+        {/* Display delivery address only for delivery orders */}
+        {order.fulfillment_type === 'delivery' && order.delivery_address && (
+          <div className="pt-2">
+            <p className="text-sm font-medium">Delivery Address:</p>
+            <p className="text-sm whitespace-pre-line">{order.delivery_address}</p>
+          </div>
+        )}
+
         <div className="border-t pt-2 mt-2">
           <p className="text-sm">Subtotal: {formatCurrency(order.total_amount - order.tax_amount)}</p>
           <p className="text-sm">Tax: {formatCurrency(order.tax_amount)}</p>
