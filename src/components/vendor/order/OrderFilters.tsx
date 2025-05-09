@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
@@ -27,36 +28,46 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
+  // When a filter value changes, update both local state and propagate to parent
   const handleFilterChange = (key: keyof OrderFilters, value: any) => {
     console.log(`Filter changed: ${key} = ${value}`);
-    // Keep "all" value in internal state
+    
+    // Create new filters object with the updated value
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     
-    // Create external filters object with correct values - we only pass non-"all" values
+    // For date changes, also update the selectedDate state
+    if (key === 'date') {
+      setSelectedDate(value);
+    }
+    
+    // Create and apply external filters (non-"all" values)
+    applyFilters(newFilters, key === 'date' ? value : selectedDate);
+  };
+
+  // Extract the filter application logic to a separate function
+  const applyFilters = (filterState: OrderFilters, dateValue?: Date) => {
     const externalFilters: OrderFilters = {};
     
     // Only add properties to externalFilters if they aren't "all"
-    if (newFilters.categoryId && newFilters.categoryId !== 'all') {
-      externalFilters.categoryId = newFilters.categoryId;
+    if (filterState.categoryId && filterState.categoryId !== 'all') {
+      externalFilters.categoryId = filterState.categoryId;
     }
     
-    if (newFilters.pickupLocation && newFilters.pickupLocation !== 'all') {
-      externalFilters.pickupLocation = newFilters.pickupLocation;
+    if (filterState.pickupLocation && filterState.pickupLocation !== 'all') {
+      externalFilters.pickupLocation = filterState.pickupLocation;
     }
     
-    if (newFilters.fulfillmentType && newFilters.fulfillmentType !== 'all') {
-      externalFilters.fulfillmentType = newFilters.fulfillmentType;
+    if (filterState.fulfillmentType && filterState.fulfillmentType !== 'all') {
+      externalFilters.fulfillmentType = filterState.fulfillmentType;
     }
     
-    // Add date separately as it's handled differently
-    if (selectedDate) {
-      externalFilters.date = selectedDate;
+    // Add date using the provided dateValue (which could be from a direct date change)
+    if (dateValue) {
+      externalFilters.date = dateValue;
     }
     
-    // Log the filters being applied
     console.log('Applied filters:', externalFilters);
-    
     onFilterChange(externalFilters);
   };
 
@@ -92,7 +103,7 @@ export function OrderFilters({ onFilterChange, categories, pickupLocations }: Or
           <DatePicker
             date={selectedDate}
             onSelect={(date) => {
-              setSelectedDate(date);
+              // Directly handle date selection with immediate filter application
               handleFilterChange('date', date);
             }}
             className="w-full"
