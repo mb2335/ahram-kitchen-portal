@@ -86,11 +86,22 @@ export function PickupLocationSelector({
     }
     
     // Map pickup settings to pickup details - using all available settings
-    const details = pickupSettings.map(setting => ({
+    let details = pickupSettings.map(setting => ({
       day: setting.day,
       time: setting.time || '',
       location: setting.location || ''
     }));
+    
+    // Sort details by time in ascending order
+    details = details.sort((a, b) => {
+      // Convert time strings to comparable values (minutes since midnight)
+      const timeToMinutes = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return (hours * 60) + minutes;
+      };
+      
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
+    });
     
     setAvailablePickupDetails(details);
     setError(null);

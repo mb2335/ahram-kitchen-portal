@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +27,13 @@ import {
 
 // Day names array for display purposes
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// Helper function to convert time string to minutes for sorting
+const timeToMinutes = (timeStr: string): number => {
+  if (!timeStr) return 0;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return (hours * 60) + (minutes || 0);
+};
 
 interface PickupSettingsManagerProps {
   categories: Category[];
@@ -79,6 +87,13 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
             location: setting.location
           });
         }
+      });
+      
+      // Sort settings by time within each day
+      Object.keys(settingsByDay).forEach(day => {
+        settingsByDay[parseInt(day)].sort((a, b) => {
+          return timeToMinutes(a.time) - timeToMinutes(b.time);
+        });
       });
       
       setExistingSettings(settingsByDay);
