@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatTime } from '@/types/delivery';
 
 interface DeliveryTimeSlotsManagerProps {
   categoryId: string;
@@ -145,6 +145,14 @@ export function DeliveryTimeSlotsManager({
     );
   }
 
+  const formatDisplayTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10));
+    date.setMinutes(parseInt(minutes, 10));
+    return format(date, 'h:mm a');
+  };
+
   return (
     <div className="space-y-4">
       <Label className="flex items-center gap-1">
@@ -161,7 +169,7 @@ export function DeliveryTimeSlotsManager({
               onClick={() => !isBooked && handleSlotToggle(time)}
               disabled={isBooked}
             >
-              {formatTime(time)}
+              {formatDisplayTime(time)}
             </Button>
           ))}
         </div>
