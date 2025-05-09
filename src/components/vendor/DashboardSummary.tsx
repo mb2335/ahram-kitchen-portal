@@ -68,10 +68,12 @@ export function DashboardSummary() {
 
   const handleQuickDateSelect = (filter: 'today' | 'week' | 'month' | 'custom') => {
     setTimeFilter(filter);
+    
+    // For custom selection, we now keep the current range instead of resetting
     if (filter === 'custom') {
-      // Don't update the date range for custom selection
       return;
     }
+    
     const today = new Date();
     switch (filter) {
       case 'today':
@@ -111,37 +113,29 @@ export function DashboardSummary() {
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="week">Last 7 days</SelectItem>
               <SelectItem value="month">Last 30 days</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
           <DatePickerWithRange
             date={dateRange}
             onSelect={(range) => {
-              if (range?.from && range?.to) {
-                if (timeFilter === 'today') {
-                  // If 'today' is selected, force both dates to be the same
-                  const selectedDate = range.from;
-                  setDateRange({
-                    from: startOfDay(selectedDate),
-                    to: endOfDay(selectedDate)
-                  });
-                } else if (timeFilter === 'custom') {
-                  // For custom selection, allow selecting a single day
-                  const selectedDate = range.from;
-                  setDateRange({
-                    from: startOfDay(selectedDate),
-                    to: endOfDay(selectedDate)
-                  });
-                } else {
-                  setDateRange({
-                    from: startOfDay(range.from),
-                    to: endOfDay(range.to)
-                  });
+              if (range?.from) {
+                // Always ensure there's a "to" date if we have a "from" date
+                const to = range.to || range.from;
+                
+                if (timeFilter !== 'custom') {
+                  // Switch to custom mode when manually selecting dates
+                  setTimeFilter('custom');
                 }
+                
+                setDateRange({
+                  from: startOfDay(range.from),
+                  to: endOfDay(to)
+                });
               }
             }}
-            disabled={timeFilter === 'today'}
-            mode={(timeFilter === 'today' || timeFilter === 'custom') ? 'single' : 'range'}
+            // Mode is always range now that we've improved custom date selection
+            mode="range"
           />
         </div>
       </div>

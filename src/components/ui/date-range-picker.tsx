@@ -64,7 +64,7 @@ export function DatePickerWithRange({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
           {mode === "single" ? (
             <Calendar
               initialFocus
@@ -77,7 +77,7 @@ export function DatePickerWithRange({
                 }
               }}
               numberOfMonths={1}
-              className="p-3"
+              className="p-3 pointer-events-auto"
               disabled={disabledDays}
             />
           ) : (
@@ -87,8 +87,8 @@ export function DatePickerWithRange({
               defaultMonth={date?.from}
               selected={date}
               onSelect={onSelect}
-              numberOfMonths={1}
-              className="p-3"
+              numberOfMonths={2}
+              className="p-3 pointer-events-auto"
               disabled={disabledDays}
             />
           )}
