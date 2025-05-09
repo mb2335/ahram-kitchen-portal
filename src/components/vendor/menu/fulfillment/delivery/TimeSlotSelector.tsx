@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { format } from 'date-fns';
+import { formatTime } from '@/types/delivery';
 import { useEffect, useState } from "react";
 
 interface TimeSlotSelectorProps {
@@ -79,7 +79,7 @@ export function TimeSlotSelector({
             onClick={() => handleTimeSlotToggle(slot)}
             disabled={isSaving}
           >
-            {format(new Date(`2000-01-01T${slot}`), 'h:mm a')}
+            {formatTime(slot)}
           </Button>
         ))}
       </div>

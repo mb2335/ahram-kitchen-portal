@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { format } from 'date-fns';
-import { generateFixedTimeSlots } from "@/types/delivery";
+import { formatTime } from '@/types/delivery';
 import { useVendorId } from "@/hooks/useVendorId";
 
 export function DeliverySettingsManager() {
@@ -251,7 +249,7 @@ export function DeliverySettingsManager() {
                           onClick={() => toggleTimeSlot(day, slot)}
                           disabled={isSaving}
                         >
-                          {format(new Date(`2000-01-01T${slot}`), 'h:mm a')}
+                          {formatTime(slot)}
                         </Button>
                       ))}
                     </div>
