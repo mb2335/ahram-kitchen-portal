@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -171,15 +170,20 @@ export function FulfillmentSettings({
       return false;
     }
     
-    // Don't allow dates more than 14 days in the future
-    const maxDate = addDays(new Date(new Date().setHours(0, 0, 0, 0)), 14);
-    if (date > maxDate) {
-      return false;
-    }
-
+    // For pickup - limit to max 7 days in the future
     if (fulfillmentType === FULFILLMENT_TYPE_PICKUP) {
+      const maxPickupDate = addDays(new Date(new Date().setHours(0, 0, 0, 0)), 7);
+      if (date > maxPickupDate) {
+        return false;
+      }
       return availablePickupDays.has(dayOfWeek);
-    } else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
+    } 
+    // For delivery - keep existing 14-day limit
+    else if (fulfillmentType === FULFILLMENT_TYPE_DELIVERY) {
+      const maxDate = addDays(new Date(new Date().setHours(0, 0, 0, 0)), 14);
+      if (date > maxDate) {
+        return false;
+      }
       return availableDeliveryDays.has(dayOfWeek);
     }
     
@@ -203,7 +207,7 @@ export function FulfillmentSettings({
         // Find the next available pickup date (starting from tomorrow)
         let nextDate = new Date();
         nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 7; i++) { // Only look 7 days ahead for pickup
           if (isDateAvailable(nextDate, FULFILLMENT_TYPE_PICKUP)) {
             onDateChange(FULFILLMENT_TYPE_PICKUP, nextDate);
             break;
@@ -216,7 +220,7 @@ export function FulfillmentSettings({
         nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
         let foundDate = false;
         
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 7; i++) { // Only look 7 days ahead for pickup
           if (isDateAvailable(nextDate, FULFILLMENT_TYPE_PICKUP)) {
             onDateChange(FULFILLMENT_TYPE_PICKUP, nextDate);
             foundDate = true;
@@ -226,7 +230,7 @@ export function FulfillmentSettings({
         }
         
         if (!foundDate) {
-          console.warn("No available pickup dates found in the next 14 days");
+          console.warn("No available pickup dates found in the next 7 days");
         }
       }
     }
@@ -243,7 +247,7 @@ export function FulfillmentSettings({
         // Find the next available delivery date (starting from tomorrow)
         let nextDate = new Date();
         nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 14; i++) { // Keep 14 days for delivery
           if (isDateAvailable(nextDate, FULFILLMENT_TYPE_DELIVERY)) {
             onDateChange(FULFILLMENT_TYPE_DELIVERY, nextDate);
             break;
@@ -256,7 +260,7 @@ export function FulfillmentSettings({
         nextDate.setDate(nextDate.getDate() + 1); // Start from tomorrow
         let foundDate = false;
         
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 14; i++) { // Keep 14 days for delivery
           if (isDateAvailable(nextDate, FULFILLMENT_TYPE_DELIVERY)) {
             onDateChange(FULFILLMENT_TYPE_DELIVERY, nextDate);
             foundDate = true;
@@ -343,12 +347,6 @@ export function FulfillmentSettings({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Pickup Date</Label>
-                  <Alert variant="default" className="mt-2 bg-amber-50 border-amber-200 text-amber-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Same-day pickup is not available. Please select a future date.
-                    </AlertDescription>
-                  </Alert>
                   {availablePickupDays.size === 0 ? (
                     <Alert variant="default" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
@@ -392,12 +390,6 @@ export function FulfillmentSettings({
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Delivery Date</Label>
-                  <Alert variant="default" className="mt-2 bg-amber-50 border-amber-200 text-amber-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Same-day delivery is not available. Please select a future date.
-                    </AlertDescription>
-                  </Alert>
                   {availableDeliveryDays.size === 0 ? (
                     <Alert variant="default" className="mt-2">
                       <AlertCircle className="h-4 w-4" />
