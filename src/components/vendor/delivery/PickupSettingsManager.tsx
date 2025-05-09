@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -14,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useVendorId } from "@/hooks/useVendorId";
+import { formatTime } from "@/types/delivery";
 
 export function PickupSettingsManager() {
   const { toast } = useToast();
@@ -326,6 +326,11 @@ export function PickupSettingsManager() {
                                 placeholder="e.g., 1:00 PM"
                                 className="w-full"
                               />
+                              {detail.time && (
+                                <p className="text-xs text-muted-foreground">
+                                  Will display as: {formatTime(detail.time)}
+                                </p>
+                              )}
                             </div>
                             <div className="flex-1 space-y-2">
                               <Label>Pickup Location</Label>

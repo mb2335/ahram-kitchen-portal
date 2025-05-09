@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { DaySelector } from "./pickup/DaySelector";
 import { useVendorId } from "@/hooks/useVendorId";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { formatTime } from "@/types/delivery";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -246,7 +246,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
                       <div key={idx} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{setting.time}</span>
+                          <span>{formatTime(setting.time)}</span>
                         </div>
                         <div className="flex items-center gap-2 flex-1 mx-4">
                           <MapPinIcon className="h-4 w-4 text-muted-foreground" />

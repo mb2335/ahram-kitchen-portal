@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { formatTime } from '@/types/delivery';
 
 interface PickupLocationSelectorProps {
   category: {
@@ -178,7 +179,7 @@ export function PickupLocationSelector({
                 key={index} 
                 value={`${detail.location}-${detail.time}`}
               >
-                {detail.location} - {detail.time}
+                {detail.location} - {formatTime(detail.time)}
               </SelectItem>
             ))}
           </ScrollArea>
