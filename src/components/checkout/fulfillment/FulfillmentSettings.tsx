@@ -50,7 +50,12 @@ export function FulfillmentSettings({
   }, [isLoading]);
 
   // Fetch delivery settings
-  const { data: deliverySettings, refetch: refetchDeliverySettings, isError: isDeliveryError } = useQuery({
+  const { 
+    data: deliverySettings, 
+    refetch: refetchDeliverySettings, 
+    isError: isDeliveryError,
+    isLoading: isLoadingDelivery 
+  } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       try {
@@ -76,6 +81,8 @@ export function FulfillmentSettings({
         return null;
       }
     },
+    retry: 2,  // Retry failed requests up to 2 times
+    staleTime: 60000, // Consider data fresh for 1 minute
   });
 
   // Fetch ALL pickup settings globally - without ANY vendor filtering
@@ -117,6 +124,14 @@ export function FulfillmentSettings({
     staleTime: 60000, // Consider data fresh for 1 minute
   });
 
+  // Update loading state based on query states
+  useEffect(() => {
+    // Set loading to false only when both queries have completed (success or error)
+    if (!isLoadingDelivery && !isLoadingPickup) {
+      setIsLoading(false);
+    }
+  }, [isLoadingDelivery, isLoadingPickup]);
+  
   // Function to retry fetching data when failed
   const handleRetryFetch = () => {
     setIsLoading(true);
@@ -257,30 +272,23 @@ export function FulfillmentSettings({
     }
   }, [availablePickupDays, availableDeliveryDays, usedFulfillmentTypes, selectedDates, onDateChange, pickupSettings.length, isLoading]);
 
-  if (isLoading || isLoadingPickup) {
+  // Determine if we're actually still loading or if there is an error
+  const hasQueryError = (isDeliveryError && !deliverySettings) || (isPickupError && pickupSettings.length === 0);
+  const isActuallyLoading = isLoading && !loadingTimeout && !hasQueryError;
+
+  // If all data is loaded but has no valid content, show an error
+  const hasNoValidData = !isActuallyLoading && availablePickupDays.size === 0 && availableDeliveryDays.size === 0;
+
+  if (isActuallyLoading) {
     return (
       <div className="space-y-6">
         <Card className="shadow-md border-opacity-50">
           <CardContent className="p-6">
             <div className="flex items-center justify-center h-40 flex-col gap-4">
-              {loadingTimeout ? (
-                <>
-                  <p className="text-muted-foreground">Failed to load fulfillment options</p>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleRetryFetch}
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCcw className="h-4 w-4" />
-                    Retry
-                  </Button>
-                </>
-              ) : (
-                <div className="text-center">
-                  <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent mb-4 mx-auto"></div>
-                  <p className="text-muted-foreground">Loading fulfillment options...</p>
-                </div>
-              )}
+              <div className="text-center">
+                <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent mb-4 mx-auto"></div>
+                <p className="text-muted-foreground">Loading fulfillment options...</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -288,17 +296,19 @@ export function FulfillmentSettings({
     );
   }
 
-  // Show error state if both queries failed and we have no data
-  if ((isDeliveryError || isPickupError) && availablePickupDays.size === 0 && availableDeliveryDays.size === 0) {
+  // Show retry button for timeout or error states
+  if (loadingTimeout || hasNoValidData || hasQueryError) {
     return (
       <div className="space-y-6">
         <Card className="shadow-md border-opacity-50">
           <CardContent className="p-6">
             <div className="flex items-center justify-center h-40 flex-col gap-4">
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Failed to load fulfillment options. Please try again.
+                  {loadingTimeout 
+                    ? "Failed to load fulfillment options in a timely manner." 
+                    : "No fulfillment options available. Please contact the vendor."}
                 </AlertDescription>
               </Alert>
               <Button 
