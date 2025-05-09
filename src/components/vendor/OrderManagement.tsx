@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Order } from './types';
@@ -61,17 +62,17 @@ export function OrderManagement() {
 
   const filterOrders = (orders: Order[]) => {
     return orders?.filter(order => {
-      // DATE FILTERING - strict comparison with delivery_date
+      // DATE FILTERING - fix to properly compare dates based on delivery_date
       if (filters.date) {
-        // Convert delivery_date to date object and strip time for comparison
-        const selectedDate = new Date(filters.date);
-        selectedDate.setHours(0, 0, 0, 0);
+        const orderDate = new Date(order.delivery_date);
+        const filterDate = new Date(filters.date);
         
-        const orderDeliveryDate = new Date(order.delivery_date);
-        orderDeliveryDate.setHours(0, 0, 0, 0);
-        
-        // Compare dates using time-agnostic comparison
-        if (selectedDate.getTime() !== orderDeliveryDate.getTime()) {
+        // Compare dates by checking year, month, and day
+        if (
+          orderDate.getFullYear() !== filterDate.getFullYear() ||
+          orderDate.getMonth() !== filterDate.getMonth() ||
+          orderDate.getDate() !== filterDate.getDate()
+        ) {
           return false;
         }
       }
