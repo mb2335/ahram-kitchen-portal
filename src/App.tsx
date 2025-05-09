@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,7 +18,6 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
 import { StrictMode, useEffect, useState } from "react";
 import { OfflineAlert } from "./components/shared/OfflineAlert";
-import { Watermark } from "./components/shared/Watermark";
 import Index from "./pages/Index";
 import { Help } from "./pages/Help";
 
@@ -49,8 +47,7 @@ const App = () => {
             <TooltipProvider>
               <CartProvider>
                 <BrowserRouter>
-                  <div className="min-h-screen bg-gray-50 relative">
-                    <Watermark />
+                  <div className="min-h-screen bg-gray-50">
                     <Navigation />
                     <Routes>
                       <Route path="/" element={<Index />} />
