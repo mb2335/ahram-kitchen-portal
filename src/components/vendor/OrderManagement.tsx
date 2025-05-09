@@ -60,19 +60,23 @@ export function OrderManagement() {
     }
   };
 
+  // Helper function to normalize dates for comparison (strips time component)
+  const normalizeDateForComparison = (date: Date): string => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const filterOrders = (orders: Order[]) => {
     return orders?.filter(order => {
-      // DATE FILTERING - fix to properly compare dates based on delivery_date
+      // DATE FILTERING - normalize both dates to YYYY-MM-DD string format for exact comparison
       if (filters.date) {
         const orderDate = new Date(order.delivery_date);
         const filterDate = new Date(filters.date);
         
-        // Compare dates by checking year, month, and day
-        if (
-          orderDate.getFullYear() !== filterDate.getFullYear() ||
-          orderDate.getMonth() !== filterDate.getMonth() ||
-          orderDate.getDate() !== filterDate.getDate()
-        ) {
+        // Compare dates using normalized string format to ensure exact date match
+        const normalizedOrderDate = normalizeDateForComparison(orderDate);
+        const normalizedFilterDate = normalizeDateForComparison(filterDate);
+        
+        if (normalizedOrderDate !== normalizedFilterDate) {
           return false;
         }
       }
