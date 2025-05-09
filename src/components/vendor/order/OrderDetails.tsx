@@ -1,6 +1,7 @@
 
 import { Order } from '../types';
 import { formatCurrency } from '@/utils/formatters';
+import { formatTime } from '@/types/delivery';
 
 interface OrderDetailsProps {
   order: Order;
@@ -20,6 +21,22 @@ export function OrderDetails({ order }: OrderDetailsProps) {
         
         {order.fulfillment_type && (
           <p className="text-sm">Type: <span className="capitalize">{order.fulfillment_type}</span></p>
+        )}
+
+        {/* Display pickup details only for pickup orders */}
+        {order.fulfillment_type === 'pickup' && (
+          <div className="pt-2">
+            {order.pickup_time && (
+              <p className="text-sm">
+                Pickup Time: <span className="font-medium">{formatTime(order.pickup_time)}</span>
+              </p>
+            )}
+            {order.pickup_location && (
+              <p className="text-sm">
+                Pickup Location: <span className="font-medium">{order.pickup_location}</span>
+              </p>
+            )}
+          </div>
         )}
 
         {/* Display delivery address only for delivery orders */}
