@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,7 +16,6 @@ export const useMenuItems = () => {
             name_ko
           )
         `)
-        .eq('is_available', true)
         .order('order_index');
 
       if (error) throw error;

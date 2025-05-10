@@ -31,6 +31,7 @@ export function useCategoryManagement() {
     console.log("Submitting form data:", formData);
 
     try {
+      // Check if user is a vendor
       const { data: vendorData } = await supabase
         .from('vendors')
         .select('id')
@@ -52,7 +53,7 @@ export function useCategoryManagement() {
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
-        vendor_id: vendorData.id,
+        vendor_id: vendorData.id, // Still assign a vendor_id for new categories
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         fulfillment_types: formData.fulfillment_types,
         has_custom_pickup: false // Simplified to always false as we don't use this field anymore

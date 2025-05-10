@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Category } from "@/components/vendor/menu/types/category";
 
 export function FulfillmentSettings() {
-  // Fetch categories for the PickupSettingsManager
+  // Fetch all categories without filtering by vendor
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {

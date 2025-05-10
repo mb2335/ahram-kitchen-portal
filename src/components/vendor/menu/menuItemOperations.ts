@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
@@ -14,6 +15,7 @@ export async function updateMenuItemOrder(items: { id: string; order_index: numb
 }
 
 export async function loadVendorMenuItems(userId: string) {
+  // First check if the user is a vendor at all
   const { data: vendorData } = await supabase
     .from('vendors')
     .select('id')
@@ -22,10 +24,10 @@ export async function loadVendorMenuItems(userId: string) {
 
   if (!vendorData) throw new Error('Vendor not found');
 
+  // Now load all menu items without filtering by vendor_id
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
-    .eq('vendor_id', vendorData.id)
     .order('order_index', { ascending: true });
 
   if (error) throw error;
@@ -54,10 +56,11 @@ export async function saveMenuItem(
   if (editingItemId) {
     const { error } = await supabase
       .from('menu_items')
-      .update({ ...formattedData, vendor_id: vendorData.id })
+      .update({ ...formattedData })
       .eq('id', editingItemId);
     if (error) throw error;
   } else {
+    // For new items, we still need to set vendor_id
     const { error } = await supabase
       .from('menu_items')
       .insert([{ ...formattedData, vendor_id: vendorData.id }]);
