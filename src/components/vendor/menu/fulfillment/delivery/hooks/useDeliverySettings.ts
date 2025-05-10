@@ -26,14 +26,15 @@ export function useDeliverySettings() {
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ['vendor-delivery-settings', vendorId],
+    queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       if (!vendorId) return null;
       
+      // Removed vendor_id filtering to fetch global settings
       const { data, error } = await supabase
         .from('delivery_settings')
         .select('*')
-        .eq('vendor_id', vendorId)
+        .limit(1) // Since we're treating settings as global now
         .maybeSingle();
         
       if (error) throw error;
@@ -81,6 +82,7 @@ export function useDeliverySettings() {
       
       console.log("Saving normalized time slots:", normalizedTimeSlots);
       
+      // Use upsert to either update existing settings or create new ones
       const { error } = await supabase
         .from('delivery_settings')
         .upsert({

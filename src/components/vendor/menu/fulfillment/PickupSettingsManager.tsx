@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,14 +54,14 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
 
   // Fetch existing pickup settings
   const { data: pickupSettings, isLoading: isLoadingSettings } = useQuery({
-    queryKey: ['pickup-settings', vendorId],
+    queryKey: ['pickup-settings'],
     queryFn: async () => {
       if (!vendorId) return [];
       
+      // Remove vendor_id filter to get all pickup settings
       const { data, error } = await supabase
         .from('pickup_settings')
-        .select('*')
-        .eq('vendor_id', vendorId);
+        .select('*');
       
       if (error) throw error;
       return data || [];
