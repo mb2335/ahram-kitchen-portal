@@ -30,11 +30,11 @@ export default {
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#9E4244", // Korean red moved to secondary color
-          foreground: "#FFFFFF",
+          DEFAULT: "#F5E6D3", // Warm beige kept as secondary color
+          foreground: "#2D2D2D",
         },
         accent: {
-          DEFAULT: "#8AA6A3", // Keeping the muted teal inspired by celadon ceramics
+          DEFAULT: "#9E4244", // Korean red moved to accent color
           foreground: "#FFFFFF",
         },
         muted: {
