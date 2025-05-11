@@ -1,5 +1,7 @@
-import { PickupDetail } from "./pickup";
-import { DeliveryTimeSlotSelection } from "./delivery";
+import { PickupDetail } from './pickup';
+import { DeliveryTimeSlotSelection } from './delivery';
+
+export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
 
 export interface OrderItem {
   id: string;
@@ -9,6 +11,19 @@ export interface OrderItem {
   price: number;
   category_id?: string;
   discount_percentage?: number | null;
+  menu_item_id: string;
+  unit_price: number;
+  menu_item?: {
+    id: string;
+    name: string;
+    name_ko: string;
+    discount_percentage?: number;
+    category?: {
+      id: string;
+      name: string;
+      name_ko: string;
+    };
+  };
 }
 
 export interface OrderSubmissionProps {
@@ -92,7 +107,7 @@ export interface Order {
   customer_phone?: string;
   created_at: string;
   delivery_date: string;
-  status: string;
+  status: OrderStatus;
   total_amount: number;
   tax_amount: number;
   notes?: string;
