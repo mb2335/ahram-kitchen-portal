@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -25,15 +26,15 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#9E4244", // Deep red color inspired by Korean pottery
+          DEFAULT: "#1F3A5F", // Korean Navy blue as primary color
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#F5E6D3", // Warm beige inspired by traditional Korean paper
-          foreground: "#2D2D2D",
+          DEFAULT: "#9E4244", // Korean red moved to secondary color
+          foreground: "#FFFFFF",
         },
         accent: {
-          DEFAULT: "#8AA6A3", // Muted teal inspired by celadon ceramics
+          DEFAULT: "#8AA6A3", // Keeping the muted teal inspired by celadon ceramics
           foreground: "#FFFFFF",
         },
         muted: {
