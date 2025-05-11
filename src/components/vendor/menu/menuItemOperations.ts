@@ -4,45 +4,59 @@ import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export async function updateMenuItemOrder(items: { id: string; order_index: number }[]) {
-  for (const item of items) {
-    const { error } = await supabase
-      .from('menu_items')
-      .update({ order_index: item.order_index })
-      .eq('id', item.id);
+  try {
+    for (const item of items) {
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ order_index: item.order_index })
+        .eq('id', item.id);
 
-    if (error) throw error;
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error updating menu item order:', error);
+    throw error;
   }
 }
 
 export async function loadVendorMenuItems() {
-  // Access all menu items since RLS will handle vendor permissions
-  const { data, error } = await supabase
-    .from('menu_items')
-    .select('*')
-    .order('order_index', { ascending: true });
+  try {
+    // Get session to verify authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    
+    // Access all menu items since RLS will handle vendor permissions
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('*')
+      .order('order_index', { ascending: true });
 
-  if (error) {
-    console.error("Error loading menu items:", error);
+    if (error) {
+      console.error("Error loading menu items:", error);
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    console.error("Error in loadVendorMenuItems:", error);
     throw error;
   }
-  return data;
 }
 
 export async function saveMenuItem(
   menuItemData: Omit<MenuItem, 'id' | 'vendor_id' | 'created_at'>,
   editingItemId?: string
 ) {
-  // Check if we have an active session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Authentication required');
-
-  // Format the discount percentage to ensure it's a number or null
-  const formattedData = {
-    ...menuItemData,
-    discount_percentage: menuItemData.discount_percentage || null
-  };
-
   try {
+    // Check if we have an active session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+
+    // Format the discount percentage to ensure it's a number or null
+    const formattedData = {
+      ...menuItemData,
+      discount_percentage: menuItemData.discount_percentage || null
+    };
+
     if (editingItemId) {
       // Update existing menu item
       const { error } = await supabase
@@ -73,12 +87,21 @@ export async function saveMenuItem(
 
 export async function deleteMenuItem(itemId: string) {
   try {
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    
     // Get the item's image URL first
-    const { data: item } = await supabase
+    const { data: item, error: fetchError } = await supabase
       .from('menu_items')
       .select('image')
       .eq('id', itemId)
       .single();
+
+    if (fetchError) {
+      console.error('Error fetching menu item:', fetchError);
+      throw fetchError;
+    }
 
     // If there's an image, delete it from storage
     if (item?.image) {
@@ -122,18 +145,23 @@ export async function deleteMenuItem(itemId: string) {
 }
 
 export async function handleImageUpload(file: File) {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${crypto.randomUUID()}.${fileExt}`;
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
-  const { error: uploadError, data } = await supabase.storage
-    .from('menu_items')
-    .upload(fileName, file);
+    const { error: uploadError, data } = await supabase.storage
+      .from('menu_items')
+      .upload(fileName, file);
 
-  if (uploadError) throw uploadError;
+    if (uploadError) throw uploadError;
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('menu_items')
-    .getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabase.storage
+      .from('menu_items')
+      .getPublicUrl(fileName);
 
-  return publicUrl;
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw error;
+  }
 }

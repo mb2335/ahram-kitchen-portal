@@ -33,14 +33,26 @@ export function useCategoryManagement() {
     try {
       // Check if we have an active session
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Authentication required');
+      if (!session) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to perform this action",
+          variant: "destructive",
+        });
+        throw new Error('Authentication required');
+      }
 
       // Get the next order index for new categories
-      const { data: maxOrderData } = await supabase
+      const { data: maxOrderData, error: orderError } = await supabase
         .from('menu_categories')
         .select('order_index')
         .order('order_index', { ascending: false })
         .limit(1);
+
+      if (orderError) {
+        console.error('Error getting max order index:', orderError);
+        throw orderError;
+      }
 
       const nextOrderIndex = maxOrderData && maxOrderData.length > 0 
         ? (maxOrderData[0].order_index + 1) 

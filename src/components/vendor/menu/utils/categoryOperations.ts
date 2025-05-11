@@ -4,6 +4,10 @@ import { toast } from "@/hooks/use-toast";
 
 export async function checkCategoryItems(categoryId: string) {
   try {
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    
     const { data: items, error } = await supabase
       .from('menu_items')
       .select('id')
@@ -23,6 +27,10 @@ export async function checkCategoryItems(categoryId: string) {
 
 export async function deleteCategory(categoryId: string) {
   try {
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    
     const { error } = await supabase
       .from('menu_categories')
       .delete()
@@ -40,6 +48,10 @@ export async function deleteCategory(categoryId: string) {
 
 export async function removeItemsCategory(categoryId: string) {
   try {
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    
     const { error } = await supabase
       .from('menu_items')
       .update({ category_id: null })
@@ -57,6 +69,10 @@ export async function removeItemsCategory(categoryId: string) {
 
 export async function deleteMenuItems(categoryId: string) {
   try {
+    // Check authentication first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    
     const { error } = await supabase
       .from('menu_items')
       .delete()
