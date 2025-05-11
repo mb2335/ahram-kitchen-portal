@@ -45,8 +45,7 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // Simplified category data - we don't need to specify vendor_id
-      // RLS policies will associate it with the authenticated user
+      // Simplified category data - rely on RLS policies to associate with the authenticated user
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,

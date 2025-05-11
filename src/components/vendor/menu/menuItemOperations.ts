@@ -39,18 +39,23 @@ export async function saveMenuItem(
     discount_percentage: menuItemData.discount_percentage || null
   };
 
-  if (editingItemId) {
-    const { error } = await supabase
-      .from('menu_items')
-      .update({ ...formattedData })
-      .eq('id', editingItemId);
-    if (error) throw error;
-  } else {
-    // Let RLS handle vendor_id attachment from the authenticated user
-    const { error } = await supabase
-      .from('menu_items')
-      .insert([formattedData]);
-    if (error) throw error;
+  try {
+    if (editingItemId) {
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ ...formattedData })
+        .eq('id', editingItemId);
+      if (error) throw error;
+    } else {
+      // Let RLS handle vendor_id attachment from the authenticated user
+      const { error } = await supabase
+        .from('menu_items')
+        .insert([formattedData]);
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error saving menu item:', error);
+    throw error;
   }
 }
 

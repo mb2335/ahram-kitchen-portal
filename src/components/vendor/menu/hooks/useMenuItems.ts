@@ -28,18 +28,11 @@ export function useMenuItems() {
   const handleDeleteMenuItem = async (itemId: string) => {
     try {
       await deleteMenuItem(itemId);
-      toast({
-        title: "Success",
-        description: "Menu item deleted successfully",
-      });
+      // The toast notification is handled inside the deleteMenuItem function
       loadMenuItems();
     } catch (error) {
-      console.error('Error deleting menu item:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete menu item",
-        variant: "destructive",
-      });
+      // Error handling is done in deleteMenuItem
+      console.error('Error in handleDeleteMenuItem:', error);
     }
   };
 
