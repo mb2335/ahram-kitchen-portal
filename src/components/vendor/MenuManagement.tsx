@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
@@ -12,8 +11,6 @@ import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DeliverySettingsManager } from './delivery/DeliverySettingsManager';
-import { PickupSettingsManager } from './delivery/PickupSettingsManager';
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 
 export function MenuManagement() {
@@ -36,6 +33,7 @@ export function MenuManagement() {
   });
 
   useEffect(() => {
+    // Set up real-time subscriptions to menu updates
     const menuChannel = supabase
       .channel('menu-management-changes')
       .on(

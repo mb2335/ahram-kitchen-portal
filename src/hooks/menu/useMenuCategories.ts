@@ -12,7 +12,10 @@ export function useMenuCategories(menuItems: MenuItem[]) {
         .select('*')
         .order('order_index');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading menu categories:", error);
+        throw error;
+      }
       
       return data.map(category => ({
         ...category,

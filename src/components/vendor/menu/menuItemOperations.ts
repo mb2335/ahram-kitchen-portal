@@ -15,13 +15,16 @@ export async function updateMenuItemOrder(items: { id: string; order_index: numb
 }
 
 export async function loadVendorMenuItems() {
-  // Load all menu items - vendor filtering is handled by RLS policies
+  // Access all menu items since RLS will handle vendor permissions
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
     .order('order_index', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error loading menu items:", error);
+    throw error;
+  }
   return data;
 }
 
