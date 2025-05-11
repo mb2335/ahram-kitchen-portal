@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,34 +33,32 @@ export function PaymentProof({ paymentProofUrl }: PaymentProofProps) {
   };
 
   return (
-    <div className="border-t pt-4">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={handleViewPaymentProof}
-          >
-            <Image className="h-4 w-4" />
-            View Payment Proof
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Payment Proof</DialogTitle>
-          </DialogHeader>
-          {imageUrl && (
-            <div className="relative aspect-video">
-              <img
-                src={imageUrl}
-                alt="Payment proof"
-                className="rounded-lg object-contain w-full h-full"
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={handleViewPaymentProof}
+        >
+          <Image className="h-4 w-4" />
+          View Payment Proof
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Payment Proof</DialogTitle>
+        </DialogHeader>
+        {imageUrl && (
+          <div className="relative aspect-video">
+            <img
+              src={imageUrl}
+              alt="Payment proof"
+              className="rounded-lg object-contain w-full h-full"
+            />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

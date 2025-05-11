@@ -8,6 +8,8 @@ import { OrderItems } from './order/OrderItems';
 import { OrderDetails } from './order/OrderDetails';
 import { OrderActions } from './order/OrderActions';
 import { formatCurrency } from '@/utils/formatters';
+import { SendSMSToCustomer } from './order/SendSMSToCustomer';
+import { PaymentProof } from './order/PaymentProof';
 
 interface OrderCardProps {
   order: Order;
@@ -47,8 +49,23 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
 
         <OrderItems items={order.order_items} />
 
+        {order.payment_proof_url && (
+          <div className="mt-4 border-t pt-4">
+            <PaymentProof paymentProofUrl={order.payment_proof_url} />
+          </div>
+        )}
+
         <div className="mt-4 border-t pt-4">
-          {children}
+          <div className="flex flex-wrap gap-2">
+            {order.customer?.phone && (
+              <SendSMSToCustomer 
+                customerPhone={order.customer.phone} 
+                customerName={order.customer?.full_name || order.customer_name || "Customer"}
+              />
+            )}
+            
+            {children}
+          </div>
           
           {onDelete && (
             <div className="mt-4">
