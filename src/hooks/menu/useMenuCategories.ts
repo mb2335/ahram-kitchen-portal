@@ -22,7 +22,7 @@ export function useMenuCategories(menuItems: MenuItem[]) {
         fulfillment_types: category.fulfillment_types || []
       }));
     },
-    retry: false,
+    retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,

@@ -40,7 +40,14 @@ export function useMenuItemForm(onSuccess: () => void) {
     try {
       // Check authentication
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Authentication required');
+      if (!session) {
+        toast({
+          title: 'Authentication Error',
+          description: 'You must be logged in to perform this action',
+          variant: 'destructive',
+        });
+        throw new Error('Authentication required');
+      }
       
       let imageUrl = editingItem?.image;
       
@@ -48,6 +55,7 @@ export function useMenuItemForm(onSuccess: () => void) {
         imageUrl = await handleImageUpload(data.image);
       }
 
+      // Handle image removal
       if (editingItem?.image && !imageUrl && !selectedImage) {
         const fileName = editingItem.image.split('/').pop();
         if (fileName) {
@@ -68,11 +76,12 @@ export function useMenuItemForm(onSuccess: () => void) {
         is_available: data.is_available,
         image: imageUrl,
         category_id: data.category_id || null,
-        order_index: editingItem?.order_index || 0, // This will be updated from the database
+        order_index: editingItem?.order_index || 0,
         discount_percentage: data.discount_percentage ? parseInt(data.discount_percentage) : null,
       };
 
       await saveMenuItem(menuItemData, editingItem?.id);
+      console.log("Menu item saved successfully:", editingItem?.id || 'new item');
 
       toast({
         title: 'Success',

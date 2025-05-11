@@ -32,7 +32,7 @@ export async function saveMenuItem(
   menuItemData: Omit<MenuItem, 'id' | 'vendor_id' | 'created_at'>,
   editingItemId?: string
 ) {
-  // Get the current user's session
+  // Check if we have an active session
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Authentication required');
 
@@ -44,17 +44,26 @@ export async function saveMenuItem(
 
   try {
     if (editingItemId) {
+      // Update existing menu item
       const { error } = await supabase
         .from('menu_items')
-        .update({ ...formattedData })
+        .update(formattedData)
         .eq('id', editingItemId);
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error updating menu item:', error);
+        throw error;
+      }
     } else {
-      // Let RLS handle vendor_id attachment from the authenticated user
+      // Insert new menu item
       const { error } = await supabase
         .from('menu_items')
         .insert([formattedData]);
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error inserting menu item:', error);
+        throw error;
+      }
     }
   } catch (error) {
     console.error('Error saving menu item:', error);

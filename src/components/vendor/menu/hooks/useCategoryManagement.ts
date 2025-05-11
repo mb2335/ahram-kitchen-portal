@@ -31,10 +31,11 @@ export function useCategoryManagement() {
     console.log("Submitting form data:", formData);
 
     try {
-      // Get the current user's session
+      // Check if we have an active session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Authentication required');
 
+      // Get the next order index for new categories
       const { data: maxOrderData } = await supabase
         .from('menu_categories')
         .select('order_index')
@@ -45,38 +46,38 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // Simplified category data - rely on RLS policies to associate with the authenticated user
+      // Prepare category data
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         fulfillment_types: formData.fulfillment_types,
-        has_custom_pickup: false // Simplified to always false as we don't use this field anymore
+        has_custom_pickup: false // Simplified as per existing code
       };
       
-      let categoryId: string;
-      
       if (editingCategory) {
-        const { error, data } = await supabase
+        // Update existing category
+        const { error } = await supabase
           .from('menu_categories')
           .update(categoryData)
-          .eq('id', editingCategory.id)
-          .select('id')
-          .single();
+          .eq('id', editingCategory.id);
 
-        if (error) throw error;
-        categoryId = editingCategory.id;
-        console.log("Updated category with ID:", categoryId);
+        if (error) {
+          console.error('Error updating category:', error);
+          throw error;
+        }
+        console.log("Updated category successfully");
       } else {
-        const { error, data } = await supabase
+        // Insert new category
+        const { error } = await supabase
           .from('menu_categories')
-          .insert([categoryData])
-          .select('id')
-          .single();
+          .insert([categoryData]);
 
-        if (error) throw error;
-        categoryId = data.id;
-        console.log("Created new category with ID:", categoryId);
+        if (error) {
+          console.error('Error creating category:', error);
+          throw error;
+        }
+        console.log("Created new category successfully");
       }
 
       toast({
