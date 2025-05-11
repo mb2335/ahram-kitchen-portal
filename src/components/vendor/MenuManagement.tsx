@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
@@ -16,10 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeliverySettingsManager } from './delivery/DeliverySettingsManager';
 import { PickupSettingsManager } from './delivery/PickupSettingsManager';
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
-import { useQuery } from "@tanstack/react-query";
 
 export function MenuManagement() {
-  const session = useSession();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("categories");
@@ -118,6 +115,7 @@ export function MenuManagement() {
                 quantity_limit: item.quantity_limit ? item.quantity_limit.toString() : '',
                 is_available: item.is_available,
                 category_id: item.category_id || undefined,
+                discount_percentage: item.discount_percentage ? item.discount_percentage.toString() : '',
               });
               setIsDialogOpen(true);
             }}
@@ -139,7 +137,7 @@ export function MenuManagement() {
         setFormData={setFormData}
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
-        onSubmit={(data) => handleSubmit(data, session?.user?.id!)}
+        onSubmit={handleSubmit}
       />
     </div>
   );

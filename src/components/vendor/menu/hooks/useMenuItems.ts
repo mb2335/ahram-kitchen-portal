@@ -1,21 +1,18 @@
+
 import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
 import { MenuItem } from '../types';
 import { useToast } from '@/hooks/use-toast';
 import { loadVendorMenuItems, deleteMenuItem } from '../menuItemOperations';
 
 export function useMenuItems() {
-  const session = useSession();
   const { toast } = useToast();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadMenuItems = async () => {
     try {
-      if (session?.user?.id) {
-        const data = await loadVendorMenuItems(session.user.id);
-        setMenuItems(data || []);
-      }
+      const data = await loadVendorMenuItems();
+      setMenuItems(data || []);
     } catch (error) {
       console.error('Error loading menu items:', error);
       toast({
@@ -48,7 +45,7 @@ export function useMenuItems() {
 
   useEffect(() => {
     loadMenuItems();
-  }, [session?.user?.id]);
+  }, []);
 
   return {
     menuItems,

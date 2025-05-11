@@ -14,17 +14,8 @@ export async function updateMenuItemOrder(items: { id: string; order_index: numb
   }
 }
 
-export async function loadVendorMenuItems(userId: string) {
-  // First check if the user is a vendor at all
-  const { data: vendorData } = await supabase
-    .from('vendors')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-
-  if (!vendorData) throw new Error('Vendor not found');
-
-  // Now load all menu items without filtering by vendor_id
+export async function loadVendorMenuItems() {
+  // Load all menu items - vendor filtering is handled by RLS policies
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
@@ -35,17 +26,12 @@ export async function loadVendorMenuItems(userId: string) {
 }
 
 export async function saveMenuItem(
-  userId: string,
   menuItemData: Omit<MenuItem, 'id' | 'vendor_id' | 'created_at'>,
   editingItemId?: string
 ) {
-  const { data: vendorData } = await supabase
-    .from('vendors')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-
-  if (!vendorData) throw new Error('Vendor not found');
+  // Get the current user's session
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Authentication required');
 
   // Format the discount percentage to ensure it's a number or null
   const formattedData = {
@@ -60,10 +46,10 @@ export async function saveMenuItem(
       .eq('id', editingItemId);
     if (error) throw error;
   } else {
-    // For new items, we still need to set vendor_id
+    // Let RLS handle vendor_id attachment from the authenticated user
     const { error } = await supabase
       .from('menu_items')
-      .insert([{ ...formattedData, vendor_id: vendorData.id }]);
+      .insert([formattedData]);
     if (error) throw error;
   }
 }

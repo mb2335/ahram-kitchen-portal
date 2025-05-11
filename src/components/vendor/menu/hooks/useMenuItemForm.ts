@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { MenuItem, MenuFormData } from '../types';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +36,7 @@ export function useMenuItemForm(onSuccess: () => void) {
     setSelectedImage(null);
   };
 
-  const handleSubmit = async (data: MenuFormData & { image?: File }, userId: string) => {
+  const handleSubmit = async (data: MenuFormData & { image?: File }) => {
     try {
       let imageUrl = editingItem?.image;
       
@@ -53,13 +54,6 @@ export function useMenuItemForm(onSuccess: () => void) {
         imageUrl = null;
       }
 
-      const { data: maxOrderIndex } = await supabase
-        .from('menu_items')
-        .select('order_index')
-        .order('order_index', { ascending: false })
-        .limit(1)
-        .single();
-
       const menuItemData = {
         name: data.name,
         name_ko: data.name_ko,
@@ -70,11 +64,11 @@ export function useMenuItemForm(onSuccess: () => void) {
         is_available: data.is_available,
         image: imageUrl,
         category_id: data.category_id || null,
-        order_index: editingItem?.order_index || (maxOrderIndex?.order_index || 0) + 1,
+        order_index: editingItem?.order_index || 0, // This will be updated from the database
         discount_percentage: data.discount_percentage ? parseInt(data.discount_percentage) : null,
       };
 
-      await saveMenuItem(userId, menuItemData, editingItem?.id);
+      await saveMenuItem(menuItemData, editingItem?.id);
 
       toast({
         title: 'Success',

@@ -31,13 +31,9 @@ export function useCategoryManagement() {
     console.log("Submitting form data:", formData);
 
     try {
-      // Check if user is a vendor
-      const { data: vendorData } = await supabase
-        .from('vendors')
-        .select('id')
-        .single();
-
-      if (!vendorData) throw new Error('Vendor not found');
+      // Get the current user's session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Authentication required');
 
       const { data: maxOrderData } = await supabase
         .from('menu_categories')
@@ -49,11 +45,11 @@ export function useCategoryManagement() {
         ? (maxOrderData[0].order_index + 1) 
         : 1;
 
-      // Simplified category data
+      // Simplified category data - we don't need to specify vendor_id
+      // RLS policies will associate it with the authenticated user
       const categoryData = {
         name: formData.name,
         name_ko: formData.name_ko,
-        vendor_id: vendorData.id, // Still assign a vendor_id for new categories
         order_index: editingCategory ? editingCategory.order_index : nextOrderIndex,
         fulfillment_types: formData.fulfillment_types,
         has_custom_pickup: false // Simplified to always false as we don't use this field anymore
