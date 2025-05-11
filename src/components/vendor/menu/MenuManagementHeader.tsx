@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,11 +12,14 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function MenuManagementHeader() {
   const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
   const [discountPercentage, setDiscountPercentage] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleApplyDiscount = async () => {
     const discount = parseInt(discountPercentage);
@@ -29,25 +33,36 @@ export function MenuManagementHeader() {
     }
 
     try {
+      setIsApplying(true);
+      
       const { error } = await supabase
         .from('menu_items')
         .update({ discount_percentage: discount })
-        .not('category_id', 'is', null);
+        .not('is_available', 'is', false);
 
       if (error) throw error;
 
+      // Invalidate all relevant queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      
       toast({
         title: "Success",
-        description: `Applied ${discount}% discount to all menu items`,
+        description: discount > 0 
+          ? `Applied ${discount}% discount to all available menu items` 
+          : "Removed discount from all menu items",
       });
+      
       setIsDiscountDialogOpen(false);
       setDiscountPercentage("");
     } catch (error) {
+      console.error('Error applying menu-wide discount:', error);
       toast({
         title: "Error",
         description: "Failed to apply menu-wide discount",
         variant: "destructive",
       });
+    } finally {
+      setIsApplying(false);
     }
   };
 
@@ -68,7 +83,9 @@ export function MenuManagementHeader() {
           <DialogHeader>
             <DialogTitle>Apply Menu-wide Discount</DialogTitle>
             <DialogDescription>
-              Enter a discount percentage to apply to all menu items. This will override any existing individual discounts.
+              Enter a discount percentage to apply to all available menu items. 
+              This will override any existing individual discounts. 
+              Enter 0 to remove all discounts.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -87,8 +104,8 @@ export function MenuManagementHeader() {
             <Button variant="outline" onClick={() => setIsDiscountDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApplyDiscount}>
-              Apply Discount
+            <Button onClick={handleApplyDiscount} disabled={isApplying}>
+              {isApplying ? "Applying..." : "Apply Discount"}
             </Button>
           </DialogFooter>
         </DialogContent>

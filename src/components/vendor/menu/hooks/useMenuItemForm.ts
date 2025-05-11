@@ -4,9 +4,11 @@ import { MenuItem, MenuFormData } from '../types';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { handleImageUpload, saveMenuItem } from '../menuItemOperations';
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useMenuItemForm(onSuccess: () => void) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [formData, setFormData] = useState<MenuFormData>({
@@ -71,6 +73,9 @@ export function useMenuItemForm(onSuccess: () => void) {
 
       await saveMenuItem(menuItemData, editingItem?.id);
       console.log("Menu item saved successfully:", editingItem?.id || 'new item');
+
+      // Invalidate queries to ensure all components using menu items get updated
+      await queryClient.invalidateQueries({ queryKey: ['menu-items'] });
 
       toast({
         title: 'Success',

@@ -24,6 +24,7 @@ export function useMenuWithRealtime() {
         },
         (payload) => {
           console.log('Menu item change detected:', payload);
+          // Invalidate menu items whenever there's a change
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
       )

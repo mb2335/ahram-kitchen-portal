@@ -20,9 +20,11 @@ export const useMenuItems = () => {
 
       if (error) throw error;
 
+      // Process the menu items to ensure discount_percentage is properly formatted
       return data?.map(item => ({
         ...item,
         remaining_quantity: item.quantity_limit,
+        discount_percentage: item.discount_percentage || null,
         category: item.category ? {
           id: item.category.id,
           name: item.category.name,
