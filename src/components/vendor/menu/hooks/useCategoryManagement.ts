@@ -31,17 +31,6 @@ export function useCategoryManagement() {
     console.log("Submitting form data:", formData);
 
     try {
-      // Check if we have an active session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to perform this action",
-          variant: "destructive",
-        });
-        throw new Error('Authentication required');
-      }
-
       // Get the next order index for new categories
       const { data: maxOrderData, error: orderError } = await supabase
         .from('menu_categories')

@@ -7,9 +7,6 @@ export function useMenuCategories(menuItems: MenuItem[]) {
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
-      // Check if we have an active session for better error handling
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const { data, error } = await supabase
         .from('menu_categories')
         .select('*')

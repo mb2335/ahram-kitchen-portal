@@ -21,10 +21,6 @@ export async function updateMenuItemOrder(items: { id: string; order_index: numb
 
 export async function loadVendorMenuItems() {
   try {
-    // Get session to verify authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Authentication required');
-    
     // Access all menu items since RLS will handle vendor permissions
     const { data, error } = await supabase
       .from('menu_items')
@@ -47,10 +43,6 @@ export async function saveMenuItem(
   editingItemId?: string
 ) {
   try {
-    // Check if we have an active session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Authentication required');
-
     // Format the discount percentage to ensure it's a number or null
     const formattedData = {
       ...menuItemData,
@@ -87,10 +79,6 @@ export async function saveMenuItem(
 
 export async function deleteMenuItem(itemId: string) {
   try {
-    // Check authentication first
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Authentication required');
-    
     // Get the item's image URL first
     const { data: item, error: fetchError } = await supabase
       .from('menu_items')

@@ -38,17 +38,6 @@ export function useMenuItemForm(onSuccess: () => void) {
 
   const handleSubmit = async (data: MenuFormData & { image?: File }) => {
     try {
-      // Check authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: 'Authentication Error',
-          description: 'You must be logged in to perform this action',
-          variant: 'destructive',
-        });
-        throw new Error('Authentication required');
-      }
-      
       let imageUrl = editingItem?.image;
       
       if (data.image) {
