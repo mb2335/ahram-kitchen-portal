@@ -13,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
-import { useMenuRealtimeContext } from '@/contexts/MenuRealtimeContext';
 
 interface CategoryManagementProps {
   removeTabs?: boolean;
@@ -25,9 +24,6 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
   const [activeTab, setActiveTab] = useState<string>("categories");
   const [localCategories, setLocalCategories] = useState<Category[]>([]);
 
-  // Use the centralized context instead of setting up new subscriptions
-  useMenuRealtimeContext();
-  
   const { 
     isDialogOpen, 
     setIsDialogOpen, 

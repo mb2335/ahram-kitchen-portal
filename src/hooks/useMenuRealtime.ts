@@ -1,7 +1,8 @@
 
-import { useMenuRealtimeContext } from '@/contexts/MenuRealtimeContext';
+import { useMenuChannel } from './menu/useMenuChannel';
+import { useOrderChannel } from './menu/useOrderChannel';
 
 export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
-  // Just use the centralized context, no need to set up separate channels
-  return useMenuRealtimeContext();
+  useMenuChannel();
+  useOrderChannel(refetchOrderQuantities);
 };

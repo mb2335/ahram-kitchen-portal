@@ -18,8 +18,6 @@ import { SortableMenuItem } from "./SortableMenuItem";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface MenuItemGridProps {
   items: MenuItem[];
@@ -29,14 +27,6 @@ interface MenuItemGridProps {
 }
 
 export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGridProps) {
-  const queryClient = useQueryClient();
-  const [localItems, setLocalItems] = useState<MenuItem[]>(items);
-  
-  // Update local state when props change
-  if (JSON.stringify(items) !== JSON.stringify(localItems)) {
-    setLocalItems(items);
-  }
-  
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -74,10 +64,10 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = localItems.findIndex((item) => item.id === active.id);
-      const newIndex = localItems.findIndex((item) => item.id === over.id);
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
 
-      const newItems = [...localItems];
+      const newItems = [...items];
       const [movedItem] = newItems.splice(oldIndex, 1);
       newItems.splice(newIndex, 0, movedItem);
 
@@ -86,18 +76,12 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
         order_index: index + 1,
       }));
 
-      // Update local state immediately for optimistic UI update
-      setLocalItems(reorderedItems);
-      
-      // Update query cache for immediate UI update across components
-      queryClient.setQueryData(['menu-items'], reorderedItems);
-      
-      // Persist changes to the backend
+      // Immediate UI update by calling onReorder with the new items
       onReorder(reorderedItems);
     }
   }
 
-  const itemsByCategory = localItems.reduce((acc, item) => {
+  const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
     if (!acc[categoryId]) {
       acc[categoryId] = [];
