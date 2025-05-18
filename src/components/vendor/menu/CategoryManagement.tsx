@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
@@ -23,7 +22,19 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
 
-  const { isDialogOpen, setIsDialogOpen, editingCategory, setEditingCategory, categoryToDelete, setCategoryToDelete, formData, setFormData, resetForm, handleSubmit } = useCategoryManagement();
+  const { 
+    isDialogOpen, 
+    setIsDialogOpen, 
+    editingCategory, 
+    setEditingCategory, 
+    categoryToDelete, 
+    setCategoryToDelete, 
+    formData, 
+    setFormData, 
+    resetForm, 
+    handleSubmit,
+    handleReorder 
+  } = useCategoryManagement();
 
   const { data: categories = [], refetch } = useQuery({
     queryKey: ['menu-categories'],
@@ -146,6 +157,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
                 setIsDialogOpen(true);
               }}
               onDelete={handleDelete}
+              onReorder={handleReorder}
             />
           </TabsContent>
           
@@ -174,6 +186,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
               setIsDialogOpen(true);
             }}
             onDelete={handleDelete}
+            onReorder={handleReorder}
           />
         </>
       )}
