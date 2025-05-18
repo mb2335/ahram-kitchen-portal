@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,10 +41,11 @@ interface PickupSettingsManagerProps {
 
 export function PickupSettingsManager({ categories }: PickupSettingsManagerProps) {
   const [selectedDay, setSelectedDay] = useState<number>(0);
-  const [pickupTime, setPickupTime] = useState<string>("");
+  const [pickupStartTime, setPickupStartTime] = useState<string>("");
+  const [pickupEndTime, setPickupEndTime] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [existingSettings, setExistingSettings] = useState<{[key: number]: {id: string, time: string, location: string}[]}>({});
+  const [existingSettings, setExistingSettings] = useState<{[key: number]: {id: string, start_time: string, end_time: string, location: string}[]}>({});
   const [isExistingSettingsOpen, setIsExistingSettingsOpen] = useState<{[key: number]: boolean}>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingToDelete, setSettingToDelete] = useState<{id: string, day: number} | null>(null);
@@ -72,26 +74,27 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   // Organize pickup settings by day
   useEffect(() => {
     if (pickupSettings && pickupSettings.length > 0) {
-      const settingsByDay: {[key: number]: {id: string, time: string, location: string}[]} = {};
+      const settingsByDay: {[key: number]: {id: string, start_time: string, end_time: string, location: string}[]} = {};
       
       pickupSettings.forEach(setting => {
         if (!settingsByDay[setting.day]) {
           settingsByDay[setting.day] = [];
         }
         
-        if (setting.time && setting.location) {
+        if ((setting.start_time || setting.time) && setting.location) {
           settingsByDay[setting.day].push({
             id: setting.id,
-            time: setting.time,
+            start_time: setting.start_time || setting.time || "",
+            end_time: setting.end_time || "",
             location: setting.location
           });
         }
       });
       
-      // Sort settings by time within each day
+      // Sort settings by start_time within each day
       Object.keys(settingsByDay).forEach(day => {
         settingsByDay[parseInt(day)].sort((a, b) => {
-          return timeToMinutes(a.time) - timeToMinutes(b.time);
+          return timeToMinutes(a.start_time) - timeToMinutes(b.start_time);
         });
       });
       
@@ -109,10 +112,20 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
 
   // Save pickup setting
   const handleSavePickupSetting = async () => {
-    if (!pickupTime.trim() || !location.trim()) {
+    if (!pickupStartTime.trim() || !location.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide both pickup time and location.",
+        description: "Please provide pickup start time and location.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate that end time is after start time if provided
+    if (pickupEndTime && timeToMinutes(pickupStartTime) >= timeToMinutes(pickupEndTime)) {
+      toast({
+        title: "Invalid Time Range",
+        description: "End time must be after start time.",
         variant: "destructive",
       });
       return;
@@ -132,15 +145,18 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
     try {
       console.log("Creating global pickup setting with vendor_id:", vendorId);
       
-      // Always include vendor_id when creating pickup settings
+      const newSetting = {
+        day: selectedDay,
+        start_time: pickupStartTime,
+        end_time: pickupEndTime || "",
+        time: pickupStartTime, // For backward compatibility
+        location: location,
+        vendor_id: vendorId // Associate with the vendor but settings are global for checkout
+      };
+
       const { error } = await supabase
         .from('pickup_settings')
-        .insert({
-          day: selectedDay,
-          time: pickupTime,
-          location: location,
-          vendor_id: vendorId // Associate with the vendor but settings are global for checkout
-        });
+        .insert(newSetting);
 
       if (error) throw error;
 
@@ -153,7 +169,8 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
       });
 
       // Reset the form
-      setPickupTime("");
+      setPickupStartTime("");
+      setPickupEndTime("");
       setLocation("");
     } catch (error: any) {
       toast({
@@ -213,6 +230,15 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
     }));
   };
 
+  // Format time range for display
+  const formatTimeRange = (startTime: string, endTime: string): string => {
+    const formattedStart = formatTime(startTime);
+    if (!endTime) return formattedStart;
+    
+    const formattedEnd = formatTime(endTime);
+    return `${formattedStart} - ${formattedEnd}`;
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -260,7 +286,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
                       <div key={idx} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{formatTime(setting.time)}</span>
+                          <span>{formatTimeRange(setting.start_time, setting.end_time)}</span>
                         </div>
                         <div className="flex items-center gap-2 flex-1 mx-4">
                           <MapPinIcon className="h-4 w-4 text-muted-foreground" />
@@ -294,25 +320,37 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="flex items-center gap-1 mb-2">
-                  <Clock className="h-4 w-4" /> Time
+                  <Clock className="h-4 w-4" /> Start Time
                 </Label>
                 <Input
                   type="time"
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  placeholder="12:00 PM"
+                  value={pickupStartTime}
+                  onChange={(e) => setPickupStartTime(e.target.value)}
+                  placeholder="09:00"
                 />
               </div>
               <div>
                 <Label className="flex items-center gap-1 mb-2">
-                  <MapPinIcon className="h-4 w-4" /> Location
+                  <Clock className="h-4 w-4" /> End Time (Optional)
                 </Label>
                 <Input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Pickup location"
+                  type="time"
+                  value={pickupEndTime}
+                  onChange={(e) => setPickupEndTime(e.target.value)}
+                  placeholder="17:00"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label className="flex items-center gap-1 mb-2">
+                <MapPinIcon className="h-4 w-4" /> Location
+              </Label>
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Pickup location"
+              />
             </div>
 
             <Button 

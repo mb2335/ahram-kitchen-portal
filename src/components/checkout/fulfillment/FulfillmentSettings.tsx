@@ -156,6 +156,15 @@ export function FulfillmentSettings({
     [deliverySettings]
   );
 
+  // Format time range for display
+  const formatTimeRange = (detail: PickupDetail): string => {
+    const startTime = formatTime(detail.start_time || detail.time || '');
+    if (!detail.end_time) return startTime;
+    
+    const endTime = formatTime(detail.end_time);
+    return `${startTime} - ${endTime}`;
+  };
+
   // Filter date picker to only show available dates based on fulfillment type
   const isDateAvailable = (date: Date, fulfillmentType: string) => {
     const dayOfWeek = date.getDay();

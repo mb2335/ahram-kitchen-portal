@@ -343,24 +343,30 @@ export type Database = {
         Row: {
           created_at: string | null
           day: number
+          end_time: string | null
           id: string
           location: string | null
+          start_time: string | null
           time: string | null
           vendor_id: string | null
         }
         Insert: {
           created_at?: string | null
           day: number
+          end_time?: string | null
           id?: string
           location?: string | null
+          start_time?: string | null
           time?: string | null
           vendor_id?: string | null
         }
         Update: {
           created_at?: string | null
           day?: number
+          end_time?: string | null
           id?: string
           location?: string | null
+          start_time?: string | null
           time?: string | null
           vendor_id?: string | null
         }
