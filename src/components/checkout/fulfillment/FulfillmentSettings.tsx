@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Package as PackageIcon, Truck as TruckIcon, RefreshCcw } from "lucide-react";
 import { PickupDetail } from "@/types/pickup";
 import { Button } from "@/components/ui/button";
+import { formatTime } from "@/types/delivery";
 
 interface FulfillmentSettingsProps {
   selectedDates: Record<string, Date>;

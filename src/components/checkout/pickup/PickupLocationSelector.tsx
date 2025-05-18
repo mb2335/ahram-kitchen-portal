@@ -6,7 +6,7 @@ import { PickupDetail } from "@/types/pickup";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { formatInTimeZone } from 'date-fns-tz';
+import { format } from 'date-fns';
 import { Category } from "@/components/vendor/menu/types/category";
 import { MapPinIcon, Clock } from "lucide-react";
 
@@ -47,12 +47,12 @@ export function PickupLocationSelector({
         
         // Transform to PickupDetail format
         const pickupDetails = globalSettings.map(setting => ({
+          id: setting.id,
           day: setting.day,
           time: setting.time || setting.start_time || '',
           start_time: setting.start_time || setting.time || '',
           end_time: setting.end_time || '',
-          location: setting.location,
-          id: setting.id
+          location: setting.location
         }));
         
         return pickupDetails;

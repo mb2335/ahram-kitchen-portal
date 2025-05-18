@@ -53,8 +53,11 @@ export function PickupSettingsManager() {
       
       // Map to pickup details
       const details = pickupSettings.map(item => ({
+        id: item.id,
         day: item.day,
         time: item.time || '',
+        start_time: item.start_time || item.time || '',
+        end_time: item.end_time || '',
         location: item.location || ''
       }));
       setPickupDetails(details);
@@ -99,7 +102,13 @@ export function PickupSettingsManager() {
   };
 
   const addPickupDetail = (day: number) => {
-    const newDetail: PickupDetail = { day, time: '', location: '' };
+    const newDetail: PickupDetail = { 
+      day, 
+      time: '', 
+      start_time: '',
+      end_time: '',
+      location: '' 
+    };
     setPickupDetails([...pickupDetails, newDetail]);
   };
 
@@ -163,6 +172,8 @@ export function PickupSettingsManager() {
           vendor_id: vendorId,
           day: detail.day,
           time: detail.time,
+          start_time: detail.start_time,
+          end_time: detail.end_time,
           location: detail.location
         }));
         
