@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -14,7 +13,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 import { toast } from "@/hooks/use-toast";
-import { MenuItem } from './menu/types';
 
 export function MenuManagement() {
   const queryClient = useQueryClient();
@@ -34,34 +32,6 @@ export function MenuManagement() {
     setIsDialogOpen(false);
     loadMenuItems();
   });
-
-  const handleReorderMenuItems = async (items: MenuItem[]) => {
-    try {
-      // Optimistic UI update - update local state immediately
-      queryClient.setQueryData(['menu-items'], items);
-      
-      // Send update to the server
-      await updateMenuItemOrder(items);
-      
-      // Refresh data to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      
-      toast({
-        title: "Success",
-        description: "Menu item order updated",
-      });
-    } catch (error) {
-      console.error('Error reordering menu items:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update menu item order",
-        variant: "destructive",
-      });
-      
-      // Revert optimistic update on error
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-    }
-  };
 
   useEffect(() => {
     // Set up real-time subscriptions to menu updates
@@ -149,7 +119,6 @@ export function MenuManagement() {
               setIsDialogOpen(true);
             }}
             onDelete={handleDeleteMenuItem}
-            onReorder={handleReorderMenuItems}
           />
         </TabsContent>
 

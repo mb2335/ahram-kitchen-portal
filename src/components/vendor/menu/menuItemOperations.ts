@@ -3,22 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
 
-export async function updateMenuItemOrder(items: { id: string; order_index: number }[]) {
-  try {
-    for (const item of items) {
-      const { error } = await supabase
-        .from('menu_items')
-        .update({ order_index: item.order_index })
-        .eq('id', item.id);
-
-      if (error) throw error;
-    }
-  } catch (error) {
-    console.error('Error updating menu item order:', error);
-    throw error;
-  }
-}
-
 export async function loadVendorMenuItems() {
   try {
     // Access all menu items since RLS will handle vendor permissions

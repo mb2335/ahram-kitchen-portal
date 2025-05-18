@@ -13,6 +13,7 @@ export const useMenuChannel = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Use a single channel for menu items updates to be more efficient
     const menuItemsChannel = supabase
       .channel('menu-items-updates')
       .on(
@@ -27,8 +28,28 @@ export const useMenuChannel = () => {
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
         }
       )
-      .subscribe();
+      .on(
+        'system',
+        { event: 'error' },
+        () => {
+          toast({
+            title: "Connection Error",
+            description: "Having trouble receiving menu updates. Please refresh the page.",
+            variant: "destructive",
+          });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          toast({
+            title: "Connection Error",
+            description: "Failed to connect to menu updates. Please refresh the page.",
+            variant: "destructive",
+          });
+        }
+      });
 
+    // Use a separate channel for category updates
     const menuCategoriesChannel = supabase
       .channel('menu-categories-updates')
       .on(
