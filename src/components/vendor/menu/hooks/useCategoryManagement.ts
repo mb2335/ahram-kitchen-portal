@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CategoryFormData, Category } from '../types/category';
@@ -28,15 +29,24 @@ export function useCategoryManagement() {
 
   const handleReorder = async (reorderedCategories: Category[]) => {
     try {
+      // Optimistic UI update - update the query cache immediately
+      queryClient.setQueryData(['menu-categories'], reorderedCategories);
+      
       const updatePayload = reorderedCategories.map((category) => ({
         id: category.id,
         order_index: category.order_index
       }));
       
+      // Send update to the database
       await updateCategoryOrder(updatePayload);
       
-      // Update local state if needed
+      // Refresh data to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+      
+      toast({
+        title: "Success",
+        description: "Category order updated",
+      });
     } catch (error) {
       console.error('Error reordering categories:', error);
       toast({
@@ -44,6 +54,9 @@ export function useCategoryManagement() {
         description: "Failed to update category order",
         variant: "destructive",
       });
+      
+      // Revert optimistic update on error by refetching
+      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
     }
   };
 

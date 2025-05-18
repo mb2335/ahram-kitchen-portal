@@ -48,6 +48,7 @@ export function CategoryList({ categories, onEdit, onDelete, onReorder }: Catego
         order_index: index + 1,
       }));
 
+      // Immediate UI update - call onReorder with the new categories
       onReorder(reorderedCategories);
     }
   }

@@ -30,6 +30,24 @@ export function useMenuWithRealtime() {
       )
       .subscribe();
 
+    // Set up menu categories channel
+    const categoryChannel = supabase
+      .channel('category-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_categories'
+        },
+        (payload) => {
+          console.log('Menu category change detected:', payload);
+          // Invalidate categories whenever there's a change
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+        }
+      )
+      .subscribe();
+
     // Set up orders channel
     const orderChannel = supabase
       .channel('order-updates')
@@ -51,6 +69,7 @@ export function useMenuWithRealtime() {
     return () => {
       console.log('Cleaning up realtime subscriptions');
       supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoryChannel);
       supabase.removeChannel(orderChannel);
     };
   }, [queryClient, orderQuantitiesQuery]);

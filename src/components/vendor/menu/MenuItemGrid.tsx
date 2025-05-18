@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -75,6 +76,7 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
         order_index: index + 1,
       }));
 
+      // Immediate UI update by calling onReorder with the new items
       onReorder(reorderedItems);
     }
   }

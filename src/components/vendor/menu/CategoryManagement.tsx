@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
@@ -21,6 +22,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
+  const [localCategories, setLocalCategories] = useState<Category[]>([]);
 
   const { 
     isDialogOpen, 
@@ -54,6 +56,11 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
       })) as Category[];
     },
   });
+
+  // Update local state when the query data changes
+  useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
 
   useEffect(() => {
     const categoryChannel = supabase
@@ -128,6 +135,15 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
     }
   };
 
+  // Handle reordering with immediate UI update
+  const handleCategoryReorder = async (reorderedCategories: Category[]) => {
+    // Update local state immediately for UI responsiveness
+    setLocalCategories(reorderedCategories);
+    
+    // Call the actual handleReorder function that updates the database
+    await handleReorder(reorderedCategories);
+  };
+
   return (
     <div className="mb-6">
       {!removeTabs ? (
@@ -146,7 +162,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
             />
             
             <CategoryList 
-              categories={categories || []}
+              categories={localCategories}
               onEdit={(category) => {
                 setEditingCategory(category);
                 setFormData({
@@ -157,7 +173,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
                 setIsDialogOpen(true);
               }}
               onDelete={handleDelete}
-              onReorder={handleReorder}
+              onReorder={handleCategoryReorder}
             />
           </TabsContent>
           
@@ -175,7 +191,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
           />
           
           <CategoryList 
-            categories={categories || []}
+            categories={localCategories}
             onEdit={(category) => {
               setEditingCategory(category);
               setFormData({
@@ -186,7 +202,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
               setIsDialogOpen(true);
             }}
             onDelete={handleDelete}
-            onReorder={handleReorder}
+            onReorder={handleCategoryReorder}
           />
         </>
       )}

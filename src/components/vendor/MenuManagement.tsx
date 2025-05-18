@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
@@ -36,8 +37,15 @@ export function MenuManagement() {
 
   const handleReorderMenuItems = async (items: MenuItem[]) => {
     try {
+      // Optimistic UI update - update local state immediately
+      queryClient.setQueryData(['menu-items'], items);
+      
+      // Send update to the server
       await updateMenuItemOrder(items);
+      
+      // Refresh data to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      
       toast({
         title: "Success",
         description: "Menu item order updated",
@@ -49,6 +57,9 @@ export function MenuManagement() {
         description: "Failed to update menu item order",
         variant: "destructive",
       });
+      
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
     }
   };
 
