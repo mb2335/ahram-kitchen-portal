@@ -1,84 +1,56 @@
+
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
+import { Index } from './pages/Index';
+import { Help } from './pages/Help';
+import { Navigation } from './components/Navigation';
+import { Auth } from './components/Auth';
+import { Cart } from './components/Cart';
+import { Checkout } from './components/Checkout';
+import { OrderThankYou } from './components/OrderThankYou';
+import { Menu } from './components/Menu';
+import { OrderHistory } from './components/OrderHistory';
+import { VendorDashboard } from './components/vendor/VendorDashboard';
+import { VendorProfile } from './components/vendor/VendorProfile';
+import { OrderManagement } from './components/vendor/OrderManagement';
+import { CustomerProfile } from './components/customer/CustomerProfile';
+import { MenuManagement } from './components/vendor/MenuManagement';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "./contexts/LanguageContext";
-import { CartProvider } from "./contexts/CartContext";
-import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { Navigation } from "./components/Navigation";
-import { Cart } from "./components/Cart";
-import { Auth } from "./components/Auth";
-import { VendorDashboard } from "./components/vendor/VendorDashboard";
-import { CustomerProfile } from "./components/customer/CustomerProfile";
-import { Checkout } from "./components/Checkout";
-import { OrderHistory } from "./components/OrderHistory";
-import { OrderThankYou } from "./components/checkout/OrderThankYou";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { supabase } from "@/integrations/supabase/client";
-import { StrictMode, useEffect, useState } from "react";
-import { OfflineAlert } from "./components/shared/OfflineAlert";
-import Index from "./pages/Index";
-import { Help } from "./pages/Help";
+import { MenuRealtimeProvider } from './contexts/MenuRealtimeContext';
+import { useOrderQuantities } from './hooks/useOrderQuantities';
 
-const queryClient = new QueryClient();
-
-const App = () => {
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+function App() {
+  const { refetch: refetchOrderQuantities } = useOrderQuantities();
 
   return (
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <SessionContextProvider supabaseClient={supabase}>
-          <LanguageProvider>
-            <TooltipProvider>
-              <CartProvider>
-                <BrowserRouter>
-                  <div className="min-h-screen bg-gray-50">
-                    <Navigation />
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/help" element={<Help />} />
-                      <Route path="/cart" element={<Cart />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/thank-you" element={<OrderThankYou />} />
-                      <Route path="/orders" element={<OrderHistory />} />
-                      <Route path="/profile" element={<CustomerProfile />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route
-                        path="/vendor/*"
-                        element={
-                          <ProtectedRoute requiredRole="vendor">
-                            <VendorDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                    </Routes>
-                  </div>
-                </BrowserRouter>
-                {isOffline && <OfflineAlert />}
-                <Toaster />
-                <Sonner />
-              </CartProvider>
-            </TooltipProvider>
-          </LanguageProvider>
-        </SessionContextProvider>
-      </QueryClientProvider>
-    </StrictMode>
+    <Router>
+      <MenuRealtimeProvider refetchOrderQuantities={refetchOrderQuantities}>
+        <div className="flex flex-col min-h-screen">
+          <Navigation />
+
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/menu" element={<Menu />} />
+              <Route path="/auth/*" element={<Auth />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/thank-you" element={<OrderThankYou />} />
+              <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><CustomerProfile /></ProtectedRoute>} />
+              <Route path="/vendor/dashboard" element={<ProtectedRoute><VendorDashboard /></ProtectedRoute>} />
+              <Route path="/vendor/profile" element={<ProtectedRoute><VendorProfile /></ProtectedRoute>} />
+              <Route path="/vendor/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
+              <Route path="/vendor/menu" element={<ProtectedRoute><MenuManagement /></ProtectedRoute>} />
+            </Routes>
+          </main>
+        </div>
+        <Toaster />
+      </MenuRealtimeProvider>
+    </Router>
   );
-};
+}
 
 export default App;

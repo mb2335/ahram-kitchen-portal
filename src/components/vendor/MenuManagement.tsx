@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
@@ -9,18 +8,22 @@ import { MenuItemDialog } from './menu/components/MenuItemDialog';
 import { ItemsHeader } from './menu/components/ItemsHeader';
 import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 import { toast } from "@/hooks/use-toast";
 import { MenuItem } from './menu/types';
+import { useMenuRealtimeContext } from '@/contexts/MenuRealtimeContext';
 
 export function MenuManagement() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("items");
   const { menuItems, loading, loadMenuItems, handleDeleteMenuItem } = useMenuItems();
+  
+  // Use the centralized context instead of setting up new subscriptions
+  useMenuRealtimeContext();
+  
   const {
     selectedImage,
     setSelectedImage,
@@ -62,46 +65,6 @@ export function MenuManagement() {
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
     }
   };
-
-  useEffect(() => {
-    // Set up real-time subscriptions to menu updates
-    const menuChannel = supabase
-      .channel('menu-management-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'menu_items' 
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-          loadMenuItems();
-        }
-      )
-      .subscribe();
-
-    const categoryChannel = supabase
-      .channel('category-management-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'menu_categories' 
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-          loadMenuItems();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(menuChannel);
-      supabase.removeChannel(categoryChannel);
-    };
-  }, [queryClient, loadMenuItems]);
 
   if (loading) {
     return <LoadingState />;
