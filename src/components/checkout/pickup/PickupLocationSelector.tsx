@@ -83,7 +83,6 @@ export function PickupLocationSelector({
 
   return (
     <div className="space-y-4">
-      <Label>{t('checkout.pickup.select_location')}</Label>
       <RadioGroup
         value={selectedPickupDetail?.id || ""}
         onValueChange={(value) => {
@@ -100,21 +99,24 @@ export function PickupLocationSelector({
           {pickupSettings.map((setting) => (
             <div
               key={setting.id}
-              className={`border rounded-md p-4 transition-colors ${
+              className={`border rounded-md p-4 transition-colors cursor-pointer ${
                 selectedPickupDetail?.id === setting.id
                   ? "bg-primary/5 border-primary"
                   : "hover:bg-accent"
               }`}
+              onClick={() => {
+                onPickupDetailChange({
+                  ...setting,
+                  day: selectedDate.getDay(),
+                });
+              }}
             >
               <RadioGroupItem
                 value={setting.id || ""}
                 id={`location-${setting.id}`}
                 className="peer sr-only"
               />
-              <Label
-                htmlFor={`location-${setting.id}`}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer"
-              >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 mb-2 sm:mb-0">
                   <MapPinIcon className="h-4 w-4 text-muted-foreground" /> 
                   <span>{setting.location}</span>
@@ -123,7 +125,7 @@ export function PickupLocationSelector({
                   <Clock className="h-4 w-4" /> 
                   <span>{formatTimeRange(setting)}</span>
                 </div>
-              </Label>
+              </div>
             </div>
           ))}
         </div>
