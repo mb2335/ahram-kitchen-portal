@@ -19,36 +19,42 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from "@/components/ui/toaster";
 import { MenuRealtimeProvider } from './contexts/MenuRealtimeContext';
 import { useOrderQuantities } from './hooks/useOrderQuantities';
+import { CartProvider } from './contexts/CartContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 function App() {
   const { refetch: refetchOrderQuantities } = useOrderQuantities();
 
   return (
     <Router>
-      <MenuRealtimeProvider refetchOrderQuantities={refetchOrderQuantities}>
-        <div className="flex flex-col min-h-screen">
-          <Navigation />
+      <LanguageProvider>
+        <CartProvider>
+          <MenuRealtimeProvider refetchOrderQuantities={refetchOrderQuantities}>
+            <div className="flex flex-col min-h-screen">
+              <Navigation />
 
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/menu" element={<Menu />} />
-              <Route path="/auth/*" element={<Auth />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/thank-you" element={<OrderThankYou />} />
-              <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><CustomerProfile /></ProtectedRoute>} />
-              <Route path="/vendor/dashboard" element={<ProtectedRoute><VendorDashboard /></ProtectedRoute>} />
-              <Route path="/vendor/profile" element={<ProtectedRoute><VendorProfile /></ProtectedRoute>} />
-              <Route path="/vendor/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
-              <Route path="/vendor/menu" element={<ProtectedRoute><MenuManagement /></ProtectedRoute>} />
-            </Routes>
-          </main>
-        </div>
-        <Toaster />
-      </MenuRealtimeProvider>
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/help" element={<Help />} />
+                  <Route path="/menu" element={<Menu />} />
+                  <Route path="/auth/*" element={<Auth />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/thank-you" element={<OrderThankYou />} />
+                  <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><CustomerProfile /></ProtectedRoute>} />
+                  <Route path="/vendor/dashboard" element={<ProtectedRoute><VendorDashboard /></ProtectedRoute>} />
+                  <Route path="/vendor/profile" element={<ProtectedRoute><VendorProfile /></ProtectedRoute>} />
+                  <Route path="/vendor/orders" element={<ProtectedRoute><OrderManagement /></ProtectedRoute>} />
+                  <Route path="/vendor/menu" element={<ProtectedRoute><MenuManagement /></ProtectedRoute>} />
+                </Routes>
+              </main>
+            </div>
+            <Toaster />
+          </MenuRealtimeProvider>
+        </CartProvider>
+      </LanguageProvider>
     </Router>
   );
 }
