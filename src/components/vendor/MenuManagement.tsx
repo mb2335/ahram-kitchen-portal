@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from 'react';
+import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -8,13 +8,12 @@ import { MenuItemDialog } from './menu/components/MenuItemDialog';
 import { ItemsHeader } from './menu/components/ItemsHeader';
 import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
+import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 import { toast } from "@/hooks/use-toast";
 import { MenuItem } from './menu/types';
-import { useRealtimeMenuUpdates } from '@/hooks/useRealtimeMenuUpdates';
-import { useReorderMenuEntities } from '@/hooks/useReorderMenuEntities';
 
 export function MenuManagement() {
   const queryClient = useQueryClient();
@@ -35,14 +34,63 @@ export function MenuManagement() {
     loadMenuItems();
   });
 
-  // Use our centralized real-time updates hook
-  useRealtimeMenuUpdates();
-  
-  // Use our shared reorder hook for menu items
-  const { handleReorder: handleReorderMenuItems } = useReorderMenuEntities<MenuItem>(
-    'menu_items', 
-    'menu-items'
-  );
+  const handleReorderMenuItems = async (items: MenuItem[]) => {
+    try {
+      await updateMenuItemOrder(items);
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      toast({
+        title: "Success",
+        description: "Menu item order updated",
+      });
+    } catch (error) {
+      console.error('Error reordering menu items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update menu item order",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    // Set up real-time subscriptions to menu updates
+    const menuChannel = supabase
+      .channel('menu-management-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+          loadMenuItems();
+        }
+      )
+      .subscribe();
+
+    const categoryChannel = supabase
+      .channel('category-management-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          loadMenuItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoryChannel);
+    };
+  }, [queryClient, loadMenuItems]);
 
   if (loading) {
     return <LoadingState />;

@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,13 +7,11 @@ import { CategoryHeader } from './components/CategoryHeader';
 import { useCategoryManagement } from './hooks/useCategoryManagement';
 import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
-import { useRealtimeMenuUpdates } from '@/hooks/useRealtimeMenuUpdates';
-import { useReorderMenuEntities } from '@/hooks/useReorderMenuEntities';
 
 interface CategoryManagementProps {
   removeTabs?: boolean;
@@ -22,10 +19,8 @@ interface CategoryManagementProps {
 
 export function CategoryManagement({ removeTabs = false }: CategoryManagementProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
-
-  // Use our centralized real-time updates hook
-  useRealtimeMenuUpdates();
 
   const { 
     isDialogOpen, 
@@ -37,14 +32,9 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
     formData, 
     setFormData, 
     resetForm, 
-    handleSubmit 
+    handleSubmit,
+    handleReorder 
   } = useCategoryManagement();
-
-  // Use our shared reorder hook for categories
-  const { handleReorder } = useReorderMenuEntities<Category>(
-    'menu_categories', 
-    'menu-categories'
-  );
 
   const { data: categories = [], refetch } = useQuery({
     queryKey: ['menu-categories'],
@@ -64,6 +54,28 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
       })) as Category[];
     },
   });
+
+  useEffect(() => {
+    const categoryChannel = supabase
+      .channel('category-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        async () => {
+          await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          refetch();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(categoryChannel);
+    };
+  }, [queryClient, refetch]);
 
   const handleDelete = async (categoryId: string) => {
     try {
