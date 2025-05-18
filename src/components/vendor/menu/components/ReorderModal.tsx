@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   DndContext,
@@ -31,6 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface ReorderItemType {
   id: string;
@@ -112,7 +114,7 @@ export function ReorderModal({
   };
 
   const ModalContent = (
-    <>
+    <ScrollArea className="h-full max-h-[60vh] pr-4">
       <div className="space-y-4">
         <DndContext
           sensors={sensors}
@@ -131,7 +133,7 @@ export function ReorderModal({
           </SortableContext>
         </DndContext>
       </div>
-    </>
+    </ScrollArea>
   );
 
   if (isMobile) {
@@ -141,12 +143,12 @@ export function ReorderModal({
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 py-2">{ModalContent}</div>
+          <div className="px-4 py-2 max-h-[70vh]">{ModalContent}</div>
           <DrawerFooter>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving} className="w-full">
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
               Cancel
             </Button>
           </DrawerFooter>
@@ -157,12 +159,12 @@ export function ReorderModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {ModalContent}
-        <DialogFooter>
+        <DialogFooter className="mt-4 pt-2 border-t">
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -174,3 +176,4 @@ export function ReorderModal({
     </Dialog>
   );
 }
+
