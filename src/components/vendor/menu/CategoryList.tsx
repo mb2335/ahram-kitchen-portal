@@ -15,9 +15,10 @@ interface CategoryListProps {
   categories: Category[];
   onEdit: (category: Category) => void;
   onDelete: (categoryId: string) => void;
+  onReorder: () => void;
 }
 
-export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps) {
+export function CategoryList({ categories, onEdit, onDelete, onReorder }: CategoryListProps) {
   const getFulfillmentTypeLabel = (type: string) => {
     switch (type) {
       case 'delivery':
@@ -31,6 +32,14 @@ export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps
 
   return (
     <div className="space-y-4">
+      {categories.length > 1 && (
+        <div className="flex justify-end mb-2">
+          <Button variant="outline" onClick={onReorder}>
+            Reorder Categories
+          </Button>
+        </div>
+      )}
+      
       {categories.map((category) => (
         <Card key={category.id} className="overflow-hidden w-full">
           <CardHeader className="pb-2">

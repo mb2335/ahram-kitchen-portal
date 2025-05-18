@@ -6,13 +6,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DeleteCategoryDialog } from './dialogs/DeleteCategoryDialog';
 import { CategoryHeader } from './components/CategoryHeader';
 import { useCategoryManagement } from './hooks/useCategoryManagement';
-import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
+import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems, updateCategoryOrder } from './utils/categoryOperations';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
+import { ReorderModal, ReorderItemType } from './components/ReorderModal';
 
 interface CategoryManagementProps {
   removeTabs?: boolean;
@@ -22,6 +23,8 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { isDialogOpen, setIsDialogOpen, editingCategory, setEditingCategory, categoryToDelete, setCategoryToDelete, formData, setFormData, resetForm, handleSubmit } = useCategoryManagement();
 
@@ -117,6 +120,27 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
     }
   };
 
+  const handleReorder = () => {
+    setIsReorderModalOpen(true);
+  };
+
+  const handleSaveOrder = async (reorderedItems: ReorderItemType[]) => {
+    setIsSaving(true);
+    try {
+      await updateCategoryOrder(reorderedItems);
+      await refetch();
+    } catch (error) {
+      console.error('Error saving category order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update category order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="mb-6">
       {!removeTabs ? (
@@ -146,6 +170,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
                 setIsDialogOpen(true);
               }}
               onDelete={handleDelete}
+              onReorder={handleReorder}
             />
           </TabsContent>
           
@@ -174,6 +199,7 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
               setIsDialogOpen(true);
             }}
             onDelete={handleDelete}
+            onReorder={handleReorder}
           />
         </>
       )}
@@ -196,6 +222,19 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
         onClose={() => setCategoryToDelete(null)}
         onConfirm={handleDeleteConfirm}
         itemCount={categoryToDelete?.itemCount || 0}
+      />
+
+      <ReorderModal
+        isOpen={isReorderModalOpen}
+        onOpenChange={setIsReorderModalOpen}
+        items={categories.map(cat => ({ 
+          id: cat.id, 
+          name: cat.name, 
+          order_index: cat.order_index 
+        }))}
+        title="Reorder Categories"
+        onSave={handleSaveOrder}
+        isSaving={isSaving}
       />
     </div>
   );

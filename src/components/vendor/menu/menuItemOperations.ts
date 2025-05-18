@@ -38,6 +38,32 @@ export async function loadVendorMenuItems() {
   }
 }
 
+export async function loadCategoryMenuItems(categoryId: string | null) {
+  try {
+    let query = supabase
+      .from('menu_items')
+      .select('*')
+      .order('order_index', { ascending: true });
+    
+    if (categoryId) {
+      query = query.eq('category_id', categoryId);
+    } else {
+      query = query.is('category_id', null);
+    }
+    
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error loading category menu items:", error);
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    console.error("Error in loadCategoryMenuItems:", error);
+    throw error;
+  }
+}
+
 export async function saveMenuItem(
   menuItemData: Omit<MenuItem, 'id' | 'vendor_id' | 'created_at'>,
   editingItemId?: string

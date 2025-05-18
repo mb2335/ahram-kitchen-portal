@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Category } from "../types/category";
 
 export async function checkCategoryItems(categoryId: string) {
   try {
@@ -68,6 +69,25 @@ export async function deleteMenuItems(categoryId: string) {
     }
   } catch (error) {
     console.error('Error in deleteMenuItems:', error);
+    throw error;
+  }
+}
+
+export async function updateCategoryOrder(categories: { id: string; order_index: number }[]) {
+  try {
+    for (const category of categories) {
+      const { error } = await supabase
+        .from('menu_categories')
+        .update({ order_index: category.order_index })
+        .eq('id', category.id);
+
+      if (error) {
+        console.error('Error updating category order:', error);
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error in updateCategoryOrder:', error);
     throw error;
   }
 }

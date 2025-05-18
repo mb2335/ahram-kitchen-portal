@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -17,12 +18,13 @@ import { SortableMenuItem } from "./SortableMenuItem";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 interface MenuItemGridProps {
   items: MenuItem[];
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
-  onReorder: (items: MenuItem[]) => void;
+  onReorder: (categoryId: string | null) => void;
 }
 
 export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGridProps) {
@@ -59,26 +61,6 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
     }
   };
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
-
-      const newItems = [...items];
-      const [movedItem] = newItems.splice(oldIndex, 1);
-      newItems.splice(newIndex, 0, movedItem);
-
-      const reorderedItems = newItems.map((item, index) => ({
-        ...item,
-        order_index: index + 1,
-      }));
-
-      onReorder(reorderedItems);
-    }
-  }
-
   const itemsByCategory = items.reduce((acc, item) => {
     const categoryId = item.category_id || 'uncategorized';
     if (!acc[categoryId]) {
@@ -89,54 +71,63 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="space-y-6">
-        {categories.map((category) => (
+    <div className="space-y-6">
+      {categories.map((category) => {
+        const categoryItems = itemsByCategory[category.id] || [];
+        return categoryItems.length > 0 ? (
           <div key={category.id} className="space-y-2">
-            <h3 className="text-lg font-semibold">{category.name}</h3>
-            <SortableContext
-              items={itemsByCategory[category.id] || []}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="grid gap-4">
-                {(itemsByCategory[category.id] || []).map((item) => (
-                  <SortableMenuItem
-                    key={item.id}
-                    item={item}
-                    onEdit={onEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </SortableContext>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">{category.name}</h3>
+              {categoryItems.length > 1 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onReorder(category.id)}
+                >
+                  Reorder Items
+                </Button>
+              )}
+            </div>
+            <div className="grid gap-4">
+              {categoryItems.map((item) => (
+                <SortableMenuItem
+                  key={item.id}
+                  item={item}
+                  onEdit={onEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
           </div>
-        ))}
+        ) : null;
+      })}
 
-        {itemsByCategory['uncategorized'] && (
-          <div className="space-y-2">
+      {itemsByCategory['uncategorized'] && itemsByCategory['uncategorized'].length > 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Uncategorized</h3>
-            <SortableContext
-              items={itemsByCategory['uncategorized']}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="grid gap-4">
-                {itemsByCategory['uncategorized'].map((item) => (
-                  <SortableMenuItem
-                    key={item.id}
-                    item={item}
-                    onEdit={onEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </SortableContext>
+            {itemsByCategory['uncategorized'].length > 1 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onReorder(null)}
+              >
+                Reorder Items
+              </Button>
+            )}
           </div>
-        )}
-      </div>
-    </DndContext>
+          <div className="grid gap-4">
+            {itemsByCategory['uncategorized'].map((item) => (
+              <SortableMenuItem
+                key={item.id}
+                item={item}
+                onEdit={onEdit}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
