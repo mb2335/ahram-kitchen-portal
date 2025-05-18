@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
@@ -13,6 +14,7 @@ import { Category } from './types/category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 import { useRealtimeMenuUpdates } from '@/hooks/useRealtimeMenuUpdates';
+import { useReorderMenuEntities } from '@/hooks/useReorderMenuEntities';
 
 interface CategoryManagementProps {
   removeTabs?: boolean;
@@ -35,9 +37,14 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
     formData, 
     setFormData, 
     resetForm, 
-    handleSubmit,
-    handleReorder 
+    handleSubmit 
   } = useCategoryManagement();
+
+  // Use our shared reorder hook for categories
+  const { handleReorder } = useReorderMenuEntities<Category>(
+    'menu_categories', 
+    'menu-categories'
+  );
 
   const { data: categories = [], refetch } = useQuery({
     queryKey: ['menu-categories'],

@@ -89,13 +89,6 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
         order_index: index + 1,
       }));
       
-      // Combine with items from other categories that weren't affected
-      const otherItems = items.filter(
-        item => item.category_id !== draggedItem.category_id
-      );
-      
-      const allUpdatedItems = [...updatedCategoryItems, ...otherItems];
-      
       // Call the onReorder callback with the updated items
       onReorder(updatedCategoryItems);
     }

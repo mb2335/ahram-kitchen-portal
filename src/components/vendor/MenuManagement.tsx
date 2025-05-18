@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
 import { MenuItemGrid } from './menu/MenuItemGrid';
@@ -15,6 +14,7 @@ import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
 import { toast } from "@/hooks/use-toast";
 import { MenuItem } from './menu/types';
 import { useRealtimeMenuUpdates } from '@/hooks/useRealtimeMenuUpdates';
+import { useReorderMenuEntities } from '@/hooks/useReorderMenuEntities';
 
 export function MenuManagement() {
   const queryClient = useQueryClient();
@@ -37,21 +37,12 @@ export function MenuManagement() {
 
   // Use our centralized real-time updates hook
   useRealtimeMenuUpdates();
-
-  const handleReorderMenuItems = async (items: MenuItem[]) => {
-    try {
-      await updateMenuItemOrder(items);
-      // The real-time hook will handle invalidating queries and updating the UI
-      console.log('Menu items reordered successfully');
-    } catch (error) {
-      console.error('Error reordering menu items:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update menu item order",
-        variant: "destructive",
-      });
-    }
-  };
+  
+  // Use our shared reorder hook for menu items
+  const { handleReorder: handleReorderMenuItems } = useReorderMenuEntities<MenuItem>(
+    'menu_items', 
+    'menu-items'
+  );
 
   if (loading) {
     return <LoadingState />;
