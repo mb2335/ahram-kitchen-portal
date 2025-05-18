@@ -9,15 +9,16 @@ import { ErrorState } from "./shared/ErrorState";
 import { MenuHeader } from "./menu/MenuHeader";
 import { CategorySection } from "./menu/CategorySection";
 import { useMenuCategories } from "@/hooks/menu/useMenuCategories";
-import { useRealtimeMenuUpdates } from "@/hooks/useRealtimeMenuUpdates";
+// We're removing this import since Index.tsx is already using it
+// import { useRealtimeMenuUpdates } from "@/hooks/useRealtimeMenuUpdates";
 
 export function Menu() {
   const { addItem } = useCart();
   const { data: menuItems = [], isLoading: menuLoading, error: menuError } = useMenuItems();
   const { categories, itemsByCategory, isLoading: categoriesLoading } = useMenuCategories(menuItems);
   
-  // Use our centralized real-time updates hook
-  useRealtimeMenuUpdates();
+  // Remove the duplicated hook call, we already have this in Index.tsx
+  // useRealtimeMenuUpdates();
 
   useEffect(() => {
     if (menuError) {

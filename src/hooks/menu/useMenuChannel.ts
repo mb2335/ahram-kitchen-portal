@@ -6,8 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { useRealtimeMenuUpdates } from '@/hooks/useRealtimeMenuUpdates';
 
 export const useMenuChannel = () => {
-  const queryClient = useQueryClient();
-  
   // Use our centralized real-time updates hook
+  // This avoids creating duplicate subscriptions
   useRealtimeMenuUpdates();
 };
