@@ -1,14 +1,78 @@
 
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { useMenuItems } from '../useMenuItems';
 import { useOrderQuantities } from '../useOrderQuantities';
-import { useMenuRealtime } from '../useMenuRealtime';
 
 export function useMenuWithRealtime() {
+  const queryClient = useQueryClient();
   const menuItemsQuery = useMenuItems();
   const orderQuantitiesQuery = useOrderQuantities();
 
-  // Use our centralized realtime hook instead of duplicating the logic
-  useMenuRealtime(orderQuantitiesQuery.refetch);
+  useEffect(() => {
+    // Set up menu items channel
+    const menuChannel = supabase
+      .channel('menu-updates')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        (payload) => {
+          console.log('Menu item change detected:', payload);
+          // Invalidate menu items whenever there's a change
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        }
+      )
+      .subscribe();
+
+    // Set up menu categories channel
+    const categoryChannel = supabase
+      .channel('category-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_categories'
+        },
+        (payload) => {
+          console.log('Menu category change detected:', payload);
+          // Invalidate categories whenever there's a change
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+        }
+      )
+      .subscribe();
+
+    // Set up orders channel
+    const orderChannel = supabase
+      .channel('order-updates')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'order_items' 
+        },
+        () => {
+          console.log('Order item change detected');
+          queryClient.invalidateQueries({ queryKey: ['order-quantities'] });
+          orderQuantitiesQuery.refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up realtime subscriptions');
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoryChannel);
+      supabase.removeChannel(orderChannel);
+    };
+  }, [queryClient, orderQuantitiesQuery]);
 
   return {
     menuItems: menuItemsQuery.data || [],

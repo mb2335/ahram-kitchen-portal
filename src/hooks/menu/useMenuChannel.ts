@@ -22,32 +22,9 @@ export const useMenuChannel = () => {
           schema: 'public', 
           table: 'menu_items' 
         },
-        (payload: MenuItemChange) => {
+        (payload) => {
           console.log('Menu item change detected:', payload);
           queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-          
-          // Show toast notification for reordering specifically
-          if (payload.eventType === 'UPDATE' && 
-              payload.old && 
-              payload.new && 
-              payload.old.order_index !== payload.new.order_index) {
-            toast({
-              title: "Menu Updated",
-              description: "Menu item order has been updated",
-              duration: 2000,
-            });
-          }
-        }
-      )
-      .on(
-        'system',
-        { event: 'error' },
-        () => {
-          toast({
-            title: "Connection Error",
-            description: "Having trouble receiving menu updates. Please refresh the page.",
-            variant: "destructive",
-          });
         }
       )
       .subscribe();

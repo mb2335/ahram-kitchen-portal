@@ -5,18 +5,14 @@ import { toast } from "@/hooks/use-toast";
 
 export async function updateMenuItemOrder(items: { id: string; order_index: number }[]) {
   try {
-    // Use Promise.all to process all updates in parallel for better performance
-    await Promise.all(items.map(async (item) => {
+    for (const item of items) {
       const { error } = await supabase
         .from('menu_items')
         .update({ order_index: item.order_index })
         .eq('id', item.id);
 
       if (error) throw error;
-    }));
-    
-    console.log('Menu item order updated successfully');
-    return true;
+    }
   } catch (error) {
     console.error('Error updating menu item order:', error);
     throw error;
