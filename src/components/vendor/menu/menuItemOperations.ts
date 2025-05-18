@@ -1,20 +1,40 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export async function updateMenuItemOrder(items: { id: string; order_index: number }[]) {
   try {
-    for (const item of items) {
-      const { error } = await supabase
+    const promises = items.map(item => {
+      return supabase
         .from('menu_items')
         .update({ order_index: item.order_index })
         .eq('id', item.id);
+    });
 
-      if (error) throw error;
+    const results = await Promise.all(promises);
+
+    // Check for errors
+    const errors = results.filter(result => result.error);
+    if (errors.length > 0) {
+      console.error('Errors updating menu item order:', errors);
+      throw new Error('Some items failed to update');
     }
+
+    toast({
+      title: "Order updated",
+      description: "Menu item order has been updated successfully",
+    });
+    
+    return true;
   } catch (error) {
     console.error('Error updating menu item order:', error);
+    
+    toast({
+      title: "Error",
+      description: "Failed to update menu item order",
+      variant: "destructive",
+    });
+    
     throw error;
   }
 }
