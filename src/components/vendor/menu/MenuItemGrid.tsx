@@ -114,6 +114,11 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
       );
       
       onReorder(affectedItems);
+      
+      toast({
+        title: "Menu items reordered",
+        description: "The order has been updated in real-time",
+      });
     }
   }
 

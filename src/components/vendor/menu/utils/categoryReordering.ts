@@ -15,6 +15,11 @@ export async function updateCategoryOrder(categories: { id: string; order_index:
       if (error) throw error;
     }
     
+    toast({
+      title: "Categories reordered",
+      description: "The changes have been saved and will update in real-time",
+    });
+    
     return true;
   } catch (error) {
     console.error('Error updating category order:', error);
