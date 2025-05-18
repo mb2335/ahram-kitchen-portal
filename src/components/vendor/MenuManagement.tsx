@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { updateMenuItemOrder } from './menu/menuItemOperations';
 import { LoadingState } from '../shared/LoadingState';
 import { MenuManagementHeader } from './menu/MenuManagementHeader';
@@ -9,11 +8,13 @@ import { MenuItemDialog } from './menu/components/MenuItemDialog';
 import { ItemsHeader } from './menu/components/ItemsHeader';
 import { useMenuItems } from './menu/hooks/useMenuItems';
 import { useMenuItemForm } from './menu/hooks/useMenuItemForm';
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
-import { useRealtimeMenuUpdates } from '@/hooks/menu/useRealtimeMenuUpdates';
 
 export function MenuManagement() {
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("categories");
   const { menuItems, loading, loadMenuItems, handleDeleteMenuItem } = useMenuItems();
@@ -31,8 +32,45 @@ export function MenuManagement() {
     loadMenuItems();
   });
 
-  // Set up realtime subscriptions using our centralized hook
-  useRealtimeMenuUpdates();
+  useEffect(() => {
+    // Set up real-time subscriptions to menu updates
+    const menuChannel = supabase
+      .channel('menu-management-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+          loadMenuItems();
+        }
+      )
+      .subscribe();
+
+    const categoryChannel = supabase
+      .channel('category-management-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          loadMenuItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(categoryChannel);
+    };
+  }, [queryClient, loadMenuItems]);
 
   if (loading) {
     return <LoadingState />;

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,12 +8,11 @@ import { CategoryHeader } from './components/CategoryHeader';
 import { useCategoryManagement } from './hooks/useCategoryManagement';
 import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
-import { useRealtimeMenuUpdates } from '@/hooks/menu/useRealtimeMenuUpdates';
 
 interface CategoryManagementProps {
   removeTabs?: boolean;
@@ -20,6 +20,7 @@ interface CategoryManagementProps {
 
 export function CategoryManagement({ removeTabs = false }: CategoryManagementProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
 
   const { isDialogOpen, setIsDialogOpen, editingCategory, setEditingCategory, categoryToDelete, setCategoryToDelete, formData, setFormData, resetForm, handleSubmit } = useCategoryManagement();
@@ -43,8 +44,27 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
     },
   });
 
-  // Set up realtime subscriptions using our centralized hook
-  useRealtimeMenuUpdates();
+  useEffect(() => {
+    const categoryChannel = supabase
+      .channel('category-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        async () => {
+          await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+          refetch();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(categoryChannel);
+    };
+  }, [queryClient, refetch]);
 
   const handleDelete = async (categoryId: string) => {
     try {

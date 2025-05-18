@@ -1,7 +1,7 @@
+import { useMenuChannel } from './menu/useMenuChannel';
+import { useOrderChannel } from './menu/useOrderChannel';
 
-import { useRealtimeMenuUpdates } from './menu/useRealtimeMenuUpdates';
-
-export const useMenuRealtime = () => {
-  // Use our new centralized hook for all menu realtime updates
-  useRealtimeMenuUpdates();
+export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
+  useMenuChannel();
+  useOrderChannel(refetchOrderQuantities);
 };

@@ -1,90 +1,81 @@
 
+import React from 'react';
 import { 
-  DndContext, 
-  DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter, 
-  useSensor, 
-  useSensors
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
-import { Card } from '@/components/ui/card';
-import { SortableCategory } from './SortableCategory';
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Category } from './types/category';
-import { updateCategoryOrder } from './utils/categoryReordering';
+import { Badge } from '@/components/ui/badge';
 
 interface CategoryListProps {
   categories: Category[];
   onEdit: (category: Category) => void;
-  onDelete: (id: string) => void;
+  onDelete: (categoryId: string) => void;
 }
 
 export function CategoryList({ categories, onEdit, onDelete }: CategoryListProps) {
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = categories.findIndex((category) => category.id === active.id);
-      const newIndex = categories.findIndex((category) => category.id === over.id);
-
-      const newCategories = [...categories];
-      const [movedCategory] = newCategories.splice(oldIndex, 1);
-      newCategories.splice(newIndex, 0, movedCategory);
-
-      // Update order_index for each category
-      const updatedCategories = newCategories.map((category, index) => ({
-        ...category,
-        order_index: index + 1,
-      }));
-
-      // Save the new order to the database
-      updateCategoryOrder(
-        updatedCategories.map(cat => ({ id: cat.id, order_index: cat.order_index }))
-      );
+  const getFulfillmentTypeLabel = (type: string) => {
+    switch (type) {
+      case 'delivery':
+        return 'Delivery';
+      case 'pickup':
+        return 'Pickup';
+      default:
+        return type;
     }
-  }
-
-  if (categories.length === 0) {
-    return (
-      <Card className="p-4 text-center text-muted-foreground">
-        No categories found. Create a category to organize your menu items.
-      </Card>
-    );
-  }
+  };
 
   return (
-    <div className="space-y-2">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={categories}
-          strategy={verticalListSortingStrategy}
-        >
-          {categories.map((category) => (
-            <SortableCategory
-              key={category.id}
-              category={category}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+    <div className="space-y-4">
+      {categories.map((category) => (
+        <Card key={category.id} className="overflow-hidden w-full">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>{category.name}</CardTitle>
+                <CardDescription>{category.name_ko}</CardDescription>
+              </div>
+              <div className="space-x-2 flex">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onEdit(category)}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => onDelete(category.id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4 text-sm">
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-medium mb-1">Fulfillment Types</h4>
+                <div className="flex flex-wrap gap-1">
+                  {category.fulfillment_types?.map((type, index) => (
+                    <Badge key={index} variant="secondary">
+                      {getFulfillmentTypeLabel(type)}
+                    </Badge>
+                  ))}
+                  {(!category.fulfillment_types || category.fulfillment_types.length === 0) && (
+                    <span className="text-muted-foreground">None specified</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
