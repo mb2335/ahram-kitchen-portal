@@ -1,7 +1,7 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import { Index } from './pages/Index';
+import Index from './pages/Index';
 import { Help } from './pages/Help';
 import { Navigation } from './components/Navigation';
 import { Auth } from './components/Auth';

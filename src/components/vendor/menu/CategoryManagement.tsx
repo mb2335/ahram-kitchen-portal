@@ -8,7 +8,7 @@ import { CategoryHeader } from './components/CategoryHeader';
 import { useCategoryManagement } from './hooks/useCategoryManagement';
 import { checkCategoryItems, deleteCategory, removeItemsCategory, deleteMenuItems } from './utils/categoryOperations';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +21,7 @@ interface CategoryManagementProps {
 
 export function CategoryManagement({ removeTabs = false }: CategoryManagementProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("categories");
   const [localCategories, setLocalCategories] = useState<Category[]>([]);
 
