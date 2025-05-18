@@ -1,5 +1,4 @@
 
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatTime } from "@/types/delivery";
 import { PickupDetail } from "@/types/pickup";
@@ -95,14 +94,14 @@ export function PickupLocationSelector({
           }
         }}
       >
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3">
           {pickupSettings.map((setting) => (
             <div
               key={setting.id}
-              className={`border rounded-md p-4 transition-colors cursor-pointer ${
+              className={`relative border rounded-md transition-all duration-200 cursor-pointer hover:bg-secondary/10 ${
                 selectedPickupDetail?.id === setting.id
-                  ? "bg-primary/5 border-primary"
-                  : "hover:bg-accent"
+                  ? "bg-primary/10 border-primary shadow-sm"
+                  : "border-muted"
               }`}
               onClick={() => {
                 onPickupDetailChange({
@@ -116,16 +115,24 @@ export function PickupLocationSelector({
                 id={`location-${setting.id}`}
                 className="peer sr-only"
               />
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 mb-2 sm:mb-0">
-                  <MapPinIcon className="h-4 w-4 text-muted-foreground" /> 
-                  <span>{setting.location}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" /> 
-                  <span>{formatTimeRange(setting)}</span>
+              
+              <div className="p-4">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-start">
+                    <MapPinIcon className="h-5 w-5 text-primary mt-0.5 mr-2 flex-shrink-0" /> 
+                    <span className="font-medium">{setting.location}</span>
+                  </div>
+                  
+                  <div className="flex items-center pl-7">
+                    <Clock className="h-4 w-4 text-muted-foreground mr-2" /> 
+                    <span className="text-sm text-muted-foreground">{formatTimeRange(setting)}</span>
+                  </div>
                 </div>
               </div>
+              
+              {selectedPickupDetail?.id === setting.id && (
+                <div className="absolute -right-1 -top-1 h-4 w-4 bg-primary rounded-full border-2 border-background"></div>
+              )}
             </div>
           ))}
         </div>

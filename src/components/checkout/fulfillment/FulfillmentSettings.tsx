@@ -354,40 +354,43 @@ export function FulfillmentSettings({
               <h3 className="font-medium text-primary text-lg flex items-center gap-2">
                 <PackageIcon className="h-5 w-5" /> Pickup Settings
               </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Pickup Date</Label>
-                  {availablePickupDays.size === 0 ? (
-                    <Alert variant="default" className="mt-2">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        No pickup days are currently available. Please contact the vendor.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <div>
-                      <DatePicker
-                        date={selectedDates[FULFILLMENT_TYPE_PICKUP]}
-                        onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_PICKUP, date)}
-                        disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_PICKUP)}
-                      />
+              
+              {availablePickupDays.size === 0 ? (
+                <Alert variant="default">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No pickup days are currently available. Please contact the vendor.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid gap-6">
+                  <div>
+                    <Label className="text-muted-foreground mb-2 block">Pickup Date</Label>
+                    <DatePicker
+                      date={selectedDates[FULFILLMENT_TYPE_PICKUP]}
+                      onSelect={(date) => date && onDateChange(FULFILLMENT_TYPE_PICKUP, date)}
+                      disabled={(date) => !isDateAvailable(date, FULFILLMENT_TYPE_PICKUP)}
+                    />
+                  </div>
+                  
+                  {selectedDates[FULFILLMENT_TYPE_PICKUP] && (
+                    <div className="mt-2">
+                      <div className="bg-secondary/5 rounded-lg p-4">
+                        <h4 className="text-sm font-medium mb-3">
+                          Available pickup locations for {format(selectedDates[FULFILLMENT_TYPE_PICKUP], 'EEEE, MMMM d')}
+                        </h4>
+                        <PickupLocationSelector
+                          selectedDate={selectedDates[FULFILLMENT_TYPE_PICKUP]}
+                          selectedPickupDetail={selectedPickupDetail}
+                          onPickupDetailChange={onPickupDetailChange}
+                          category={null}
+                          allPickupCategories={[]}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
-                {selectedDates[FULFILLMENT_TYPE_PICKUP] && (
-                  <div className="border-l border-secondary/30 pl-4">
-                    <div>
-                      <PickupLocationSelector
-                        selectedDate={selectedDates[FULFILLMENT_TYPE_PICKUP]}
-                        selectedPickupDetail={selectedPickupDetail}
-                        onPickupDetailChange={onPickupDetailChange}
-                        category={null}
-                        allPickupCategories={[]}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
               <Separator className="my-4 bg-secondary/50" />
             </div>
           )}
