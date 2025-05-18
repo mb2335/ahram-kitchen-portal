@@ -13,8 +13,19 @@ export async function updateMenuItemOrder(items: { id: string; order_index: numb
 
       if (error) throw error;
     }
+    
+    // Show success toast
+    toast({
+      title: "Success",
+      description: "Menu item order updated",
+    });
   } catch (error) {
     console.error('Error updating menu item order:', error);
+    toast({
+      title: "Error",
+      description: "Failed to update menu item order",
+      variant: "destructive",
+    });
     throw error;
   }
 }
