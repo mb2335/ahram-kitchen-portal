@@ -1,9 +1,9 @@
+
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CategoryFormData, Category } from '../types/category';
+import { CategoryFormData } from '../types/category';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
-import { updateCategoryOrder } from '../utils/categoryOperations';
 
 export function useCategoryManagement() {
   const { toast } = useToast();
@@ -24,27 +24,6 @@ export function useCategoryManagement() {
       fulfillment_types: [],
     });
     setEditingCategory(null);
-  };
-
-  const handleReorder = async (reorderedCategories: Category[]) => {
-    try {
-      const updatePayload = reorderedCategories.map((category) => ({
-        id: category.id,
-        order_index: category.order_index
-      }));
-      
-      await updateCategoryOrder(updatePayload);
-      
-      // Update local state if needed
-      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-    } catch (error) {
-      console.error('Error reordering categories:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update category order",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +110,5 @@ export function useCategoryManagement() {
     setFormData,
     resetForm,
     handleSubmit,
-    handleReorder,
   };
 }

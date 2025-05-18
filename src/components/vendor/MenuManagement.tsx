@@ -12,13 +12,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FulfillmentSettings } from './menu/fulfillment/FulfillmentSettings';
-import { toast } from "@/hooks/use-toast";
-import { MenuItem } from './menu/types';
 
 export function MenuManagement() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("items");
+  const [activeTab, setActiveTab] = useState<string>("categories");
   const { menuItems, loading, loadMenuItems, handleDeleteMenuItem } = useMenuItems();
   const {
     selectedImage,
@@ -33,24 +31,6 @@ export function MenuManagement() {
     setIsDialogOpen(false);
     loadMenuItems();
   });
-
-  const handleReorderMenuItems = async (items: MenuItem[]) => {
-    try {
-      await updateMenuItemOrder(items);
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-      toast({
-        title: "Success",
-        description: "Menu item order updated",
-      });
-    } catch (error) {
-      console.error('Error reordering menu items:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update menu item order",
-        variant: "destructive",
-      });
-    }
-  };
 
   useEffect(() => {
     // Set up real-time subscriptions to menu updates
@@ -138,7 +118,7 @@ export function MenuManagement() {
               setIsDialogOpen(true);
             }}
             onDelete={handleDeleteMenuItem}
-            onReorder={handleReorderMenuItems}
+            onReorder={updateMenuItemOrder}
           />
         </TabsContent>
 
