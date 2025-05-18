@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -16,24 +15,23 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableMenuItem } from "./SortableMenuItem";
 import { MenuItem } from "./types";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useMenuItemReordering } from "@/hooks/menu/useMenuItemReordering";
 
 interface MenuItemGridProps {
   items: MenuItem[];
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
+  onReorder: (items: MenuItem[]) => void;
 }
 
-export function MenuItemGrid({ items, onEdit, onDelete }: MenuItemGridProps) {
+export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGridProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  const { handleReorderMenuItems } = useMenuItemReordering();
 
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
@@ -53,6 +51,11 @@ export function MenuItemGrid({ items, onEdit, onDelete }: MenuItemGridProps) {
       await onDelete(id);
     } catch (error) {
       console.error('Error deleting menu item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete menu item",
+        variant: "destructive",
+      });
     }
   };
 
@@ -67,14 +70,12 @@ export function MenuItemGrid({ items, onEdit, onDelete }: MenuItemGridProps) {
       const [movedItem] = newItems.splice(oldIndex, 1);
       newItems.splice(newIndex, 0, movedItem);
 
-      // Update order indices for all affected items
       const reorderedItems = newItems.map((item, index) => ({
         ...item,
         order_index: index + 1,
       }));
 
-      // Handle reordering with instant UI update
-      handleReorderMenuItems(reorderedItems);
+      onReorder(reorderedItems);
     }
   }
 
