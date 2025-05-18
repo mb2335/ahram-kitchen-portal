@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { CartProvider } from "./contexts/CartContext";
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { RealtimeProvider } from "./contexts/RealtimeContext";
 import { Navigation } from "./components/Navigation";
 import { Cart } from "./components/Cart";
 import { Auth } from "./components/Auth";
@@ -43,38 +45,40 @@ const App = () => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <SessionContextProvider supabaseClient={supabase}>
-          <LanguageProvider>
-            <TooltipProvider>
-              <CartProvider>
-                <BrowserRouter>
-                  <div className="min-h-screen bg-gray-50">
-                    <Navigation />
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/help" element={<Help />} />
-                      <Route path="/cart" element={<Cart />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/thank-you" element={<OrderThankYou />} />
-                      <Route path="/orders" element={<OrderHistory />} />
-                      <Route path="/profile" element={<CustomerProfile />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route
-                        path="/vendor/*"
-                        element={
-                          <ProtectedRoute requiredRole="vendor">
-                            <VendorDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                    </Routes>
-                  </div>
-                </BrowserRouter>
-                {isOffline && <OfflineAlert />}
-                <Toaster />
-                <Sonner />
-              </CartProvider>
-            </TooltipProvider>
-          </LanguageProvider>
+          <RealtimeProvider>
+            <LanguageProvider>
+              <TooltipProvider>
+                <CartProvider>
+                  <BrowserRouter>
+                    <div className="min-h-screen bg-gray-50">
+                      <Navigation />
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/help" element={<Help />} />
+                        <Route path="/cart" element={<Cart />} />
+                        <Route path="/checkout" element={<Checkout />} />
+                        <Route path="/thank-you" element={<OrderThankYou />} />
+                        <Route path="/orders" element={<OrderHistory />} />
+                        <Route path="/profile" element={<CustomerProfile />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route
+                          path="/vendor/*"
+                          element={
+                            <ProtectedRoute requiredRole="vendor">
+                              <VendorDashboard />
+                            </ProtectedRoute>
+                          }
+                        />
+                      </Routes>
+                    </div>
+                  </BrowserRouter>
+                  {isOffline && <OfflineAlert />}
+                  <Toaster />
+                  <Sonner />
+                </CartProvider>
+              </TooltipProvider>
+            </LanguageProvider>
+          </RealtimeProvider>
         </SessionContextProvider>
       </QueryClientProvider>
     </StrictMode>

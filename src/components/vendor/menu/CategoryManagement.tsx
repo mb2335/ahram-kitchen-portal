@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { CategoryForm } from './CategoryForm';
 import { CategoryList } from './CategoryList';
@@ -11,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types/category';
+import { useRealtime } from "@/contexts/RealtimeContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 
@@ -21,6 +21,7 @@ interface CategoryManagementProps {
 export function CategoryManagement({ removeTabs = false }: CategoryManagementProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { subscribe } = useRealtime();
   const [activeTab, setActiveTab] = useState<string>("categories");
 
   const { isDialogOpen, setIsDialogOpen, editingCategory, setEditingCategory, categoryToDelete, setCategoryToDelete, formData, setFormData, resetForm, handleSubmit } = useCategoryManagement();
@@ -45,26 +46,13 @@ export function CategoryManagement({ removeTabs = false }: CategoryManagementPro
   });
 
   useEffect(() => {
-    const categoryChannel = supabase
-      .channel('category-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'menu_categories' 
-        },
-        async () => {
-          await queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-          refetch();
-        }
-      )
-      .subscribe();
-      
+    // Subscribe to category changes
+    const unsubscribe = subscribe('menu_categories', ['menu-categories'], refetch);
+    
     return () => {
-      supabase.removeChannel(categoryChannel);
+      unsubscribe();
     };
-  }, [queryClient, refetch]);
+  }, [subscribe, refetch]);
 
   const handleDelete = async (categoryId: string) => {
     try {
