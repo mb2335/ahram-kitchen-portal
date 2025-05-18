@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -18,8 +17,6 @@ import { SortableMenuItem } from "./SortableMenuItem";
 import { MenuItem } from "./types";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useRealtime } from "@/contexts/RealtimeContext";
-import { useEffect } from "react";
 
 interface MenuItemGridProps {
   items: MenuItem[];
@@ -36,8 +33,6 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
     })
   );
 
-  const { subscribe } = useRealtime();
-
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
@@ -50,12 +45,6 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
       return data;
     },
   });
-
-  useEffect(() => {
-    // Subscribe to category changes
-    const unsubscribe = subscribe('menu_categories', ['menu-categories']);
-    return () => unsubscribe();
-  }, [subscribe]);
 
   const handleDelete = async (id: string) => {
     try {

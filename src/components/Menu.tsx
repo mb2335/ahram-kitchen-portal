@@ -1,4 +1,3 @@
-
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useMenuItems } from "@/hooks/useMenuItems";
@@ -9,11 +8,12 @@ import { ErrorState } from "./shared/ErrorState";
 import { MenuHeader } from "./menu/MenuHeader";
 import { CategorySection } from "./menu/CategorySection";
 import { useMenuCategories } from "@/hooks/menu/useMenuCategories";
-import { useRealtime } from "@/contexts/RealtimeContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Menu() {
   const { addItem } = useCart();
-  const { subscribe } = useRealtime();
+  const queryClient = useQueryClient();
   const { data: menuItems = [], isLoading: menuLoading, error: menuError } = useMenuItems();
   const { categories, itemsByCategory, isLoading: categoriesLoading } = useMenuCategories(menuItems);
 
@@ -29,16 +29,61 @@ export function Menu() {
 
   useEffect(() => {
     // Subscribe to menu items changes
-    const unsubscribeMenuItems = subscribe('menu_items', ['menu-items']);
-    
-    // Subscribe to menu categories
-    const unsubscribeCategories = subscribe('menu_categories', ['menu-categories']);
-    
+    const menuChannel = supabase
+      .channel('menu-items-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_items' 
+        },
+        (payload) => {
+          console.log('Menu item updated:', payload);
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to order items changes to update quantities
+    const orderChannel = supabase
+      .channel('order-items-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'order_items' 
+        },
+        () => {
+          console.log('Order items changed, refreshing menu items');
+          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to category changes
+    const categoryChannel = supabase
+      .channel('menu-categories-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_categories' 
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
+        }
+      )
+      .subscribe();
+
     return () => {
-      unsubscribeMenuItems();
-      unsubscribeCategories();
+      supabase.removeChannel(menuChannel);
+      supabase.removeChannel(orderChannel);
+      supabase.removeChannel(categoryChannel);
     };
-  }, [subscribe]);
+  }, [queryClient]);
 
   if (menuError) {
     return <ErrorState message="Failed to load menu items. Please try again later." />;
