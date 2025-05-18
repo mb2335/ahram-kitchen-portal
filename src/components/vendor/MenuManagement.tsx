@@ -43,12 +43,13 @@ export function MenuManagement() {
       // Send update to the server
       await updateMenuItemOrder(items);
       
-      // Refresh data to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      // No need to explicitly refresh data as the realtime subscription will handle updates
       
+      // Optional success toast
       toast({
         title: "Success",
         description: "Menu item order updated",
+        duration: 2000,
       });
     } catch (error) {
       console.error('Error reordering menu items:', error);
@@ -58,50 +59,13 @@ export function MenuManagement() {
         variant: "destructive",
       });
       
-      // Revert optimistic update on error
+      // Revert optimistic update on error by refreshing from the server
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      loadMenuItems();
     }
   };
 
-  useEffect(() => {
-    // Set up real-time subscriptions to menu updates
-    const menuChannel = supabase
-      .channel('menu-management-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'menu_items' 
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['menu-items'] });
-          loadMenuItems();
-        }
-      )
-      .subscribe();
-
-    const categoryChannel = supabase
-      .channel('category-management-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'menu_categories' 
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
-          loadMenuItems();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(menuChannel);
-      supabase.removeChannel(categoryChannel);
-    };
-  }, [queryClient, loadMenuItems]);
+  // We no longer need to set up real-time subscriptions here as they are handled by useMenuChannel
 
   if (loading) {
     return <LoadingState />;
