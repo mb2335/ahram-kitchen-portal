@@ -1,8 +1,8 @@
 
-import { useMenuChannel } from './menu/useMenuChannel';
+import { useRealtimeMenuUpdates } from './useRealtimeMenuUpdates';
 import { useOrderChannel } from './menu/useOrderChannel';
 
 export const useMenuRealtime = (refetchOrderQuantities: () => void) => {
-  useMenuChannel();
+  useRealtimeMenuUpdates();
   useOrderChannel(refetchOrderQuantities);
 };

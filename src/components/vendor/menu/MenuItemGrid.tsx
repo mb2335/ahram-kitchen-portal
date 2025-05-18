@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -63,19 +64,40 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
-
-      const newItems = [...items];
-      const [movedItem] = newItems.splice(oldIndex, 1);
-      newItems.splice(newIndex, 0, movedItem);
-
-      const reorderedItems = newItems.map((item, index) => ({
+      // Find the category of the dragged item
+      const draggedItem = items.find(item => item.id === active.id);
+      if (!draggedItem) return;
+      
+      // Get all items in the same category
+      const categoryItems = items.filter(
+        item => item.category_id === draggedItem.category_id
+      );
+      
+      const oldIndex = categoryItems.findIndex(item => item.id === active.id);
+      const newIndex = categoryItems.findIndex(item => item.id === over.id);
+      
+      if (oldIndex === -1 || newIndex === -1) return;
+      
+      // Create a new array with the item moved to the new position
+      const reorderedCategoryItems = [...categoryItems];
+      const [movedItem] = reorderedCategoryItems.splice(oldIndex, 1);
+      reorderedCategoryItems.splice(newIndex, 0, movedItem);
+      
+      // Update order indices for the reordered category items
+      const updatedCategoryItems = reorderedCategoryItems.map((item, index) => ({
         ...item,
         order_index: index + 1,
       }));
-
-      onReorder(reorderedItems);
+      
+      // Combine with items from other categories that weren't affected
+      const otherItems = items.filter(
+        item => item.category_id !== draggedItem.category_id
+      );
+      
+      const allUpdatedItems = [...updatedCategoryItems, ...otherItems];
+      
+      // Call the onReorder callback with the updated items
+      onReorder(updatedCategoryItems);
     }
   }
 
@@ -89,15 +111,15 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
   }, {} as Record<string, MenuItem[]>);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="space-y-6">
-        {categories.map((category) => (
-          <div key={category.id} className="space-y-2">
-            <h3 className="text-lg font-semibold">{category.name}</h3>
+    <div className="space-y-6">
+      {categories.map((category) => (
+        <div key={category.id} className="space-y-2">
+          <h3 className="text-lg font-semibold">{category.name}</h3>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
             <SortableContext
               items={itemsByCategory[category.id] || []}
               strategy={verticalListSortingStrategy}
@@ -113,12 +135,18 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
                 ))}
               </div>
             </SortableContext>
-          </div>
-        ))}
+          </DndContext>
+        </div>
+      ))}
 
-        {itemsByCategory['uncategorized'] && (
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Uncategorized</h3>
+      {itemsByCategory['uncategorized'] && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Uncategorized</h3>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
             <SortableContext
               items={itemsByCategory['uncategorized']}
               strategy={verticalListSortingStrategy}
@@ -134,9 +162,9 @@ export function MenuItemGrid({ items, onEdit, onDelete, onReorder }: MenuItemGri
                 ))}
               </div>
             </SortableContext>
-          </div>
-        )}
-      </div>
-    </DndContext>
+          </DndContext>
+        </div>
+      )}
+    </div>
   );
 }
