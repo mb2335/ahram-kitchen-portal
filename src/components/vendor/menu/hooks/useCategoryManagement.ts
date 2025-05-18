@@ -88,6 +88,7 @@ export function useCategoryManagement() {
 
       setIsDialogOpen(false);
       resetForm();
+      queryClient.invalidateQueries({ queryKey: ['menu-categories'] });
     } catch (error) {
       console.error('Error saving category:', error);
       toast({
