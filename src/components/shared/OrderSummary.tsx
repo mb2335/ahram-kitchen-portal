@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface OrderSummaryProps {
   subtotal: number;
-  taxAmount: number;
+  taxAmount?: number; // Make tax optional
   total: number;
   discountAmount?: number;
   items?: Array<{
@@ -23,7 +23,7 @@ interface OrderSummaryProps {
 
 export function OrderSummary({ 
   subtotal, 
-  taxAmount, 
+  taxAmount = 0, // Default to 0
   total, 
   discountAmount = 0,
   items = [],
@@ -91,10 +91,7 @@ export function OrderSummary({
             <span>-${discountAmount.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="text-gray-600">{t('checkout.tax')}</span>
-          <span>${taxAmount.toFixed(2)}</span>
-        </div>
+        {/* Removed tax display */}
         <div className="flex justify-between font-bold">
           <span>{t('checkout.total')}</span>
           <span>${total.toFixed(2)}</span>

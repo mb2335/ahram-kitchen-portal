@@ -34,13 +34,13 @@ export function OrderSummary() {
     return acc + (itemTotal * (item.discount_percentage / 100));
   }, 0);
 
-  // Calculate tax (10% of the discounted subtotal)
-  const taxRate = 0.1;
-  const taxableAmount = subtotal - totalDiscount;
-  const taxAmount = taxableAmount * taxRate;
+  // Remove tax calculation
+  // const taxRate = 0.1;
+  // const taxableAmount = subtotal - totalDiscount;
+  // const taxAmount = taxableAmount * taxRate;
 
-  // Calculate final total
-  const total = taxableAmount + taxAmount;
+  // Calculate final total (without tax)
+  const total = subtotal - totalDiscount;
 
   const formattedItems = items.map(item => {
     const category = categories.find(cat => cat.id === item.category_id);
@@ -63,7 +63,6 @@ export function OrderSummary() {
       <SharedOrderSummary
         items={formattedItems}
         subtotal={subtotal}
-        taxAmount={taxAmount}
         total={total}
         discountAmount={totalDiscount}
       />
