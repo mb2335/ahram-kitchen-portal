@@ -91,7 +91,6 @@ export function OrderSummary({
             <span>-${discountAmount.toFixed(2)}</span>
           </div>
         )}
-        {/* Removed tax display */}
         <div className="flex justify-between font-bold">
           <span>{t('checkout.total')}</span>
           <span>${total.toFixed(2)}</span>

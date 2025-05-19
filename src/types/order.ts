@@ -42,6 +42,7 @@ export interface OrderData {
   pickup_location?: string;
   payment_proof_url: string;
   tax_amount: number;
+  discount_amount?: number;
   fulfillment_type?: string;
   created_at: string;
   rejection_reason?: string;
@@ -58,6 +59,7 @@ export interface OrderHistoryItem {
   created_at: string;
   status: string;
   total_amount: number;
+  discount_amount?: number;
   delivery_date: string;
   rejection_reason?: string;
   pickup_time?: string;

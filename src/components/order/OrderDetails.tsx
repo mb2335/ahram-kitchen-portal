@@ -34,6 +34,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
             menu_item_id,
             quantity,
             unit_price,
+            discount_percentage,
             menu_item:menu_items (
               id,
               name,
@@ -66,19 +67,23 @@ export function OrderDetails({ order }: OrderDetailsProps) {
     loadRelatedOrders();
   }, [order]);
 
+  // Calculate total discount based on order items discount_percentage
   const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
-    if (!item.menu_item?.discount_percentage) return acc;
+    if (!item.discount_percentage) return acc;
     const originalPrice = item.unit_price * item.quantity;
-    const discountAmount = (originalPrice * (item.menu_item.discount_percentage / 100));
+    const discountAmount = (originalPrice * (item.discount_percentage / 100));
     return acc + discountAmount;
   }, 0) || 0;
+
+  // Use the order's discount_amount field if available, otherwise use calculated value
+  const discountAmount = order.discount_amount !== null ? order.discount_amount : totalDiscount;
 
   const formattedItems = order.order_items?.map((item: any) => ({
     name: item.menu_item?.name,
     nameKo: item.menu_item?.name_ko,
     quantity: item.quantity,
     price: item.unit_price,
-    discount_percentage: item.menu_item?.discount_percentage,
+    discount_percentage: item.discount_percentage,
     category: item.menu_item?.category
   })) || [];
 
@@ -98,9 +103,9 @@ export function OrderDetails({ order }: OrderDetailsProps) {
       
       <OrderSummary
         items={formattedItems}
-        subtotal={order.total_amount + totalDiscount}
+        subtotal={order.total_amount + discountAmount}
         total={order.total_amount}
-        discountAmount={totalDiscount}
+        discountAmount={discountAmount}
       />
 
       <div className="space-y-4">

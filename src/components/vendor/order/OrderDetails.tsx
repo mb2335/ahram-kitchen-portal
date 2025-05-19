@@ -8,15 +8,21 @@ interface OrderDetailsProps {
 }
 
 export function OrderDetails({ order }: OrderDetailsProps) {
-  // Calculate total discount (if any)
-  const totalDiscount = order.order_items?.reduce((acc, item) => {
-    if (!item.menu_item?.discount_percentage) return acc;
-    const itemTotal = item.unit_price * item.quantity;
-    return acc + (itemTotal * (item.menu_item.discount_percentage / 100));
-  }, 0) || 0;
+  // First check if there's a stored discount amount
+  let discountAmount = order.discount_amount || 0;
+  
+  // If no stored discount amount, calculate it from order items
+  if (!discountAmount) {
+    discountAmount = order.order_items?.reduce((acc, item) => {
+      if (!item.discount_percentage && !item.menu_item?.discount_percentage) return acc;
+      const discountPercentage = item.discount_percentage || item.menu_item?.discount_percentage || 0;
+      const itemTotal = item.unit_price * item.quantity;
+      return acc + (itemTotal * (discountPercentage / 100));
+    }, 0) || 0;
+  }
 
   // Calculate subtotal before discounts
-  const subtotalBeforeDiscount = order.total_amount + totalDiscount;
+  const subtotalBeforeDiscount = order.total_amount + discountAmount;
 
   return (
     <div className="bg-gray-50 p-4 rounded-md">
@@ -59,8 +65,8 @@ export function OrderDetails({ order }: OrderDetailsProps) {
 
         <div className="border-t pt-2 mt-2">
           <p className="text-sm">Subtotal: {formatCurrency(subtotalBeforeDiscount)}</p>
-          {totalDiscount > 0 && (
-            <p className="text-sm text-red-500">Discount: -{formatCurrency(totalDiscount)}</p>
+          {discountAmount > 0 && (
+            <p className="text-sm text-red-500">Discount: -{formatCurrency(discountAmount)}</p>
           )}
           <p className="text-sm font-bold">Total: {formatCurrency(order.total_amount)}</p>
         </div>

@@ -40,11 +40,20 @@ export async function createOrder({
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
 
+  // Calculate the actual total with discounts applied
   const categoryTotal = categoryItems.reduce((sum, item) => {
     const price = item.discount_percentage 
       ? item.price * (1 - item.discount_percentage / 100) 
       : item.price;
     return sum + price * item.quantity;
+  }, 0);
+
+  // Calculate total discount amount
+  const discountAmount = categoryItems.reduce((sum, item) => {
+    if (!item.discount_percentage) return sum;
+    const originalPrice = item.price * item.quantity;
+    const discountedPrice = item.price * (1 - item.discount_percentage / 100) * item.quantity;
+    return sum + (originalPrice - discountedPrice);
   }, 0);
 
   console.log("Creating order with data:", {
@@ -60,7 +69,8 @@ export async function createOrder({
     delivery_time_slot: deliveryTimeSlot,
     customer_name: customerName,
     customer_email: customerEmail,
-    customer_phone: customerPhone
+    customer_phone: customerPhone,
+    discount_amount: discountAmount > 0 ? discountAmount : null
   });
 
   try {
@@ -82,7 +92,8 @@ export async function createOrder({
         delivery_time_slot: deliveryTimeSlot,
         customer_name: customerName,
         customer_email: customerEmail,
-        customer_phone: customerPhone
+        customer_phone: customerPhone,
+        discount_amount: discountAmount > 0 ? discountAmount : null // Store discount amount in the order
       })
       .select()
       .single();
@@ -100,6 +111,7 @@ export async function createOrder({
       menu_item_id: item.id,
       quantity: item.quantity,
       unit_price: item.price,
+      discount_percentage: item.discount_percentage || null // Store the discount percentage with each order item
     }));
 
     const { error: orderItemsError } = await supabase
