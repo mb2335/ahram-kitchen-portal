@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -16,7 +17,6 @@ interface OrderConfirmationProps {
   deliveryDate: Date;
   notes?: string;
   total: number;
-  taxAmount: number;
 }
 
 export function OrderConfirmation({ 
@@ -24,8 +24,7 @@ export function OrderConfirmation({
   items, 
   deliveryDate, 
   notes, 
-  total, 
-  taxAmount 
+  total
 }: OrderConfirmationProps) {
   const navigate = useNavigate();
   const { language } = useLanguage();
@@ -54,17 +53,9 @@ export function OrderConfirmation({
           ))}
           
           <div className="border-t pt-4">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${total.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>${taxAmount.toFixed(2)}</span>
-            </div>
             <div className="flex justify-between font-bold mt-2">
               <span>Total</span>
-              <span>${(total + taxAmount).toFixed(2)}</span>
+              <span>${total.toFixed(2)}</span>
             </div>
           </div>
         </div>

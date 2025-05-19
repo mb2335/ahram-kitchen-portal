@@ -1,11 +1,11 @@
+
 interface OrderTotalsProps {
   subtotal: number;
-  taxAmount: number;
   total: number;
   discountAmount?: number;
 }
 
-export function OrderTotals({ subtotal, taxAmount, total, discountAmount = 0 }: OrderTotalsProps) {
+export function OrderTotals({ subtotal, total, discountAmount = 0 }: OrderTotalsProps) {
   return (
     <div className="mt-4 pt-4 border-t">
       <div className="space-y-2">
@@ -19,10 +19,6 @@ export function OrderTotals({ subtotal, taxAmount, total, discountAmount = 0 }: 
             <span>-${discountAmount.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="text-gray-600">Tax</span>
-          <span>${taxAmount.toFixed(2)}</span>
-        </div>
         <div className="flex justify-between font-bold">
           <span>Total</span>
           <span>${total.toFixed(2)}</span>

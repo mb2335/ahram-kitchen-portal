@@ -25,7 +25,6 @@ interface OrderDetails {
     };
   }>;
   total: number;
-  taxAmount: number;
   subtotal: number;
   createdAt: string;
   pickupTime?: string | null;
@@ -56,12 +55,8 @@ export function OrderThankYou() {
     return acc + (itemTotal * (item.discount_percentage / 100));
   }, 0);
 
-  // Calculate tax (10% of the discounted subtotal)
-  const taxableAmount = subtotal - discountAmount;
-  const taxAmount = taxableAmount * 0.1;
-
-  // Calculate final total (subtotal - discount + tax)
-  const total = subtotal - discountAmount + taxAmount;
+  // Calculate final total (subtotal - discount)
+  const total = subtotal - discountAmount;
 
   return (
     <div className="container mx-auto max-w-2xl p-6">
@@ -104,7 +99,6 @@ export function OrderThankYou() {
           <OrderSummary
             items={orderDetails.items}
             subtotal={subtotal}
-            taxAmount={taxAmount}
             total={total}
             discountAmount={discountAmount}
           />

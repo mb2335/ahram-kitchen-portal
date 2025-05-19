@@ -8,7 +8,6 @@ interface CreateOrderParams {
   deliveryDate: Date;
   items: OrderItem[];
   total: number;
-  taxAmount: number;
   notes: string;
   paymentProofUrl: string;
   pickupTime?: string | null;
@@ -27,7 +26,6 @@ export async function createOrder({
   deliveryDate,
   items,
   total,
-  taxAmount,
   notes,
   paymentProofUrl,
   pickupTime,
@@ -42,13 +40,16 @@ export async function createOrder({
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
 
-  const categoryTotal = categoryItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const categoryTaxAmount = categoryTotal * (taxAmount / total);
+  const categoryTotal = categoryItems.reduce((sum, item) => {
+    const price = item.discount_percentage 
+      ? item.price * (1 - item.discount_percentage / 100) 
+      : item.price;
+    return sum + price * item.quantity;
+  }, 0);
 
   console.log("Creating order with data:", {
     customer_id: customerId,
-    total_amount: categoryTotal + categoryTaxAmount,
-    tax_amount: categoryTaxAmount,
+    total_amount: categoryTotal,
     notes,
     delivery_date: deliveryDate.toISOString(),
     payment_proof_url: paymentProofUrl,
@@ -68,8 +69,8 @@ export async function createOrder({
       .from('orders')
       .insert({
         customer_id: customerId,
-        total_amount: categoryTotal + categoryTaxAmount,
-        tax_amount: categoryTaxAmount,
+        total_amount: categoryTotal,
+        tax_amount: 0, // Set tax amount to 0
         notes: notes,
         status: 'pending',
         delivery_date: deliveryDate.toISOString(),
