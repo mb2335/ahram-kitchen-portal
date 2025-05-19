@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -17,8 +16,12 @@ export const useOrderSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadPaymentProof } = usePaymentProofUpload();
 
-  const submitOrder = async (props: OrderSubmissionProps, paymentProofFile: File) => {
+  const submitOrder = async (props: OrderSubmissionProps, paymentProofFile: File | null) => {
     try {
+      if (!paymentProofFile) {
+        throw new Error("Payment proof is required");
+      }
+      
       setIsUploading(true);
       setIsSubmitting(true);
       
@@ -178,13 +181,19 @@ export const useOrderSubmission = () => {
         
         let orderResult = null;
         try {
-          // Remove taxAmount parameter from this function call
+          // Calculate total discount amount
+          const discountAmount = items.reduce((sum, item) => {
+            if (!item.discount_percentage) return sum;
+            const itemTotal = item.price * item.quantity;
+            return sum + (itemTotal * (item.discount_percentage / 100));
+          }, 0);
+
           orderResult = await createOrder({
             customerId,
             categoryId,
             deliveryDate,
             items,
-            total: categoryTotal, // Now we're using categoryTotal directly
+            total: categoryTotal,
             notes: props.notes,
             paymentProofUrl,
             pickupTime: props.pickupDetail?.time || null,
@@ -194,7 +203,8 @@ export const useOrderSubmission = () => {
             deliveryTimeSlot,
             customerName: props.customerData.fullName,
             customerEmail: props.customerData.email,
-            customerPhone: props.customerData.phone || null
+            customerPhone: props.customerData.phone || null,
+            discountAmount: discountAmount > 0 ? discountAmount : null
           });
 
           if (orderResult) {

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -5,6 +6,10 @@ export function usePaymentProofUpload() {
   const [isUploading, setIsUploading] = useState(false);
 
   const uploadPaymentProof = async (file: File) => {
+    if (!file) {
+      throw new Error("Payment proof file is required");
+    }
+
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();

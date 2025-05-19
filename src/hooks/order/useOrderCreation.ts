@@ -18,6 +18,7 @@ interface CreateOrderParams {
   customerName: string;
   customerEmail: string;
   customerPhone?: string | null;
+  discountAmount?: number | null;
 }
 
 export async function createOrder({
@@ -35,7 +36,8 @@ export async function createOrder({
   deliveryTimeSlot,
   customerName,
   customerEmail,
-  customerPhone
+  customerPhone,
+  discountAmount
 }: CreateOrderParams) {
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
@@ -48,8 +50,8 @@ export async function createOrder({
     return sum + price * item.quantity;
   }, 0);
 
-  // Calculate total discount amount
-  const discountAmount = categoryItems.reduce((sum, item) => {
+  // Use the provided discount amount or recalculate if not provided
+  const finalDiscountAmount = discountAmount !== undefined ? discountAmount : categoryItems.reduce((sum, item) => {
     if (!item.discount_percentage) return sum;
     const originalPrice = item.price * item.quantity;
     const discountedPrice = item.price * (1 - item.discount_percentage / 100) * item.quantity;
@@ -70,7 +72,7 @@ export async function createOrder({
     customer_name: customerName,
     customer_email: customerEmail,
     customer_phone: customerPhone,
-    discount_amount: discountAmount > 0 ? discountAmount : null
+    discount_amount: finalDiscountAmount > 0 ? finalDiscountAmount : null
   });
 
   try {
@@ -93,7 +95,7 @@ export async function createOrder({
         customer_name: customerName,
         customer_email: customerEmail,
         customer_phone: customerPhone,
-        discount_amount: discountAmount > 0 ? discountAmount : null // Store discount amount in the order
+        discount_amount: finalDiscountAmount > 0 ? finalDiscountAmount : null // Store discount amount in the order
       })
       .select()
       .single();

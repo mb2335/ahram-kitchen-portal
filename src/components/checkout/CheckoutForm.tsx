@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -225,8 +226,6 @@ export function CheckoutForm({
     },
   });
   
-  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
-  const [currentStep, setCurrentStep] = useState('checkout');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -237,8 +236,16 @@ export function CheckoutForm({
       onSmsOptInRequired();
       return;
     }
-
-    setCurrentStep('payment');
+    
+    // Validate payment proof file
+    if (!paymentProof) {
+      toast({
+        title: "Payment Proof Required",
+        description: "Please upload a screenshot as proof of payment",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const selectedDates = formData.deliveryDates;
@@ -260,14 +267,13 @@ export function CheckoutForm({
           timeSlotSelections,
           onOrderSuccess,
         },
-        paymentProofFile
+        paymentProof
       );
 
       console.log("Order placed successfully with ID:", orderId);
     } catch (error: any) {
       console.error("Error placing order:", error);
       setErrorMessage(error.message || "An error occurred while placing your order");
-      setCurrentStep('checkout');
     }
   };
 
@@ -312,6 +318,14 @@ export function CheckoutForm({
         paymentProof={paymentProof}
         onFileChange={handleFileChange}
       />
+
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
 
       <Button 
         type="submit" 
