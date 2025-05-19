@@ -1,6 +1,8 @@
+
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Order } from '../types';
+import { formatCurrency } from '@/utils/formatters';
 
 interface OrderHeaderProps {
   order: Order;
@@ -34,7 +36,7 @@ export function OrderHeader({ order }: OrderHeaderProps) {
         </p>
       </div>
       <div className="text-right space-y-2">
-        <p className="font-medium text-lg">${order.total_amount.toFixed(2)}</p>
+        <p className="font-medium text-lg">{formatCurrency(order.total_amount)}</p>
         {getStatusBadge(order.status)}
       </div>
     </div>

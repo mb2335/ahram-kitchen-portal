@@ -67,10 +67,9 @@ export function OrderDetails({ order }: OrderDetailsProps) {
   }, [order]);
 
   const totalDiscount = order.order_items?.reduce((acc: number, item: any) => {
+    if (!item.menu_item?.discount_percentage) return acc;
     const originalPrice = item.unit_price * item.quantity;
-    const discountAmount = item.menu_item?.discount_percentage 
-      ? (originalPrice * (item.menu_item.discount_percentage / 100))
-      : 0;
+    const discountAmount = (originalPrice * (item.menu_item.discount_percentage / 100));
     return acc + discountAmount;
   }, 0) || 0;
 
@@ -99,8 +98,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
       
       <OrderSummary
         items={formattedItems}
-        subtotal={order.total_amount - order.tax_amount + totalDiscount}
-        taxAmount={order.tax_amount}
+        subtotal={order.total_amount + totalDiscount}
         total={order.total_amount}
         discountAmount={totalDiscount}
       />

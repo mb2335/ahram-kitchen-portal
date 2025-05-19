@@ -8,6 +8,16 @@ interface OrderDetailsProps {
 }
 
 export function OrderDetails({ order }: OrderDetailsProps) {
+  // Calculate total discount (if any)
+  const totalDiscount = order.order_items?.reduce((acc, item) => {
+    if (!item.menu_item?.discount_percentage) return acc;
+    const itemTotal = item.unit_price * item.quantity;
+    return acc + (itemTotal * (item.menu_item.discount_percentage / 100));
+  }, 0) || 0;
+
+  // Calculate subtotal before discounts
+  const subtotalBeforeDiscount = order.total_amount + totalDiscount;
+
   return (
     <div className="bg-gray-50 p-4 rounded-md">
       <h4 className="font-medium mb-2">Order Details</h4>
@@ -48,8 +58,10 @@ export function OrderDetails({ order }: OrderDetailsProps) {
         )}
 
         <div className="border-t pt-2 mt-2">
-          <p className="text-sm">Subtotal: {formatCurrency(order.total_amount - order.tax_amount)}</p>
-          <p className="text-sm">Tax: {formatCurrency(order.tax_amount)}</p>
+          <p className="text-sm">Subtotal: {formatCurrency(subtotalBeforeDiscount)}</p>
+          {totalDiscount > 0 && (
+            <p className="text-sm text-red-500">Discount: -{formatCurrency(totalDiscount)}</p>
+          )}
           <p className="text-sm font-bold">Total: {formatCurrency(order.total_amount)}</p>
         </div>
       </div>
