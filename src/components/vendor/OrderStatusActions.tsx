@@ -1,7 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { RejectionDialog } from "./RejectionDialog";
-import { OrderStatus } from "./types";
+
+// Define OrderStatus type directly rather than importing it
+type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
 
 interface OrderStatusActionsProps {
   status: OrderStatus;

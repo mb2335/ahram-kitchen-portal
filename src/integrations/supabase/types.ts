@@ -229,6 +229,7 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string | null
+          discount_percentage: number | null
           id: string
           menu_item_id: string
           order_id: string | null
@@ -237,6 +238,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          discount_percentage?: number | null
           id?: string
           menu_item_id: string
           order_id?: string | null
@@ -245,6 +247,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          discount_percentage?: number | null
           id?: string
           menu_item_id?: string
           order_id?: string | null
@@ -278,6 +281,7 @@ export type Database = {
           delivery_address: string | null
           delivery_date: string
           delivery_time_slot: string | null
+          discount_amount: number | null
           fulfillment_type: string | null
           id: string
           notes: string | null
@@ -298,6 +302,7 @@ export type Database = {
           delivery_address?: string | null
           delivery_date: string
           delivery_time_slot?: string | null
+          discount_amount?: number | null
           fulfillment_type?: string | null
           id?: string
           notes?: string | null
@@ -318,6 +323,7 @@ export type Database = {
           delivery_address?: string | null
           delivery_date?: string
           delivery_time_slot?: string | null
+          discount_amount?: number | null
           fulfillment_type?: string | null
           id?: string
           notes?: string | null

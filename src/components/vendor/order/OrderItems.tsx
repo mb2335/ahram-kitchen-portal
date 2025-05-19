@@ -18,8 +18,8 @@ export function OrderItems({ items }: OrderItemsProps) {
             <div className="space-y-1">
               <span className="font-medium">
                 {item.quantity}x {language === 'en' ? 
-                  (item.menu_item?.name || item.name) : 
-                  (item.menu_item?.name_ko || item.nameKo)}
+                  (item.menu_item?.name || '') : 
+                  (item.menu_item?.name_ko || '')}
               </span>
               {item.menu_item?.category && (
                 <p className="text-sm text-muted-foreground">
@@ -27,11 +27,11 @@ export function OrderItems({ items }: OrderItemsProps) {
                 </p>
               )}
               <p className="text-sm text-gray-600">
-                ${(item.unit_price || item.price).toFixed(2)} {t('checkout.quantity')}
+                ${(item.unit_price).toFixed(2)} {t('checkout.quantity')}
               </p>
             </div>
             <span className="font-medium">
-              ${(item.quantity * (item.unit_price || item.price)).toFixed(2)}
+              ${(item.quantity * (item.unit_price)).toFixed(2)}
             </span>
           </div>
         ))}
