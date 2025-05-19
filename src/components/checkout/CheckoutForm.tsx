@@ -224,14 +224,6 @@ export function CheckoutForm({
       return data;
     },
   });
-
-  const pickupDaysByDay = pickupSettings.reduce((acc, setting) => {
-    if (!acc[setting.day]) {
-      acc[setting.day] = [];
-    }
-    acc[setting.day].push(setting);
-    return acc;
-  }, {} as Record<number, any[]>);
   
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [currentStep, setCurrentStep] = useState('checkout');
@@ -246,7 +238,6 @@ export function CheckoutForm({
       return;
     }
 
-    setIsSubmitting(true);
     setCurrentStep('payment');
 
     try {
@@ -273,11 +264,9 @@ export function CheckoutForm({
       );
 
       console.log("Order placed successfully with ID:", orderId);
-      setIsSubmitting(false);
     } catch (error: any) {
       console.error("Error placing order:", error);
       setErrorMessage(error.message || "An error occurred while placing your order");
-      setIsSubmitting(false);
       setCurrentStep('checkout');
     }
   };
