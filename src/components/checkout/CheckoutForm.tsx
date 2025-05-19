@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -22,19 +21,18 @@ interface CheckoutFormProps {
     email: string;
     phone: string;
     smsOptIn: boolean;
+    address?: string;
   };
   onOrderSuccess: (orderId: string, isAuthenticated: boolean) => void;
   total: number;
-  taxAmount: number;
   items: OrderItem[];
-  onSmsOptInRequired?: () => void;
+  onSmsOptInRequired: () => void;
 }
 
 export function CheckoutForm({
   customerData,
   onOrderSuccess,
   total,
-  taxAmount,
   items,
   onSmsOptInRequired
 }: CheckoutFormProps) {
@@ -235,119 +233,52 @@ export function CheckoutForm({
     return acc;
   }, {} as Record<number, any[]>);
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!customerData.fullName || !customerData.email) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide your name and email address",
-        variant: "destructive",
-      });
-      return;
-    }
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [currentStep, setCurrentStep] = useState('checkout');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // Check if SMS opt-in is enabled
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    // Validation checks
     if (!customerData.smsOptIn) {
-      if (onSmsOptInRequired) {
-        onSmsOptInRequired();
-      }
-      setShowSmsWarning(true);
-      return;
-    } else {
-      setShowSmsWarning(false);
-    }
-    
-    if (!paymentProof) {
-      toast({
-        title: t('checkout.error.payment'),
-        description: t('checkout.error.payment'),
-        variant: 'destructive',
-      });
+      onSmsOptInRequired();
       return;
     }
 
-    if (!validateDates()) {
-      return;
-    }
-
-    const hasDeliveryItems = Array.from(categoriesWithItems).some(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      
-      if (category?.fulfillment_types.length === 1 && 
-          category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
-        return false;
-      }
-      
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      return categoryFulfillment === FULFILLMENT_TYPE_DELIVERY;
-    });
-    
-    if (hasDeliveryItems) {
-      if (!formData.deliveryAddress?.trim()) {
-        toast({
-          title: t('checkout.error.address'),
-          description: t('checkout.error.address'),
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (!validateTimeSlots()) {
-        return;
-      }
-    }
-
-    const dateErrors: string[] = [];
-    Array.from(categoriesWithItems).forEach(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (!category) return;
-      
-      const date = formData.deliveryDates[categoryId];
-      if (!date) return;
-      
-      const dayOfWeek = date.getDay();
-      const hasPickupDay = pickupDaysByDay[dayOfWeek]?.length > 0;
-      const categoryFulfillment = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-      
-      if (categoryFulfillment === FULFILLMENT_TYPE_PICKUP && !hasPickupDay) {
-        dateErrors.push(`${category.name}: Pickup is only available on designated pickup days`);
-      } else if (categoryFulfillment === FULFILLMENT_TYPE_DELIVERY && hasPickupDay) {
-        dateErrors.push(`${category.name}: Delivery is not available on pickup days`);
-      }
-    });
-    
-    if (dateErrors.length > 0) {
-      toast({
-        title: t('checkout.error.date'),
-        description: dateErrors.join('\n'),
-        variant: 'destructive',
-      });
-      return;
-    }
+    setIsSubmitting(true);
+    setCurrentStep('payment');
 
     try {
-      console.log("Submitting order with customer data:", customerData);
-      await submitOrder({
-        items,
-        total,
-        taxAmount,
-        notes: formData.notes,
-        deliveryDates: formData.deliveryDates,
-        customerData: {
-          ...customerData,
-          address: formData.deliveryAddress,
-          smsOptIn: true // Ensure smsOptIn is true when submitting
+      const selectedDates = formData.deliveryDates;
+      const notes = formData.notes;
+      const selectedPickupDetail = Object.values(formData.pickupDetails)[0] || null;
+      const selectedFulfillmentType = fulfillmentType;
+      const timeSlotSelections = formData.deliveryTimeSlotSelections;
+
+      const orderId = await submitOrder(
+        {
+          items,
+          total,
+          notes,
+          deliveryDates: selectedDates,
+          customerData,
+          pickupDetail: selectedPickupDetail,
+          fulfillmentType: selectedFulfillmentType,
+          categoryFulfillmentTypes: categoryFulfillmentTypes,
+          timeSlotSelections,
+          onOrderSuccess,
         },
-        pickupDetail: Object.values(formData.pickupDetails)[0] || null,
-        fulfillmentType,
-        categoryFulfillmentTypes,
-        timeSlotSelections: formData.deliveryTimeSlotSelections,
-        onOrderSuccess
-      }, paymentProof);
+        paymentProofFile
+      );
+
+      console.log("Order placed successfully with ID:", orderId);
+      setIsSubmitting(false);
     } catch (error: any) {
-      console.error('Order submission error:', error);
-      // The toast is already shown in the submitOrder function
+      console.error("Error placing order:", error);
+      setErrorMessage(error.message || "An error occurred while placing your order");
+      setIsSubmitting(false);
+      setCurrentStep('checkout');
     }
   };
 

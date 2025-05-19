@@ -11,15 +11,12 @@ import { CustomerForm } from './checkout/CustomerForm';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useQuery } from '@tanstack/react-query';
 
-const TAX_RATE = 0.1;
-
 export function Checkout() {
   const { items, total, clearCart } = useCart();
   const session = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
-  const taxAmount = total * TAX_RATE;
 
   const [customerData, setCustomerData] = useState({
     fullName: '',
@@ -141,8 +138,7 @@ export function Checkout() {
           } : undefined
         };
       }),
-      subtotal: total - taxAmount,
-      taxAmount: taxAmount,
+      subtotal: total,
       total: total,
       createdAt: new Date().toISOString(),
     };
@@ -215,7 +211,6 @@ export function Checkout() {
           customerData={customerData}
           onOrderSuccess={handleOrderSuccess}
           total={total}
-          taxAmount={taxAmount}
           items={checkoutItems}
           onSmsOptInRequired={() => setShowSmsWarning(true)}
         />

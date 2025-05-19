@@ -15,7 +15,6 @@ export interface OrderItem {
 export interface OrderSubmissionProps {
   items: OrderItem[];
   total: number;
-  taxAmount: number;
   notes: string;
   deliveryDates: Record<string, Date>;
   customerData: {

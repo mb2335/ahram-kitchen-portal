@@ -162,9 +162,6 @@ export const useOrderSubmission = () => {
           return sum + itemTotal;
         }, 0);
         
-        const categoryTaxAmount = (categoryTotal / props.total) * props.taxAmount;
-        const totalAmount = categoryTotal + categoryTaxAmount;
-        
         // Get delivery time slot if applicable
         let deliveryTimeSlot = null;
         if (categoryFulfillmentType === 'delivery') {
@@ -181,14 +178,13 @@ export const useOrderSubmission = () => {
         
         let orderResult = null;
         try {
-          // The only significant change is here - we ensure that customer info is always passed
+          // Remove taxAmount parameter from this function call
           orderResult = await createOrder({
             customerId,
             categoryId,
             deliveryDate,
             items,
-            total: props.total,
-            taxAmount: props.taxAmount,
+            total: categoryTotal, // Now we're using categoryTotal directly
             notes: props.notes,
             paymentProofUrl,
             pickupTime: props.pickupDetail?.time || null,
@@ -240,8 +236,6 @@ export const useOrderSubmission = () => {
       } catch (qtyError) {
         console.warn("Error updating menu item quantities, but order was created:", qtyError);
       }
-
-      // Removed: SMS confirmation code that was here previously
 
       // Determine if user is authenticated before calling success callback
       const isAuthenticated = !!session?.user;
