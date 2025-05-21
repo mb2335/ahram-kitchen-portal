@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -86,25 +86,27 @@ export function SmsNotifications() {
     setIsLoading(true);
     
     try {
-      // Update all vendors: set receive_notifications=true for selected vendors
-      // and receive_notifications=false for unselected vendors
+      // Fix: Update vendors one by one instead of using a single update with neq.dummy
       
-      // First, set all vendors to not receive notifications
-      const { error: resetError } = await supabase
-        .from('vendors')
-        .update({ receive_notifications: false })
-        .neq('id', 'dummy'); // Update all rows
+      // Create a map of which vendors should receive notifications
+      const receivesNotifications = new Map<string, boolean>();
+      vendors.forEach(vendor => {
+        receivesNotifications.set(vendor.id, data.vendorIds.includes(vendor.id));
+      });
       
-      if (resetError) throw resetError;
-      
-      // Then, set selected vendors to receive notifications
-      if (data.vendorIds.length > 0) {
-        const { error: updateError } = await supabase
-          .from('vendors')
-          .update({ receive_notifications: true })
-          .in('id', data.vendorIds);
+      // Update each vendor individually
+      for (const vendor of vendors) {
+        const shouldReceiveNotifications = receivesNotifications.get(vendor.id) || false;
         
-        if (updateError) throw updateError;
+        // Only update if the setting has changed
+        if (vendor.receive_notifications !== shouldReceiveNotifications) {
+          const { error } = await supabase
+            .from('vendors')
+            .update({ receive_notifications: shouldReceiveNotifications })
+            .eq('id', vendor.id);
+          
+          if (error) throw error;
+        }
       }
       
       // Update local state to reflect changes
