@@ -201,6 +201,14 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
     setPickupLocation('all');
   };
 
+  // Handle date selection and ensure immediate update
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    // We'll manually trigger the extraction after setting the date
+    // This ensures we're filtering with the newly selected date
+    setTimeout(() => extractPhoneNumbers(), 10);
+  };
+
   return (
     <>
       <Button onClick={() => setOpen(true)} variant="outline">
@@ -231,11 +239,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
                 <Label>Fulfillment Date</Label>
                 <DatePicker
                   date={selectedDate}
-                  onSelect={(date) => {
-                    setSelectedDate(date);
-                    // Force re-extraction of phone numbers after date change
-                    setTimeout(() => extractPhoneNumbers(), 10);
-                  }}
+                  onSelect={handleDateSelect}
                   className="w-full"
                 />
               </div>
