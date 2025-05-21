@@ -54,10 +54,10 @@ async function handleOrderStatusUpdate(data) {
     let orderSummary = "";
     if (order.status === 'pending' && !previousStatus) {
       if (order.order_items && order.order_items.length > 0) {
-        // Create a simple summary like "2x Item1, 1x Item2"
-        orderSummary = order.order_items.map(item => 
-          `${item.quantity}x ${item.menu_item?.name || 'Item'}`
-        ).join(", ");
+        // Create a formatted list of items with line breaks
+        orderSummary = "\n" + order.order_items.map(item => 
+          `- ${item.quantity}x ${item.menu_item?.name || 'Item'}`
+        ).join("\n");
       } else {
         orderSummary = `Order #${order.id.substring(0, 8)}`;
       }
@@ -77,7 +77,7 @@ async function handleOrderStatusUpdate(data) {
       // Message to customer
       messages.push({
         to: customerPhone,
-        body: `Ahram Kitchen: Thank you for placing an order! Your order, ${orderSummary}, is currently pending.`
+        body: `Ahram Kitchen: Thank you for placing an order! Your order,${orderSummary}\nis currently pending.`
       });
     }
     // Order confirmed
