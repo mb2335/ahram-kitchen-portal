@@ -104,12 +104,29 @@ export function SendSMSDialog({
     
     // Otherwise extract recipients from filtered orders
     const filteredOrders = filterOrders(orders);
-    return filteredOrders
-      .filter(order => order.customer?.phone)
-      .map(order => ({
-        phone: order.customer.phone,
-        name: order.customer.full_name
-      }));
+    
+    // Get recipients with phone numbers from both registered customers and guest checkouts
+    const allRecipients = filteredOrders.map(order => {
+      // Check for customer phone either from the customer object or directly from order
+      const phone = order.customer?.phone || order.customer_phone;
+      const name = order.customer?.full_name || order.customer_name || 'Guest Customer';
+      
+      // Only return if there's a valid phone number
+      return phone ? { phone, name } : null;
+    }).filter(Boolean);
+    
+    // Deduplicate recipients by phone number
+    const uniqueRecipients: Recipient[] = [];
+    const phoneNumbers = new Set<string>();
+    
+    allRecipients.forEach(recipient => {
+      if (recipient && recipient.phone && !phoneNumbers.has(recipient.phone)) {
+        phoneNumbers.add(recipient.phone);
+        uniqueRecipients.push(recipient);
+      }
+    });
+    
+    return uniqueRecipients;
   };
 
   const handleSendSMS = async () => {

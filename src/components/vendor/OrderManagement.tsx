@@ -146,15 +146,6 @@ export function OrderManagement() {
   const pickupCount = validOrders.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length;
   const deliveryCount = validOrders.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length;
 
-  const getSMSRecipients = (orders: Order[]) => {
-    return orders
-      .filter(order => order.customer?.phone)
-      .map(order => ({
-        phone: order.customer!.phone!,
-        name: order.customer!.full_name
-      }));
-  };
-
   const renderOrdersList = (filteredOrders: Order[]) => {
     if (filteredOrders.length === 0) {
       return <p className="text-center text-gray-500">No orders found</p>;
