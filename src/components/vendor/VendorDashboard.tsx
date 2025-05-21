@@ -6,6 +6,7 @@ import { OrderManagement } from './OrderManagement';
 import { VendorProfile } from './VendorProfile';
 import { DashboardSummary } from './DashboardSummary';
 import { PopularItemsChart } from './analytics/PopularItemsChart';
+import { SmsNotifications } from './SmsNotifications';
 import { cn } from "@/lib/utils";
 import { X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -31,6 +32,7 @@ export function VendorDashboard() {
       { path: '/analytics', label: 'Analytics' },
       { path: '/menu', label: 'Menu Management' },
       { path: '/orders', label: 'Orders' },
+      { path: '/notifications', label: 'SMS Notifications' },
       { path: '/profile', label: 'Profile' }
     ];
 
@@ -81,6 +83,7 @@ export function VendorDashboard() {
               <Route path="analytics" element={<PopularItemsChart />} />
               <Route path="menu" element={<MenuManagement />} />
               <Route path="orders" element={<OrderManagement />} />
+              <Route path="notifications" element={<SmsNotifications />} />
               <Route path="profile" element={<VendorProfile />} />
             </Routes>
           </main>
@@ -105,6 +108,7 @@ export function VendorDashboard() {
             <Route path="analytics" element={<PopularItemsChart />} />
             <Route path="menu" element={<MenuManagement />} />
             <Route path="orders" element={<OrderManagement />} />
+            <Route path="notifications" element={<SmsNotifications />} />
             <Route path="profile" element={<VendorProfile />} />
           </Routes>
         </main>
