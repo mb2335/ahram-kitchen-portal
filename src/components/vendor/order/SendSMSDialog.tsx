@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,20 +40,35 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
   const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
   const [newPhoneNumber, setNewPhoneNumber] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  
+  // Current filtered orders
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
 
   // Function to normalize date for comparison
   const normalizeDateForComparison = (date: Date): string => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  // Load phone numbers when dialog opens or filters change
+  // Update filtered orders whenever filters or base orders change
   useEffect(() => {
     if (!open) return;
-    extractPhoneNumbers();
+    
+    const newFilteredOrders = filterOrders();
+    setFilteredOrders(newFilteredOrders);
+    
+    // Extract phone numbers from the filtered orders
+    const extractedNumbers = Array.from(
+      new Set(
+        newFilteredOrders
+          .map(order => order.customer?.phone || order.customer_phone)
+          .filter(Boolean) as string[]
+      )
+    );
+    setPhoneNumbers(extractedNumbers);
   }, [open, selectedDate, fulfillmentType, pickupLocation, orders]);
 
   // Filter orders based on selected filters
-  const filterOrders = () => {
+  const filterOrders = useCallback(() => {
     return orders.filter(order => {
       // Date filtering
       if (selectedDate) {
@@ -85,20 +100,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
 
       return true;
     });
-  };
-
-  // Extract phone numbers from filtered orders
-  const extractPhoneNumbers = () => {
-    const filteredOrders = filterOrders();
-    const extractedNumbers = Array.from(
-      new Set(
-        filteredOrders
-          .map(order => order.customer?.phone || order.customer_phone)
-          .filter(Boolean) as string[]
-      )
-    );
-    setPhoneNumbers(extractedNumbers);
-  };
+  }, [orders, selectedDate, fulfillmentType, pickupLocation]);
 
   // Handle adding a new phone number
   const handleAddPhoneNumber = () => {
@@ -201,12 +203,10 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
     setPickupLocation('all');
   };
 
-  // Handle date selection and ensure immediate update
+  // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
+    // Update state directly, the useEffect will handle filtering
     setSelectedDate(date);
-    // We'll manually trigger the extraction after setting the date
-    // This ensures we're filtering with the newly selected date
-    setTimeout(() => extractPhoneNumbers(), 10);
   };
 
   return (
@@ -289,7 +289,18 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={extractPhoneNumbers}
+                  onClick={() => {
+                    const newFilteredOrders = filterOrders();
+                    setFilteredOrders(newFilteredOrders);
+                    const extractedNumbers = Array.from(
+                      new Set(
+                        newFilteredOrders
+                          .map(order => order.customer?.phone || order.customer_phone)
+                          .filter(Boolean) as string[]
+                      )
+                    );
+                    setPhoneNumbers(extractedNumbers);
+                  }}
                 >
                   Refresh
                 </Button>
