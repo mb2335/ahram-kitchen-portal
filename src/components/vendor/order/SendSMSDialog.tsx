@@ -31,6 +31,9 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
+  // Internal copy of all orders, unaffected by page filters
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  
   // Filter states - initialized with blank values
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [fulfillmentType, setFulfillmentType] = useState<string>('all');
@@ -44,35 +47,40 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
   // Current filtered orders
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
 
+  // When dialog opens, make a copy of all orders
+  useEffect(() => {
+    if (open) {
+      setAllOrders([...orders]);
+      resetFilters();
+    }
+  }, [open, orders]);
+
   // Function to normalize date for comparison
   const normalizeDateForComparison = (date: Date): string => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  // Reset all filters when dialog opens and update filtered orders
+  // Apply filters and update filtered orders whenever filter states change
   useEffect(() => {
     if (!open) return;
     
-    // When dialog first opens, reset filters to blank state
-    if (open) {
-      const newFilteredOrders = filterOrders();
-      setFilteredOrders(newFilteredOrders);
-      
-      // Extract phone numbers from the filtered orders
-      const extractedNumbers = Array.from(
-        new Set(
-          newFilteredOrders
-            .map(order => order.customer?.phone || order.customer_phone)
-            .filter(Boolean) as string[]
-        )
-      );
-      setPhoneNumbers(extractedNumbers);
-    }
-  }, [open, selectedDate, fulfillmentType, pickupLocation, orders]);
+    const newFilteredOrders = filterOrders();
+    setFilteredOrders(newFilteredOrders);
+    
+    // Extract phone numbers from the filtered orders
+    const extractedNumbers = Array.from(
+      new Set(
+        newFilteredOrders
+          .map(order => order.customer?.phone || order.customer_phone)
+          .filter(Boolean) as string[]
+      )
+    );
+    setPhoneNumbers(extractedNumbers);
+  }, [selectedDate, fulfillmentType, pickupLocation, allOrders, open]);
 
   // Filter orders based on selected filters
   const filterOrders = useCallback(() => {
-    return orders.filter(order => {
+    return allOrders.filter(order => {
       // Date filtering
       if (selectedDate) {
         const orderDate = new Date(order.delivery_date);
@@ -103,7 +111,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
 
       return true;
     });
-  }, [orders, selectedDate, fulfillmentType, pickupLocation]);
+  }, [allOrders, selectedDate, fulfillmentType, pickupLocation]);
 
   // Handle adding a new phone number
   const handleAddPhoneNumber = () => {
@@ -221,18 +229,21 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
       
       <Dialog open={open} onOpenChange={(newOpen) => {
         setOpen(newOpen);
-        if (newOpen) {
-          // Reset filters when dialog opens
-          resetFilters();
-        }
         
-        if (!newOpen) {
+        if (newOpen) {
+          // Reset everything when dialog opens
+          resetFilters();
+          setMessage('');
+          setNewPhoneNumber('');
+          setEditingIndex(null);
+        } else {
           // Clean up when dialog closes
           resetFilters();
           setMessage('');
           setNewPhoneNumber('');
           setEditingIndex(null);
           setPhoneNumbers([]);
+          setAllOrders([]);
         }
       }}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
