@@ -10,6 +10,7 @@ import { OrderActions } from './order/OrderActions';
 import { formatCurrency } from '@/utils/formatters';
 import { SendSMSToCustomer } from './order/SendSMSToCustomer';
 import { PaymentProof } from './order/PaymentProof';
+import { OrderNotes } from './order/OrderNotes';
 
 interface OrderCardProps {
   order: Order;
@@ -54,6 +55,12 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
             <PaymentProof paymentProofUrl={order.payment_proof_url} />
           </div>
         )}
+
+        {/* Display OrderNotes component with rejection reason */}
+        <OrderNotes 
+          notes={order.notes} 
+          rejectionReason={order.rejection_reason} 
+        />
 
         <div className="mt-4 border-t pt-4">
           <div className="flex flex-wrap gap-2">
