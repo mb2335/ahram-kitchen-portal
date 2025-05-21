@@ -396,6 +396,7 @@ export type Database = {
           phone: string | null
           receive_notifications: boolean | null
           user_id: string | null
+          vendor_name: string | null
         }
         Insert: {
           business_name: string
@@ -406,6 +407,7 @@ export type Database = {
           phone?: string | null
           receive_notifications?: boolean | null
           user_id?: string | null
+          vendor_name?: string | null
         }
         Update: {
           business_name?: string
@@ -416,6 +418,7 @@ export type Database = {
           phone?: string | null
           receive_notifications?: boolean | null
           user_id?: string | null
+          vendor_name?: string | null
         }
         Relationships: []
       }

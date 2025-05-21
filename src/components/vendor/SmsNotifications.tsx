@@ -9,12 +9,14 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 // Type definitions
 interface VendorNotification {
   id: string;
   business_name: string;
-  phone: string;
+  vendor_name: string | null;
+  phone: string | null;
   receive_notifications: boolean;
 }
 
@@ -47,7 +49,7 @@ export function SmsNotifications() {
         // Get all vendors with their notification settings
         const { data, error } = await supabase
           .from('vendors')
-          .select('id, business_name, phone, receive_notifications')
+          .select('id, business_name, vendor_name, phone, receive_notifications')
           .order('business_name');
           
         if (error) throw error;
@@ -123,6 +125,11 @@ export function SmsNotifications() {
     }
   }
   
+  // Helper function to display vendor name (use vendor_name if available, otherwise business_name)
+  const getDisplayName = (vendor: VendorNotification): string => {
+    return vendor.vendor_name || vendor.business_name;
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -144,50 +151,61 @@ export function SmsNotifications() {
               name="vendorIds"
               render={() => (
                 <FormItem>
-                  <div className="space-y-4">
-                    {vendors.length === 0 && !isLoading ? (
-                      <p className="text-sm text-gray-500">No vendor accounts found.</p>
-                    ) : (
-                      vendors.map((vendor) => (
-                        <FormField
-                          key={vendor.id}
-                          control={form.control}
-                          name="vendorIds"
-                          render={({ field }) => (
-                            <FormItem
-                              key={vendor.id}
-                              className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(vendor.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange([...field.value, vendor.id]);
-                                    } else {
-                                      field.onChange(
-                                        field.value?.filter(
-                                          (id) => id !== vendor.id
-                                        )
-                                      );
-                                    }
-                                  }}
-                                />
-                              </FormControl>
-                              <div className="flex-1 space-y-1">
-                                <FormLabel className="text-sm font-medium leading-none">
-                                  {vendor.business_name}
-                                </FormLabel>
-                                <p className="text-sm text-gray-500">
-                                  {vendor.phone || "No phone number"}
-                                </p>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      ))
-                    )}
-                  </div>
+                  {vendors.length === 0 && !isLoading ? (
+                    <p className="text-sm text-gray-500">No vendor accounts found.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[50px]">Notify</TableHead>
+                          <TableHead>Vendor Name</TableHead>
+                          <TableHead>Phone Number</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {vendors.map((vendor) => (
+                          <TableRow key={vendor.id}>
+                            <TableCell>
+                              <FormField
+                                key={vendor.id}
+                                control={form.control}
+                                name="vendorIds"
+                                render={({ field }) => (
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(vendor.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          field.onChange([...field.value, vendor.id]);
+                                        } else {
+                                          field.onChange(
+                                            field.value?.filter(
+                                              (id) => id !== vendor.id
+                                            )
+                                          );
+                                        }
+                                      }}
+                                    />
+                                  </FormControl>
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{getDisplayName(vendor)}</div>
+                              <div className="text-sm text-gray-500">{vendor.business_name}</div>
+                            </TableCell>
+                            <TableCell>
+                              {vendor.phone ? (
+                                vendor.phone
+                              ) : (
+                                <span className="text-gray-400 italic">No phone number</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </FormItem>
               )}
             />
