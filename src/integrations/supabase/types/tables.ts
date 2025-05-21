@@ -267,6 +267,7 @@ export interface Database {
           phone: string | null
           business_name: string
           email: string
+          receive_notifications: boolean | null
         }
         Insert: {
           created_at?: string | null
@@ -276,6 +277,7 @@ export interface Database {
           phone?: string | null
           business_name: string
           email: string
+          receive_notifications?: boolean | null
         }
         Update: {
           created_at?: string | null
@@ -285,6 +287,7 @@ export interface Database {
           phone?: string | null
           business_name?: string
           email?: string
+          receive_notifications?: boolean | null
         }
       }
     }

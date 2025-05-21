@@ -1,14 +1,17 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import twilio from 'npm:twilio';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Vendor phone number as a constant for easier management
-const VENDOR_PHONE = '425-553-5355';
+// Initialize Supabase client
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -41,18 +44,34 @@ async function handleOrderStatusUpdate(data) {
   try {
     const { order, previousStatus } = data;
     const customerPhone = order.customer_phone;
+    const messages = [];
     
-    // Don't proceed if customer has no phone number
-    if (!customerPhone) {
-      return new Response(
-        JSON.stringify({ success: false, message: "No customer phone number provided" }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Generate order summary for new orders
-    let orderSummary = "";
+    // New order (pending) - send to all vendors with receive_notifications=true
     if (order.status === 'pending' && !previousStatus) {
+      // Fetch vendors who should receive SMS notifications
+      const { data: vendorsToNotify, error } = await supabase
+        .from('vendors')
+        .select('phone')
+        .eq('receive_notifications', true)
+        .not('phone', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching vendors for notification:', error);
+      }
+      else if (vendorsToNotify && vendorsToNotify.length > 0) {
+        // Send notification to each vendor with notifications enabled
+        vendorsToNotify.forEach(vendor => {
+          if (vendor.phone) {
+            messages.push({
+              to: vendor.phone,
+              body: "A new order has been placed. Please review it in your dashboard."
+            });
+          }
+        });
+      }
+      
+      // Generate order summary for customer
+      let orderSummary = "";
       if (order.order_items && order.order_items.length > 0) {
         // Create a formatted list of items with line breaks
         orderSummary = "\n" + order.order_items.map(item => 
@@ -61,46 +80,42 @@ async function handleOrderStatusUpdate(data) {
       } else {
         orderSummary = `Order #${order.id.substring(0, 8)}`;
       }
-    }
-
-    // Determine messages to send based on order status
-    const messages = [];
-    
-    // New order (pending)
-    if (order.status === 'pending' && !previousStatus) {
-      // Message to vendor
-      messages.push({
-        to: VENDOR_PHONE,
-        body: "A new order has been placed. Please review it in your dashboard."
-      });
       
-      // Message to customer
-      messages.push({
-        to: customerPhone,
-        body: `Ahram Kitchen: Thank you for placing an order! Your order,${orderSummary}\nis currently pending.`
-      });
+      // Message to customer if they have a phone number
+      if (customerPhone) {
+        messages.push({
+          to: customerPhone,
+          body: `Ahram Kitchen: Thank you for placing an order! Your order,${orderSummary}\nis currently pending.`
+        });
+      }
     }
     // Order confirmed
     else if (order.status === 'confirmed' && previousStatus === 'pending') {
-      messages.push({
-        to: customerPhone,
-        body: "Ahram Kitchen: Your order has been confirmed."
-      });
+      if (customerPhone) {
+        messages.push({
+          to: customerPhone,
+          body: "Ahram Kitchen: Your order has been confirmed."
+        });
+      }
     }
     // Order rejected
     else if (order.status === 'rejected' && previousStatus === 'pending') {
-      const reason = order.rejection_reason || "no reason provided";
-      messages.push({
-        to: customerPhone,
-        body: `Ahram Kitchen: Your order has been rejected due to ${reason}.`
-      });
+      if (customerPhone) {
+        const reason = order.rejection_reason || "no reason provided";
+        messages.push({
+          to: customerPhone,
+          body: `Ahram Kitchen: Your order has been rejected due to ${reason}.`
+        });
+      }
     }
     // Order completed
     else if (order.status === 'completed' && previousStatus === 'confirmed') {
-      messages.push({
-        to: customerPhone,
-        body: "Ahram Kitchen: Your order has been marked complete."
-      });
+      if (customerPhone) {
+        messages.push({
+          to: customerPhone,
+          body: "Ahram Kitchen: Your order has been marked complete."
+        });
+      }
     }
 
     // Send all messages
