@@ -29,3 +29,12 @@ export function debounce<F extends (...args: any[]) => any>(
     timeout = setTimeout(later, wait);
   };
 }
+
+/**
+ * Prevents event propagation and default behavior
+ */
+export function stopPropagation(e: React.SyntheticEvent): void {
+  e.stopPropagation();
+  e.nativeEvent?.stopImmediatePropagation?.();
+  e.preventDefault();
+}

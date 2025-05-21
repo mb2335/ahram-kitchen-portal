@@ -30,7 +30,16 @@ export function DatePicker({ date, onSelect, disabled, className }: DatePickerPr
           {date ? format(date, "PPP") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+      <PopoverContent 
+        className="w-auto p-0 pointer-events-auto z-50" 
+        align="start"
+        onInteractOutside={(e) => {
+          // Prevent the popover from closing when interacting with calendar elements
+          if ((e.target as HTMLElement).closest('.rdp')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <Calendar
           mode="single"
           selected={date}
