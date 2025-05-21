@@ -81,6 +81,14 @@ export function OrderManagement() {
         }
       }
 
+      // Customer Name filtering
+      if (filters.customerName && filters.customerName.trim() !== '') {
+        const customerName = order.customer?.full_name || order.customer_name || '';
+        if (!customerName.toLowerCase().includes(filters.customerName.toLowerCase())) {
+          return false;
+        }
+      }
+
       // Fulfillment type filtering - must be checked before pickup location
       if (filters.fulfillmentType && filters.fulfillmentType !== 'all') {
         if (order.fulfillment_type !== filters.fulfillmentType) {
@@ -98,14 +106,6 @@ export function OrderManagement() {
         }
       }
 
-      // Category filtering
-      if (filters.categoryId && filters.categoryId !== 'all') {
-        const hasCategory = order.order_items?.some(item => 
-          item.menu_item?.category?.id === filters.categoryId
-        );
-        if (!hasCategory) return false;
-      }
-
       return true;
     }) || [];
   };
@@ -115,24 +115,6 @@ export function OrderManagement() {
     const statusFiltered = orders?.filter(order => order.status === status) || [];
     return filterOrders(statusFiltered);
   };
-
-  // Extract unique categories from orders
-  const uniqueCategories = new Set();
-  const categories = orders?.flatMap(order => 
-    order.order_items?.map(item => {
-      const category = item.menu_item?.category;
-      if (category && !uniqueCategories.has(category.id)) {
-        uniqueCategories.add(category.id);
-        return {
-          id: category.id,
-          name: category.name,
-          name_ko: category.name_ko
-        };
-      }
-      return null;
-    })
-  )
-  .filter(Boolean) || [];
 
   // Extract unique pickup locations from orders
   const pickupLocations = Array.from(new Set(
@@ -173,7 +155,6 @@ export function OrderManagement() {
         <h2 className="text-2xl font-bold">Orders</h2>
         <SendSMSDialog 
           orders={filterOrders(orders || [])}
-          categories={categories}
           pickupLocations={pickupLocations}
         />
       </div>
@@ -195,7 +176,6 @@ export function OrderManagement() {
       
       <OrderFilters 
         onFilterChange={setFilters}
-        categories={categories}
         pickupLocations={pickupLocations}
       />
 
