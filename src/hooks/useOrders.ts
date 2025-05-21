@@ -138,6 +138,30 @@ export const useVendorOrders = () => {
 
   const updateOrderStatus = async (orderId: string, status: string, reason?: string) => {
     try {
+      // Get the current order to compare status for notifications
+      const { data: currentOrder } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            quantity,
+            menu_item_id,
+            menu_item:menu_items (
+              id,
+              name,
+              name_ko
+            )
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+        
+      if (!currentOrder) throw new Error('Order not found');
+      
+      const previousStatus = currentOrder.status;
+      
+      // Update the order status
       const updateData: any = { status };
       if (reason) {
         updateData.rejection_reason = reason;
@@ -149,6 +173,48 @@ export const useVendorOrders = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Get the updated order with customer information for notifications
+      const { data: updatedOrder } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          customer:customers (
+            id,
+            full_name,
+            email,
+            phone
+          ),
+          order_items (
+            id,
+            quantity,
+            menu_item_id,
+            menu_item:menu_items (
+              id,
+              name,
+              name_ko
+            )
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+        
+      // Send SMS notification for status change
+      if (updatedOrder) {
+        try {
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              type: 'order_status_update',
+              order: updatedOrder,
+              previousStatus
+            }
+          });
+          console.log('Order status notification sent');
+        } catch (notificationError) {
+          console.error('Error sending notification:', notificationError);
+          // Continue with the order update even if notification fails
+        }
+      }
 
       await queryClient.invalidateQueries({ queryKey: orderKeys.all });
       await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });

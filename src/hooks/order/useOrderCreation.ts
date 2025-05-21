@@ -95,7 +95,7 @@ export async function createOrder({
         customer_name: customerName,
         customer_email: customerEmail,
         customer_phone: customerPhone,
-        discount_amount: finalDiscountAmount > 0 ? finalDiscountAmount : null // Store discount amount in the order
+        discount_amount: finalDiscountAmount > 0 ? finalDiscountAmount : null
       })
       .select()
       .single();
@@ -126,6 +126,43 @@ export async function createOrder({
     }
 
     console.log("Successfully created order items:", orderItems.length);
+
+    // Get the complete order with items to send notification
+    const { data: completeOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          id,
+          quantity,
+          menu_item_id,
+          menu_item:menu_items (
+            id,
+            name,
+            name_ko
+          )
+        )
+      `)
+      .eq('id', orderData.id)
+      .single();
+
+    if (!fetchError && completeOrder) {
+      // Send new order notification via SMS
+      try {
+        await supabase.functions.invoke('send-sms', {
+          body: {
+            type: 'order_status_update',
+            order: completeOrder,
+            previousStatus: null // null indicates a new order
+          }
+        });
+        console.log("Order creation notification sent");
+      } catch (notificationError) {
+        console.error("Error sending order creation notification:", notificationError);
+        // Continue with the order creation even if notification fails
+      }
+    }
+
     return orderData;
   } catch (error) {
     console.error("Error in createOrder:", error);

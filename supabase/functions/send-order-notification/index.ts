@@ -44,7 +44,7 @@ serve(async (req) => {
     const payload = await req.json() as WebhookPayload;
     console.log("Received webhook payload:", payload);
 
-    // Only process new orders or status changes
+    // Only process order events
     if (payload.table !== "orders") {
       return new Response(JSON.stringify({ message: "Not an order event" }), {
         status: 200,
@@ -52,34 +52,10 @@ serve(async (req) => {
       });
     }
 
-    const order = payload.record;
-    const oldRecord = payload.old_record;
+    // NOTE: We've removed all email notification functionality
+    // SMS notifications are now handled by the send-sms function
     
-    // Check if this is a new order or status update
-    const isNewOrder = payload.type === "INSERT";
-    const isStatusChange = payload.type === "UPDATE" && oldRecord && order.status !== oldRecord.status;
-
-    if (!isNewOrder && !isStatusChange) {
-      return new Response(JSON.stringify({ message: "No notification needed" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Prepare message based on event type
-    let message = "";
-    if (isNewOrder) {
-      message = `New order received from ${order.customer_name}. Order ID: ${order.id.substring(0, 8)}`;
-    } else if (isStatusChange) {
-      message = `Order ${order.id.substring(0, 8)} status updated to: ${order.status.toUpperCase()}`;
-    }
-
-    console.log("Preparing to send notification:", message);
-
-    // NOTE: We've removed the automated SMS sending functionality
-    // The vendor will now be responsible for sending SMS notifications manually
-
-    return new Response(JSON.stringify({ success: true, message: "Order processed, no automatic notifications sent" }), {
+    return new Response(JSON.stringify({ success: true, message: "Order processed, SMS notifications handled separately" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
