@@ -31,7 +31,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  // Filter states
+  // Filter states - initialized with blank values
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [fulfillmentType, setFulfillmentType] = useState<string>('all');
   const [pickupLocation, setPickupLocation] = useState<string>('all');
@@ -49,22 +49,25 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  // Update filtered orders whenever filters or base orders change
+  // Reset all filters when dialog opens and update filtered orders
   useEffect(() => {
     if (!open) return;
     
-    const newFilteredOrders = filterOrders();
-    setFilteredOrders(newFilteredOrders);
-    
-    // Extract phone numbers from the filtered orders
-    const extractedNumbers = Array.from(
-      new Set(
-        newFilteredOrders
-          .map(order => order.customer?.phone || order.customer_phone)
-          .filter(Boolean) as string[]
-      )
-    );
-    setPhoneNumbers(extractedNumbers);
+    // When dialog first opens, reset filters to blank state
+    if (open) {
+      const newFilteredOrders = filterOrders();
+      setFilteredOrders(newFilteredOrders);
+      
+      // Extract phone numbers from the filtered orders
+      const extractedNumbers = Array.from(
+        new Set(
+          newFilteredOrders
+            .map(order => order.customer?.phone || order.customer_phone)
+            .filter(Boolean) as string[]
+        )
+      );
+      setPhoneNumbers(extractedNumbers);
+    }
   }, [open, selectedDate, fulfillmentType, pickupLocation, orders]);
 
   // Filter orders based on selected filters
@@ -197,6 +200,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
     }
   };
 
+  // Reset filters to blank state
   const resetFilters = () => {
     setSelectedDate(undefined);
     setFulfillmentType('all');
@@ -205,7 +209,6 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
 
   // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
-    // Update state directly, the useEffect will handle filtering
     setSelectedDate(date);
   };
 
@@ -218,11 +221,18 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
       
       <Dialog open={open} onOpenChange={(newOpen) => {
         setOpen(newOpen);
+        if (newOpen) {
+          // Reset filters when dialog opens
+          resetFilters();
+        }
+        
         if (!newOpen) {
+          // Clean up when dialog closes
           resetFilters();
           setMessage('');
           setNewPhoneNumber('');
           setEditingIndex(null);
+          setPhoneNumbers([]);
         }
       }}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
