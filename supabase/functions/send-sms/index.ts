@@ -48,26 +48,35 @@ async function handleOrderStatusUpdate(data) {
     
     // New order (pending) - send to all vendors with receive_notifications=true
     if (order.status === 'pending' && !previousStatus) {
+      console.log('Processing new order notification');
+      
       // Fetch vendors who should receive SMS notifications
       const { data: vendorsToNotify, error } = await supabase
         .from('vendors')
-        .select('phone')
+        .select('id, phone, business_name, vendor_name')
         .eq('receive_notifications', true)
         .not('phone', 'is', null);
       
       if (error) {
         console.error('Error fetching vendors for notification:', error);
       }
-      else if (vendorsToNotify && vendorsToNotify.length > 0) {
-        // Send notification to each vendor with notifications enabled
-        vendorsToNotify.forEach(vendor => {
-          if (vendor.phone) {
-            messages.push({
-              to: vendor.phone,
-              body: "A new order has been placed. Please review it in your dashboard."
-            });
-          }
-        });
+      else {
+        console.log(`Found ${vendorsToNotify?.length || 0} vendors with notifications enabled`);
+        
+        if (vendorsToNotify && vendorsToNotify.length > 0) {
+          // Send notification to each vendor with notifications enabled
+          vendorsToNotify.forEach(vendor => {
+            if (vendor.phone) {
+              console.log(`Sending notification to vendor ${vendor.id} at ${vendor.phone}`);
+              messages.push({
+                to: vendor.phone,
+                body: "A new order has been placed. Please review it in your dashboard."
+              });
+            }
+          });
+        } else {
+          console.log('No vendors found with notifications enabled or with phone numbers');
+        }
       }
       
       // Generate order summary for customer
@@ -120,12 +129,14 @@ async function handleOrderStatusUpdate(data) {
 
     // Send all messages
     if (messages.length > 0) {
+      console.log(`Sending ${messages.length} message(s)`);
       const results = await sendMessages(messages);
       return new Response(
         JSON.stringify({ results }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
+      console.log('No messages to send for this order status update');
       return new Response(
         JSON.stringify({ success: true, message: "No notifications needed for this status change" }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -165,22 +176,29 @@ async function sendCustomMessage(phoneNumbers, message) {
 
 // Common function to send messages via Twilio
 async function sendMessages(messages) {
-  const client = twilio(
-    Deno.env.get('TWILIO_ACCOUNT_SID'),
-    Deno.env.get('TWILIO_AUTH_TOKEN')
-  );
-  
+  const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+  const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const fromPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
+  
+  console.log(`Using Twilio configuration: Account SID ${twilioAccountSid ? 'present' : 'missing'}, Auth Token ${twilioAuthToken ? 'present' : 'missing'}, From Phone ${fromPhone || 'missing'}`);
+  
+  if (!twilioAccountSid || !twilioAuthToken || !fromPhone) {
+    throw new Error('Missing Twilio configuration');
+  }
+  
+  const client = twilio(twilioAccountSid, twilioAuthToken);
   
   const results = await Promise.all(
     messages.map(async (messageData) => {
       try {
+        console.log(`Sending SMS to ${messageData.to}: ${messageData.body.substring(0, 30)}...`);
         const message = await client.messages.create({
           body: messageData.body,
           from: fromPhone,
           to: messageData.to
         });
         
+        console.log(`Successfully sent message with SID: ${message.sid}`);
         return { 
           success: true, 
           phone: messageData.to, 

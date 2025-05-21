@@ -65,6 +65,7 @@ export function SmsNotifications() {
           .filter(vendor => vendor.receive_notifications)
           .map(vendor => vendor.id);
           
+        // Important: This ensures the form state matches the database state
         form.setValue('vendorIds', notifiedVendors);
       } catch (error: any) {
         console.error('Error fetching vendors:', error);
@@ -86,8 +87,6 @@ export function SmsNotifications() {
     setIsLoading(true);
     
     try {
-      // Fix: Update vendors one by one instead of using a single update with neq.dummy
-      
       // Create a map of which vendors should receive notifications
       const receivesNotifications = new Map<string, boolean>();
       vendors.forEach(vendor => {
