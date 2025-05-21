@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { MessageSquare, Plus, Trash, Edit, Phone } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,7 +50,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
   useEffect(() => {
     if (!open) return;
     extractPhoneNumbers();
-  }, [open, selectedDate, fulfillmentType, pickupLocation]);
+  }, [open, selectedDate, fulfillmentType, pickupLocation, orders]);
 
   // Filter orders based on selected filters
   const filterOrders = () => {
@@ -219,6 +220,9 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Send SMS to Customers</DialogTitle>
+            <DialogDescription>
+              Filter customers and send an SMS to selected recipients
+            </DialogDescription>
           </DialogHeader>
           
           <div className="my-4 space-y-4">
@@ -227,7 +231,11 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
                 <Label>Fulfillment Date</Label>
                 <DatePicker
                   date={selectedDate}
-                  onSelect={setSelectedDate}
+                  onSelect={(date) => {
+                    setSelectedDate(date);
+                    // Force re-extraction of phone numbers after date change
+                    setTimeout(() => extractPhoneNumbers(), 10);
+                  }}
                   className="w-full"
                 />
               </div>
@@ -283,7 +291,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
                 </Button>
               </div>
               
-              <div className="max-h-[150px] overflow-y-auto border rounded-md p-2 mb-3">
+              <div className="max-h-[150px] overflow-y-auto border rounded-md p-2 mb-3 bg-background">
                 {phoneNumbers.length === 0 ? (
                   <p className="text-muted-foreground text-center py-2">No phone numbers found with current filters</p>
                 ) : (
