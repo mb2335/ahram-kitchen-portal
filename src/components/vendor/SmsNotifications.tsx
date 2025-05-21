@@ -10,6 +10,8 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { useVendorId } from "@/hooks/useVendorId";
+import { Phone, Mail, Store } from "lucide-react";
 
 // Type definitions
 interface VendorNotification {
@@ -18,6 +20,7 @@ interface VendorNotification {
   vendor_name: string | null;
   phone: string | null;
   receive_notifications: boolean;
+  email: string;
 }
 
 // Schema for form validation
@@ -31,6 +34,7 @@ export function SmsNotifications() {
   const [vendors, setVendors] = useState<VendorNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { vendorId } = useVendorId();
   
   // Initialize form
   const form = useForm<FormValues>({
@@ -49,7 +53,7 @@ export function SmsNotifications() {
         // Get all vendors with their notification settings
         const { data, error } = await supabase
           .from('vendors')
-          .select('id, business_name, vendor_name, phone, receive_notifications')
+          .select('id, business_name, vendor_name, phone, email, receive_notifications')
           .order('business_name');
           
         if (error) throw error;
@@ -129,6 +133,11 @@ export function SmsNotifications() {
   const getDisplayName = (vendor: VendorNotification): string => {
     return vendor.vendor_name || vendor.business_name;
   };
+
+  // Helper to highlight the current vendor
+  const isCurrentVendor = (id: string): boolean => {
+    return id === vendorId;
+  };
   
   return (
     <div className="space-y-6">
@@ -154,65 +163,94 @@ export function SmsNotifications() {
                   {vendors.length === 0 && !isLoading ? (
                     <p className="text-sm text-gray-500">No vendor accounts found.</p>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[50px]">Notify</TableHead>
-                          <TableHead>Vendor Name</TableHead>
-                          <TableHead>Phone Number</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {vendors.map((vendor) => (
-                          <TableRow key={vendor.id}>
-                            <TableCell>
-                              <FormField
-                                key={vendor.id}
-                                control={form.control}
-                                name="vendorIds"
-                                render={({ field }) => (
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(vendor.id)}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          field.onChange([...field.value, vendor.id]);
-                                        } else {
-                                          field.onChange(
-                                            field.value?.filter(
-                                              (id) => id !== vendor.id
-                                            )
-                                          );
-                                        }
-                                      }}
-                                    />
-                                  </FormControl>
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium">{getDisplayName(vendor)}</div>
-                              <div className="text-sm text-gray-500">{vendor.business_name}</div>
-                            </TableCell>
-                            <TableCell>
-                              {vendor.phone ? (
-                                vendor.phone
-                              ) : (
-                                <span className="text-gray-400 italic">No phone number</span>
-                              )}
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[50px]">Notify</TableHead>
+                            <TableHead>Vendor Information</TableHead>
+                            <TableHead>Contact Details</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {vendors.map((vendor) => (
+                            <TableRow key={vendor.id} className={isCurrentVendor(vendor.id) ? "bg-muted/30" : ""}>
+                              <TableCell>
+                                <FormField
+                                  key={vendor.id}
+                                  control={form.control}
+                                  name="vendorIds"
+                                  render={({ field }) => (
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(vendor.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            field.onChange([...field.value, vendor.id]);
+                                          } else {
+                                            field.onChange(
+                                              field.value?.filter(
+                                                (id) => id !== vendor.id
+                                              )
+                                            );
+                                          }
+                                        }}
+                                        disabled={!vendor.phone}
+                                      />
+                                    </FormControl>
+                                  )}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col space-y-1">
+                                  <div className="font-medium flex items-center gap-2">
+                                    <Store className="h-4 w-4 text-muted-foreground" />
+                                    {getDisplayName(vendor)}
+                                    {isCurrentVendor(vendor.id) && (
+                                      <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                                        You
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{vendor.business_name}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col space-y-2">
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    {vendor.phone ? (
+                                      vendor.phone
+                                    ) : (
+                                      <span className="text-gray-400 italic">No phone number</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                    {vendor.email}
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </FormItem>
               )}
             />
             
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Settings"}
-            </Button>
+            <div className="flex justify-between items-center pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                {vendors.filter(v => !v.phone).length > 0 && (
+                  <p>Vendors without phone numbers cannot receive SMS notifications.</p>
+                )}
+              </div>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
           </form>
         </Form>
       </Card>
