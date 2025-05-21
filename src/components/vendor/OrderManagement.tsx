@@ -139,9 +139,12 @@ export function OrderManagement() {
     orders?.map(order => order.pickup_location).filter(Boolean) || []
   ));
 
-  // Count orders by fulfillment type
-  const pickupCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length || 0;
-  const deliveryCount = orders?.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length || 0;
+  // Filter orders excluding rejected ones for counts
+  const validOrders = orders?.filter(order => order.status !== 'rejected') || [];
+
+  // Count orders by fulfillment type (excluding rejected orders)
+  const pickupCount = validOrders.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length;
+  const deliveryCount = validOrders.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length;
 
   const getSMSRecipients = (orders: Order[]) => {
     return orders
@@ -195,7 +198,7 @@ export function OrderManagement() {
         </div>
         <div className="bg-muted/30 rounded-lg p-4 text-center">
           <h3 className="text-lg font-medium mb-2">Total Orders</h3>
-          <p className="text-3xl font-bold">{orders?.length || 0}</p>
+          <p className="text-3xl font-bold">{validOrders.length || 0}</p>
         </div>
       </div>
       

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,7 +46,29 @@ export function PopularItemsChart() {
     queryKey: ['popular-items', timeRange],
     queryFn: async () => {
       const startDate = getStartDate();
-      let query = supabase
+      
+      // First, get the non-rejected order IDs
+      let ordersQuery = supabase
+        .from('orders')
+        .select('id')
+        .neq('status', 'rejected');
+        
+      if (startDate) {
+        ordersQuery = ordersQuery.gte('created_at', startDate.toISOString());
+      }
+      
+      const { data: validOrders, error: ordersError } = await ordersQuery;
+      
+      if (ordersError) throw ordersError;
+      
+      if (!validOrders || validOrders.length === 0) {
+        return [];
+      }
+      
+      // Get order items only from valid orders
+      const validOrderIds = validOrders.map(order => order.id);
+      
+      const { data, error } = await supabase
         .from('order_items')
         .select(`
           quantity,
@@ -54,13 +77,8 @@ export function PopularItemsChart() {
             name_ko
           )
         `)
+        .in('order_id', validOrderIds)
         .order('quantity', { ascending: false });
-
-      if (startDate) {
-        query = query.gte('created_at', startDate.toISOString());
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
 

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -45,12 +46,17 @@ export function DashboardSummary() {
 
         if (error) throw error;
 
+        // Filter out rejected orders for total count and revenue calculations
+        const validOrders = orders?.filter(o => o.status !== 'rejected') || [];
+        
         const stats = {
-          total: orders?.length || 0,
+          // Only count non-rejected orders for total
+          total: validOrders.length || 0,
           pending: orders?.filter(o => o.status === 'pending').length || 0,
           completed: orders?.filter(o => o.status === 'completed').length || 0,
           rejected: orders?.filter(o => o.status === 'rejected').length || 0,
-          revenue: orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
+          // Only include revenue from non-rejected orders
+          revenue: validOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
         };
 
         return stats;
