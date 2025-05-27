@@ -20,7 +20,8 @@ interface CreateOrderParams {
   customerPhone?: string | null;
   discountAmount?: number | null;
   skipNotification?: boolean;
-  orderId?: string; // Add parameter to use existing order ID
+  sharedOrderId?: string; // Use shared order ID for grouping
+  isFirstCategory?: boolean; // Track if this is the first category
 }
 
 export async function createOrder({
@@ -41,7 +42,8 @@ export async function createOrder({
   customerPhone,
   discountAmount,
   skipNotification = false,
-  orderId // Use provided order ID if available
+  sharedOrderId,
+  isFirstCategory = false
 }: CreateOrderParams) {
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
@@ -84,31 +86,60 @@ export async function createOrder({
   try {
     let finalOrderData;
     
-    if (orderId) {
-      // For subsequent categories, create a new UUID since we can't use the same ID
-      const newOrderId = crypto.randomUUID();
+    if (sharedOrderId && isFirstCategory) {
+      // For the first category, create the main order with the shared ID
       finalOrderData = {
-        id: newOrderId,
-        ...orderData
+        id: sharedOrderId,
+        ...orderData,
+        status: 'pending'
       };
       
       const { data: insertedOrder, error: orderError } = await supabase
         .from('orders')
-        .insert({
-          ...finalOrderData,
-          status: 'pending'
-        })
+        .insert(finalOrderData)
         .select()
         .single();
 
       if (orderError) {
-        console.error("Error creating order with new ID:", orderError);
+        console.error("Error creating main order:", orderError);
         throw orderError;
       }
       
       finalOrderData = insertedOrder;
+    } else if (sharedOrderId && !isFirstCategory) {
+      // For subsequent categories, update the existing order by adding amounts
+      const { data: existingOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('total_amount, discount_amount')
+        .eq('id', sharedOrderId)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching existing order:", fetchError);
+        throw fetchError;
+      }
+
+      const updatedTotalAmount = existingOrder.total_amount + categoryTotal;
+      const updatedDiscountAmount = (existingOrder.discount_amount || 0) + (finalDiscountAmount || 0);
+
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from('orders')
+        .update({
+          total_amount: updatedTotalAmount,
+          discount_amount: updatedDiscountAmount > 0 ? updatedDiscountAmount : null
+        })
+        .eq('id', sharedOrderId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Error updating order totals:", updateError);
+        throw updateError;
+      }
+
+      finalOrderData = updatedOrder;
     } else {
-      // Create new order with auto-generated ID - this is for the first category
+      // Create new order with auto-generated ID (fallback)
       const { data: insertedOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -126,11 +157,11 @@ export async function createOrder({
       finalOrderData = insertedOrder;
     }
 
-    console.log("Successfully created order record:", finalOrderData);
+    console.log("Successfully created/updated order record:", finalOrderData);
 
-    // Create the order items
+    // Create the order items - always use the shared order ID if provided
     const orderItems = categoryItems.map((item) => ({
-      order_id: finalOrderData.id,
+      order_id: sharedOrderId || finalOrderData.id,
       menu_item_id: item.id,
       quantity: item.quantity,
       unit_price: item.price,
@@ -165,7 +196,7 @@ export async function createOrder({
             )
           )
         `)
-        .eq('id', finalOrderData.id)
+        .eq('id', sharedOrderId || finalOrderData.id)
         .single();
 
       if (!fetchError && completeOrder) {

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -137,10 +136,13 @@ export const useOrderSubmission = () => {
       
       console.log("Final category date mapping:", categoryToDateMap);
       
-      const orderIds: string[] = [];
-      let firstOrderId: string | null = null;
+      // Generate a single shared order ID for all categories
+      const sharedOrderId = crypto.randomUUID();
+      console.log("Generated shared order ID for all categories:", sharedOrderId);
       
-      // Create orders for each category - each gets its own unique ID
+      const orderIds: string[] = [sharedOrderId]; // All categories will use this same ID
+      
+      // Create orders for each category using the shared order ID
       for (let i = 0; i < categoryIds.length; i++) {
         const categoryId = categoryIds[i];
         const items = itemsByCategory[categoryId];
@@ -209,15 +211,12 @@ export const useOrderSubmission = () => {
             customerPhone: props.customerData.phone || null,
             discountAmount: discountAmount > 0 ? discountAmount : null,
             skipNotification: true, // Skip individual notifications
-            orderId: i === 0 ? undefined : firstOrderId // Only pass orderId for subsequent orders
+            sharedOrderId: sharedOrderId, // Use the shared order ID
+            isFirstCategory: i === 0 // Mark if this is the first category
           });
 
           if (orderResult) {
-            orderIds.push(orderResult.id);
-            if (i === 0) {
-              firstOrderId = orderResult.id;
-            }
-            console.log(`Order created with ID ${orderResult.id}`);
+            console.log(`Order processed for category ${categoryId} with shared ID ${sharedOrderId}`);
           }
         } catch (orderError) {
           console.error(`Error creating order for category ${categoryId}:`, orderError);
@@ -230,7 +229,7 @@ export const useOrderSubmission = () => {
             const { error: bookingError } = await supabase
               .from('delivery_time_bookings')
               .insert({
-                order_id: orderResult.id,
+                order_id: sharedOrderId, // Use shared order ID for booking
                 category_id: categoryId,
                 delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
                 time_slot: deliveryTimeSlot
@@ -239,7 +238,7 @@ export const useOrderSubmission = () => {
             if (bookingError) {
               console.warn(`Failed to book delivery time slot, but continuing:`, bookingError);
             } else {
-              console.log(`Booked delivery time slot ${deliveryTimeSlot} for order ${orderResult.id}`);
+              console.log(`Booked delivery time slot ${deliveryTimeSlot} for shared order ${sharedOrderId}`);
             }
           } catch (bookingErr) {
             console.warn("Error in delivery time booking, but continuing with order:", bookingErr);
@@ -268,11 +267,11 @@ export const useOrderSubmission = () => {
       // Determine if user is authenticated before calling success callback
       const isAuthenticated = !!session?.user;
       
-      // Call the success callback with the first order ID
-      console.log(`Order submission completed successfully. Calling success callback with first order ID ${firstOrderId}`);
-      props.onOrderSuccess(firstOrderId || orderIds[0], isAuthenticated);
+      // Call the success callback with the shared order ID
+      console.log(`Order submission completed successfully. Calling success callback with shared order ID ${sharedOrderId}`);
+      props.onOrderSuccess(sharedOrderId, isAuthenticated);
       
-      return firstOrderId || orderIds[0];
+      return sharedOrderId;
     } catch (error: any) {
       console.error("Order submission failed:", error);
       toast({
