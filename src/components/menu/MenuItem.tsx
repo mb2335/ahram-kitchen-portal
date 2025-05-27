@@ -39,7 +39,7 @@ export function MenuItem({
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
   
   return (
-    <Card className="group relative flex flex-col h-full min-h-[400px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="group relative flex flex-col h-full min-h-[450px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative overflow-hidden bg-muted">
         <AspectRatio ratio={4 / 3}>
           {item.image ? (
@@ -65,24 +65,29 @@ export function MenuItem({
         </AspectRatio>
       </div>
 
-      <div className="flex flex-col flex-grow p-4 space-y-3">
-        <div className="space-y-2">
-          <h3 className="font-semibold text-lg leading-tight text-center">
+      <div className="flex flex-col flex-grow p-4">
+        {/* Title Section - Fixed Height */}
+        <div className="h-14 flex items-center justify-center mb-3">
+          <h3 className="font-semibold text-lg leading-tight text-center line-clamp-2">
             {displayName}
           </h3>
-          <div className="min-h-[3rem] flex items-start">
-            {displayDescription ? (
-              <p className="text-sm text-muted-foreground leading-relaxed text-center w-full">
-                {displayDescription}
-              </p>
-            ) : (
-              <div className="h-12"></div>
-            )}
-          </div>
         </div>
 
-        <div className="flex flex-col gap-3 mt-auto pt-2">
-          <div className="flex items-center justify-center">
+        {/* Description Section - Fixed Height */}
+        <div className="h-16 flex items-start justify-center mb-4">
+          {displayDescription ? (
+            <p className="text-sm text-muted-foreground leading-relaxed text-center line-clamp-3">
+              {displayDescription}
+            </p>
+          ) : (
+            <div className="h-full"></div>
+          )}
+        </div>
+
+        {/* Footer Section - Push to bottom with consistent alignment */}
+        <div className="mt-auto space-y-3">
+          {/* Price Section - Fixed Height and Alignment */}
+          <div className="h-16 flex items-center justify-center">
             <div className="text-center">
               {discountedPrice ? (
                 <div className="space-y-1">
@@ -101,7 +106,8 @@ export function MenuItem({
             </div>
           </div>
 
-          <div className="flex justify-center">
+          {/* Stock Badge - Fixed Height */}
+          <div className="h-6 flex justify-center">
             <Badge 
               variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
               className="text-xs px-3 py-1"
@@ -110,14 +116,17 @@ export function MenuItem({
             </Badge>
           </div>
 
-          <Button 
-            onClick={() => onAddToCart(item)} 
-            className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2" 
-            disabled={item.remaining_quantity === 0}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t('item.add')}
-          </Button>
+          {/* Add to Cart Button - Fixed Height */}
+          <div className="h-10">
+            <Button 
+              onClick={() => onAddToCart(item)} 
+              className="w-full bg-primary hover:bg-primary/90 text-white font-medium h-full" 
+              disabled={item.remaining_quantity === 0}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t('item.add')}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>
