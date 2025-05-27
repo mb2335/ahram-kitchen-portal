@@ -1,59 +1,88 @@
 
 import { useMemo } from 'react';
 import { Order } from '@/components/vendor/types';
-import { UnifiedOrder, OrderGroup } from '@/types/unifiedOrder';
+import { UnifiedOrder, OrderGroup, CategoryFulfillmentDetail } from '@/types/unifiedOrder';
 
 export const useCustomerUnifiedOrders = (orders: Order[]) => {
   const unifiedOrders = useMemo(() => {
     if (!orders || orders.length === 0) return [];
 
-    // For customer orders, each order should be its own unified order
-    // Unlike vendor orders which might group by customer and time window
-    return orders.map(order => {
-      // Create category details from the order items
-      const categoryDetails = [{
-        categoryId: order.order_items?.[0]?.menu_item?.category?.id || order.id,
-        categoryName: order.order_items?.[0]?.menu_item?.category?.name || 'Mixed Items',
-        categoryNameKo: order.order_items?.[0]?.menu_item?.category?.name_ko,
-        fulfillmentType: (order.fulfillment_type as 'pickup' | 'delivery') || 'delivery',
-        deliveryDate: order.delivery_date,
-        deliveryAddress: order.delivery_address,
-        deliveryTimeSlot: order.delivery_time_slot,
-        pickupTime: order.pickup_time,
-        pickupLocation: order.pickup_location,
-        status: order.status,
-        items: order.order_items?.map(item => ({
-          id: item.id,
-          name: item.menu_item?.name || '',
-          nameKo: item.menu_item?.name_ko,
-          quantity: item.quantity,
-          unitPrice: item.unit_price,
-          discountPercentage: item.discount_percentage || item.menu_item?.discount_percentage
-        })) || [],
-        subtotal: order.total_amount
-      }];
+    // Group orders by customer and creation time window (within 1 minute) - same logic as vendor dashboard
+    const orderGroups: { [key: string]: Order[] } = {};
+    
+    orders.forEach(order => {
+      // Create a key based on customer info and rounded timestamp
+      const customerKey = order.customer_email || order.customer_id || 'unknown';
+      const timeWindow = Math.floor(new Date(order.created_at).getTime() / 60000); // 1-minute windows
+      const groupKey = `${customerKey}-${timeWindow}`;
+      
+      if (!orderGroups[groupKey]) {
+        orderGroups[groupKey] = [];
+      }
+      orderGroups[groupKey].push(order);
+    });
+
+    // Convert groups to unified orders - same logic as vendor dashboard
+    return Object.values(orderGroups).map(groupOrders => {
+      const mainOrder = groupOrders[0]; // Use first order as the main one
+      
+      // Calculate category details
+      const categoryDetails: CategoryFulfillmentDetail[] = groupOrders.map(order => {
+        const categoryName = order.order_items?.[0]?.menu_item?.category?.name || 'Unknown Category';
+        const categoryNameKo = order.order_items?.[0]?.menu_item?.category?.name_ko;
+        const categoryId = order.order_items?.[0]?.menu_item?.category?.id || order.id;
+        
+        return {
+          categoryId,
+          categoryName,
+          categoryNameKo,
+          fulfillmentType: (order.fulfillment_type as 'pickup' | 'delivery') || 'delivery',
+          deliveryDate: order.delivery_date,
+          deliveryAddress: order.delivery_address,
+          deliveryTimeSlot: order.delivery_time_slot,
+          pickupTime: order.pickup_time,
+          pickupLocation: order.pickup_location,
+          status: order.status,
+          items: order.order_items?.map(item => ({
+            id: item.id,
+            name: item.menu_item?.name || '',
+            nameKo: item.menu_item?.name_ko,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+            discountPercentage: item.discount_percentage || item.menu_item?.discount_percentage
+          })) || [],
+          subtotal: order.total_amount
+        };
+      });
+
+      // Calculate overall status (prioritize pending/rejected over completed) - same logic as vendor dashboard
+      const statuses = groupOrders.map(o => o.status);
+      let overallStatus = 'completed';
+      if (statuses.includes('rejected')) overallStatus = 'rejected';
+      else if (statuses.includes('pending')) overallStatus = 'pending';
+      else if (statuses.includes('confirmed')) overallStatus = 'confirmed';
 
       const unifiedOrder: UnifiedOrder = {
-        id: order.id,
-        customerId: order.customer_id,
-        customerName: order.customer?.full_name || order.customer_name || '',
-        customerEmail: order.customer?.email || order.customer_email || '',
-        customerPhone: order.customer?.phone || order.customer_phone,
-        customer: order.customer,
-        totalAmount: order.total_amount,
-        discountAmount: order.discount_amount || 0,
-        createdAt: order.created_at,
-        overallStatus: order.status,
-        notes: order.notes,
-        paymentProofUrl: order.payment_proof_url,
-        rejectionReason: order.rejection_reason,
+        id: mainOrder.id,
+        customerId: mainOrder.customer_id,
+        customerName: mainOrder.customer?.full_name || mainOrder.customer_name || '',
+        customerEmail: mainOrder.customer?.email || mainOrder.customer_email || '',
+        customerPhone: mainOrder.customer?.phone || mainOrder.customer_phone,
+        customer: mainOrder.customer,
+        totalAmount: groupOrders.reduce((sum, order) => sum + order.total_amount, 0),
+        discountAmount: groupOrders.reduce((sum, order) => sum + (order.discount_amount || 0), 0),
+        createdAt: mainOrder.created_at,
+        overallStatus,
+        notes: mainOrder.notes,
+        paymentProofUrl: mainOrder.payment_proof_url,
+        rejectionReason: mainOrder.rejection_reason,
         categoryDetails,
-        relatedOrderIds: [order.id]
+        relatedOrderIds: groupOrders.map(o => o.id)
       };
 
       return {
         unifiedOrder,
-        originalOrders: [order]
+        originalOrders: groupOrders
       } as OrderGroup;
     });
   }, [orders]);
