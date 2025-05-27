@@ -7,13 +7,13 @@ export const useUnifiedOrders = (orders: Order[]) => {
   const unifiedOrders = useMemo(() => {
     if (!orders || orders.length === 0) return [];
 
-    // Group orders by customer and creation time window (within 5 minutes)
+    // Group orders by customer and creation time window (within 1 minute)
     const orderGroups: { [key: string]: Order[] } = {};
     
     orders.forEach(order => {
-      // Create a key based on customer info and rounded timestamp (5-minute windows)
+      // Create a key based on customer info and rounded timestamp
       const customerKey = order.customer_email || order.customer_id || 'unknown';
-      const timeWindow = Math.floor(new Date(order.created_at).getTime() / 300000); // 5-minute windows
+      const timeWindow = Math.floor(new Date(order.created_at).getTime() / 60000); // 1-minute windows
       const groupKey = `${customerKey}-${timeWindow}`;
       
       if (!orderGroups[groupKey]) {
@@ -24,11 +24,7 @@ export const useUnifiedOrders = (orders: Order[]) => {
 
     // Convert groups to unified orders
     return Object.values(orderGroups).map(groupOrders => {
-      // Sort by creation time to get the main order
-      const sortedOrders = groupOrders.sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-      const mainOrder = sortedOrders[0];
+      const mainOrder = groupOrders[0]; // Use first order as the main one
       
       // Calculate category details
       const categoryDetails: CategoryFulfillmentDetail[] = groupOrders.map(order => {
