@@ -11,6 +11,7 @@ import { OrderFilters } from './order/OrderFilters';
 import type { OrderFilters as OrderFiltersType } from './order/OrderFilters';
 import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
 import { SendSMSDialog } from './order/SendSMSDialog';
+import { OrderActions } from './order/OrderActions';
 
 export function OrderManagement() {
   const [rejectionReason, setRejectionReason] = useState('');
@@ -124,13 +125,6 @@ export function OrderManagement() {
     orders?.map(order => order.pickup_location).filter(Boolean) || []
   ));
 
-  // Filter orders excluding rejected ones for counts
-  const validOrders = orders?.filter(order => order.status !== 'rejected') || [];
-
-  // Count orders by fulfillment type (excluding rejected orders)
-  const pickupCount = validOrders.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_PICKUP).length;
-  const deliveryCount = validOrders.filter(order => order.fulfillment_type === FULFILLMENT_TYPE_DELIVERY).length;
-
   const renderOrdersList = (status: string) => {
     const filteredUnifiedOrders = getFilteredUnifiedOrders(status);
     
@@ -144,17 +138,25 @@ export function OrderManagement() {
         unifiedOrder={orderGroup.unifiedOrder}
         onDelete={handleDelete}
       >
-        <OrderStatusActions
-          status={orderGroup.unifiedOrder.overallStatus as OrderStatus}
-          onUpdateStatus={(status, reason) => {
-            // Update status for all related orders
-            orderGroup.originalOrders.forEach(order => 
-              handleStatusUpdate(order.id, status, reason)
-            );
-          }}
-          rejectionReason={rejectionReason}
-          setRejectionReason={setRejectionReason}
-        />
+        <div className="flex justify-between items-center w-full">
+          <div className="flex gap-2">
+            <OrderStatusActions
+              status={orderGroup.unifiedOrder.overallStatus as OrderStatus}
+              onUpdateStatus={(status, reason) => {
+                // Update status for all related orders
+                orderGroup.originalOrders.forEach(order => 
+                  handleStatusUpdate(order.id, status, reason)
+                );
+              }}
+              rejectionReason={rejectionReason}
+              setRejectionReason={setRejectionReason}
+            />
+          </div>
+          <OrderActions 
+            orderId={orderGroup.unifiedOrder.id}
+            onDelete={handleDelete}
+          />
+        </div>
       </UnifiedOrderCard>
     ));
   };
@@ -167,21 +169,6 @@ export function OrderManagement() {
           orders={orders || []}
           pickupLocations={pickupLocations}
         />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-muted/30 rounded-lg p-4 text-center">
-          <h3 className="text-lg font-medium mb-2">Pickup Orders (Thu-Fri)</h3>
-          <p className="text-3xl font-bold">{pickupCount}</p>
-        </div>
-        <div className="bg-muted/30 rounded-lg p-4 text-center">
-          <h3 className="text-lg font-medium mb-2">Delivery Orders</h3>
-          <p className="text-3xl font-bold">{deliveryCount}</p>
-        </div>
-        <div className="bg-muted/30 rounded-lg p-4 text-center">
-          <h3 className="text-lg font-medium mb-2">Total Orders</h3>
-          <p className="text-3xl font-bold">{validOrders.length || 0}</p>
-        </div>
       </div>
       
       <OrderFilters 

@@ -7,14 +7,13 @@ export const useCustomerUnifiedOrders = (orders: Order[]) => {
   const unifiedOrders = useMemo(() => {
     if (!orders || orders.length === 0) return [];
 
-    // Group orders by customer and creation time window (within 5 minutes for better grouping)
+    // Group orders by the exact same customer and order ID since each order should be unified by default
+    // No time-based grouping to avoid edge cases with quick successive orders
     const orderGroups: { [key: string]: Order[] } = {};
     
     orders.forEach(order => {
-      // Create a key based on customer info and rounded timestamp (5-minute windows)
-      const customerKey = order.customer_email || order.customer_id || 'unknown';
-      const timeWindow = Math.floor(new Date(order.created_at).getTime() / 300000); // 5-minute windows
-      const groupKey = `${customerKey}-${timeWindow}`;
+      // Use the order ID as the key to ensure each order is treated separately
+      const groupKey = order.id;
       
       if (!orderGroups[groupKey]) {
         orderGroups[groupKey] = [];
@@ -24,43 +23,30 @@ export const useCustomerUnifiedOrders = (orders: Order[]) => {
 
     // Convert groups to unified orders
     return Object.values(orderGroups).map(groupOrders => {
-      const mainOrder = groupOrders[0]; // Use first order as the main one
+      const mainOrder = groupOrders[0]; // Since we're grouping by ID, there's only one order per group
       
       // Calculate category details
-      const categoryDetails = groupOrders.map(order => {
-        const categoryName = order.order_items?.[0]?.menu_item?.category?.name || 'Unknown Category';
-        const categoryNameKo = order.order_items?.[0]?.menu_item?.category?.name_ko;
-        const categoryId = order.order_items?.[0]?.menu_item?.category?.id || order.id;
-        
-        return {
-          categoryId,
-          categoryName,
-          categoryNameKo,
-          fulfillmentType: (order.fulfillment_type as 'pickup' | 'delivery') || 'delivery',
-          deliveryDate: order.delivery_date,
-          deliveryAddress: order.delivery_address,
-          deliveryTimeSlot: order.delivery_time_slot,
-          pickupTime: order.pickup_time,
-          pickupLocation: order.pickup_location,
-          status: order.status,
-          items: order.order_items?.map(item => ({
-            id: item.id,
-            name: item.menu_item?.name || '',
-            nameKo: item.menu_item?.name_ko,
-            quantity: item.quantity,
-            unitPrice: item.unit_price,
-            discountPercentage: item.discount_percentage || item.menu_item?.discount_percentage
-          })) || [],
-          subtotal: order.total_amount
-        };
-      });
-
-      // Calculate overall status (prioritize pending/rejected over completed)
-      const statuses = groupOrders.map(o => o.status);
-      let overallStatus = 'completed';
-      if (statuses.includes('rejected')) overallStatus = 'rejected';
-      else if (statuses.includes('pending')) overallStatus = 'pending';
-      else if (statuses.includes('confirmed')) overallStatus = 'confirmed';
+      const categoryDetails = [{
+        categoryId: mainOrder.order_items?.[0]?.menu_item?.category?.id || mainOrder.id,
+        categoryName: mainOrder.order_items?.[0]?.menu_item?.category?.name || 'Mixed Items',
+        categoryNameKo: mainOrder.order_items?.[0]?.menu_item?.category?.name_ko,
+        fulfillmentType: (mainOrder.fulfillment_type as 'pickup' | 'delivery') || 'delivery',
+        deliveryDate: mainOrder.delivery_date,
+        deliveryAddress: mainOrder.delivery_address,
+        deliveryTimeSlot: mainOrder.delivery_time_slot,
+        pickupTime: mainOrder.pickup_time,
+        pickupLocation: mainOrder.pickup_location,
+        status: mainOrder.status,
+        items: mainOrder.order_items?.map(item => ({
+          id: item.id,
+          name: item.menu_item?.name || '',
+          nameKo: item.menu_item?.name_ko,
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          discountPercentage: item.discount_percentage || item.menu_item?.discount_percentage
+        })) || [],
+        subtotal: mainOrder.total_amount
+      }];
 
       const unifiedOrder: UnifiedOrder = {
         id: mainOrder.id,
@@ -69,16 +55,16 @@ export const useCustomerUnifiedOrders = (orders: Order[]) => {
         customerEmail: mainOrder.customer?.email || mainOrder.customer_email || '',
         customerPhone: mainOrder.customer?.phone || mainOrder.customer_phone,
         customer: mainOrder.customer,
-        totalAmount: groupOrders.reduce((sum, order) => sum + order.total_amount, 0),
-        discountAmount: groupOrders.reduce((sum, order) => sum + (order.discount_amount || 0), 0),
-        taxAmount: groupOrders.reduce((sum, order) => sum + (order.tax_amount || 0), 0),
+        totalAmount: mainOrder.total_amount,
+        discountAmount: mainOrder.discount_amount || 0,
+        taxAmount: mainOrder.tax_amount || 0,
         createdAt: mainOrder.created_at,
-        overallStatus,
+        overallStatus: mainOrder.status,
         notes: mainOrder.notes,
         paymentProofUrl: mainOrder.payment_proof_url,
         rejectionReason: mainOrder.rejection_reason,
         categoryDetails,
-        relatedOrderIds: groupOrders.map(o => o.id)
+        relatedOrderIds: [mainOrder.id]
       };
 
       return {

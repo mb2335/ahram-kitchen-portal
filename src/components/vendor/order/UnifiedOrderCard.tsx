@@ -138,13 +138,15 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
 
         {/* Actions */}
         <div className="mt-4 border-t pt-4">
-          <div className="flex flex-wrap gap-2">
-            {unifiedOrder.customerPhone && (
-              <SendSMSToCustomer 
-                customerPhone={unifiedOrder.customerPhone} 
-                customerName={unifiedOrder.customerName}
-              />
-            )}
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            <div className="flex gap-2">
+              {unifiedOrder.customerPhone && (
+                <SendSMSToCustomer 
+                  customerPhone={unifiedOrder.customerPhone} 
+                  customerName={unifiedOrder.customerName}
+                />
+              )}
+            </div>
             {children}
           </div>
         </div>
