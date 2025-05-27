@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { Order } from './types';
+import { Order, OrderStatus } from './types';
 import { UnifiedOrderCard } from './order/UnifiedOrderCard';
 import { OrderStatusActions } from './OrderStatusActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -153,7 +154,7 @@ export function OrderManagement() {
           onDelete={handleDelete}
         >
           <OrderStatusActions
-            status={orderGroup.unifiedOrder.overallStatus}
+            status={orderGroup.unifiedOrder.overallStatus as OrderStatus}
             onUpdateStatus={(status, reason) => {
               // Update status for all related orders
               orderGroup.originalOrders.forEach(order => 
