@@ -39,25 +39,25 @@ export function MenuItem({
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
   
   return (
-    <Card className="group relative flex flex-col h-full overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="group relative flex flex-col h-full min-h-[400px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative overflow-hidden bg-muted">
         <AspectRatio ratio={4 / 3}>
           {item.image ? (
             <img 
               src={item.image} 
               alt={displayName} 
-              className="h-full w-full object-contain" 
+              className="h-full w-full object-cover" 
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-accent/10">
-              <span className="text-muted-foreground">No image</span>
+              <span className="text-muted-foreground text-sm">No image</span>
             </div>
           )}
           
           {item.discount_percentage && item.discount_percentage > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute top-2 right-2 z-10 bg-red-500 text-white whitespace-nowrap"
+              className="absolute top-3 right-3 z-10 bg-red-500 text-white font-semibold"
             >
               {item.discount_percentage}% OFF
             </Badge>
@@ -66,38 +66,45 @@ export function MenuItem({
       </div>
 
       <div className="flex flex-col flex-grow p-4 space-y-3">
-        <div>
-          <h3 className="font-medium text-lg leading-tight mb-1 line-clamp-2">
+        <div className="space-y-2">
+          <h3 className="font-semibold text-lg leading-tight text-center">
             {displayName}
           </h3>
-          {displayDescription && (
-            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-              {displayDescription}
-            </p>
-          )}
+          <div className="min-h-[3rem] flex items-start">
+            {displayDescription ? (
+              <p className="text-sm text-muted-foreground leading-relaxed text-center w-full">
+                {displayDescription}
+              </p>
+            ) : (
+              <div className="h-12"></div>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2 mt-auto pt-2">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
+        <div className="flex flex-col gap-3 mt-auto pt-2">
+          <div className="flex items-center justify-center">
+            <div className="text-center">
               {discountedPrice ? (
-                <>
-                  <span className="text-sm line-through text-muted-foreground">
+                <div className="space-y-1">
+                  <div className="text-sm line-through text-muted-foreground">
                     ${item.price.toFixed(2)}
-                  </span>
-                  <span className="text-lg font-bold text-red-500">
+                  </div>
+                  <div className="text-xl font-bold text-red-500">
                     ${discountedPrice.toFixed(2)}
-                  </span>
-                </>
+                  </div>
+                </div>
               ) : (
-                <span className="text-lg font-bold">
+                <div className="text-xl font-bold">
                   ${item.price.toFixed(2)}
-                </span>
+                </div>
               )}
             </div>
+          </div>
+
+          <div className="flex justify-center">
             <Badge 
               variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
-              className="text-xs whitespace-nowrap"
+              className="text-xs px-3 py-1"
             >
               {getQuantityDisplay()}
             </Badge>
@@ -105,7 +112,7 @@ export function MenuItem({
 
           <Button 
             onClick={() => onAddToCart(item)} 
-            className="w-full bg-primary hover:bg-primary/90 text-white" 
+            className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2" 
             disabled={item.remaining_quantity === 0}
           >
             <Plus className="w-4 h-4 mr-2" />
