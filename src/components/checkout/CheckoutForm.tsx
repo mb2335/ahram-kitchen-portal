@@ -254,13 +254,19 @@ export function CheckoutForm({
       const selectedFulfillmentType = fulfillmentType;
       const timeSlotSelections = formData.deliveryTimeSlotSelections;
 
+      // Create updated customer data with delivery address
+      const updatedCustomerData = {
+        ...customerData,
+        address: formData.deliveryAddress || customerData.address
+      };
+
       const orderId = await submitOrder(
         {
           items,
           total,
           notes,
           deliveryDates: selectedDates,
-          customerData,
+          customerData: updatedCustomerData,
           pickupDetail: selectedPickupDetail,
           fulfillmentType: selectedFulfillmentType,
           categoryFulfillmentTypes: categoryFulfillmentTypes,
@@ -338,7 +344,7 @@ export function CheckoutForm({
             {t('checkout.processing')}
           </>
         ) : (
-          t('checkout.submit')
+          t('checkout.submit')}
         )}
       </Button>
     </form>
