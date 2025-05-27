@@ -138,7 +138,7 @@ export const useOrderSubmission = () => {
       
       const orderIds: string[] = [];
       
-      // Create one order per category
+      // Create one order per category (skip individual notifications)
       for (const categoryId of categoryIds) {
         const items = itemsByCategory[categoryId];
         
@@ -204,7 +204,8 @@ export const useOrderSubmission = () => {
             customerName: props.customerData.fullName,
             customerEmail: props.customerData.email,
             customerPhone: props.customerData.phone || null,
-            discountAmount: discountAmount > 0 ? discountAmount : null
+            discountAmount: discountAmount > 0 ? discountAmount : null,
+            skipNotification: true // Skip individual notifications
           });
 
           if (orderResult) {
@@ -236,6 +237,16 @@ export const useOrderSubmission = () => {
           } catch (bookingErr) {
             console.warn("Error in delivery time booking, but continuing with order:", bookingErr);
           }
+        }
+      }
+      
+      // Send unified notification after all orders are created
+      if (orderIds.length > 0) {
+        try {
+          const { sendUnifiedOrderNotification } = await import('@/hooks/order/useOrderCreation');
+          await sendUnifiedOrderNotification(orderIds);
+        } catch (notificationError) {
+          console.warn("Error sending unified notification, but orders were created:", notificationError);
         }
       }
       

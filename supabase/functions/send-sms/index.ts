@@ -19,11 +19,12 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request body
     const requestData = await req.json();
     
     // Handle different types of SMS notifications
-    if (requestData.type === 'order_status_update') {
+    if (requestData.type === 'unified_order_notification') {
+      return await handleUnifiedOrderNotification(requestData);
+    } else if (requestData.type === 'order_status_update') {
       return await handleOrderStatusUpdate(requestData);
     } else {
       // Original functionality for custom messages
@@ -39,7 +40,92 @@ serve(async (req) => {
   }
 })
 
-// Function to handle order status updates
+// Function to handle unified order notifications (multiple categories in one message)
+async function handleUnifiedOrderNotification(data) {
+  try {
+    const { orders, customerPhone } = data;
+    const messages = [];
+    
+    if (!customerPhone || !orders || orders.length === 0) {
+      console.log('No customer phone or orders provided for unified notification');
+      return new Response(
+        JSON.stringify({ success: true, message: "No notification needed" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Collect all items from all orders
+    const allItems = [];
+    for (const order of orders) {
+      if (order.order_items && order.order_items.length > 0) {
+        order.order_items.forEach(item => {
+          allItems.push({
+            quantity: item.quantity,
+            name: item.menu_item?.name || 'Item'
+          });
+        });
+      }
+    }
+
+    // Create unified order summary
+    let orderSummary = "";
+    if (allItems.length > 0) {
+      orderSummary = "\n" + allItems.map(item => 
+        `- ${item.quantity}x ${item.name}`
+      ).join("\n");
+    } else {
+      orderSummary = `Order #${orders[0].id.substring(0, 8)}`;
+    }
+
+    // Send unified notification to vendors
+    const { data: vendorsToNotify, error } = await supabase
+      .from('vendors')
+      .select('id, phone, business_name, vendor_name')
+      .eq('receive_notifications', true)
+      .not('phone', 'is', null);
+    
+    if (!error && vendorsToNotify && vendorsToNotify.length > 0) {
+      vendorsToNotify.forEach(vendor => {
+        if (vendor.phone) {
+          console.log(`Sending unified notification to vendor ${vendor.id} at ${vendor.phone}`);
+          messages.push({
+            to: vendor.phone,
+            body: "A new order has been placed. Please review it in your dashboard."
+          });
+        }
+      });
+    }
+
+    // Send unified notification to customer
+    messages.push({
+      to: customerPhone,
+      body: `Ahram Kitchen: Thank you for placing an order! Your order,${orderSummary}\nis currently pending.`
+    });
+
+    // Send all messages
+    if (messages.length > 0) {
+      console.log(`Sending ${messages.length} unified notification message(s)`);
+      const results = await sendMessages(messages);
+      return new Response(
+        JSON.stringify({ results }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      return new Response(
+        JSON.stringify({ success: true, message: "No notifications needed" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  } catch (error) {
+    console.error('Error handling unified order notification:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// Function to handle order status updates (existing functionality)
 async function handleOrderStatusUpdate(data) {
   try {
     const { order, previousStatus } = data;
@@ -64,7 +150,6 @@ async function handleOrderStatusUpdate(data) {
         console.log(`Found ${vendorsToNotify?.length || 0} vendors with notifications enabled`);
         
         if (vendorsToNotify && vendorsToNotify.length > 0) {
-          // Send notification to each vendor with notifications enabled
           vendorsToNotify.forEach(vendor => {
             if (vendor.phone) {
               console.log(`Sending notification to vendor ${vendor.id} at ${vendor.phone}`);
@@ -74,15 +159,12 @@ async function handleOrderStatusUpdate(data) {
               });
             }
           });
-        } else {
-          console.log('No vendors found with notifications enabled or with phone numbers');
         }
       }
       
       // Generate order summary for customer
       let orderSummary = "";
       if (order.order_items && order.order_items.length > 0) {
-        // Create a formatted list of items with line breaks
         orderSummary = "\n" + order.order_items.map(item => 
           `- ${item.quantity}x ${item.menu_item?.name || 'Item'}`
         ).join("\n");

@@ -19,6 +19,7 @@ interface CreateOrderParams {
   customerEmail: string;
   customerPhone?: string | null;
   discountAmount?: number | null;
+  skipNotification?: boolean; // Add parameter to skip individual notifications
 }
 
 export async function createOrder({
@@ -37,7 +38,8 @@ export async function createOrder({
   customerName,
   customerEmail,
   customerPhone,
-  discountAmount
+  discountAmount,
+  skipNotification = false
 }: CreateOrderParams) {
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
@@ -82,7 +84,7 @@ export async function createOrder({
       .insert({
         customer_id: customerId,
         total_amount: categoryTotal,
-        tax_amount: 0, // Set tax amount to 0
+        tax_amount: 0,
         notes: notes,
         status: 'pending',
         delivery_date: deliveryDate.toISOString(),
@@ -113,7 +115,7 @@ export async function createOrder({
       menu_item_id: item.id,
       quantity: item.quantity,
       unit_price: item.price,
-      discount_percentage: item.discount_percentage || null // Store the discount percentage with each order item
+      discount_percentage: item.discount_percentage || null
     }));
 
     const { error: orderItemsError } = await supabase
@@ -127,8 +129,56 @@ export async function createOrder({
 
     console.log("Successfully created order items:", orderItems.length);
 
-    // Get the complete order with items to send notification
-    const { data: completeOrder, error: fetchError } = await supabase
+    // Only send notification if not skipped (for individual orders, we'll skip and send unified notification later)
+    if (!skipNotification) {
+      const { data: completeOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            quantity,
+            menu_item_id,
+            menu_item:menu_items (
+              id,
+              name,
+              name_ko
+            )
+          )
+        `)
+        .eq('id', orderData.id)
+        .single();
+
+      if (!fetchError && completeOrder) {
+        try {
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              type: 'order_status_update',
+              order: completeOrder,
+              previousStatus: null
+            }
+          });
+          console.log("Order creation notification sent");
+        } catch (notificationError) {
+          console.error("Error sending order creation notification:", notificationError);
+        }
+      }
+    }
+
+    return orderData;
+  } catch (error) {
+    console.error("Error in createOrder:", error);
+    throw error;
+  }
+}
+
+// New function to send unified order notification
+export async function sendUnifiedOrderNotification(orderIds: string[]) {
+  try {
+    if (orderIds.length === 0) return;
+    
+    // Get all orders with their items
+    const { data: orders, error } = await supabase
       .from('orders')
       .select(`
         *,
@@ -143,29 +193,25 @@ export async function createOrder({
           )
         )
       `)
-      .eq('id', orderData.id)
-      .single();
+      .in('id', orderIds);
 
-    if (!fetchError && completeOrder) {
-      // Send new order notification via SMS
-      try {
-        await supabase.functions.invoke('send-sms', {
-          body: {
-            type: 'order_status_update',
-            order: completeOrder,
-            previousStatus: null // null indicates a new order
-          }
-        });
-        console.log("Order creation notification sent");
-      } catch (notificationError) {
-        console.error("Error sending order creation notification:", notificationError);
-        // Continue with the order creation even if notification fails
-      }
+    if (error || !orders || orders.length === 0) {
+      console.error("Error fetching orders for unified notification:", error);
+      return;
     }
 
-    return orderData;
+    // Send unified notification with all orders
+    await supabase.functions.invoke('send-sms', {
+      body: {
+        type: 'unified_order_notification',
+        orders: orders,
+        customerPhone: orders[0].customer_phone,
+        customerName: orders[0].customer_name
+      }
+    });
+    
+    console.log("Unified order notification sent for orders:", orderIds);
   } catch (error) {
-    console.error("Error in createOrder:", error);
-    throw error;
+    console.error("Error sending unified order notification:", error);
   }
 }
