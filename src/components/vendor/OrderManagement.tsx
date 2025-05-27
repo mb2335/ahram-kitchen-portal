@@ -42,18 +42,36 @@ export function OrderManagement() {
     }
   };
 
-  const handleDelete = async (orderId: string) => {
+  const handleUnifiedOrderDelete = async (unifiedOrderId: string) => {
     try {
-      const result = await deleteOrder(orderId);
-      if (result.success) {
-        toast({
-          title: 'Success',
-          description: 'Order deleted successfully',
-        });
-        await refetch();
-      } else {
-        throw new Error(result.error);
+      // Find the unified order group
+      const orderGroup = unifiedOrderGroups.find(group => group.unifiedOrder.id === unifiedOrderId);
+      if (!orderGroup) {
+        throw new Error('Order group not found');
       }
+
+      // Delete all related orders
+      let hasError = false;
+      let errorMessage = '';
+
+      for (const order of orderGroup.originalOrders) {
+        const result = await deleteOrder(order.id);
+        if (!result.success) {
+          hasError = true;
+          errorMessage = result.error;
+          break;
+        }
+      }
+
+      if (hasError) {
+        throw new Error(errorMessage);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Order deleted successfully',
+      });
+      await refetch();
     } catch (error: any) {
       toast({
         title: 'Error deleting order',
@@ -136,7 +154,7 @@ export function OrderManagement() {
       <UnifiedOrderCard 
         key={orderGroup.unifiedOrder.id} 
         unifiedOrder={orderGroup.unifiedOrder}
-        onDelete={handleDelete}
+        onDelete={handleUnifiedOrderDelete}
       >
         <div className="flex justify-between items-center w-full">
           <div className="flex gap-2">
@@ -154,7 +172,7 @@ export function OrderManagement() {
           </div>
           <OrderActions 
             orderId={orderGroup.unifiedOrder.id}
-            onDelete={handleDelete}
+            onDelete={handleUnifiedOrderDelete}
           />
         </div>
       </UnifiedOrderCard>

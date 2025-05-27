@@ -226,7 +226,7 @@ export const useVendorOrders = () => {
     }
   };
 
-  const deleteOrder = async (orderId: string) => {
+  const deleteOrder = async (orderId: string, skipNotification = false) => {
     try {
       console.log('Starting order deletion process for order:', orderId);
       
