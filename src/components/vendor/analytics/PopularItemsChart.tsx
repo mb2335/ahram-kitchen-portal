@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/select';
 import { subDays, subMonths, subYears, startOfDay, format } from 'date-fns';
 import { DollarSign, Package, Users, ShoppingCart } from 'lucide-react';
-import { useVendorId } from '@/hooks/useVendorId';
 
 type TimeRange = 'week' | 'month' | '6months' | 'year' | 'all';
 
@@ -34,9 +33,6 @@ const COLORS = ['#1F3A5F', '#9E4244', '#F5E6D3', '#8884d8', '#82ca9d', '#ffc658'
 
 export function PopularItemsChart() {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
-  const { vendorId } = useVendorId();
-
-  console.log('PopularItemsChart - vendorId:', vendorId);
 
   const getStartDate = () => {
     const now = new Date();
@@ -54,16 +50,11 @@ export function PopularItemsChart() {
     }
   };
 
-  // Popular Items Data
+  // Popular Items Data - Platform wide
   const { data: popularItems, isLoading: popularItemsLoading, error: popularItemsError } = useQuery({
-    queryKey: ['popular-items', timeRange, vendorId],
+    queryKey: ['popular-items-platform', timeRange],
     queryFn: async () => {
-      if (!vendorId) {
-        console.log('No vendorId available for popular items query');
-        return [];
-      }
-      
-      console.log('Fetching popular items for vendor:', vendorId);
+      console.log('Fetching platform-wide popular items');
       const startDate = getStartDate();
       
       let query = supabase
@@ -73,8 +64,7 @@ export function PopularItemsChart() {
           menu_item_id,
           menu_item:menu_items!inner(
             id,
-            name,
-            vendor_id
+            name
           ),
           order:orders!inner(
             id,
@@ -82,7 +72,6 @@ export function PopularItemsChart() {
             created_at
           )
         `)
-        .eq('menu_item.vendor_id', vendorId)
         .neq('order.status', 'rejected');
         
       if (startDate) {
@@ -126,19 +115,13 @@ export function PopularItemsChart() {
       console.log('Popular items result:', result);
       return result;
     },
-    enabled: !!vendorId,
   });
 
-  // Revenue Trends Data
+  // Revenue Trends Data - Platform wide
   const { data: revenueTrends, isLoading: revenueLoading, error: revenueError } = useQuery({
-    queryKey: ['revenue-trends', timeRange, vendorId],
+    queryKey: ['revenue-trends-platform', timeRange],
     queryFn: async () => {
-      if (!vendorId) {
-        console.log('No vendorId available for revenue trends query');
-        return [];
-      }
-      
-      console.log('Fetching revenue trends for vendor:', vendorId);
+      console.log('Fetching platform-wide revenue trends');
       const startDate = getStartDate();
       
       let query = supabase
@@ -146,12 +129,8 @@ export function PopularItemsChart() {
         .select(`
           total_amount,
           created_at,
-          status,
-          order_items!inner(
-            menu_item:menu_items!inner(vendor_id)
-          )
+          status
         `)
-        .eq('order_items.menu_item.vendor_id', vendorId)
         .neq('status', 'rejected');
         
       if (startDate) {
@@ -196,30 +175,18 @@ export function PopularItemsChart() {
       console.log('Revenue trends result:', result);
       return result;
     },
-    enabled: !!vendorId,
   });
 
-  // Order Status Distribution
+  // Order Status Distribution - Platform wide
   const { data: orderStatus, isLoading: statusLoading, error: statusError } = useQuery({
-    queryKey: ['order-status', timeRange, vendorId],
+    queryKey: ['order-status-platform', timeRange],
     queryFn: async () => {
-      if (!vendorId) {
-        console.log('No vendorId available for order status query');
-        return [];
-      }
-      
-      console.log('Fetching order status for vendor:', vendorId);
+      console.log('Fetching platform-wide order status');
       const startDate = getStartDate();
       
       let query = supabase
         .from('orders')
-        .select(`
-          status,
-          order_items!inner(
-            menu_item:menu_items!inner(vendor_id)
-          )
-        `)
-        .eq('order_items.menu_item.vendor_id', vendorId);
+        .select('status');
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
@@ -251,19 +218,13 @@ export function PopularItemsChart() {
       console.log('Order status result:', result);
       return result;
     },
-    enabled: !!vendorId,
   });
 
-  // Summary Stats including guest customers
+  // Summary Stats - Platform wide including guest customers
   const { data: summaryStats, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ['summary-stats', timeRange, vendorId],
+    queryKey: ['summary-stats-platform', timeRange],
     queryFn: async () => {
-      if (!vendorId) {
-        console.log('No vendorId available for summary stats query');
-        return null;
-      }
-      
-      console.log('Fetching summary stats for vendor:', vendorId);
+      console.log('Fetching platform-wide summary stats');
       const startDate = getStartDate();
       
       let query = supabase
@@ -272,12 +233,8 @@ export function PopularItemsChart() {
           total_amount,
           status,
           customer_id,
-          customer_email,
-          order_items!inner(
-            menu_item:menu_items!inner(vendor_id)
-          )
-        `)
-        .eq('order_items.menu_item.vendor_id', vendorId);
+          customer_email
+        `);
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
@@ -328,7 +285,6 @@ export function PopularItemsChart() {
       console.log('Summary stats result:', result);
       return result;
     },
-    enabled: !!vendorId,
   });
 
   const isLoading = popularItemsLoading || revenueLoading || statusLoading || statsLoading;
@@ -338,20 +294,10 @@ export function PopularItemsChart() {
     console.error('Analytics errors:', { popularItemsError, revenueError, statusError, statsError });
   }
 
-  if (!vendorId) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-center items-center h-64">
-          <p className="text-muted-foreground">No vendor ID found. Please ensure you are logged in as a vendor.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h2>
+        <h2 className="text-3xl font-bold text-gray-900">Business Analytics Dashboard</h2>
         <Select
           value={timeRange}
           onValueChange={(value: TimeRange) => setTimeRange(value)}
