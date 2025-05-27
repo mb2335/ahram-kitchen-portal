@@ -39,7 +39,7 @@ export function MenuItem({
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
   
   return (
-    <Card className="group relative flex flex-col h-full min-h-[500px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="group relative flex flex-col h-full min-h-[450px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative overflow-hidden bg-muted">
         <AspectRatio ratio={4 / 3}>
           {item.image ? (
@@ -74,9 +74,9 @@ export function MenuItem({
         </div>
 
         {/* Description Section - Fixed Height */}
-        <div className="h-20 flex items-start justify-center mb-4">
+        <div className="h-16 flex items-start justify-center mb-4">
           {displayDescription ? (
-            <p className="text-sm text-muted-foreground leading-relaxed text-center line-clamp-4">
+            <p className="text-sm text-muted-foreground leading-relaxed text-center line-clamp-3">
               {displayDescription}
             </p>
           ) : (
@@ -85,9 +85,9 @@ export function MenuItem({
         </div>
 
         {/* Footer Section - Push to bottom with consistent alignment */}
-        <div className="mt-auto space-y-4">
-          {/* Price Section - Fixed Height and Centered */}
-          <div className="h-20 flex items-center justify-center">
+        <div className="mt-auto space-y-3">
+          {/* Price Section - Fixed Height and Alignment */}
+          <div className="h-16 flex items-center justify-center">
             <div className="text-center">
               {discountedPrice ? (
                 <div className="space-y-1">
@@ -106,8 +106,8 @@ export function MenuItem({
             </div>
           </div>
 
-          {/* Stock Badge - Fixed Height and Centered */}
-          <div className="h-8 flex justify-center items-center">
+          {/* Stock Badge - Fixed Height */}
+          <div className="h-6 flex justify-center">
             <Badge 
               variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
               className="text-xs px-3 py-1"
