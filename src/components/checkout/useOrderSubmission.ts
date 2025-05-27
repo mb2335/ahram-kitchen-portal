@@ -137,13 +137,10 @@ export const useOrderSubmission = () => {
       
       console.log("Final category date mapping:", categoryToDateMap);
       
-      // Generate a single order ID for the entire checkout
-      const sharedOrderId = crypto.randomUUID();
-      console.log("Generated shared order ID:", sharedOrderId);
-      
       const orderIds: string[] = [];
+      let firstOrderId: string | null = null;
       
-      // Create orders for each category using the same order ID
+      // Create orders for each category - each gets its own unique ID
       for (let i = 0; i < categoryIds.length; i++) {
         const categoryId = categoryIds[i];
         const items = itemsByCategory[categoryId];
@@ -212,12 +209,15 @@ export const useOrderSubmission = () => {
             customerPhone: props.customerData.phone || null,
             discountAmount: discountAmount > 0 ? discountAmount : null,
             skipNotification: true, // Skip individual notifications
-            orderId: sharedOrderId // Use the shared order ID for all categories
+            orderId: i === 0 ? undefined : firstOrderId // Only pass orderId for subsequent orders
           });
 
           if (orderResult) {
             orderIds.push(orderResult.id);
-            console.log(`Order created with shared ID ${orderResult.id}`);
+            if (i === 0) {
+              firstOrderId = orderResult.id;
+            }
+            console.log(`Order created with ID ${orderResult.id}`);
           }
         } catch (orderError) {
           console.error(`Error creating order for category ${categoryId}:`, orderError);
@@ -251,7 +251,7 @@ export const useOrderSubmission = () => {
       if (orderIds.length > 0) {
         try {
           const { sendUnifiedOrderNotification } = await import('@/hooks/order/useOrderCreation');
-          await sendUnifiedOrderNotification([sharedOrderId]); // Use the shared order ID
+          await sendUnifiedOrderNotification(orderIds);
         } catch (notificationError) {
           console.warn("Error sending unified notification, but orders were created:", notificationError);
         }
@@ -268,11 +268,11 @@ export const useOrderSubmission = () => {
       // Determine if user is authenticated before calling success callback
       const isAuthenticated = !!session?.user;
       
-      // Call the success callback with the shared order ID
-      console.log(`Order submission completed successfully. Calling success callback with shared order ID ${sharedOrderId}`);
-      props.onOrderSuccess(sharedOrderId, isAuthenticated);
+      // Call the success callback with the first order ID
+      console.log(`Order submission completed successfully. Calling success callback with first order ID ${firstOrderId}`);
+      props.onOrderSuccess(firstOrderId || orderIds[0], isAuthenticated);
       
-      return sharedOrderId;
+      return firstOrderId || orderIds[0];
     } catch (error: any) {
       console.error("Order submission failed:", error);
       toast({

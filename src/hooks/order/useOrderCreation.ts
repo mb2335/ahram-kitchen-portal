@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types/order';
 
@@ -84,20 +85,24 @@ export async function createOrder({
     let finalOrderData;
     
     if (orderId) {
-      // Use existing order ID - this is for subsequent categories in the same checkout
+      // For subsequent categories, create a new UUID since we can't use the same ID
+      const newOrderId = crypto.randomUUID();
       finalOrderData = {
-        id: orderId,
+        id: newOrderId,
         ...orderData
       };
       
       const { data: insertedOrder, error: orderError } = await supabase
         .from('orders')
-        .insert(finalOrderData)
+        .insert({
+          ...finalOrderData,
+          status: 'pending'
+        })
         .select()
         .single();
 
       if (orderError) {
-        console.error("Error creating order with existing ID:", orderError);
+        console.error("Error creating order with new ID:", orderError);
         throw orderError;
       }
       

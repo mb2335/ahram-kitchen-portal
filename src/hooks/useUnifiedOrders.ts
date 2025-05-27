@@ -71,7 +71,6 @@ export const useUnifiedOrders = (orders: Order[]) => {
         customer: mainOrder.customer,
         totalAmount: groupOrders.reduce((sum, order) => sum + order.total_amount, 0),
         discountAmount: groupOrders.reduce((sum, order) => sum + (order.discount_amount || 0), 0),
-        taxAmount: groupOrders.reduce((sum, order) => sum + (order.tax_amount || 0), 0),
         createdAt: mainOrder.created_at,
         overallStatus,
         notes: mainOrder.notes,

@@ -42,7 +42,6 @@ export const useCustomerUnifiedOrders = (orders: Order[]) => {
         customer: order.customer,
         totalAmount: order.total_amount,
         discountAmount: order.discount_amount || 0,
-        taxAmount: order.tax_amount || 0,
         createdAt: order.created_at,
         overallStatus: order.status,
         notes: order.notes,
