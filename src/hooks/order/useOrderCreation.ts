@@ -19,7 +19,8 @@ interface CreateOrderParams {
   customerEmail: string;
   customerPhone?: string | null;
   discountAmount?: number | null;
-  skipNotification?: boolean; // Add parameter to skip individual notifications
+  skipNotification?: boolean;
+  orderId?: string; // Add parameter to use existing order ID
 }
 
 export async function createOrder({
@@ -39,7 +40,8 @@ export async function createOrder({
   customerEmail,
   customerPhone,
   discountAmount,
-  skipNotification = false
+  skipNotification = false,
+  orderId // Use provided order ID if available
 }: CreateOrderParams) {
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
@@ -60,7 +62,7 @@ export async function createOrder({
     return sum + (originalPrice - discountedPrice);
   }, 0);
 
-  console.log("Creating order with data:", {
+  const orderData = {
     customer_id: customerId,
     total_amount: categoryTotal,
     notes,
@@ -75,43 +77,57 @@ export async function createOrder({
     customer_email: customerEmail,
     customer_phone: customerPhone,
     discount_amount: finalDiscountAmount > 0 ? finalDiscountAmount : null
-  });
+  };
+
+  console.log("Creating order with data:", orderData);
 
   try {
-    // Create the order record
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        customer_id: customerId,
-        total_amount: categoryTotal,
-        tax_amount: 0,
-        notes: notes,
-        status: 'pending',
-        delivery_date: deliveryDate.toISOString(),
-        payment_proof_url: paymentProofUrl,
-        pickup_time: pickupTime,
-        pickup_location: pickupLocation,
-        fulfillment_type: fulfillmentType || 'pickup',
-        delivery_address: deliveryAddress,
-        delivery_time_slot: deliveryTimeSlot,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
-        discount_amount: finalDiscountAmount > 0 ? finalDiscountAmount : null
-      })
-      .select()
-      .single();
+    let finalOrderData;
+    
+    if (orderId) {
+      // Use existing order ID - this is for subsequent categories in the same checkout
+      finalOrderData = {
+        id: orderId,
+        ...orderData
+      };
+      
+      const { data: insertedOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert(finalOrderData)
+        .select()
+        .single();
 
-    if (orderError) {
-      console.error("Error creating order:", orderError);
-      throw orderError;
+      if (orderError) {
+        console.error("Error creating order with existing ID:", orderError);
+        throw orderError;
+      }
+      
+      finalOrderData = insertedOrder;
+    } else {
+      // Create new order with auto-generated ID - this is for the first category
+      const { data: insertedOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          ...orderData,
+          status: 'pending',
+          tax_amount: 0
+        })
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error("Error creating order:", orderError);
+        throw orderError;
+      }
+      
+      finalOrderData = insertedOrder;
     }
 
-    console.log("Successfully created order record:", orderData);
+    console.log("Successfully created order record:", finalOrderData);
 
     // Create the order items
     const orderItems = categoryItems.map((item) => ({
-      order_id: orderData.id,
+      order_id: finalOrderData.id,
       menu_item_id: item.id,
       quantity: item.quantity,
       unit_price: item.price,
@@ -146,7 +162,7 @@ export async function createOrder({
             )
           )
         `)
-        .eq('id', orderData.id)
+        .eq('id', finalOrderData.id)
         .single();
 
       if (!fetchError && completeOrder) {
@@ -165,7 +181,7 @@ export async function createOrder({
       }
     }
 
-    return orderData;
+    return finalOrderData;
   } catch (error) {
     console.error("Error in createOrder:", error);
     throw error;
