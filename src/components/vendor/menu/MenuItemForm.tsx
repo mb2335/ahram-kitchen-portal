@@ -1,16 +1,17 @@
+
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { MenuFormData } from "./types";
 import { validateMenuItemAvailability } from "./utils/menuItemValidation";
 import { MenuItem } from "./types";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { ImageUpload } from "./components/ImageUpload";
 import { BasicDetails } from "./components/BasicDetails";
 import { PricingDetails } from "./components/PricingDetails";
 import { CategorySelection } from "./components/CategorySelection";
 
 interface MenuItemFormProps {
-  onSubmit: (data: MenuFormData & { image?: File }) => Promise<void>;
+  onSubmit: (data: MenuFormData & { image?: File; imageRemoved?: boolean }) => Promise<void>;
   editingItem: MenuItem | null;
   formData: MenuFormData;
   setFormData: Dispatch<SetStateAction<MenuFormData>>;
@@ -30,6 +31,8 @@ export function MenuItemForm({
     defaultValues: formData
   });
 
+  const [imageRemoved, setImageRemoved] = useState(false);
+
   const watchCategoryId = watch('category_id');
   const watchIsAvailable = watch('is_available');
 
@@ -44,7 +47,11 @@ export function MenuItemForm({
       return;
     }
 
-    await onSubmit({ ...data, image: selectedImage || undefined });
+    await onSubmit({ 
+      ...data, 
+      image: selectedImage || undefined,
+      imageRemoved 
+    });
   };
 
   return (
@@ -54,6 +61,8 @@ export function MenuItemForm({
           editingItem={editingItem}
           selectedImage={selectedImage}
           setSelectedImage={setSelectedImage}
+          imageRemoved={imageRemoved}
+          setImageRemoved={setImageRemoved}
         />
         <BasicDetails register={register} errors={errors} />
         <PricingDetails register={register} errors={errors} editingItem={editingItem} />

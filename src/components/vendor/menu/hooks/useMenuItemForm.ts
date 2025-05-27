@@ -38,16 +38,16 @@ export function useMenuItemForm(onSuccess: () => void) {
     setSelectedImage(null);
   };
 
-  const handleSubmit = async (data: MenuFormData & { image?: File }) => {
+  const handleSubmit = async (data: MenuFormData & { image?: File; imageRemoved?: boolean }) => {
     try {
       let imageUrl = editingItem?.image;
       
+      // Handle new image upload
       if (data.image) {
         imageUrl = await handleImageUpload(data.image);
       }
-
       // Handle image removal
-      if (editingItem?.image && !imageUrl && !selectedImage) {
+      else if (data.imageRemoved && editingItem?.image) {
         const fileName = editingItem.image.split('/').pop();
         if (fileName) {
           await supabase.storage

@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { MenuItemForm } from '../MenuItemForm';
 import { MenuItem, MenuFormData } from '../types';
@@ -10,7 +11,7 @@ interface MenuItemDialogProps {
   setFormData: (data: MenuFormData) => void;
   selectedImage: File | null;
   setSelectedImage: (file: File | null) => void;
-  onSubmit: (data: MenuFormData & { image?: File }) => Promise<void>;
+  onSubmit: (data: MenuFormData & { image?: File; imageRemoved?: boolean }) => Promise<void>;
 }
 
 export function MenuItemDialog({

@@ -11,9 +11,17 @@ interface ImageUploadProps {
   editingItem: MenuItem | null;
   selectedImage: File | null;
   setSelectedImage: (file: File | null) => void;
+  imageRemoved?: boolean;
+  setImageRemoved?: (removed: boolean) => void;
 }
 
-export function ImageUpload({ editingItem, selectedImage, setSelectedImage }: ImageUploadProps) {
+export function ImageUpload({ 
+  editingItem, 
+  selectedImage, 
+  setSelectedImage,
+  imageRemoved = false,
+  setImageRemoved 
+}: ImageUploadProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -39,24 +47,37 @@ export function ImageUpload({ editingItem, selectedImage, setSelectedImage }: Im
       }
 
       setSelectedImage(file);
+      // Reset image removed flag when a new image is selected
+      if (setImageRemoved) {
+        setImageRemoved(false);
+      }
     }
   };
 
   const removeImage = () => {
     setSelectedImage(null);
+    // Mark existing image as removed
+    if (setImageRemoved) {
+      setImageRemoved(true);
+    }
+    // Clear the file input
     const input = document.getElementById('image') as HTMLInputElement;
     if (input) input.value = '';
   };
+
+  // Determine if we should show an image
+  const hasImage = selectedImage || (editingItem?.image && !imageRemoved);
+  const imageUrl = selectedImage ? URL.createObjectURL(selectedImage) : editingItem?.image;
 
   return (
     <div className="space-y-2">
       <Label htmlFor="image">Image</Label>
       <div className="space-y-2">
-        {(selectedImage || editingItem?.image) && (
+        {hasImage && imageUrl && (
           <div className="relative w-full max-w-md">
             <AspectRatio ratio={4/3} className="bg-muted rounded-lg overflow-hidden">
               <img
-                src={selectedImage ? URL.createObjectURL(selectedImage) : editingItem?.image}
+                src={imageUrl}
                 alt="Preview"
                 className="w-full h-full object-cover"
               />
