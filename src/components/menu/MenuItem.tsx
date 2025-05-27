@@ -39,7 +39,7 @@ export function MenuItem({
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
   
   return (
-    <Card className="group relative flex flex-col h-full min-h-[380px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="group relative flex flex-col h-full min-h-[450px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative overflow-hidden bg-muted">
         <AspectRatio ratio={4 / 3}>
           {item.image ? (
@@ -57,7 +57,7 @@ export function MenuItem({
           {item.discount_percentage && item.discount_percentage > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute top-2 right-2 z-10 bg-red-500 text-white font-semibold text-xs"
+              className="absolute top-3 right-3 z-10 bg-red-500 text-white font-semibold"
             >
               {item.discount_percentage}% OFF
             </Badge>
@@ -65,18 +65,18 @@ export function MenuItem({
         </AspectRatio>
       </div>
 
-      <div className="flex flex-col flex-grow p-3">
-        {/* Title Section - Reduced Height */}
-        <div className="h-12 flex items-center justify-center mb-2">
-          <h3 className="font-semibold text-base leading-tight text-center line-clamp-2">
+      <div className="flex flex-col flex-grow p-4">
+        {/* Title Section - Fixed Height */}
+        <div className="h-14 flex items-center justify-center mb-3">
+          <h3 className="font-semibold text-lg leading-tight text-center line-clamp-2">
             {displayName}
           </h3>
         </div>
 
-        {/* Description Section - Reduced Height */}
-        <div className="h-12 flex items-start justify-center mb-3">
+        {/* Description Section - Fixed Height */}
+        <div className="h-16 flex items-start justify-center mb-4">
           {displayDescription ? (
-            <p className="text-xs text-muted-foreground leading-relaxed text-center line-clamp-3">
+            <p className="text-sm text-muted-foreground leading-relaxed text-center line-clamp-3">
               {displayDescription}
             </p>
           ) : (
@@ -84,46 +84,46 @@ export function MenuItem({
           )}
         </div>
 
-        {/* Footer Section - Push to bottom with reduced spacing */}
-        <div className="mt-auto space-y-2">
-          {/* Price Section - Reduced Height */}
-          <div className="h-12 flex items-center justify-center">
+        {/* Footer Section - Push to bottom with consistent alignment */}
+        <div className="mt-auto space-y-3">
+          {/* Price Section - Fixed Height and Alignment */}
+          <div className="h-16 flex items-center justify-center">
             <div className="text-center">
               {discountedPrice ? (
-                <div className="space-y-0.5">
-                  <div className="text-xs line-through text-muted-foreground">
+                <div className="space-y-1">
+                  <div className="text-sm line-through text-muted-foreground">
                     ${item.price.toFixed(2)}
                   </div>
-                  <div className="text-lg font-bold text-red-500">
+                  <div className="text-xl font-bold text-red-500">
                     ${discountedPrice.toFixed(2)}
                   </div>
                 </div>
               ) : (
-                <div className="text-lg font-bold">
+                <div className="text-xl font-bold">
                   ${item.price.toFixed(2)}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Stock Badge - Reduced Height */}
-          <div className="h-5 flex justify-center">
+          {/* Stock Badge - Fixed Height */}
+          <div className="h-6 flex justify-center">
             <Badge 
               variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
-              className="text-xs px-2 py-0.5"
+              className="text-xs px-3 py-1"
             >
               {getQuantityDisplay()}
             </Badge>
           </div>
 
-          {/* Add to Cart Button - Reduced Height */}
-          <div className="h-8">
+          {/* Add to Cart Button - Fixed Height */}
+          <div className="h-10">
             <Button 
               onClick={() => onAddToCart(item)} 
-              className="w-full bg-primary hover:bg-primary/90 text-white font-medium h-full text-sm" 
+              className="w-full bg-primary hover:bg-primary/90 text-white font-medium h-full" 
               disabled={item.remaining_quantity === 0}
             >
-              <Plus className="w-3 h-3 mr-1" />
+              <Plus className="w-4 h-4 mr-2" />
               {t('item.add')}
             </Button>
           </div>
