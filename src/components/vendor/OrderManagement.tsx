@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { OrderStatus } from './types';
@@ -39,6 +38,47 @@ export function OrderManagement() {
         description: result.error,
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleUnifiedOrderStatusUpdate = async (orderGroup: any, status: string, reason?: string) => {
+    console.log('Handling unified order status update:', { orderGroup: orderGroup.unifiedOrder.id, status, reason });
+    
+    // Update status for all related orders but only send notification for the first one
+    let hasError = false;
+    let errorMessage = '';
+    let successCount = 0;
+
+    for (let i = 0; i < orderGroup.originalOrders.length; i++) {
+      const order = orderGroup.originalOrders[i];
+      const isFirstOrder = i === 0;
+      
+      // Use the hook's updateOrderStatus method with skipNotification for all but first order
+      const result = await updateOrderStatus(order.id, status, reason, !isFirstOrder);
+      
+      if (result.success) {
+        successCount++;
+      } else {
+        hasError = true;
+        errorMessage = result.error;
+        break;
+      }
+    }
+
+    if (hasError) {
+      toast({
+        title: 'Error updating order status',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: status === 'rejected' 
+          ? `Order rejected${reason ? ': ' + reason : ''}`
+          : `Order ${status} successfully`,
+      });
+      await refetch();
     }
   };
 
@@ -161,10 +201,7 @@ export function OrderManagement() {
             <OrderStatusActions
               status={orderGroup.unifiedOrder.overallStatus as OrderStatus}
               onUpdateStatus={(status, reason) => {
-                // Update status for all related orders
-                orderGroup.originalOrders.forEach(order => 
-                  handleStatusUpdate(order.id, status, reason)
-                );
+                handleUnifiedOrderStatusUpdate(orderGroup, status, reason);
               }}
               rejectionReason={rejectionReason}
               setRejectionReason={setRejectionReason}
