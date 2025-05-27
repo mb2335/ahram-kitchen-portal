@@ -1,8 +1,5 @@
-
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
@@ -14,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useVendorOrders } from '@/hooks/useOrders';
+import { useUnifiedOrders } from '@/hooks/useUnifiedOrders';
 
 export function DashboardSummary() {
   const session = useSession();
@@ -24,53 +23,25 @@ export function DashboardSummary() {
     to: endOfDay(new Date())
   });
 
-  const { data: orderStats } = useQuery({
-    queryKey: ['order-stats', timeFilter, dateRange],
-    queryFn: async () => {
-      try {
-        const { data: vendorData } = await supabase
-          .from('vendors')
-          .select('id')
-          .eq('user_id', session?.user?.id)
-          .single();
+  const { orders } = useVendorOrders();
+  const unifiedOrderGroups = useUnifiedOrders(orders || []);
 
-        if (!vendorData) throw new Error('Vendor not found');
-
-        let timeQuery = supabase
-          .from('orders')
-          .select('status, total_amount')
-          .gte('created_at', dateRange.from.toISOString())
-          .lte('created_at', dateRange.to.toISOString());
-
-        const { data: orders, error } = await timeQuery;
-
-        if (error) throw error;
-
-        // Filter out rejected orders for total count and revenue calculations
-        const validOrders = orders?.filter(o => o.status !== 'rejected') || [];
-        
-        const stats = {
-          // Only count non-rejected orders for total
-          total: validOrders.length || 0,
-          pending: orders?.filter(o => o.status === 'pending').length || 0,
-          completed: orders?.filter(o => o.status === 'completed').length || 0,
-          rejected: orders?.filter(o => o.status === 'rejected').length || 0,
-          // Only include revenue from non-rejected orders
-          revenue: validOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
-        };
-
-        return stats;
-      } catch (error: any) {
-        toast({
-          title: 'Error fetching statistics',
-          description: error.message,
-          variant: 'destructive',
-        });
-        return null;
-      }
-    },
-    enabled: !!session?.user?.id,
+  // Filter unified orders based on date range
+  const filteredUnifiedOrders = unifiedOrderGroups.filter(group => {
+    const orderDate = new Date(group.unifiedOrder.createdAt);
+    return orderDate >= dateRange.from && orderDate <= dateRange.to;
   });
+
+  // Calculate stats based on unified orders
+  const orderStats = {
+    total: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus !== 'rejected').length,
+    pending: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'pending').length,
+    completed: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'completed').length,
+    rejected: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'rejected').length,
+    revenue: filteredUnifiedOrders
+      .filter(group => group.unifiedOrder.overallStatus !== 'rejected')
+      .reduce((sum, group) => sum + group.unifiedOrder.totalAmount, 0)
+  };
 
   const handleQuickDateSelect = (filter: 'today' | 'week' | 'month' | 'custom') => {
     setTimeFilter(filter);
@@ -149,19 +120,19 @@ export function DashboardSummary() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <h3 className="text-sm font-medium text-muted-foreground">Total Orders</h3>
-          <p className="text-2xl font-bold">{orderStats?.total || 0}</p>
+          <p className="text-2xl font-bold">{orderStats.total}</p>
         </Card>
         <Card className="p-4">
           <h3 className="text-sm font-medium text-muted-foreground">Pending Orders</h3>
-          <p className="text-2xl font-bold">{orderStats?.pending || 0}</p>
+          <p className="text-2xl font-bold">{orderStats.pending}</p>
         </Card>
         <Card className="p-4">
           <h3 className="text-sm font-medium text-muted-foreground">Completed Orders</h3>
-          <p className="text-2xl font-bold">{orderStats?.completed || 0}</p>
+          <p className="text-2xl font-bold">{orderStats.completed}</p>
         </Card>
         <Card className="p-4">
           <h3 className="text-sm font-medium text-muted-foreground">Total Revenue</h3>
-          <p className="text-2xl font-bold">${orderStats?.revenue.toFixed(2) || '0.00'}</p>
+          <p className="text-2xl font-bold">${orderStats.revenue.toFixed(2)}</p>
         </Card>
       </div>
     </div>
