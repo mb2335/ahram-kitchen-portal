@@ -86,9 +86,10 @@ export function MenuItem({
 
         {/* Footer Section - Push to bottom with consistent alignment */}
         <div className="mt-auto space-y-3">
-          {/* Price Section - Fixed Height and Alignment */}
-          <div className="h-16 flex items-center justify-center">
-            <div className="text-center">
+          {/* Price and Quantity Section - Horizontal Layout */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Price Section */}
+            <div className="flex-1">
               {discountedPrice ? (
                 <div className="space-y-1">
                   <div className="text-sm line-through text-muted-foreground">
@@ -104,16 +105,16 @@ export function MenuItem({
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Stock Badge - Fixed Height */}
-          <div className="h-6 flex justify-center">
-            <Badge 
-              variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
-              className="text-xs px-3 py-1"
-            >
-              {getQuantityDisplay()}
-            </Badge>
+            {/* Stock Badge */}
+            <div className="flex-shrink-0">
+              <Badge 
+                variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
+                className="text-xs px-3 py-1"
+              >
+                {getQuantityDisplay()}
+              </Badge>
+            </div>
           </div>
 
           {/* Add to Cart Button - Fixed Height */}
