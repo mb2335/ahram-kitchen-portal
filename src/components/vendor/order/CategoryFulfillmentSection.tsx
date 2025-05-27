@@ -80,15 +80,15 @@ export function CategoryFulfillmentSection({ categoryDetail }: CategoryFulfillme
           </div>
         ) : (
           <div className="space-y-1">
-            {categoryDetail.deliveryAddress && (
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <Truck className="h-4 w-4 mt-1" />
-                <div>
-                  <div className="font-medium">Delivery Address:</div>
-                  <div className="whitespace-pre-line">{categoryDetail.deliveryAddress}</div>
+            <div className="flex items-start gap-2 text-sm text-gray-600">
+              <Truck className="h-4 w-4 mt-1" />
+              <div>
+                <div className="font-medium">Delivery Address:</div>
+                <div className="whitespace-pre-line">
+                  {categoryDetail.deliveryAddress || "No delivery address provided"}
                 </div>
               </div>
-            )}
+            </div>
             {categoryDetail.deliveryTimeSlot && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Clock className="h-4 w-4" />
