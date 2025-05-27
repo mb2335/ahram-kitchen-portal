@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +37,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [fulfillmentType, setFulfillmentType] = useState<string>('all');
   const [pickupLocation, setPickupLocation] = useState<string>('all');
+  const [orderStatus, setOrderStatus] = useState<string>('all');
   
   // Phone numbers management
   const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
@@ -76,7 +76,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
       )
     );
     setPhoneNumbers(extractedNumbers);
-  }, [selectedDate, fulfillmentType, pickupLocation, allOrders, open]);
+  }, [selectedDate, fulfillmentType, pickupLocation, orderStatus, allOrders, open]);
 
   // Filter orders based on selected filters
   const filterOrders = useCallback(() => {
@@ -109,9 +109,14 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
         }
       }
 
+      // Order status filtering
+      if (orderStatus !== 'all' && order.status !== orderStatus) {
+        return false;
+      }
+
       return true;
     });
-  }, [allOrders, selectedDate, fulfillmentType, pickupLocation]);
+  }, [allOrders, selectedDate, fulfillmentType, pickupLocation, orderStatus]);
 
   // Handle adding a new phone number
   const handleAddPhoneNumber = () => {
@@ -213,6 +218,7 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
     setSelectedDate(undefined);
     setFulfillmentType('all');
     setPickupLocation('all');
+    setOrderStatus('all');
   };
 
   // Handle date selection
@@ -281,28 +287,49 @@ export function SendSMSDialog({ orders, pickupLocations }: SendSMSDialogProps) {
                 </Select>
               </div>
             </div>
-            
-            {fulfillmentType === FULFILLMENT_TYPE_PICKUP && (
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Pickup Location</Label>
+                <Label>Order Status</Label>
                 <Select
-                  value={pickupLocation}
-                  onValueChange={setPickupLocation}
+                  value={orderStatus}
+                  onValueChange={setOrderStatus}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All locations" />
+                    <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All locations</SelectItem>
-                    {pickupLocations.map((location) => (
-                      <SelectItem key={location || "unknown-location"} value={location || "unknown-location"}>
-                        {location || "Unspecified location"}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
+              
+              {fulfillmentType === FULFILLMENT_TYPE_PICKUP && (
+                <div>
+                  <Label>Pickup Location</Label>
+                  <Select
+                    value={pickupLocation}
+                    onValueChange={setPickupLocation}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All locations</SelectItem>
+                      {pickupLocations.map((location) => (
+                        <SelectItem key={location || "unknown-location"} value={location || "unknown-location"}>
+                          {location || "Unspecified location"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
             
             <div>
               <div className="flex items-center justify-between mb-2">
