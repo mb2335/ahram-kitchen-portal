@@ -4,7 +4,6 @@ import { Separator } from "@/components/ui/separator";
 
 interface OrderSummaryProps {
   subtotal: number;
-  taxAmount?: number; // Make tax optional
   total: number;
   discountAmount?: number;
   items?: Array<{
@@ -23,7 +22,6 @@ interface OrderSummaryProps {
 
 export function OrderSummary({ 
   subtotal, 
-  taxAmount = 0, // Default to 0
   total, 
   discountAmount = 0,
   items = [],

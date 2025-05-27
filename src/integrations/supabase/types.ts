@@ -290,7 +290,6 @@ export type Database = {
           pickup_time: string | null
           rejection_reason: string | null
           status: string
-          tax_amount: number
           total_amount: number
         }
         Insert: {
@@ -311,7 +310,6 @@ export type Database = {
           pickup_time?: string | null
           rejection_reason?: string | null
           status?: string
-          tax_amount: number
           total_amount: number
         }
         Update: {
@@ -332,7 +330,6 @@ export type Database = {
           pickup_time?: string | null
           rejection_reason?: string | null
           status?: string
-          tax_amount?: number
           total_amount?: number
         }
         Relationships: [

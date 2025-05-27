@@ -1,4 +1,3 @@
-
 import { PickupDetail } from "./pickup";
 import { DeliveryTimeSlotSelection } from "./delivery";
 
@@ -41,7 +40,6 @@ export interface OrderData {
   pickup_time?: string;
   pickup_location?: string;
   payment_proof_url: string;
-  tax_amount: number;
   discount_amount?: number;
   fulfillment_type?: string;
   created_at: string;

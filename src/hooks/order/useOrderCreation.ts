@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { OrderItem } from '@/types/order';
 
@@ -109,8 +108,7 @@ export async function createOrder({
         .from('orders')
         .insert({
           ...orderData,
-          status: 'pending',
-          tax_amount: 0
+          status: 'pending'
         })
         .select()
         .single();
