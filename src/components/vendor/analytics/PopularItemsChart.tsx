@@ -10,13 +10,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
-  Area,
   AreaChart,
+  Area,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -27,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { subDays, subMonths, subYears, startOfDay, format } from 'date-fns';
-import { TrendingUp, TrendingDown, DollarSign, Package, Users, ShoppingCart } from 'lucide-react';
+import { DollarSign, Package, Users, ShoppingCart } from 'lucide-react';
 import { useVendorId } from '@/hooks/useVendorId';
 
 type TimeRange = 'week' | 'month' | '6months' | 'year' | 'all';
@@ -37,6 +35,8 @@ const COLORS = ['#1F3A5F', '#9E4244', '#F5E6D3', '#8884d8', '#82ca9d', '#ffc658'
 export function PopularItemsChart() {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const { vendorId } = useVendorId();
+
+  console.log('PopularItemsChart - vendorId:', vendorId);
 
   const getStartDate = () => {
     const now = new Date();
@@ -55,83 +55,104 @@ export function PopularItemsChart() {
   };
 
   // Popular Items Data
-  const { data: popularItems, isLoading: popularItemsLoading } = useQuery({
+  const { data: popularItems, isLoading: popularItemsLoading, error: popularItemsError } = useQuery({
     queryKey: ['popular-items', timeRange, vendorId],
     queryFn: async () => {
-      if (!vendorId) return [];
-      const startDate = getStartDate();
-      
-      let ordersQuery = supabase
-        .from('orders')
-        .select(`
-          id,
-          order_items!inner(
-            quantity,
-            menu_item_id,
-            menu_items!inner(
-              name,
-              vendor_id
-            )
-          )
-        `)
-        .neq('status', 'rejected')
-        .eq('order_items.menu_items.vendor_id', vendorId);
-        
-      if (startDate) {
-        ordersQuery = ordersQuery.gte('created_at', startDate.toISOString());
+      if (!vendorId) {
+        console.log('No vendorId available for popular items query');
+        return [];
       }
       
-      const { data: orders, error } = await ordersQuery;
+      console.log('Fetching popular items for vendor:', vendorId);
+      const startDate = getStartDate();
+      
+      let query = supabase
+        .from('order_items')
+        .select(`
+          quantity,
+          menu_item_id,
+          menu_item:menu_items!inner(
+            id,
+            name,
+            vendor_id
+          ),
+          order:orders!inner(
+            id,
+            status,
+            created_at
+          )
+        `)
+        .eq('menu_item.vendor_id', vendorId)
+        .neq('order.status', 'rejected');
+        
+      if (startDate) {
+        query = query.gte('order.created_at', startDate.toISOString());
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error('Error fetching popular items:', error);
         throw error;
       }
-      if (!orders || orders.length === 0) return [];
+
+      console.log('Popular items raw data:', data);
+
+      if (!data || data.length === 0) {
+        console.log('No order items found');
+        return [];
+      }
 
       // Aggregate item quantities
-      const aggregatedData = orders.reduce((acc: any[], order) => {
-        order.order_items.forEach((item: any) => {
-          if (!item.menu_items) return;
-          const existingItem = acc.find(i => i.name === item.menu_items.name);
-          if (existingItem) {
-            existingItem.quantity += item.quantity;
-          } else {
-            acc.push({
-              name: item.menu_items.name,
-              quantity: item.quantity,
-            });
-          }
-        });
+      const aggregatedData = data.reduce((acc: any[], item) => {
+        if (!item.menu_item) return acc;
+        
+        const existingItem = acc.find(i => i.name === item.menu_item.name);
+        if (existingItem) {
+          existingItem.quantity += item.quantity;
+        } else {
+          acc.push({
+            name: item.menu_item.name,
+            quantity: item.quantity,
+          });
+        }
         return acc;
       }, []);
 
-      return aggregatedData
+      const result = aggregatedData
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 8);
+        
+      console.log('Popular items result:', result);
+      return result;
     },
     enabled: !!vendorId,
   });
 
   // Revenue Trends Data
-  const { data: revenueTrends, isLoading: revenueLoading } = useQuery({
+  const { data: revenueTrends, isLoading: revenueLoading, error: revenueError } = useQuery({
     queryKey: ['revenue-trends', timeRange, vendorId],
     queryFn: async () => {
-      if (!vendorId) return [];
+      if (!vendorId) {
+        console.log('No vendorId available for revenue trends query');
+        return [];
+      }
+      
+      console.log('Fetching revenue trends for vendor:', vendorId);
       const startDate = getStartDate();
       
-      // Get orders with items from this vendor
       let query = supabase
         .from('orders')
         .select(`
           total_amount,
           created_at,
+          status,
           order_items!inner(
-            menu_items!inner(vendor_id)
+            menu_item:menu_items!inner(vendor_id)
           )
         `)
-        .neq('status', 'rejected')
-        .eq('order_items.menu_items.vendor_id', vendorId);
+        .eq('order_items.menu_item.vendor_id', vendorId)
+        .neq('status', 'rejected');
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
@@ -141,6 +162,13 @@ export function PopularItemsChart() {
       if (error) {
         console.error('Error fetching revenue trends:', error);
         throw error;
+      }
+
+      console.log('Revenue trends raw data:', data);
+
+      if (!data || data.length === 0) {
+        console.log('No revenue data found');
+        return [];
       }
 
       // Group by date and sort chronologically
@@ -160,19 +188,27 @@ export function PopularItemsChart() {
       }, {});
 
       // Sort by actual date and return last 7 data points
-      return Object.values(groupedData)
+      const result = Object.values(groupedData)
         .sort((a: any, b: any) => a.dateObj.getTime() - b.dateObj.getTime())
         .slice(-7)
         .map(({ dateObj, ...rest }: any) => rest);
+        
+      console.log('Revenue trends result:', result);
+      return result;
     },
     enabled: !!vendorId,
   });
 
   // Order Status Distribution
-  const { data: orderStatus, isLoading: statusLoading } = useQuery({
+  const { data: orderStatus, isLoading: statusLoading, error: statusError } = useQuery({
     queryKey: ['order-status', timeRange, vendorId],
     queryFn: async () => {
-      if (!vendorId) return [];
+      if (!vendorId) {
+        console.log('No vendorId available for order status query');
+        return [];
+      }
+      
+      console.log('Fetching order status for vendor:', vendorId);
       const startDate = getStartDate();
       
       let query = supabase
@@ -180,10 +216,10 @@ export function PopularItemsChart() {
         .select(`
           status,
           order_items!inner(
-            menu_items!inner(vendor_id)
+            menu_item:menu_items!inner(vendor_id)
           )
         `)
-        .eq('order_items.menu_items.vendor_id', vendorId);
+        .eq('order_items.menu_item.vendor_id', vendorId);
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
@@ -195,24 +231,39 @@ export function PopularItemsChart() {
         throw error;
       }
 
+      console.log('Order status raw data:', data);
+
+      if (!data || data.length === 0) {
+        console.log('No order status data found');
+        return [];
+      }
+
       const statusCounts = data.reduce((acc: any, order) => {
         acc[order.status] = (acc[order.status] || 0) + 1;
         return acc;
       }, {});
 
-      return Object.entries(statusCounts).map(([status, count]) => ({
+      const result = Object.entries(statusCounts).map(([status, count]) => ({
         name: status.charAt(0).toUpperCase() + status.slice(1),
         value: count as number,
       }));
+      
+      console.log('Order status result:', result);
+      return result;
     },
     enabled: !!vendorId,
   });
 
   // Summary Stats including guest customers
-  const { data: summaryStats, isLoading: statsLoading } = useQuery({
+  const { data: summaryStats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['summary-stats', timeRange, vendorId],
     queryFn: async () => {
-      if (!vendorId) return null;
+      if (!vendorId) {
+        console.log('No vendorId available for summary stats query');
+        return null;
+      }
+      
+      console.log('Fetching summary stats for vendor:', vendorId);
       const startDate = getStartDate();
       
       let query = supabase
@@ -223,10 +274,10 @@ export function PopularItemsChart() {
           customer_id,
           customer_email,
           order_items!inner(
-            menu_items!inner(vendor_id)
+            menu_item:menu_items!inner(vendor_id)
           )
         `)
-        .eq('order_items.menu_items.vendor_id', vendorId);
+        .eq('order_items.menu_item.vendor_id', vendorId);
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
@@ -236,6 +287,18 @@ export function PopularItemsChart() {
       if (error) {
         console.error('Error fetching summary stats:', error);
         throw error;
+      }
+
+      console.log('Summary stats raw data:', data);
+
+      if (!data || data.length === 0) {
+        console.log('No summary stats data found');
+        return {
+          totalRevenue: 0,
+          totalOrders: 0,
+          uniqueCustomers: 0,
+          averageOrderValue: 0,
+        };
       }
 
       const validOrders = data.filter(order => order.status !== 'rejected');
@@ -255,17 +318,35 @@ export function PopularItemsChart() {
       
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      return {
+      const result = {
         totalRevenue,
         totalOrders,
         uniqueCustomers: uniqueCustomers.size,
         averageOrderValue,
       };
+      
+      console.log('Summary stats result:', result);
+      return result;
     },
     enabled: !!vendorId,
   });
 
   const isLoading = popularItemsLoading || revenueLoading || statusLoading || statsLoading;
+  const hasError = popularItemsError || revenueError || statusError || statsError;
+
+  if (hasError) {
+    console.error('Analytics errors:', { popularItemsError, revenueError, statusError, statsError });
+  }
+
+  if (!vendorId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <p className="text-muted-foreground">No vendor ID found. Please ensure you are logged in as a vendor.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -334,10 +415,17 @@ export function PopularItemsChart() {
                 ${summaryStats?.averageOrderValue.toFixed(2) || '0.00'}
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-orange-500" />
+            <Package className="h-8 w-8 text-orange-500" />
           </div>
         </Card>
       </div>
+
+      {/* Debug Information */}
+      {hasError && (
+        <Card className="p-4 bg-red-50 border-red-200">
+          <p className="text-red-600">Error loading analytics data. Check console for details.</p>
+        </Card>
+      )}
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -352,7 +440,7 @@ export function PopularItemsChart() {
                 <div className="flex items-center justify-center h-full">
                   <p className="text-muted-foreground">Loading...</p>
                 </div>
-              ) : (
+              ) : revenueTrends && revenueTrends.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={revenueTrends}>
                     <defs>
@@ -376,6 +464,10 @@ export function PopularItemsChart() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No revenue data available</p>
+                </div>
               )}
             </div>
           </CardContent>
@@ -392,7 +484,7 @@ export function PopularItemsChart() {
                 <div className="flex items-center justify-center h-full">
                   <p className="text-muted-foreground">Loading...</p>
                 </div>
-              ) : (
+              ) : orderStatus && orderStatus.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -412,6 +504,10 @@ export function PopularItemsChart() {
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No order status data available</p>
+                </div>
               )}
             </div>
           </CardContent>
@@ -429,7 +525,7 @@ export function PopularItemsChart() {
               <div className="flex items-center justify-center h-full">
                 <p className="text-muted-foreground">Loading data...</p>
               </div>
-            ) : (
+            ) : popularItems && popularItems.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={popularItems}
@@ -453,10 +549,14 @@ export function PopularItemsChart() {
                   <Bar dataKey="quantity" fill="#1F3A5F" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">No popular items data available</p>
+              </div>
             )}
           </div>
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
