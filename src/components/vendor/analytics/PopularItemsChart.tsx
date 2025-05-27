@@ -63,45 +63,46 @@ export function PopularItemsChart() {
       
       let ordersQuery = supabase
         .from('orders')
-        .select('id')
-        .neq('status', 'rejected');
+        .select(`
+          id,
+          order_items!inner(
+            quantity,
+            menu_item_id,
+            menu_items!inner(
+              name,
+              vendor_id
+            )
+          )
+        `)
+        .neq('status', 'rejected')
+        .eq('order_items.menu_items.vendor_id', vendorId);
         
       if (startDate) {
         ordersQuery = ordersQuery.gte('created_at', startDate.toISOString());
       }
       
-      const { data: validOrders, error: ordersError } = await ordersQuery;
+      const { data: orders, error } = await ordersQuery;
       
-      if (ordersError) throw ordersError;
-      if (!validOrders || validOrders.length === 0) return [];
-      
-      const validOrderIds = validOrders.map(order => order.id);
-      
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(`
-          quantity,
-          menu_item:menu_items!inner(
-            name,
-            vendor_id
-          )
-        `)
-        .in('order_id', validOrderIds)
-        .eq('menu_item.vendor_id', vendorId);
+      if (error) {
+        console.error('Error fetching popular items:', error);
+        throw error;
+      }
+      if (!orders || orders.length === 0) return [];
 
-      if (error) throw error;
-
-      const aggregatedData = data.reduce((acc: any[], item) => {
-        if (!item.menu_item) return acc;
-        const existingItem = acc.find(i => i.name === item.menu_item.name);
-        if (existingItem) {
-          existingItem.quantity += item.quantity;
-        } else {
-          acc.push({
-            name: item.menu_item.name,
-            quantity: item.quantity,
-          });
-        }
+      // Aggregate item quantities
+      const aggregatedData = orders.reduce((acc: any[], order) => {
+        order.order_items.forEach((item: any) => {
+          if (!item.menu_items) return;
+          const existingItem = acc.find(i => i.name === item.menu_items.name);
+          if (existingItem) {
+            existingItem.quantity += item.quantity;
+          } else {
+            acc.push({
+              name: item.menu_items.name,
+              quantity: item.quantity,
+            });
+          }
+        });
         return acc;
       }, []);
 
@@ -119,30 +120,50 @@ export function PopularItemsChart() {
       if (!vendorId) return [];
       const startDate = getStartDate();
       
+      // Get orders with items from this vendor
       let query = supabase
         .from('orders')
-        .select('total_amount, created_at')
-        .neq('status', 'rejected');
+        .select(`
+          total_amount,
+          created_at,
+          order_items!inner(
+            menu_items!inner(vendor_id)
+          )
+        `)
+        .neq('status', 'rejected')
+        .eq('order_items.menu_items.vendor_id', vendorId);
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
       }
       
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching revenue trends:', error);
+        throw error;
+      }
 
-      // Group by date
+      // Group by date and sort chronologically
       const groupedData = data.reduce((acc: any, order) => {
         const date = format(new Date(order.created_at), 'MMM dd');
         if (!acc[date]) {
-          acc[date] = { date, revenue: 0, orders: 0 };
+          acc[date] = { 
+            date, 
+            revenue: 0, 
+            orders: 0,
+            dateObj: new Date(order.created_at)
+          };
         }
         acc[date].revenue += Number(order.total_amount);
         acc[date].orders += 1;
         return acc;
       }, {});
 
-      return Object.values(groupedData).slice(-7); // Last 7 data points
+      // Sort by actual date and return last 7 data points
+      return Object.values(groupedData)
+        .sort((a: any, b: any) => a.dateObj.getTime() - b.dateObj.getTime())
+        .slice(-7)
+        .map(({ dateObj, ...rest }: any) => rest);
     },
     enabled: !!vendorId,
   });
@@ -156,14 +177,23 @@ export function PopularItemsChart() {
       
       let query = supabase
         .from('orders')
-        .select('status');
+        .select(`
+          status,
+          order_items!inner(
+            menu_items!inner(vendor_id)
+          )
+        `)
+        .eq('order_items.menu_items.vendor_id', vendorId);
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
       }
       
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching order status:', error);
+        throw error;
+      }
 
       const statusCounts = data.reduce((acc: any, order) => {
         acc[order.status] = (acc[order.status] || 0) + 1;
@@ -178,7 +208,7 @@ export function PopularItemsChart() {
     enabled: !!vendorId,
   });
 
-  // Summary Stats
+  // Summary Stats including guest customers
   const { data: summaryStats, isLoading: statsLoading } = useQuery({
     queryKey: ['summary-stats', timeRange, vendorId],
     queryFn: async () => {
@@ -187,27 +217,48 @@ export function PopularItemsChart() {
       
       let query = supabase
         .from('orders')
-        .select('total_amount, status, customer_id');
+        .select(`
+          total_amount,
+          status,
+          customer_id,
+          customer_email,
+          order_items!inner(
+            menu_items!inner(vendor_id)
+          )
+        `)
+        .eq('order_items.menu_items.vendor_id', vendorId);
         
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());
       }
       
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching summary stats:', error);
+        throw error;
+      }
 
-      const totalRevenue = data
-        .filter(order => order.status !== 'rejected')
-        .reduce((sum, order) => sum + Number(order.total_amount), 0);
+      const validOrders = data.filter(order => order.status !== 'rejected');
       
-      const totalOrders = data.filter(order => order.status !== 'rejected').length;
-      const uniqueCustomers = new Set(data.map(order => order.customer_id)).size;
+      const totalRevenue = validOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+      const totalOrders = validOrders.length;
+      
+      // Count unique customers including guests (by email if no customer_id)
+      const uniqueCustomers = new Set();
+      validOrders.forEach(order => {
+        if (order.customer_id) {
+          uniqueCustomers.add(order.customer_id);
+        } else if (order.customer_email) {
+          uniqueCustomers.add(order.customer_email);
+        }
+      });
+      
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       return {
         totalRevenue,
         totalOrders,
-        uniqueCustomers,
+        uniqueCustomers: uniqueCustomers.size,
         averageOrderValue,
       };
     },
