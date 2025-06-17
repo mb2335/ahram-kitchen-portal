@@ -125,7 +125,9 @@ export function DashboardSummary() {
       </div>
 
       <Card className="p-4">
-        <h3 className="text-lg font-semibold mb-2">Admin Access Notice</h3>
+        <h3 className="text-lg font-semibold mb-2">
+
+      </h3>
         <p className="text-sm text-muted-foreground">
       </p>
       </Card>
