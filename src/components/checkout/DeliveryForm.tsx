@@ -43,9 +43,9 @@ export function DeliveryForm({
               {fulfillmentType === 'delivery' ? 'Delivery Date' : 'Pickup Date'}
             </Label>
             <DatePicker
-              selected={deliveryDate}
+              date={deliveryDate}
               onSelect={(date) => date && onDateChange(date)}
-              minDate={new Date()}
+              disabled={(date) => date < new Date()}
             />
           </div>
         </CardContent>
