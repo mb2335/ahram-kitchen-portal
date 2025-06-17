@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,8 +48,9 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
     onSaveSchedule(updatedSchedule);
   };
 
-  const toggleDayActive = (day: number, active: boolean) => {
-    updateDaySchedule(day, { is_active: active });
+  const toggleDayActive = (day: number, checked: boolean) => {
+    console.log(`Toggling day ${day} to ${checked}`);
+    updateDaySchedule(day, { is_active: checked });
   };
 
   const addTimeSlot = (day: number) => {
@@ -143,7 +143,10 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                     </div>
                     <Switch
                       checked={schedule.is_active}
-                      onCheckedChange={(checked) => toggleDayActive(day, checked)}
+                      onCheckedChange={(checked) => {
+                        console.log(`Switch toggled for day ${day}: ${checked}`);
+                        toggleDayActive(day, checked);
+                      }}
                     />
                   </div>
 
