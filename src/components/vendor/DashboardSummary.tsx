@@ -7,11 +7,10 @@ import { addDays, startOfDay, endOfDay } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useVendorOrders } from '@/hooks/useOrders';
 import { useUnifiedOrders } from '@/hooks/useUnifiedOrders';
+
 export function DashboardSummary() {
   const session = useSession();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'custom'>('today');
   const [dateRange, setDateRange] = useState({
     from: startOfDay(new Date()),
@@ -19,9 +18,7 @@ export function DashboardSummary() {
   });
 
   // Use admin orders hook for platform-wide access
-  const {
-    orders
-  } = useVendorOrders();
+  const { orders } = useVendorOrders();
   const unifiedOrderGroups = useUnifiedOrders(orders || []);
 
   // Filter unified orders based on date range
@@ -38,6 +35,7 @@ export function DashboardSummary() {
     rejected: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'rejected').length,
     revenue: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus !== 'rejected').reduce((sum, group) => sum + group.unifiedOrder.totalAmount, 0)
   };
+
   const handleQuickDateSelect = (filter: 'today' | 'week' | 'month' | 'custom') => {
     setTimeFilter(filter);
 
@@ -67,12 +65,14 @@ export function DashboardSummary() {
         break;
     }
   };
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Overview</h2>
           <p className="text-muted-foreground">
-        </p>
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <Select value={timeFilter} onValueChange={(value: 'today' | 'week' | 'month' | 'custom') => handleQuickDateSelect(value)}>
@@ -123,13 +123,6 @@ export function DashboardSummary() {
           <p className="text-2xl font-bold">${orderStats.revenue.toFixed(2)}</p>
         </Card>
       </div>
-
-      <Card className="p-4">
-        <h3 className="text-lg font-semibold mb-2">
-
-      </h3>
-        <p className="text-sm text-muted-foreground">
-      </p>
-      </Card>
-    </div>;
+    </div>
+  );
 }
