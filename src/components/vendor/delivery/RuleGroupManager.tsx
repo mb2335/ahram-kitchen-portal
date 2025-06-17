@@ -134,6 +134,22 @@ export function RuleGroupManager({
     return categories.filter(cat => !usedCategories.includes(cat.id));
   };
 
+  // Format rule group display to show the logical flow
+  const formatRuleGroupDisplay = (group: RuleGroup) => {
+    if (group.rules.length === 0) return 'No rules configured';
+    
+    return group.rules.map((rule, index) => {
+      const categoryName = getCategoryName(rule.category_id);
+      const ruleText = `${rule.minimum_items}+ ${categoryName}`;
+      
+      if (index === 0) {
+        return ruleText;
+      } else {
+        return ` ${rule.logical_operator} ${ruleText}`;
+      }
+    }).join('');
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -255,19 +271,17 @@ export function RuleGroupManager({
             {ruleGroups.map((group) => (
               <div key={group.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 mb-2">
                     <div className="font-medium">{group.name}</div>
                     <Badge variant={group.is_active ? "default" : "secondary"}>
                       {group.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {group.rules.map((rule, index) => (
-                      <span key={index}>
-                        {index > 0 && ` ${rule.logical_operator} `}
-                        {rule.minimum_items} {getCategoryName(rule.category_id)}
-                      </span>
-                    ))}
+                  <div className="text-sm text-muted-foreground">
+                    <span className="font-medium">Rules:</span> {formatRuleGroupDisplay(group)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {group.rules.length} rule{group.rules.length !== 1 ? 's' : ''} in this group
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
