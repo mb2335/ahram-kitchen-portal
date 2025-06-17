@@ -19,20 +19,33 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, children, onDelete }: OrderCardProps) {
-  // Format items for the unified component, using actual menu item category information
-  const formattedItems = order.order_items?.map((item) => ({
-    id: item.id,
-    name: item.menu_item?.name || 'Unknown Item',
-    nameKo: item.menu_item?.name_ko,
-    quantity: item.quantity,
-    price: item.unit_price,
-    discount_percentage: item.discount_percentage || item.menu_item?.discount_percentage,
-    // Preserve the actual category of each individual item
-    category: item.menu_item?.category ? {
-      name: item.menu_item.category.name,
-      name_ko: item.menu_item.category.name_ko
-    } : undefined
-  })) || [];
+  // Format items for the unified component, preserving each item's actual category
+  const formattedItems = order.order_items?.map((item) => {
+    console.log("Processing order item:", {
+      name: item.menu_item?.name,
+      category_id: item.menu_item?.category_id,
+      category_name: item.menu_item?.category?.name
+    });
+    
+    return {
+      id: item.id,
+      name: item.menu_item?.name || 'Unknown Item',
+      nameKo: item.menu_item?.name_ko,
+      quantity: item.quantity,
+      price: item.unit_price,
+      discount_percentage: item.discount_percentage || item.menu_item?.discount_percentage,
+      // Use the actual category from the menu item, not a flattened category
+      category: item.menu_item?.category ? {
+        name: item.menu_item.category.name,
+        name_ko: item.menu_item.category.name_ko
+      } : undefined
+    };
+  }) || [];
+
+  console.log("Formatted items for OrderCard:", formattedItems.map(item => ({
+    name: item.name,
+    category: item.category?.name
+  })));
 
   return (
     <Card className="overflow-hidden shadow-sm border-gray-200">
@@ -75,7 +88,7 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
           <OrderDetails order={order} />
         </div>
 
-        {/* Modern Unified Order Items - each item displays its own category */}
+        {/* Unified Order Items - each item displays its actual category */}
         <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
           <UnifiedOrderItems items={formattedItems} showPricing={true} />
         </div>

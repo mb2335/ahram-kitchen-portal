@@ -1,3 +1,4 @@
+
 import { Card } from '@/components/ui/card';
 import { OrderStatusSection } from './OrderStatusSection';
 import { CustomerSection } from './CustomerSection';
@@ -39,6 +40,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
               id,
               name,
               name_ko,
+              category_id,
               category:menu_categories (
                 id,
                 name,
@@ -78,20 +80,33 @@ export function OrderDetails({ order }: OrderDetailsProps) {
   // Use the order's discount_amount field if available, otherwise use calculated value
   const discountAmount = order.discount_amount !== null ? order.discount_amount : totalDiscount;
 
-  // Format items with proper category information from menu items - preserve each item's category
-  const formattedItems = order.order_items?.map((item: any) => ({
-    id: item.id,
-    name: item.menu_item?.name || 'Unknown Item',
-    nameKo: item.menu_item?.name_ko,
-    quantity: item.quantity,
-    price: item.unit_price,
-    discount_percentage: item.discount_percentage,
-    // Keep the actual category of each individual item
-    category: item.menu_item?.category ? {
-      name: item.menu_item.category.name,
-      name_ko: item.menu_item.category.name_ko
-    } : undefined
-  })) || [];
+  // Format items with proper category information from menu items - preserve each item's actual category
+  const formattedItems = order.order_items?.map((item: any) => {
+    console.log("Processing customer order item:", {
+      name: item.menu_item?.name,
+      category_id: item.menu_item?.category_id,
+      category_name: item.menu_item?.category?.name
+    });
+    
+    return {
+      id: item.id,
+      name: item.menu_item?.name || 'Unknown Item',
+      nameKo: item.menu_item?.name_ko,
+      quantity: item.quantity,
+      price: item.unit_price,
+      discount_percentage: item.discount_percentage,
+      // Preserve the actual category of each individual item
+      category: item.menu_item?.category ? {
+        name: item.menu_item.category.name,
+        name_ko: item.menu_item.category.name_ko
+      } : undefined
+    };
+  }) || [];
+
+  console.log("Formatted items for customer OrderDetails:", formattedItems.map(item => ({
+    name: item.name,
+    category: item.category?.name
+  })));
 
   const isMultiFulfillment = relatedOrders.length > 0;
 
@@ -108,7 +123,7 @@ export function OrderDetails({ order }: OrderDetailsProps) {
           <CustomerSection customer={order.customer} />
         )}
         
-        {/* Modern unified items display - each item shows its own category */}
+        {/* Unified items display - each item shows its actual category */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <UnifiedOrderItems items={formattedItems} showPricing={true} />
         </div>

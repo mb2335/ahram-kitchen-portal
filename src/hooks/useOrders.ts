@@ -31,7 +31,7 @@ export const useOrders = () => {
             .single();
 
           // Fetch orders with COMPLETE category information for each item
-          console.log("Fetching orders with complete category data...");
+          console.log("Fetching customer orders with complete category data...");
           const { data: orders, error } = await supabase
             .from('orders')
             .select(`
@@ -70,11 +70,12 @@ export const useOrders = () => {
 
           if (error) throw error;
           
-          console.log("Orders fetched with category data:", orders?.map(order => ({
+          console.log("Customer orders fetched with category data:", orders?.map(order => ({
             id: order.id,
             items: order.order_items?.map(item => ({
               name: item.menu_item?.name,
-              category: item.menu_item?.category?.name
+              category_id: item.menu_item?.category_id,
+              category_name: item.menu_item?.category?.name
             }))
           })));
           
@@ -108,7 +109,7 @@ export const useVendorOrders = () => {
     queryFn: async () => {
       try {
         // Admin access - fetch ALL orders with COMPLETE category data for each item
-        console.log("Fetching admin orders with complete category data...");
+        console.log("Fetching vendor orders with complete category data...");
         const { data, error } = await supabase
           .from('orders')
           .select(`
@@ -142,11 +143,12 @@ export const useVendorOrders = () => {
 
         if (error) throw error;
         
-        console.log("Admin orders fetched with category data:", data?.map(order => ({
+        console.log("Vendor orders fetched with category data:", data?.map(order => ({
           id: order.id,
           items: order.order_items?.map(item => ({
             name: item.menu_item?.name,
-            category: item.menu_item?.category?.name
+            category_id: item.menu_item?.category_id,
+            category_name: item.menu_item?.category?.name
           }))
         })));
         
