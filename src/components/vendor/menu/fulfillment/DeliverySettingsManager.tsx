@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { DeliveryDaysSelector } from "./delivery/DeliveryDaysSelector";
 import { TimeSlotSelector } from "./delivery/TimeSlotSelector";
 import { useDeliverySettings } from "./delivery/hooks/useDeliverySettings";
+import { RuleGroupManager } from "@/components/vendor/delivery/RuleGroupManager";
+import { useEnhancedDeliveryRules } from "@/hooks/vendor/useEnhancedDeliveryRules";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export function DeliverySettingsManager() {
   const {
@@ -15,6 +19,28 @@ export function DeliverySettingsManager() {
     isLoading,
     saveDeliverySettings
   } = useDeliverySettings();
+
+  const {
+    ruleGroups,
+    isLoading: isRulesLoading,
+    saveRuleGroup,
+    deleteRuleGroup,
+    toggleRuleGroup,
+  } = useEnhancedDeliveryRules();
+
+  // Fetch all categories for rule management
+  const { data: categories = [] } = useQuery({
+    queryKey: ['menu-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const toggleDay = (day: number) => {
     setSelectedDays(prev => 
@@ -57,40 +83,57 @@ export function DeliverySettingsManager() {
     return `${hours}:${minutes}`;
   };
 
-  if (isLoading) {
+  if (isLoading || isRulesLoading) {
     return <div>Loading delivery settings...</div>;
   }
 
   const allTimeSlots = generateFixedTimeSlots();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h3 className="text-lg font-semibold mb-2">Delivery Schedule</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Select which days and times are available for delivery orders.
         </p>
+
+        <div className="space-y-6">
+          <DeliveryDaysSelector
+            selectedDays={selectedDays}
+            onDayToggle={toggleDay}
+          />
+
+          <TimeSlotSelector
+            timeSlots={allTimeSlots}
+            activatedSlots={activatedSlots}
+            onTimeSlotToggle={toggleTimeSlot}
+            isSaving={isSaving}
+          />
+          
+          <Button 
+            onClick={saveDeliverySettings} 
+            className="w-full" 
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving..." : "Save Delivery Settings"}
+          </Button>
+        </div>
       </div>
 
-      <DeliveryDaysSelector
-        selectedDays={selectedDays}
-        onDayToggle={toggleDay}
-      />
-
-      <TimeSlotSelector
-        timeSlots={allTimeSlots}
-        activatedSlots={activatedSlots}
-        onTimeSlotToggle={toggleTimeSlot}
-        isSaving={isSaving}
-      />
-      
-      <Button 
-        onClick={saveDeliverySettings} 
-        className="w-full" 
-        disabled={isSaving}
-      >
-        {isSaving ? "Saving..." : "Save Delivery Settings"}
-      </Button>
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Delivery Rule Groups</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Create rule groups to define when delivery is available based on cart contents.
+        </p>
+        
+        <RuleGroupManager
+          ruleGroups={ruleGroups}
+          categories={categories}
+          onSaveRuleGroup={(ruleGroup) => saveRuleGroup.mutate(ruleGroup)}
+          onDeleteRuleGroup={(groupId) => deleteRuleGroup.mutate(groupId)}
+          onToggleRuleGroup={(groupId, active) => toggleRuleGroup.mutate({ groupId, active })}
+        />
+      </div>
     </div>
   );
 }
