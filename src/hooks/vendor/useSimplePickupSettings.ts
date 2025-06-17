@@ -4,14 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useVendorId } from '@/hooks/useVendorId';
 
-interface TimeSlot {
+export interface TimeSlot {
   id?: string;
   start_time: string;
   end_time: string;
   location?: string;
+  max_capacity?: number;
 }
 
-interface DaySchedule {
+export interface DaySchedule {
   day: number;
   is_active: boolean;
   time_slots: TimeSlot[];
@@ -35,30 +36,28 @@ export const useSimplePickupSettings = () => {
       
       if (error) throw error;
 
-      // Group by day
-      const schedulesByDay = data.reduce((acc, setting) => {
-        const day = setting.day;
-        if (!acc[day]) {
-          acc[day] = {
-            day,
-            is_active: false,
-            time_slots: [],
+      // Group pickup settings by day
+      const schedulesByDay: Record<number, DaySchedule> = {};
+      
+      (data || []).forEach(setting => {
+        if (!schedulesByDay[setting.day]) {
+          schedulesByDay[setting.day] = {
+            day: setting.day,
+            is_active: true, // If there are settings, the day is active
+            time_slots: []
           };
         }
         
-        // If we have time slot data, this day is active
         if (setting.start_time && setting.end_time) {
-          acc[day].is_active = true;
-          acc[day].time_slots.push({
+          schedulesByDay[setting.day].time_slots.push({
             id: setting.id,
             start_time: setting.start_time,
             end_time: setting.end_time,
             location: setting.location || 'In-Store Pickup',
+            max_capacity: 10 // Default capacity
           });
         }
-        
-        return acc;
-      }, {} as Record<number, DaySchedule>);
+      });
 
       return Object.values(schedulesByDay);
     },
@@ -76,7 +75,7 @@ export const useSimplePickupSettings = () => {
         .eq('vendor_id', vendorId)
         .eq('day', schedule.day);
 
-      // Insert new settings if day is active
+      // Insert new settings only if day is active and has time slots
       if (schedule.is_active && schedule.time_slots.length > 0) {
         const settingsToInsert = schedule.time_slots.map(slot => ({
           vendor_id: vendorId,
@@ -84,6 +83,7 @@ export const useSimplePickupSettings = () => {
           start_time: slot.start_time,
           end_time: slot.end_time,
           location: slot.location || 'In-Store Pickup',
+          time: slot.start_time, // For backward compatibility
         }));
 
         const { error } = await supabase
@@ -92,7 +92,7 @@ export const useSimplePickupSettings = () => {
         
         if (error) throw error;
       }
-      
+
       return schedule;
     },
     onSuccess: () => {

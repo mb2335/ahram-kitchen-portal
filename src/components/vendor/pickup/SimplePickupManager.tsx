@@ -13,6 +13,7 @@ interface TimeSlot {
   start_time: string;
   end_time: string;
   location?: string;
+  max_capacity?: number;
 }
 
 interface DaySchedule {
@@ -58,7 +59,8 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
       id: `temp-${Date.now()}`,
       start_time: '12:00',
       end_time: '15:00',
-      location: 'In-Store Pickup'
+      location: 'In-Store Pickup',
+      max_capacity: 10
     };
     
     updateDaySchedule(day, {
@@ -66,7 +68,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
     });
   };
 
-  const updateTimeSlot = (day: number, slotIndex: number, field: keyof TimeSlot, value: string) => {
+  const updateTimeSlot = (day: number, slotIndex: number, field: keyof TimeSlot, value: string | number) => {
     const schedule = getDaySchedule(day);
     const updatedSlots = [...schedule.time_slots];
     updatedSlots[slotIndex] = { ...updatedSlots[slotIndex], [field]: value };
@@ -110,7 +112,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
           In-Store Pickup Schedule
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Configure your in-store pickup availability. Customers can only select pickup during these times.
+          Configure your in-store pickup availability. Customers can reserve specific time slots during these hours.
         </p>
       </CardHeader>
       <CardContent>
@@ -136,7 +138,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                         Enable Pickup on {getDayName(day)}
                       </Label>
                       <p className="text-sm text-muted-foreground">
-                        Allow customers to schedule pickup on {getDayName(day)}s
+                        Allow customers to reserve pickup slots on {getDayName(day)}s
                       </p>
                     </div>
                     <Switch
@@ -150,7 +152,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                       <div className="flex items-center justify-between">
                         <Label className="text-base flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          Time Slots
+                          Available Time Slots
                         </Label>
                         <Button
                           variant="outline"
@@ -210,6 +212,16 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                                   placeholder="Pickup location"
                                 />
                               </div>
+                              <div className="w-24">
+                                <Label htmlFor={`capacity-${day}-${index}`}>Max Slots</Label>
+                                <Input
+                                  id={`capacity-${day}-${index}`}
+                                  type="number"
+                                  min="1"
+                                  value={slot.max_capacity || 10}
+                                  onChange={(e) => updateTimeSlot(day, index, 'max_capacity', parseInt(e.target.value) || 10)}
+                                />
+                              </div>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -231,7 +243,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                       {schedule.time_slots.length > 0 && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-600">
-                            <strong>{schedule.time_slots.length}</strong> pickup slot{schedule.time_slots.length !== 1 ? 's' : ''} configured for {getDayName(day)}
+                            <strong>{schedule.time_slots.length}</strong> pickup slot{schedule.time_slots.length !== 1 ? 's' : ''} available for customer reservations on {getDayName(day)}
                           </p>
                         </div>
                       )}

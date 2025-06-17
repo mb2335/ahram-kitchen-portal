@@ -6,9 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Plus, Save } from 'lucide-react';
+import { Trash2, Plus, Save, Edit, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DeliveryRule, RuleGroup } from '@/hooks/vendor/useEnhancedDeliveryRules';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
 
 interface RuleGroupManagerProps {
   ruleGroups: RuleGroup[];
@@ -27,6 +37,8 @@ export function RuleGroupManager({
 }: RuleGroupManagerProps) {
   const [editingGroup, setEditingGroup] = useState<RuleGroup | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
 
   const startNewGroup = () => {
     setEditingGroup({
@@ -44,6 +56,18 @@ export function RuleGroupManager({
       is_active: true,
     });
     setNewGroupName('');
+  };
+
+  const editExistingGroup = (group: RuleGroup) => {
+    setEditingGroup({ ...group });
+  };
+
+  const duplicateGroup = (group: RuleGroup) => {
+    setEditingGroup({
+      ...group,
+      id: `temp-${Date.now()}`,
+      name: `${group.name} (Copy)`,
+    });
   };
 
   const addRuleToGroup = () => {
@@ -83,6 +107,19 @@ export function RuleGroupManager({
 
   const cancelEdit = () => {
     setEditingGroup(null);
+  };
+
+  const confirmDelete = (groupId: string) => {
+    setGroupToDelete(groupId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = () => {
+    if (groupToDelete) {
+      onDeleteRuleGroup(groupToDelete);
+      setGroupToDelete(null);
+      setDeleteDialogOpen(false);
+    }
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -244,14 +281,22 @@ export function RuleGroupManager({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setEditingGroup(group)}
+                    onClick={() => duplicateGroup(group)}
+                    title="Duplicate group"
                   >
-                    Edit
+                    <Copy className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onDeleteRuleGroup(group.id)}
+                    onClick={() => editExistingGroup(group)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => confirmDelete(group.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -266,6 +311,27 @@ export function RuleGroupManager({
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Rule Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this rule group? All rules within this group will be permanently removed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setGroupToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Group
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
