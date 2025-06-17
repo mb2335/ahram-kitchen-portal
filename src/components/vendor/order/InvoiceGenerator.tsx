@@ -24,7 +24,6 @@ export function InvoiceGenerator({ order }: InvoiceGeneratorProps) {
     };
 
     const subtotal = order.order_items?.reduce((sum, item) => sum + calculateItemTotal(item), 0) || 0;
-    const tax = 0; // Assuming no tax for now, can be modified later
     const total = order.total_amount;
 
     const invoiceHTML = `
@@ -33,96 +32,157 @@ export function InvoiceGenerator({ order }: InvoiceGeneratorProps) {
         <head>
           <title>Invoice #${order.id.substring(0, 8)}</title>
           <style>
+            @page {
+              size: 8.5in 11in;
+              margin: 0.5in;
+            }
+            
             body {
               font-family: Arial, sans-serif;
-              max-width: 800px;
+              max-width: 7.5in;
               margin: 0 auto;
-              padding: 20px;
-              line-height: 1.6;
+              padding: 0;
+              line-height: 1.4;
               color: #333;
+              font-size: 12px;
             }
+            
             .invoice-header {
               border-bottom: 2px solid #333;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
+              padding-bottom: 15px;
+              margin-bottom: 20px;
             }
+            
             .invoice-title {
-              font-size: 28px;
+              font-size: 24px;
               font-weight: bold;
               margin: 0;
             }
+            
             .invoice-info {
               display: flex;
               justify-content: space-between;
-              margin-bottom: 30px;
+              margin-bottom: 20px;
             }
+            
             .invoice-details, .customer-details {
               flex: 1;
             }
+            
             .invoice-details h3, .customer-details h3 {
-              margin-top: 0;
-              font-size: 16px;
+              margin: 0 0 8px 0;
+              font-size: 14px;
               font-weight: bold;
               color: #666;
               text-transform: uppercase;
               letter-spacing: 1px;
             }
+            
+            .invoice-details p, .customer-details p {
+              margin: 4px 0;
+              font-size: 12px;
+            }
+            
+            .fulfillment-details {
+              background-color: #f8f9fa;
+              padding: 15px;
+              border-radius: 6px;
+              margin-bottom: 15px;
+            }
+            
+            .fulfillment-details h3 {
+              margin: 0 0 8px 0;
+              color: #666;
+              font-size: 14px;
+            }
+            
+            .fulfillment-details p {
+              margin: 3px 0;
+              font-size: 12px;
+            }
+            
             .items-table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 30px;
+              margin-bottom: 20px;
+              font-size: 11px;
             }
+            
             .items-table th {
               background-color: #f8f9fa;
-              padding: 12px;
+              padding: 8px 6px;
               text-align: left;
               border-bottom: 2px solid #dee2e6;
               font-weight: bold;
+              font-size: 11px;
             }
+            
             .items-table td {
-              padding: 12px;
+              padding: 8px 6px;
               border-bottom: 1px solid #dee2e6;
+              font-size: 11px;
             }
+            
             .items-table tr:nth-child(even) {
               background-color: #f8f9fa;
             }
+            
             .text-right {
               text-align: right;
             }
+            
             .totals {
               margin-left: auto;
-              width: 300px;
+              width: 250px;
             }
+            
             .totals table {
               width: 100%;
               border-collapse: collapse;
             }
+            
             .totals td {
-              padding: 8px 12px;
+              padding: 6px 10px;
               border-bottom: 1px solid #dee2e6;
+              font-size: 12px;
             }
+            
             .totals .total-row {
               font-weight: bold;
-              font-size: 18px;
+              font-size: 16px;
               border-top: 2px solid #333;
             }
-            .fulfillment-details {
+            
+            .notes-section {
+              margin-top: 15px;
+              padding: 15px;
               background-color: #f8f9fa;
-              padding: 20px;
-              border-radius: 8px;
-              margin-bottom: 20px;
+              border-radius: 6px;
             }
-            .fulfillment-details h3 {
-              margin-top: 0;
-              color: #666;
+            
+            .notes-section h3 {
+              margin: 0 0 8px 0;
+              font-size: 14px;
             }
+            
+            .notes-section p {
+              margin: 0;
+              font-size: 12px;
+            }
+            
             @media print {
               body {
                 margin: 0;
-                padding: 15px;
+                padding: 0;
+                max-width: none;
               }
+              
               .no-print {
                 display: none;
+              }
+              
+              .page-break {
+                page-break-before: always;
               }
             }
           </style>
@@ -204,10 +264,6 @@ export function InvoiceGenerator({ order }: InvoiceGeneratorProps) {
                   <td class="text-right">-${formatCurrency(order.discount_amount)}</td>
                 </tr>
               ` : ''}
-              <tr>
-                <td>Tax:</td>
-                <td class="text-right">${formatCurrency(tax)}</td>
-              </tr>
               <tr class="total-row">
                 <td>Total:</td>
                 <td class="text-right">${formatCurrency(total)}</td>
@@ -216,15 +272,15 @@ export function InvoiceGenerator({ order }: InvoiceGeneratorProps) {
           </div>
 
           ${order.notes ? `
-            <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-              <h3 style="margin-top: 0;">Notes</h3>
+            <div class="notes-section">
+              <h3>Notes</h3>
               <p>${order.notes}</p>
             </div>
           ` : ''}
 
-          <div class="no-print" style="margin-top: 30px; text-align: center;">
-            <button onclick="window.print()" style="background-color: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Print Invoice</button>
-            <button onclick="window.close()" style="background-color: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-left: 10px;">Close</button>
+          <div class="no-print" style="margin-top: 20px; text-align: center;">
+            <button onclick="window.print()" style="background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 10px;">Print Invoice</button>
+            <button onclick="window.close()" style="background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">Close</button>
           </div>
         </body>
       </html>
