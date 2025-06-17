@@ -1,32 +1,36 @@
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 interface DeliveryDaysSelectorProps {
   selectedDays: number[];
   onDayToggle: (day: number) => void;
 }
 
-export function DeliveryDaysSelector({ selectedDays, onDayToggle }: DeliveryDaysSelectorProps) {
-  const getDayName = (day: number): string => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[day];
-  };
+const DAYS = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+];
 
+export function DeliveryDaysSelector({ selectedDays, onDayToggle }: DeliveryDaysSelectorProps) {
   return (
-    <div>
-      <h3 className="text-lg font-semibold">Delivery Days</h3>
-      <p className="text-sm text-muted-foreground mb-4">
-        Select which days of the week you offer delivery service.
-      </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-6">
-        {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+    <div className="space-y-3">
+      <Label className="text-base font-medium">Available Days</Label>
+      <div className="grid grid-cols-7 gap-2">
+        {DAYS.map((day) => (
           <Button
-            key={day}
-            variant={selectedDays.includes(day) ? "default" : "outline"}
-            className="w-full"
-            onClick={() => onDayToggle(day)}
+            key={day.value}
+            variant={selectedDays.includes(day.value) ? "default" : "outline"}
+            size="sm"
+            className="w-full text-xs"
+            onClick={() => onDayToggle(day.value)}
           >
-            {getDayName(day)}
+            {day.label.slice(0, 3)}
           </Button>
         ))}
       </div>
