@@ -30,7 +30,8 @@ export const useOrders = () => {
             .eq('user_id', session.user.id)
             .single();
 
-          // Fetch orders with proper category information for each item
+          // Fetch orders with COMPLETE category information for each item
+          console.log("Fetching orders with complete category data...");
           const { data: orders, error } = await supabase
             .from('orders')
             .select(`
@@ -51,6 +52,7 @@ export const useOrders = () => {
                   id,
                   name,
                   name_ko,
+                  category_id,
                   category:menu_categories (
                     id,
                     name,
@@ -67,11 +69,21 @@ export const useOrders = () => {
             .order('created_at', { ascending: false });
 
           if (error) throw error;
+          
+          console.log("Orders fetched with category data:", orders?.map(order => ({
+            id: order.id,
+            items: order.order_items?.map(item => ({
+              name: item.menu_item?.name,
+              category: item.menu_item?.category?.name
+            }))
+          })));
+          
           return orders as unknown as Order[];
         }
         
         return [];
       } catch (error: any) {
+        console.error("Error fetching orders:", error);
         toast({
           title: 'Error fetching orders',
           description: error.message,
@@ -95,7 +107,8 @@ export const useVendorOrders = () => {
     queryKey: orderKeys.admin,
     queryFn: async () => {
       try {
-        // Admin access - fetch ALL orders across the platform with proper category data
+        // Admin access - fetch ALL orders with COMPLETE category data for each item
+        console.log("Fetching admin orders with complete category data...");
         const { data, error } = await supabase
           .from('orders')
           .select(`
@@ -116,6 +129,7 @@ export const useVendorOrders = () => {
                 id,
                 name,
                 name_ko,
+                category_id,
                 category:menu_categories(
                   id,
                   name,
@@ -127,8 +141,18 @@ export const useVendorOrders = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        
+        console.log("Admin orders fetched with category data:", data?.map(order => ({
+          id: order.id,
+          items: order.order_items?.map(item => ({
+            name: item.menu_item?.name,
+            category: item.menu_item?.category?.name
+          }))
+        })));
+        
         return data as unknown as Order[];
       } catch (error: any) {
+        console.error("Error fetching admin orders:", error);
         toast({
           title: 'Error fetching admin orders',
           description: error.message,
@@ -156,7 +180,13 @@ export const useVendorOrders = () => {
             menu_item:menu_items (
               id,
               name,
-              name_ko
+              name_ko,
+              category_id,
+              category:menu_categories(
+                id,
+                name,
+                name_ko
+              )
             )
           )
         `)
@@ -200,7 +230,13 @@ export const useVendorOrders = () => {
               menu_item:menu_items (
                 id,
                 name,
-                name_ko
+                name_ko,
+                category_id,
+                category:menu_categories(
+                  id,
+                  name,
+                  name_ko
+                )
               )
             )
           `)

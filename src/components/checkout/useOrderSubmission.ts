@@ -28,7 +28,8 @@ export const useOrderSubmission = () => {
         customerData: props.customerData,
         itemCount: props.items.length,
         fulfillmentType: props.fulfillmentType,
-        total: props.total
+        total: props.total,
+        items: props.items.map(item => ({ id: item.id, name: item.name, category_id: item.category_id }))
       });
       
       // Validate required customer data
@@ -102,14 +103,20 @@ export const useOrderSubmission = () => {
 
       console.log("Successfully created order:", order);
 
-      // Create order items
-      const orderItems = props.items.map((item) => ({
-        order_id: order.id,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        discount_percentage: item.discount_percentage || null
-      }));
+      // Create order items - PRESERVE CATEGORY INFORMATION
+      console.log("Creating order items with category preservation...");
+      const orderItems = props.items.map((item) => {
+        const orderItem = {
+          order_id: order.id,
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price,
+          discount_percentage: item.discount_percentage || null
+        };
+        
+        console.log(`Creating order item: ${item.name} (category_id: ${item.category_id})`);
+        return orderItem;
+      });
 
       const { error: orderItemsError } = await supabase
         .from('order_items')
@@ -120,7 +127,7 @@ export const useOrderSubmission = () => {
         throw orderItemsError;
       }
 
-      console.log("Successfully created order items");
+      console.log("Successfully created order items with category preservation");
 
       // Send notification
       try {
@@ -132,10 +139,18 @@ export const useOrderSubmission = () => {
               id,
               quantity,
               menu_item_id,
+              unit_price,
+              discount_percentage,
               menu_item:menu_items (
                 id,
                 name,
-                name_ko
+                name_ko,
+                category_id,
+                category:menu_categories(
+                  id,
+                  name,
+                  name_ko
+                )
               )
             )
           `)
@@ -143,6 +158,7 @@ export const useOrderSubmission = () => {
           .single();
 
         if (!fetchError && completeOrder) {
+          console.log("Order with category data for notification:", completeOrder);
           await supabase.functions.invoke('send-sms', {
             body: {
               type: 'order_status_update',

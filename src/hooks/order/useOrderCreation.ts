@@ -46,6 +46,9 @@ export async function createOrder({
   const categoryItems = items.filter(item => item.category_id === categoryId);
   if (categoryItems.length === 0) return null;
 
+  console.log(`Creating order for category ${categoryId} with ${categoryItems.length} items:`, 
+    categoryItems.map(item => ({ name: item.name, category_id: item.category_id })));
+
   // Calculate the actual total with discounts applied
   const categoryTotal = categoryItems.reduce((sum, item) => {
     const price = item.discount_percentage 
@@ -128,14 +131,19 @@ export async function createOrder({
 
     console.log("Successfully created order record:", finalOrderData);
 
-    // Create the order items
-    const orderItems = categoryItems.map((item) => ({
-      order_id: finalOrderData.id,
-      menu_item_id: item.id,
-      quantity: item.quantity,
-      unit_price: item.price,
-      discount_percentage: item.discount_percentage || null
-    }));
+    // Create the order items - PRESERVE CATEGORY DATA
+    const orderItems = categoryItems.map((item) => {
+      const orderItem = {
+        order_id: finalOrderData.id,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        discount_percentage: item.discount_percentage || null
+      };
+      
+      console.log(`Creating order item for menu_item_id: ${item.id} (category: ${item.category_id})`);
+      return orderItem;
+    });
 
     const { error: orderItemsError } = await supabase
       .from('order_items')
@@ -161,7 +169,13 @@ export async function createOrder({
             menu_item:menu_items (
               id,
               name,
-              name_ko
+              name_ko,
+              category_id,
+              category:menu_categories(
+                id,
+                name,
+                name_ko
+              )
             )
           )
         `)
@@ -170,6 +184,7 @@ export async function createOrder({
 
       if (!fetchError && completeOrder) {
         try {
+          console.log("Sending notification for order with category data:", completeOrder);
           await supabase.functions.invoke('send-sms', {
             body: {
               type: 'order_status_update',
@@ -196,7 +211,7 @@ export async function sendUnifiedOrderNotification(orderIds: string[]) {
   try {
     if (orderIds.length === 0) return;
     
-    // Get all orders with their items
+    // Get all orders with their items INCLUDING CATEGORY DATA
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -208,7 +223,13 @@ export async function sendUnifiedOrderNotification(orderIds: string[]) {
           menu_item:menu_items (
             id,
             name,
-            name_ko
+            name_ko,
+            category_id,
+            category:menu_categories(
+              id,
+              name,
+              name_ko
+            )
           )
         )
       `)
@@ -218,6 +239,8 @@ export async function sendUnifiedOrderNotification(orderIds: string[]) {
       console.error("Error fetching orders for unified notification:", error);
       return;
     }
+
+    console.log("Sending unified notification for orders with category data:", orders);
 
     // Send unified notification with all orders
     await supabase.functions.invoke('send-sms', {
