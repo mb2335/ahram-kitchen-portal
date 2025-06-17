@@ -1,4 +1,3 @@
-
 export type OrderStatus = 'pending' | 'confirmed' | 'completed' | 'rejected';
 
 export interface Order {
@@ -8,7 +7,7 @@ export interface Order {
   discount_amount?: number;
   delivery_date: string;
   created_at: string;
-  status: OrderStatus; // Ensure this is typed as OrderStatus, not string
+  status: OrderStatus;
   notes?: string;
   payment_proof_url: string;
   rejection_reason?: string;

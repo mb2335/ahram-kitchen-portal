@@ -4,15 +4,11 @@ import { UnifiedOrderDetails } from './order/UnifiedOrderDetails';
 import { useOrderHistory } from '@/hooks/order/useOrderHistory';
 import { useCustomerUnifiedOrders } from '@/hooks/useCustomerUnifiedOrders';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Order } from '@/components/vendor/types';
 
 export function OrderHistory() {
   const { orders, isLoading, isAuthenticated } = useOrderHistory();
   const { t } = useLanguage();
-  
-  // Cast the orders to the proper Order type to ensure compatibility
-  const typedOrders = orders as Order[] | undefined;
-  const unifiedOrderGroups = useCustomerUnifiedOrders(typedOrders || []);
+  const unifiedOrderGroups = useCustomerUnifiedOrders(orders || []);
 
   if (!isAuthenticated) {
     return null;

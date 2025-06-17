@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { Card } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { addDays, startOfDay, endOfDay } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useVendorOrders } from '@/hooks/useVendorOrders';
+import { useVendorOrders } from '@/hooks/useOrders';
 import { useUnifiedOrders } from '@/hooks/useUnifiedOrders';
 
 export function DashboardSummary() {

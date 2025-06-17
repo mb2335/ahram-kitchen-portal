@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { OrderStatus } from './types';
 import { UnifiedOrderCard } from './order/UnifiedOrderCard';
 import { OrderStatusActions } from './OrderStatusActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVendorOrders } from '@/hooks/useVendorOrders';
+import { useVendorOrders } from '@/hooks/useOrders';
 import { useUnifiedOrders } from '@/hooks/useUnifiedOrders';
 import { OrderFilters } from './order/OrderFilters';
 import type { OrderFilters as OrderFiltersType } from './order/OrderFilters';
@@ -179,11 +178,9 @@ export function OrderManagement() {
     });
   };
 
-  // Extract unique pickup locations from orders with proper typing
-  const pickupLocations: string[] = Array.from(new Set(
-    (orders || [])
-      .map(order => order.pickup_location)
-      .filter((location): location is string => typeof location === 'string' && location.length > 0)
+  // Extract unique pickup locations from orders
+  const pickupLocations = Array.from(new Set(
+    orders?.map(order => order.pickup_location).filter(Boolean) || []
   ));
 
   const renderOrdersList = (status: string) => {
