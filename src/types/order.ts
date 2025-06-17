@@ -22,6 +22,7 @@ export interface OrderSubmissionProps {
     address?: string;
   };
   pickupDetail: null; // Simplified - no pickup details needed
+  pickupTime?: string | null; // Add pickup time field
   fulfillmentType: 'pickup' | 'delivery'; // Simplified to only two options
   onOrderSuccess: (orderId: string, isAuthenticated: boolean) => void;
 }

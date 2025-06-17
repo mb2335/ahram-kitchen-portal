@@ -28,6 +28,7 @@ export const useOrderSubmission = () => {
         customerData: props.customerData,
         itemCount: props.items.length,
         fulfillmentType: props.fulfillmentType,
+        pickupTime: props.pickupTime,
         total: props.total,
         items: props.items.map(item => ({ id: item.id, name: item.name, category_id: item.category_id }))
       });
@@ -81,6 +82,7 @@ export const useOrderSubmission = () => {
         payment_proof_url: paymentProofUrl,
         fulfillment_type: props.fulfillmentType,
         delivery_address: props.customerData.address || null,
+        pickup_time: props.pickupTime || null, // Save pickup time
         customer_name: props.customerData.fullName,
         customer_email: props.customerData.email,
         customer_phone: props.customerData.phone || null,
@@ -88,7 +90,7 @@ export const useOrderSubmission = () => {
         status: 'pending'
       };
 
-      console.log("Creating order with data:", orderData);
+      console.log("Creating order with pickup time:", { pickup_time: props.pickupTime });
 
       const { data: order, error: orderError } = await supabase
         .from('orders')

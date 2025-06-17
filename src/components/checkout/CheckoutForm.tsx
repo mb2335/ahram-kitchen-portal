@@ -12,6 +12,7 @@ import { useOrderSubmission } from './useOrderSubmission';
 import { useDeliveryEligibility } from '@/hooks/cart/useDeliveryEligibility';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
 import { addDays } from 'date-fns';
 
 interface CheckoutFormProps {
@@ -39,11 +40,18 @@ export function CheckoutForm({
   const { t } = useLanguage();
   const { submitOrder, isSubmitting, isUploading } = useOrderSubmission();
   const { isDeliveryEligible } = useDeliveryEligibility();
+  const { 
+    formData, 
+    handleDateChange, 
+    handleNotesChange, 
+    handlePickupDetailChange, 
+    handleDeliveryAddressChange, 
+    handleTimeSlotSelectionChange,
+    getPickupTime 
+  } = useCheckoutForm();
   
   const [fulfillmentType, setFulfillmentType] = useState<'pickup' | 'delivery'>('pickup');
   const [deliveryDate, setDeliveryDate] = useState<Date>(addDays(new Date(), 3));
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [notes, setNotes] = useState('');
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [selectedDates, setSelectedDates] = useState<Record<string, Date>>({});
   const [selectedPickupDetail, setSelectedPickupDetail] = useState(null);
@@ -61,7 +69,8 @@ export function CheckoutForm({
     }
   }, [isDeliveryEligible, fulfillmentType, toast]);
 
-  const handleDateChange = (type: string, date: Date) => {
+  const handleDateChangeWrapper = (type: string, date: Date) => {
+    handleDateChange(type, date);
     setSelectedDates(prev => ({
       ...prev,
       [type]: date
@@ -69,6 +78,12 @@ export function CheckoutForm({
     if (type === fulfillmentType) {
       setDeliveryDate(date);
     }
+  };
+
+  const handlePickupDetailChangeWrapper = (detail: any) => {
+    console.log('[CheckoutForm] Pickup detail selected:', detail);
+    setSelectedPickupDetail(detail);
+    handlePickupDetailChange(fulfillmentType, detail);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,7 +103,7 @@ export function CheckoutForm({
       return;
     }
 
-    if (fulfillmentType === 'delivery' && !deliveryAddress.trim()) {
+    if (fulfillmentType === 'delivery' && !formData.deliveryAddress?.trim()) {
       toast({
         title: "Delivery Address Required",
         description: t('checkout.error.address'),
@@ -116,20 +131,25 @@ export function CheckoutForm({
     }
 
     try {
+      // Get the pickup time from selected pickup detail
+      const pickupTime = getPickupTime(fulfillmentType);
+      
       const orderProps: OrderSubmissionProps = {
         items,
         total,
-        notes,
+        notes: formData.notes,
         deliveryDates: { [fulfillmentType]: deliveryDate },
         customerData: {
           ...customerData,
-          address: fulfillmentType === 'delivery' ? deliveryAddress : undefined,
+          address: fulfillmentType === 'delivery' ? formData.deliveryAddress : undefined,
         },
         pickupDetail: selectedPickupDetail,
+        pickupTime: pickupTime, // Add pickup time to order props
         fulfillmentType,
         onOrderSuccess,
       };
 
+      console.log('[CheckoutForm] Submitting order with pickup time:', pickupTime);
       await submitOrder(orderProps, paymentProofFile);
     } catch (error) {
       console.error('Order submission failed:', error);
@@ -147,8 +167,8 @@ export function CheckoutForm({
 
       <FulfillmentSettings
         selectedDates={selectedDates}
-        onDateChange={handleDateChange}
-        onPickupDetailChange={setSelectedPickupDetail}
+        onDateChange={handleDateChangeWrapper}
+        onPickupDetailChange={handlePickupDetailChangeWrapper}
         selectedPickupDetail={selectedPickupDetail}
         onDeliveryTimeSlotChange={setSelectedTimeSlot}
         selectedTimeSlot={selectedTimeSlot}
@@ -170,8 +190,8 @@ export function CheckoutForm({
               <input
                 id="delivery-address"
                 type="text"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
+                value={formData.deliveryAddress || ''}
+                onChange={(e) => handleDeliveryAddressChange(e.target.value)}
                 placeholder={t('checkout.delivery.address.placeholder')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 required
@@ -194,8 +214,8 @@ export function CheckoutForm({
             </label>
             <textarea
               id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              value={formData.notes}
+              onChange={(e) => handleNotesChange(e.target.value)}
               placeholder={t('checkout.notes.placeholder')}
               rows={3}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"

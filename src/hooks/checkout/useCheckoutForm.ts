@@ -60,12 +60,29 @@ export function useCheckoutForm() {
     }));
   };
 
+  // Helper function to get pickup time from selected pickup detail
+  const getPickupTime = (fulfillmentType: string): string | null => {
+    if (fulfillmentType !== 'pickup') return null;
+    
+    const pickupDetail = Object.values(formData.pickupDetails)[0];
+    if (!pickupDetail) return null;
+    
+    // Return the time range if both start and end times are available
+    if (pickupDetail.start_time && pickupDetail.end_time) {
+      return `${pickupDetail.start_time} - ${pickupDetail.end_time}`;
+    }
+    
+    // Return just the time if only one is available
+    return pickupDetail.start_time || pickupDetail.time || null;
+  };
+
   return {
     formData,
     handleDateChange,
     handleNotesChange,
     handlePickupDetailChange,
     handleDeliveryAddressChange,
-    handleTimeSlotSelectionChange
+    handleTimeSlotSelectionChange,
+    getPickupTime
   };
 }
