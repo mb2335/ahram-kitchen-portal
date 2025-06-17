@@ -5,10 +5,8 @@ import { useSession } from '@supabase/auth-helpers-react';
 import { OrderSubmissionProps } from '@/types/order';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentProofUpload } from '@/hooks/order/usePaymentProofUpload';
-import { format } from 'date-fns';
 import { updateMenuItemQuantities } from '@/utils/menuItemQuantityManagement';
 import { getOrCreateCustomer } from '@/utils/customerManagement';
-import { createOrder } from '@/hooks/order/useOrderCreation';
 
 export const useOrderSubmission = () => {
   const { toast } = useToast();
@@ -26,20 +24,18 @@ export const useOrderSubmission = () => {
       setIsUploading(true);
       setIsSubmitting(true);
       
-      console.log("Starting order submission process with data:", { 
+      console.log("Starting simplified order submission:", { 
         customerData: props.customerData,
         itemCount: props.items.length,
-        deliveryDatesAvailable: Object.keys(props.deliveryDates).length,
         fulfillmentType: props.fulfillmentType,
-        categoryFulfillmentTypes: props.categoryFulfillmentTypes || {}
+        total: props.total
       });
       
-      // Validate required customer data for checkout
+      // Validate required customer data
       if (!props.customerData.fullName || !props.customerData.email) {
         throw new Error("Customer name and email are required");
       }
 
-      // Validate SMS opt-in
       if (!props.customerData.smsOptIn) {
         throw new Error("You must agree to receive SMS updates to place an order");
       }
@@ -48,213 +44,116 @@ export const useOrderSubmission = () => {
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
       console.log("Payment proof uploaded successfully");
       
-      // For authenticated users, get or create customer record
-      // For guests, this will return null
+      // Get or create customer record for authenticated users
       const customerId = session?.user?.id ? 
         await getOrCreateCustomer({
           ...props.customerData,
-          smsOptIn: true // Ensure this is set to true
+          smsOptIn: true
         }, session.user.id) : null;
       
       console.log("Customer ID obtained:", customerId);
       
-      // Group items by category
-      const itemsByCategory = props.items.reduce((acc, item) => {
-        const categoryId = item.category_id || 'uncategorized';
-        if (!acc[categoryId]) {
-          acc[categoryId] = [];
-        }
-        acc[categoryId].push(item);
-        return acc;
-      }, {} as Record<string, typeof props.items>);
+      // Get delivery date
+      const deliveryDate = Object.values(props.deliveryDates)[0] || new Date();
       
-      // Get all category IDs from the items
-      const categoryIds = Object.keys(itemsByCategory);
-      console.log("Category IDs from items:", categoryIds);
-      console.log("Available delivery dates:", props.deliveryDates);
-      
-      // Calculate fulfillment type dates
-      const fulfillmentTypeDates: Record<string, Date> = {};
-      
-      // First, gather explicit fulfillment type dates
-      for (const [key, date] of Object.entries(props.deliveryDates)) {
-        if (key === 'pickup' || key === 'delivery') {
-          fulfillmentTypeDates[key] = date;
-        }
-      }
-      
-      console.log("Fulfillment type dates:", fulfillmentTypeDates);
-      
-      // Create a map to track which dates to use for each category
-      const categoryToDateMap: Record<string, Date> = {};
-      
-      // First pass - use category-specific dates if available
-      for (const categoryId of categoryIds) {
-        if (props.deliveryDates[categoryId] &&
-            props.deliveryDates[categoryId] instanceof Date &&
-            !isNaN(props.deliveryDates[categoryId].getTime())) {
-          categoryToDateMap[categoryId] = props.deliveryDates[categoryId];
-        }
-      }
-      
-      // Second pass - use fulfillment type dates for categories that don't have specific dates
-      for (const categoryId of categoryIds) {
-        if (!categoryToDateMap[categoryId]) {
-          const categoryFulfillmentType = props.categoryFulfillmentTypes?.[categoryId] || props.fulfillmentType || 'pickup';
-          if (fulfillmentTypeDates[categoryFulfillmentType] && 
-              fulfillmentTypeDates[categoryFulfillmentType] instanceof Date &&
-              !isNaN(fulfillmentTypeDates[categoryFulfillmentType].getTime())) {
-            categoryToDateMap[categoryId] = fulfillmentTypeDates[categoryFulfillmentType];
-          }
-        }
-      }
-      
-      // Third pass - use any valid date as a fallback
-      let anyValidDate: Date | null = null;
-      
-      // Try to find any valid date from explicit category dates or fulfillment type dates
-      for (const date of [...Object.values(categoryToDateMap), ...Object.values(fulfillmentTypeDates)]) {
-        if (date instanceof Date && !isNaN(date.getTime())) {
-          anyValidDate = date;
-          break;
-        }
-      }
-      
-      // If still no valid date, create one
-      if (!anyValidDate) {
-        anyValidDate = new Date();
-        anyValidDate.setDate(anyValidDate.getDate() + 3);
-        console.log("No valid dates found, created default date:", anyValidDate);
-      }
-      
-      // Final pass - ensure all categories have a date
-      for (const categoryId of categoryIds) {
-        if (!categoryToDateMap[categoryId]) {
-          categoryToDateMap[categoryId] = anyValidDate;
-          console.log(`Assigning default date for category ${categoryId}:`, anyValidDate);
-        }
-      }
-      
-      console.log("Final category date mapping:", categoryToDateMap);
-      
-      const orderIds: string[] = [];
-      let firstOrderId: string | null = null;
-      
-      // Create orders for each category - each gets its own unique ID
-      for (let i = 0; i < categoryIds.length; i++) {
-        const categoryId = categoryIds[i];
-        const items = itemsByCategory[categoryId];
-        
-        console.log(`Processing category ${categoryId} with ${items.length} items`);
-        
-        // Use the category-specific date from our mapping
-        const deliveryDate = categoryToDateMap[categoryId];
-        console.log(`Using delivery date for ${categoryId}:`, deliveryDate);
-        
-        // Determine fulfillment type for this category
-        const categoryFulfillmentType = props.categoryFulfillmentTypes?.[categoryId] || props.fulfillmentType || 'pickup';
-        console.log(`Using fulfillment type for ${categoryId}:`, categoryFulfillmentType);
-        
-        // Calculate total for this category
-        const categoryTotal = items.reduce((sum, item) => {
-          const price = item.price;
-          let itemTotal = price * item.quantity;
-          
-          if (item.discount_percentage) {
-            const discountAmount = itemTotal * (item.discount_percentage / 100);
-            itemTotal -= discountAmount;
-          }
-          
-          return sum + itemTotal;
-        }, 0);
-        
-        // Get delivery time slot if applicable
-        let deliveryTimeSlot = null;
-        if (categoryFulfillmentType === 'delivery') {
-          // Try global time slot first, then category-specific
-          const timeSlotSelection = props.timeSlotSelections?.global || props.timeSlotSelections?.[categoryId];
-          
-          if (timeSlotSelection?.timeSlot) {
-            deliveryTimeSlot = timeSlotSelection.timeSlot;
-            console.log(`Using time slot for ${categoryId}:`, deliveryTimeSlot);
-          } else {
-            console.log(`No time slot selected for delivery in category ${categoryId}, but proceeding anyway`);
-          }
-        }
-        
-        let orderResult = null;
-        try {
-          // Calculate total discount amount
-          const discountAmount = items.reduce((sum, item) => {
-            if (!item.discount_percentage) return sum;
-            const itemTotal = item.price * item.quantity;
-            return sum + (itemTotal * (item.discount_percentage / 100));
-          }, 0);
+      // Calculate total with discounts
+      const total = props.items.reduce((sum, item) => {
+        const price = item.discount_percentage 
+          ? item.price * (1 - item.discount_percentage / 100) 
+          : item.price;
+        return sum + price * item.quantity;
+      }, 0);
 
-          orderResult = await createOrder({
-            customerId,
-            categoryId,
-            deliveryDate,
-            items,
-            total: categoryTotal,
-            notes: props.notes,
-            paymentProofUrl,
-            pickupTime: props.pickupDetail?.time || null,
-            pickupLocation: props.pickupDetail?.location || null,
-            fulfillmentType: categoryFulfillmentType,
-            deliveryAddress: props.customerData.address || null,
-            deliveryTimeSlot,
-            customerName: props.customerData.fullName,
-            customerEmail: props.customerData.email,
-            customerPhone: props.customerData.phone || null,
-            discountAmount: discountAmount > 0 ? discountAmount : null,
-            skipNotification: true, // Skip individual notifications
-            orderId: i === 0 ? undefined : firstOrderId // Only pass orderId for subsequent orders
+      // Calculate discount amount
+      const discountAmount = props.items.reduce((sum, item) => {
+        if (!item.discount_percentage) return sum;
+        const itemTotal = item.price * item.quantity;
+        return sum + (itemTotal * (item.discount_percentage / 100));
+      }, 0);
+
+      // Create single order
+      const orderData = {
+        customer_id: customerId,
+        total_amount: total,
+        notes: props.notes,
+        delivery_date: deliveryDate.toISOString(),
+        payment_proof_url: paymentProofUrl,
+        fulfillment_type: props.fulfillmentType,
+        delivery_address: props.customerData.address || null,
+        customer_name: props.customerData.fullName,
+        customer_email: props.customerData.email,
+        customer_phone: props.customerData.phone || null,
+        discount_amount: discountAmount > 0 ? discountAmount : null,
+        status: 'pending'
+      };
+
+      console.log("Creating order with data:", orderData);
+
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error("Error creating order:", orderError);
+        throw orderError;
+      }
+
+      console.log("Successfully created order:", order);
+
+      // Create order items
+      const orderItems = props.items.map((item) => ({
+        order_id: order.id,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        discount_percentage: item.discount_percentage || null
+      }));
+
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (orderItemsError) {
+        console.error("Error creating order items:", orderItemsError);
+        throw orderItemsError;
+      }
+
+      console.log("Successfully created order items");
+
+      // Send notification
+      try {
+        const { data: completeOrder, error: fetchError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              id,
+              quantity,
+              menu_item_id,
+              menu_item:menu_items (
+                id,
+                name,
+                name_ko
+              )
+            )
+          `)
+          .eq('id', order.id)
+          .single();
+
+        if (!fetchError && completeOrder) {
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              type: 'order_status_update',
+              order: completeOrder,
+              previousStatus: null
+            }
           });
-
-          if (orderResult) {
-            orderIds.push(orderResult.id);
-            if (i === 0) {
-              firstOrderId = orderResult.id;
-            }
-            console.log(`Order created with ID ${orderResult.id}`);
-          }
-        } catch (orderError) {
-          console.error(`Error creating order for category ${categoryId}:`, orderError);
-          throw new Error(`Failed to create order: ${orderError.message}`);
+          console.log("Order notification sent");
         }
-
-        // Book delivery time slot if necessary
-        if (orderResult && categoryFulfillmentType === 'delivery' && deliveryTimeSlot) {
-          try {
-            const { error: bookingError } = await supabase
-              .from('delivery_time_bookings')
-              .insert({
-                order_id: orderResult.id,
-                category_id: categoryId,
-                delivery_date: format(deliveryDate, 'yyyy-MM-dd'),
-                time_slot: deliveryTimeSlot
-              });
-
-            if (bookingError) {
-              console.warn(`Failed to book delivery time slot, but continuing:`, bookingError);
-            } else {
-              console.log(`Booked delivery time slot ${deliveryTimeSlot} for order ${orderResult.id}`);
-            }
-          } catch (bookingErr) {
-            console.warn("Error in delivery time booking, but continuing with order:", bookingErr);
-          }
-        }
-      }
-      
-      // Send unified notification after all orders are created
-      if (orderIds.length > 0) {
-        try {
-          const { sendUnifiedOrderNotification } = await import('@/hooks/order/useOrderCreation');
-          await sendUnifiedOrderNotification(orderIds);
-        } catch (notificationError) {
-          console.warn("Error sending unified notification, but orders were created:", notificationError);
-        }
+      } catch (notificationError) {
+        console.warn("Error sending notification, but order was created:", notificationError);
       }
       
       // Update item quantities
@@ -265,14 +164,12 @@ export const useOrderSubmission = () => {
         console.warn("Error updating menu item quantities, but order was created:", qtyError);
       }
 
-      // Determine if user is authenticated before calling success callback
+      // Call success callback
       const isAuthenticated = !!session?.user;
+      console.log(`Order submission completed successfully. Order ID: ${order.id}`);
+      props.onOrderSuccess(order.id, isAuthenticated);
       
-      // Call the success callback with the first order ID
-      console.log(`Order submission completed successfully. Calling success callback with first order ID ${firstOrderId}`);
-      props.onOrderSuccess(firstOrderId || orderIds[0], isAuthenticated);
-      
-      return firstOrderId || orderIds[0];
+      return order.id;
     } catch (error: any) {
       console.error("Order submission failed:", error);
       toast({

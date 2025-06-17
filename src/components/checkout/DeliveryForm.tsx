@@ -1,139 +1,99 @@
-import { useCart } from '@/contexts/CartContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { CategoryDeliveryDate } from './delivery/CategoryDeliveryDate';
-import { DeliveryNotes } from './delivery/DeliveryNotes';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/order';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
-import { PickupDetail } from '@/types/pickup';
-import { DeliveryTimeSlotSelection } from '@/types/delivery';
+import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
+import { CalendarDays, MapPin, FileText } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface DeliveryFormProps {
-  deliveryDates: Record<string, Date>;
+  deliveryDate: Date;
   notes: string;
-  onDateChange: (categoryId: string, date: Date) => void;
+  onDateChange: (date: Date) => void;
   onNotesChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  pickupDetail: PickupDetail | null;
-  onPickupDetailChange: (pickupDetail: PickupDetail) => void;
-  fulfillmentType: string;
-  onFulfillmentTypeChange: (type: string) => void;
+  fulfillmentType: 'pickup' | 'delivery';
   deliveryAddress: string;
   onDeliveryAddressChange: (address: string) => void;
-  categoryFulfillmentTypes: Record<string, string>;
-  onCategoryFulfillmentTypeChange: (categoryId: string, type: string) => void;
-  deliveryTimeSlotSelections?: Record<string, DeliveryTimeSlotSelection>;
-  onDeliveryTimeSlotSelectionChange?: (categoryId: string, selection: DeliveryTimeSlotSelection) => void;
 }
 
 export function DeliveryForm({
-  deliveryDates,
+  deliveryDate,
   notes,
   onDateChange,
   onNotesChange,
-  pickupDetail,
-  onPickupDetailChange,
   fulfillmentType,
-  onFulfillmentTypeChange,
   deliveryAddress,
   onDeliveryAddressChange,
-  categoryFulfillmentTypes,
-  onCategoryFulfillmentTypeChange,
-  deliveryTimeSlotSelections = {},
-  onDeliveryTimeSlotSelectionChange
 }: DeliveryFormProps) {
-  const { items } = useCart();
   const { t } = useLanguage();
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['menu-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .order('order_index');
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const itemsByCategory = items.reduce((acc, item) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, typeof items>);
-
-  const usedFulfillmentTypes = new Set(
-    Object.values(categoryFulfillmentTypes)
-  );
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t('category.settings.title')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5" />
+            {fulfillmentType === 'delivery' ? t('delivery.date') : t('pickup.date')}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {categories.map((category) => {
-            if (!itemsByCategory[category.id]) return null;
-            const availableTypes = category.fulfillment_types || [];
-            const currentType = categoryFulfillmentTypes[category.id] || fulfillmentType;
-            
-            return (
-              <CategoryDeliveryDate
-                key={category.id}
-                category={category}
-                selectedFulfillmentType={currentType}
-                onFulfillmentTypeChange={(type) => onCategoryFulfillmentTypeChange(category.id, type)}
-                isDisabled={availableTypes.length === 1}
-              />
-            );
-          })}
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="delivery-date">
+              {fulfillmentType === 'delivery' ? 'Delivery Date' : 'Pickup Date'}
+            </Label>
+            <DatePicker
+              selected={deliveryDate}
+              onSelect={(date) => date && onDateChange(date)}
+              minDate={new Date()}
+            />
+          </div>
         </CardContent>
       </Card>
 
-      <FulfillmentSettings
-        selectedDates={deliveryDates}
-        onDateChange={onDateChange}
-        onPickupDetailChange={onPickupDetailChange}
-        selectedPickupDetail={pickupDetail}
-        onDeliveryTimeSlotChange={(timeSlot) => 
-          onDeliveryTimeSlotSelectionChange && 
-          onDeliveryTimeSlotSelectionChange('global', {
-            categoryId: 'global',
-            date: deliveryDates[FULFILLMENT_TYPE_DELIVERY],
-            timeSlot
-          })
-        }
-        selectedTimeSlot={deliveryTimeSlotSelections?.global?.timeSlot || null}
-        usedFulfillmentTypes={usedFulfillmentTypes}
-      />
-
-      {usedFulfillmentTypes.has(FULFILLMENT_TYPE_DELIVERY) && (
-        <div className="space-y-2">
-          <Label htmlFor="delivery-address">{t('checkout.delivery.address')}</Label>
-          <Input 
-            id="delivery-address"
-            value={deliveryAddress}
-            onChange={(e) => onDeliveryAddressChange(e.target.value)}
-            placeholder={t('checkout.delivery.address.placeholder')}
-            className="w-full"
-            required
-          />
-        </div>
+      {fulfillmentType === 'delivery' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              {t('delivery.address')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="delivery-address">Delivery Address *</Label>
+              <Input
+                id="delivery-address"
+                value={deliveryAddress}
+                onChange={(e) => onDeliveryAddressChange(e.target.value)}
+                placeholder="Enter your full delivery address"
+                required
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      <DeliveryNotes
-        notes={notes}
-        onNotesChange={onNotesChange}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            {t('order.notes')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Special Instructions (Optional)</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={onNotesChange}
+              placeholder="Any special instructions for your order..."
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,19 +1,16 @@
+
 import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { OrderSubmissionProps } from '@/types/order';
+import { FulfillmentSelector } from './FulfillmentSelector';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
-import { Upload, Loader2 } from 'lucide-react';
 import { useOrderSubmission } from './useOrderSubmission';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { FULFILLMENT_TYPE_DELIVERY, FULFILLMENT_TYPE_PICKUP, OrderItem } from '@/types/order';
-import { PickupDetail } from '@/types/pickup';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
-import { DeliveryTimeSlotSelection } from '@/types/delivery';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { useDeliveryEligibility } from '@/hooks/cart/useDeliveryEligibility';
+import { addDays } from 'date-fns';
 
 interface CheckoutFormProps {
   customerData: {
@@ -25,7 +22,7 @@ interface CheckoutFormProps {
   };
   onOrderSuccess: (orderId: string, isAuthenticated: boolean) => void;
   total: number;
-  items: OrderItem[];
+  items: any[];
   onSmsOptInRequired: () => void;
 }
 
@@ -37,314 +34,127 @@ export function CheckoutForm({
   onSmsOptInRequired
 }: CheckoutFormProps) {
   const { toast } = useToast();
-  const { t } = useLanguage();
-  const [paymentProof, setPaymentProof] = useState<File | null>(null);
-  const [fulfillmentType, setFulfillmentType] = useState<string>('');
-  const [categoryFulfillmentTypes, setCategoryFulfillmentTypes] = useState<Record<string, string>>({});
-  const { submitOrder, isUploading, isSubmitting } = useOrderSubmission();
-  const [showSmsWarning, setShowSmsWarning] = useState(false);
+  const { submitOrder, isSubmitting, isUploading } = useOrderSubmission();
+  const { isDeliveryEligible } = useDeliveryEligibility();
   
-  const { 
-    formData, 
-    handleDateChange, 
-    handleNotesChange, 
-    handlePickupDetailChange,
-    handleDeliveryAddressChange,
-    handleTimeSlotSelectionChange
-  } = useCheckoutForm();
+  const [fulfillmentType, setFulfillmentType] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryDate, setDeliveryDate] = useState<Date>(addDays(new Date(), 3));
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['menu-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('*');
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const itemCategoryIds = items.map(item => item.category_id).filter(Boolean) as string[];
-  const categoriesWithItems = new Set(itemCategoryIds);
-
+  // Auto-switch to pickup if delivery becomes unavailable
   useEffect(() => {
-    if (!categories.length) return;
-    
-    const pickupOnlyCategories = new Set<string>();
-    let hasDeliveryEligibleItems = false;
-    
-    Array.from(categoriesWithItems).forEach(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (category?.fulfillment_types) {
-        if (category.fulfillment_types.length === 1 && 
-            category.fulfillment_types[0] === FULFILLMENT_TYPE_PICKUP) {
-          pickupOnlyCategories.add(categoryId);
-        } else if (category.fulfillment_types.includes(FULFILLMENT_TYPE_DELIVERY)) {
-          hasDeliveryEligibleItems = true;
-        }
-      }
-    });
-    
-    if (!fulfillmentType) {
-      if (pickupOnlyCategories.size === categoriesWithItems.size) {
-        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
-      } else if (hasDeliveryEligibleItems && pickupOnlyCategories.size === 0) {
-        setFulfillmentType(FULFILLMENT_TYPE_DELIVERY);
-      } else if (pickupOnlyCategories.size > 0) {
-        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
-      } else {
-        setFulfillmentType(FULFILLMENT_TYPE_PICKUP);
-      }
-    }
-    
-    if (Object.keys(categoryFulfillmentTypes).length === 0) {
-      const newTypes: Record<string, string> = {};
-      
-      Array.from(categoriesWithItems).forEach(categoryId => {
-        const category = categories.find(cat => cat.id === categoryId);
-        
-        if (pickupOnlyCategories.has(categoryId)) {
-          newTypes[categoryId] = FULFILLMENT_TYPE_PICKUP;
-        } else if (category?.fulfillment_types?.includes(fulfillmentType)) {
-          newTypes[categoryId] = fulfillmentType;
-        } else if (category?.fulfillment_types?.length) {
-          newTypes[categoryId] = category.fulfillment_types[0];
-        }
-      });
-      
-      if (Object.keys(newTypes).length > 0) {
-        setCategoryFulfillmentTypes(newTypes);
-      }
-    }
-  }, [categories, items, fulfillmentType, categoryFulfillmentTypes]);
-
-  const handleFulfillmentTypeChange = (type: string) => {
-    setFulfillmentType(type);
-    
-    const updatedCategoryTypes = { ...categoryFulfillmentTypes };
-    
-    Array.from(categoriesWithItems).forEach(categoryId => {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (category?.fulfillment_types?.includes(type)) {
-        updatedCategoryTypes[categoryId] = type;
-      }
-    });
-    
-    setCategoryFulfillmentTypes(updatedCategoryTypes);
-  };
-
-  const handleCategoryFulfillmentTypeChange = (categoryId: string, type: string) => {
-    setCategoryFulfillmentTypes(prev => ({
-      ...prev,
-      [categoryId]: type
-    }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPaymentProof(e.target.files[0]);
-    }
-  };
-
-  const validateDates = (): boolean => {
-    const hasPickupDate = formData.deliveryDates[FULFILLMENT_TYPE_PICKUP] instanceof Date && 
-                        !isNaN(formData.deliveryDates[FULFILLMENT_TYPE_PICKUP].getTime());
-    
-    const hasDeliveryDate = formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY] instanceof Date && 
-                          !isNaN(formData.deliveryDates[FULFILLMENT_TYPE_DELIVERY].getTime());
-    
-    const fulfillmentTypesByCategoryId: Record<string, string> = {};
-    
-    Array.from(categoriesWithItems).forEach(categoryId => {
-      fulfillmentTypesByCategoryId[categoryId] = categoryFulfillmentTypes[categoryId] || fulfillmentType;
-    });
-    
-    let missingFulfillmentTypeDate = false;
-    let missingDateCategoryName = '';
-    
-    Array.from(categoriesWithItems).forEach(categoryId => {
-      const categoryFulfillmentType = fulfillmentTypesByCategoryId[categoryId];
-      
-      const hasCategorySpecificDate = formData.deliveryDates[categoryId] instanceof Date && 
-                                    !isNaN(formData.deliveryDates[categoryId].getTime());
-      
-      if (!hasCategorySpecificDate) {
-        if (categoryFulfillmentType === FULFILLMENT_TYPE_PICKUP && !hasPickupDate) {
-          missingFulfillmentTypeDate = true;
-          const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
-          missingDateCategoryName = categoryName;
-        } else if (categoryFulfillmentType === FULFILLMENT_TYPE_DELIVERY && !hasDeliveryDate) {
-          missingFulfillmentTypeDate = true;
-          const categoryName = categories.find(cat => cat.id === categoryId)?.name || categoryId;
-          missingDateCategoryName = categoryName;
-        }
-      }
-    });
-    
-    if (missingFulfillmentTypeDate) {
+    if (fulfillmentType === 'delivery' && !isDeliveryEligible) {
+      setFulfillmentType('pickup');
       toast({
-        title: t('checkout.error.date'),
-        description: `Please select a date for ${missingDateCategoryName}`,
-        variant: 'destructive',
+        title: "Switched to Pickup",
+        description: "Your cart no longer meets delivery requirements. Switched to pickup.",
+        variant: "default",
       });
-      return false;
     }
-    
-    return true;
-  };
+  }, [isDeliveryEligible, fulfillmentType, toast]);
 
-  const validateTimeSlots = (): boolean => {
-    const deliveryCategories = Object.entries(categoryFulfillmentTypes)
-      .filter(([_, type]) => type === FULFILLMENT_TYPE_DELIVERY)
-      .map(([id]) => id);
-    
-    if (deliveryCategories.length > 0 && 
-        (!formData.deliveryTimeSlotSelections?.global || 
-         !formData.deliveryTimeSlotSelections.global.timeSlot)) {
-      toast({
-        title: t('checkout.error.time'),
-        description: "Please select a delivery time slot",
-        variant: 'destructive',
-      });
-      return false;
-    }
-    
-    return true;
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const { data: pickupSettings = [] } = useQuery({
-    queryKey: ['pickup-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pickup_settings')
-        .select('*')
-        .order('day');
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-  
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    // Validation checks
     if (!customerData.smsOptIn) {
       onSmsOptInRequired();
       return;
     }
-    
-    // Validate payment proof file
-    if (!paymentProof) {
+
+    if (fulfillmentType === 'delivery' && !isDeliveryEligible) {
+      toast({
+        title: "Delivery Not Available",
+        description: "Your cart doesn't meet the minimum requirements for delivery.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (fulfillmentType === 'delivery' && !deliveryAddress.trim()) {
+      toast({
+        title: "Delivery Address Required",
+        description: "Please provide a delivery address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!paymentProofFile) {
       toast({
         title: "Payment Proof Required",
-        description: "Please upload a screenshot as proof of payment",
+        description: "Please upload payment proof to complete your order.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const selectedDates = formData.deliveryDates;
-      const notes = formData.notes;
-      const selectedPickupDetail = Object.values(formData.pickupDetails)[0] || null;
-      const selectedFulfillmentType = fulfillmentType;
-      const timeSlotSelections = formData.deliveryTimeSlotSelections;
-
-      // Create updated customer data with delivery address
-      const updatedCustomerData = {
-        ...customerData,
-        address: formData.deliveryAddress || customerData.address
+      const orderProps: OrderSubmissionProps = {
+        items,
+        total,
+        notes,
+        deliveryDates: { [fulfillmentType]: deliveryDate },
+        customerData: {
+          ...customerData,
+          address: fulfillmentType === 'delivery' ? deliveryAddress : undefined,
+        },
+        pickupDetail: null,
+        fulfillmentType,
+        onOrderSuccess,
       };
 
-      const orderId = await submitOrder(
-        {
-          items,
-          total,
-          notes,
-          deliveryDates: selectedDates,
-          customerData: updatedCustomerData,
-          pickupDetail: selectedPickupDetail,
-          fulfillmentType: selectedFulfillmentType,
-          categoryFulfillmentTypes: categoryFulfillmentTypes,
-          timeSlotSelections,
-          onOrderSuccess,
-        },
-        paymentProof
-      );
-
-      console.log("Order placed successfully with ID:", orderId);
-    } catch (error: any) {
-      console.error("Error placing order:", error);
-      setErrorMessage(error.message || "An error occurred while placing your order");
+      await submitOrder(orderProps, paymentProofFile);
+    } catch (error) {
+      console.error('Order submission failed:', error);
     }
-  };
-
-  const handleDeliveryTimeSlotSelectionChange = (categoryId: string, selection: DeliveryTimeSlotSelection) => {
-    handleTimeSlotSelectionChange(categoryId, selection);
-  };
-
-  const handleNotesTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    handleNotesChange(e.target.value);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {showSmsWarning && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>SMS Opt-in Required</AlertTitle>
-          <AlertDescription>
-            You must agree to receive SMS updates to place an order. This allows us to send you important updates about your order status.
-          </AlertDescription>
-        </Alert>
-      )}
+      <FulfillmentSelector
+        selectedType={fulfillmentType}
+        onTypeChange={setFulfillmentType}
+      />
 
       <DeliveryForm
-        deliveryDates={formData.deliveryDates}
-        notes={formData.notes}
-        onDateChange={handleDateChange}
-        onNotesChange={handleNotesTextChange}
-        pickupDetail={Object.values(formData.pickupDetails)[0] || null}
-        onPickupDetailChange={(detail) => handlePickupDetailChange(Object.keys(formData.pickupDetails)[0] || 'default', detail)}
+        deliveryDate={deliveryDate}
+        notes={notes}
+        onDateChange={setDeliveryDate}
+        onNotesChange={(e) => setNotes(e.target.value)}
         fulfillmentType={fulfillmentType}
-        onFulfillmentTypeChange={handleFulfillmentTypeChange}
-        deliveryAddress={formData.deliveryAddress || ''}
-        onDeliveryAddressChange={handleDeliveryAddressChange}
-        categoryFulfillmentTypes={categoryFulfillmentTypes}
-        onCategoryFulfillmentTypeChange={handleCategoryFulfillmentTypeChange}
-        deliveryTimeSlotSelections={formData.deliveryTimeSlotSelections}
-        onDeliveryTimeSlotSelectionChange={handleDeliveryTimeSlotSelectionChange}
+        deliveryAddress={deliveryAddress}
+        onDeliveryAddressChange={setDeliveryAddress}
       />
 
       <PaymentInstructions
-        paymentProof={paymentProof}
-        onFileChange={handleFileChange}
+        total={total}
+        paymentProofFile={paymentProofFile}
+        onPaymentProofChange={setPaymentProofFile}
       />
 
-      {errorMessage && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
+      <Separator />
 
-      <Button 
-        type="submit" 
-        className="w-full" 
-        disabled={isUploading || isSubmitting}
+      <Card>
+        <CardHeader>
+          <CardTitle>Order Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center text-lg font-semibold">
+            <span>Total</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button
+        type="submit"
+        className="w-full"
+        size="lg"
+        disabled={isSubmitting || isUploading}
       >
-        {(isUploading || isSubmitting) ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {t('checkout.processing')}
-          </>
-        ) : (
-          t('checkout.submit')
-        )}
+        {isUploading ? 'Uploading Payment Proof...' : isSubmitting ? 'Placing Order...' : 'Place Order'}
       </Button>
     </form>
   );
