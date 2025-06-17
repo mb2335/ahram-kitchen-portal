@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,21 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Trash2, Plus, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-
-interface DeliveryRule {
-  id?: string;
-  category_id: string;
-  minimum_items: number;
-  logical_operator: 'AND' | 'OR';
-}
-
-interface RuleGroup {
-  id: string;
-  name: string;
-  rules: DeliveryRule[];
-  is_active: boolean;
-}
+import { DeliveryRule, RuleGroup } from '@/hooks/vendor/useEnhancedDeliveryRules';
 
 interface RuleGroupManagerProps {
   ruleGroups: RuleGroup[];
@@ -45,7 +32,15 @@ export function RuleGroupManager({
     setEditingGroup({
       id: `temp-${Date.now()}`,
       name: newGroupName || 'New Rule Group',
-      rules: [{ category_id: '', minimum_items: 1, logical_operator: 'AND' }],
+      rules: [{ 
+        category_id: '', 
+        minimum_items: 1, 
+        logical_operator: 'AND',
+        vendor_id: '',
+        rule_group_id: '',
+        rule_group_name: '',
+        is_active: true
+      }],
       is_active: true,
     });
     setNewGroupName('');
@@ -55,7 +50,15 @@ export function RuleGroupManager({
     if (!editingGroup) return;
     setEditingGroup({
       ...editingGroup,
-      rules: [...editingGroup.rules, { category_id: '', minimum_items: 1, logical_operator: 'AND' }],
+      rules: [...editingGroup.rules, { 
+        category_id: '', 
+        minimum_items: 1, 
+        logical_operator: 'AND',
+        vendor_id: '',
+        rule_group_id: '',
+        rule_group_name: '',
+        is_active: true
+      }],
     });
   };
 

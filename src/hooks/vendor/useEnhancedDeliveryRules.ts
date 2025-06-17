@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useVendorId } from '@/hooks/useVendorId';
 
-interface DeliveryRule {
+export interface DeliveryRule {
   id?: string;
   vendor_id: string;
   category_id: string;
@@ -15,7 +15,7 @@ interface DeliveryRule {
   is_active: boolean;
 }
 
-interface RuleGroup {
+export interface RuleGroup {
   id: string;
   name: string;
   rules: DeliveryRule[];
