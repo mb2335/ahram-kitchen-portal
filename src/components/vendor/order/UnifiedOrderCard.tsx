@@ -31,7 +31,7 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
     }
   };
 
-  // Flatten all items from all categories for unified display
+  // Flatten all items from all categories for unified display, preserving individual item categories
   const allItems = unifiedOrder.categoryDetails.flatMap(categoryDetail => 
     categoryDetail.items.map(item => ({
       id: item.id,
@@ -42,7 +42,7 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
       discount_percentage: item.discountPercentage,
       category: {
         name: categoryDetail.categoryName,
-        name_ko: categoryDetail.categoryName // Assuming same for now
+        name_ko: categoryDetail.categoryNameKo || categoryDetail.categoryName
       }
     }))
   );

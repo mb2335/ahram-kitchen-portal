@@ -19,7 +19,7 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, children, onDelete }: OrderCardProps) {
-  // Format items for the unified component
+  // Format items for the unified component, using actual menu item category information
   const formattedItems = order.order_items?.map((item) => ({
     id: item.id,
     name: item.menu_item?.name || 'Unknown Item',
@@ -27,7 +27,10 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
     quantity: item.quantity,
     price: item.unit_price,
     discount_percentage: item.discount_percentage || item.menu_item?.discount_percentage,
-    category: item.menu_item?.category
+    category: item.menu_item?.category ? {
+      name: item.menu_item.category.name,
+      name_ko: item.menu_item.category.name_ko
+    } : undefined
   })) || [];
 
   return (
