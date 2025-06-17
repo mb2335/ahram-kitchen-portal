@@ -50,19 +50,9 @@ export function DeliveryTimeSlotsManager({
     },
   });
 
-  const { data: bookingsData, isLoading: isBookingsLoading } = useQuery({
-    queryKey: ['delivery-bookings', categoryId, format(selectedDate, 'yyyy-MM-dd')],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('delivery_time_bookings')
-        .select('time_slot')
-        .eq('category_id', categoryId)
-        .eq('delivery_date', format(selectedDate, 'yyyy-MM-dd'));
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  // Mock bookings data since delivery_time_bookings table doesn't exist
+  const bookingsData: any[] = [];
+  const isBookingsLoading = false;
 
   useEffect(() => {
     const slots: { time: string; isActivated: boolean; isBooked: boolean }[] = [];
@@ -78,7 +68,7 @@ export function DeliveryTimeSlotsManager({
       for (let minute of [0, 30]) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const isActivated = isDayActive && availableTimeSlots.includes(timeString);
-        const isBooked = bookingsData?.some(booking => booking.time_slot === timeString) || false;
+        const isBooked = false; // No bookings since table doesn't exist
         
         slots.push({ 
           time: timeString, 

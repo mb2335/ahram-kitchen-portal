@@ -57,8 +57,7 @@ export function PickupSettingsManager() {
         day: item.day,
         time: item.time || '',
         start_time: item.start_time || item.time || '',
-        end_time: item.end_time || '',
-        location: item.location || ''
+        end_time: item.end_time || ''
       }));
       setPickupDetails(details);
       
@@ -106,8 +105,7 @@ export function PickupSettingsManager() {
       day, 
       time: '', 
       start_time: '',
-      end_time: '',
-      location: '' 
+      end_time: ''
     };
     setPickupDetails([...pickupDetails, newDetail]);
   };
@@ -173,8 +171,7 @@ export function PickupSettingsManager() {
           day: detail.day,
           time: detail.time,
           start_time: detail.start_time,
-          end_time: detail.end_time,
-          location: detail.location
+          end_time: detail.end_time
         }));
         
         await supabase
@@ -309,7 +306,7 @@ export function PickupSettingsManager() {
                     onClick={() => addPickupDetail(day)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Time & Location
+                    Add Time Slot
                   </Button>
                 </div>
 
@@ -330,25 +327,20 @@ export function PickupSettingsManager() {
                         <Card key={index} className="p-4">
                           <div className="flex flex-col md:flex-row gap-4 items-start">
                             <div className="flex-1 space-y-2">
-                              <Label>Pickup Time</Label>
+                              <Label>Start Time</Label>
                               <Input
-                                value={detail.time}
-                                onChange={(e) => updatePickupDetail(actualIndex, 'time', e.target.value)}
-                                placeholder="e.g., 1:00 PM"
+                                type="time"
+                                value={detail.start_time}
+                                onChange={(e) => updatePickupDetail(actualIndex, 'start_time', e.target.value)}
                                 className="w-full"
                               />
-                              {detail.time && (
-                                <p className="text-xs text-muted-foreground">
-                                  Will display as: {formatTime(detail.time)}
-                                </p>
-                              )}
                             </div>
                             <div className="flex-1 space-y-2">
-                              <Label>Pickup Location</Label>
+                              <Label>End Time (Optional)</Label>
                               <Input
-                                value={detail.location}
-                                onChange={(e) => updatePickupDetail(actualIndex, 'location', e.target.value)}
-                                placeholder="e.g., Kirkland"
+                                type="time"
+                                value={detail.end_time}
+                                onChange={(e) => updatePickupDetail(actualIndex, 'end_time', e.target.value)}
                                 className="w-full"
                               />
                             </div>

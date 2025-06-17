@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { CalendarIcon, Clock, MapPinIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, Clock, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -43,9 +42,8 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   const [selectedDay, setSelectedDay] = useState<number>(0);
   const [pickupStartTime, setPickupStartTime] = useState<string>("");
   const [pickupEndTime, setPickupEndTime] = useState<string>("");
-  const [location, setLocation] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [existingSettings, setExistingSettings] = useState<{[key: number]: {id: string, start_time: string, end_time: string, location: string}[]}>({});
+  const [existingSettings, setExistingSettings] = useState<{[key: number]: {id: string, start_time: string, end_time: string}[]}>({});
   const [isExistingSettingsOpen, setIsExistingSettingsOpen] = useState<{[key: number]: boolean}>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [settingToDelete, setSettingToDelete] = useState<{id: string, day: number} | null>(null);
@@ -74,19 +72,18 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
   // Organize pickup settings by day
   useEffect(() => {
     if (pickupSettings && pickupSettings.length > 0) {
-      const settingsByDay: {[key: number]: {id: string, start_time: string, end_time: string, location: string}[]} = {};
+      const settingsByDay: {[key: number]: {id: string, start_time: string, end_time: string}[]} = {};
       
       pickupSettings.forEach(setting => {
         if (!settingsByDay[setting.day]) {
           settingsByDay[setting.day] = [];
         }
         
-        if ((setting.start_time || setting.time) && setting.location) {
+        if ((setting.start_time || setting.time)) {
           settingsByDay[setting.day].push({
             id: setting.id,
             start_time: setting.start_time || setting.time || "",
-            end_time: setting.end_time || "",
-            location: setting.location
+            end_time: setting.end_time || ""
           });
         }
       });
@@ -112,10 +109,10 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
 
   // Save pickup setting
   const handleSavePickupSetting = async () => {
-    if (!pickupStartTime.trim() || !location.trim()) {
+    if (!pickupStartTime.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide pickup start time and location.",
+        description: "Please provide pickup start time.",
         variant: "destructive",
       });
       return;
@@ -150,7 +147,6 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
         start_time: pickupStartTime,
         end_time: pickupEndTime || "",
         time: pickupStartTime, // For backward compatibility
-        location: location,
         vendor_id: vendorId // Associate with the vendor but settings are global for checkout
       };
 
@@ -171,7 +167,6 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
       // Reset the form
       setPickupStartTime("");
       setPickupEndTime("");
-      setLocation("");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -245,7 +240,7 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
         <CardContent className="pt-6">
           <h3 className="text-lg font-medium mb-4">Pickup Configuration</h3>
           <p className="text-sm text-muted-foreground mb-6">
-            Configure your pickup days, times, and locations. These settings will apply globally to all customers during checkout.
+            Configure your pickup days, times. These settings will apply globally to all customers during checkout.
           </p>
 
           {/* Summary of enabled days */}
@@ -287,10 +282,6 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span>{formatTimeRange(setting.start_time, setting.end_time)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 flex-1 mx-4">
-                          <MapPinIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>{setting.location}</span>
                         </div>
                         <Button 
                           variant="ghost" 
@@ -340,17 +331,6 @@ export function PickupSettingsManager({ categories }: PickupSettingsManagerProps
                   placeholder="17:00"
                 />
               </div>
-            </div>
-
-            <div>
-              <Label className="flex items-center gap-1 mb-2">
-                <MapPinIcon className="h-4 w-4" /> Location
-              </Label>
-              <Input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Pickup location"
-              />
             </div>
 
             <Button 

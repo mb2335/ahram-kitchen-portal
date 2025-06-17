@@ -97,30 +97,8 @@ export function useTimeSlots({
 
         console.log("Available time slots from settings:", normalizedSlots);
         
-        // Then check which slots are already booked
-        const { data: bookingsData, error: bookingError } = await supabase
-          .from('delivery_time_bookings')
-          .select('time_slot')
-          .eq('delivery_date', formattedDate);
-          
-        if (bookingError) {
-          console.error("Error fetching bookings:", bookingError);
-          throw bookingError;
-        }
-        
-        // Create a set of booked times for faster lookups
+        // Since delivery_time_bookings table doesn't exist, all slots are available
         const bookedTimes = new Set();
-        if (bookingsData) {
-          bookingsData.forEach(booking => {
-            // Normalize each booked time as well
-            const match = booking.time_slot.match(/^(\d{1,2}):(\d{2})/);
-            if (match) {
-              bookedTimes.add(`${match[1].padStart(2, '0')}:${match[2]}`);
-            } else {
-              bookedTimes.add(booking.time_slot);
-            }
-          });
-        }
         
         console.log("Booked times:", Array.from(bookedTimes));
         

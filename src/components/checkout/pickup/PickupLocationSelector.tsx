@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { format } from 'date-fns';
 import { Category } from "@/components/vendor/menu/types/category";
-import { MapPinIcon, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface PickupLocationSelectorProps {
   selectedDate: Date;
@@ -50,8 +50,7 @@ export function PickupLocationSelector({
           day: setting.day,
           time: setting.time || setting.start_time || '',
           start_time: setting.start_time || setting.time || '',
-          end_time: setting.end_time || '',
-          location: setting.location
+          end_time: setting.end_time || ''
         }));
         
         return pickupDetails;
@@ -117,16 +116,9 @@ export function PickupLocationSelector({
               />
               
               <div className="p-4">
-                <div className="flex flex-col space-y-3">
-                  <div className="flex items-start">
-                    <MapPinIcon className="h-5 w-5 text-primary mt-0.5 mr-2 flex-shrink-0" /> 
-                    <span className="font-medium">{setting.location}</span>
-                  </div>
-                  
-                  <div className="flex items-center pl-7">
-                    <Clock className="h-4 w-4 text-muted-foreground mr-2" /> 
-                    <span className="text-sm text-muted-foreground">{formatTimeRange(setting)}</span>
-                  </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 text-muted-foreground mr-2" /> 
+                  <span className="text-sm text-muted-foreground">{formatTimeRange(setting)}</span>
                 </div>
               </div>
               
