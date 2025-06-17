@@ -8,7 +8,6 @@ export interface TimeSlot {
   id?: string;
   start_time: string;
   end_time: string;
-  location?: string;
   max_capacity?: number;
 }
 
@@ -53,7 +52,6 @@ export const useSimplePickupSettings = () => {
             id: setting.id,
             start_time: setting.start_time,
             end_time: setting.end_time,
-            location: setting.location || 'In-Store Pickup',
             max_capacity: 10 // Default capacity
           });
         }
@@ -82,7 +80,6 @@ export const useSimplePickupSettings = () => {
           day: schedule.day,
           start_time: slot.start_time,
           end_time: slot.end_time,
-          location: slot.location || 'In-Store Pickup',
           time: slot.start_time, // For backward compatibility
         }));
 

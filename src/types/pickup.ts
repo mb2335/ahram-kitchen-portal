@@ -5,5 +5,4 @@ export interface PickupDetail {
   time?: string; // Keeping original field for backward compatibility
   start_time: string;
   end_time: string;
-  location: string;
 }

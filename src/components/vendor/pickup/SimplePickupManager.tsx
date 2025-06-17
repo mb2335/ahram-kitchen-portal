@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ interface TimeSlot {
   id?: string;
   start_time: string;
   end_time: string;
-  location?: string;
   max_capacity?: number;
 }
 
@@ -59,7 +59,6 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
       id: `temp-${Date.now()}`,
       start_time: '12:00',
       end_time: '15:00',
-      location: 'In-Store Pickup',
       max_capacity: 10
     };
     
@@ -112,7 +111,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
           In-Store Pickup Schedule
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Configure your in-store pickup availability. Customers can reserve specific time slots during these hours.
+          Configure your in-store pickup availability. Enable specific days and set available time slots for customer reservations.
         </p>
       </CardHeader>
       <CardContent>
@@ -163,7 +162,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                           onClick={() => addTimeSlot(day)}
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Add Slot
+                          Add Time Slot
                         </Button>
                       </div>
 
@@ -206,15 +205,6 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                                   />
                                 </div>
                               </div>
-                              <div className="flex-1">
-                                <Label htmlFor={`location-${day}-${index}`}>Location</Label>
-                                <Input
-                                  id={`location-${day}-${index}`}
-                                  value={slot.location || 'In-Store Pickup'}
-                                  onChange={(e) => updateTimeSlot(day, index, 'location', e.target.value)}
-                                  placeholder="Pickup location"
-                                />
-                              </div>
                               <div className="w-24">
                                 <Label htmlFor={`capacity-${day}-${index}`}>Max Slots</Label>
                                 <Input
@@ -246,7 +236,7 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
                       {schedule.time_slots.length > 0 && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-600">
-                            <strong>{schedule.time_slots.length}</strong> pickup slot{schedule.time_slots.length !== 1 ? 's' : ''} available for customer reservations on {getDayName(day)}
+                            <strong>{schedule.time_slots.length}</strong> pickup time slot{schedule.time_slots.length !== 1 ? 's' : ''} available for customer reservations on {getDayName(day)}
                           </p>
                         </div>
                       )}

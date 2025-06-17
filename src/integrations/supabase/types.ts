@@ -128,48 +128,6 @@ export type Database = {
           },
         ]
       }
-      delivery_time_bookings: {
-        Row: {
-          category_id: string
-          created_at: string | null
-          delivery_date: string
-          id: string
-          order_id: string
-          time_slot: string
-        }
-        Insert: {
-          category_id: string
-          created_at?: string | null
-          delivery_date: string
-          id?: string
-          order_id: string
-          time_slot: string
-        }
-        Update: {
-          category_id?: string
-          created_at?: string | null
-          delivery_date?: string
-          id?: string
-          order_id?: string
-          time_slot?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "delivery_time_bookings_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "menu_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "delivery_time_bookings_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       menu_categories: {
         Row: {
           blocked_dates: string[] | null
@@ -402,7 +360,6 @@ export type Database = {
           day: number
           end_time: string | null
           id: string
-          location: string | null
           start_time: string | null
           time: string | null
           vendor_id: string | null
@@ -412,7 +369,6 @@ export type Database = {
           day: number
           end_time?: string | null
           id?: string
-          location?: string | null
           start_time?: string | null
           time?: string | null
           vendor_id?: string | null
@@ -422,7 +378,6 @@ export type Database = {
           day?: number
           end_time?: string | null
           id?: string
-          location?: string | null
           start_time?: string | null
           time?: string | null
           vendor_id?: string | null
