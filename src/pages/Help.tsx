@@ -43,51 +43,15 @@ export function Help() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">
-        {language === 'en' ? 'Help & FAQ' : '도움말 및 자주 묻는 질문'}
+        {language === 'en' ? 'FAQ & Installation Guide' : 'FAQ 및 설치 가이드'}
       </h1>
       
-      {/* FAQ Section */}
-      {faqs && faqs.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">
-            {language === 'en' ? 'Frequently Asked Questions' : '자주 묻는 질문'}
-          </h2>
-          <div className="space-y-3">
-            {faqs.map((faq) => (
-              <Card key={faq.id} className="p-4">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-between text-left p-0 h-auto"
-                  onClick={() => toggleFAQ(faq.id)}
-                >
-                  <h3 className="font-medium">
-                    {language === 'en' ? faq.question_en : faq.question_ko}
-                  </h3>
-                  {expandedFAQ === faq.id ? (
-                    <ChevronUp className="h-4 w-4 flex-shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                  )}
-                </Button>
-                {expandedFAQ === faq.id && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'en' ? faq.answer_en : faq.answer_ko}
-                    </p>
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Installation Guide Section */}
       <h2 className="text-xl font-semibold mb-4">
         {language === 'en' ? 'Installation Guide' : '설치 가이드'}
       </h2>
       
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-8 md:grid-cols-2 mb-8">
         {/* iOS Installation */}
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-2">
@@ -185,6 +149,42 @@ export function Help() {
           </div>
         </Card>
       </div>
+
+      {/* FAQ Section */}
+      {faqs && faqs.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">
+            {language === 'en' ? 'Frequently Asked Questions' : '자주 묻는 질문'}
+          </h2>
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <Card key={faq.id} className="p-4">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between text-left p-0 h-auto"
+                  onClick={() => toggleFAQ(faq.id)}
+                >
+                  <h3 className="font-medium">
+                    {language === 'en' ? faq.question_en : faq.question_ko}
+                  </h3>
+                  {expandedFAQ === faq.id ? (
+                    <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  )}
+                </Button>
+                {expandedFAQ === faq.id && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'en' ? faq.answer_en : faq.answer_ko}
+                    </p>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
