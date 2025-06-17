@@ -1,14 +1,26 @@
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { format } from 'date-fns';
+import { useEffect, useState } from "react";
 
 interface TimeSlotSelectorProps {
   timeSlots: string[];
   activatedSlots: string[];
-  onTimeSlotToggle: (timeSlot: string) => void;
+  onTimeSlotToggle: (slot: string) => void;
   isSaving: boolean;
 }
+
+// Helper function to normalize time format (HH:MM)
+const normalizeTimeFormat = (timeStr: string): string => {
+  // Extract hours and minutes, ignoring seconds if present
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return timeStr; // Return original if not matching expected format
+  
+  const hours = match[1].padStart(2, '0');
+  const minutes = match[2];
+  
+  return `${hours}:${minutes}`;
+};
 
 export function TimeSlotSelector({ 
   timeSlots, 
@@ -16,50 +28,65 @@ export function TimeSlotSelector({
   onTimeSlotToggle, 
   isSaving 
 }: TimeSlotSelectorProps) {
+  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   
-  const formatDisplayTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours, 10));
-    date.setMinutes(parseInt(minutes, 10));
-    return format(date, 'h:mm a');
+  // Initialize selected slots from activatedSlots when component mounts
+  // or when activatedSlots changes
+  useEffect(() => {
+    console.log("Activated slots updated in TimeSlotSelector:", activatedSlots);
+    // Normalize incoming activated slots for consistent comparison
+    const normalizedActivatedSlots = activatedSlots.map(normalizeTimeFormat);
+    setSelectedSlots(normalizedActivatedSlots);
+  }, [activatedSlots]);
+
+  const isTimeSlotActivated = (timeSlot: string): boolean => {
+    // Normalize the time slot for consistent comparison
+    const normalizedTimeSlot = normalizeTimeFormat(timeSlot);
+    return selectedSlots.includes(normalizedTimeSlot);
   };
 
-  const normalizeTimeFormat = (timeStr: string): string => {
-    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-    if (!match) return timeStr;
-    
-    const hours = match[1].padStart(2, '0');
-    const minutes = match[2];
-    
-    return `${hours}:${minutes}`;
-  };
-
-  const isSlotActivated = (slot: string) => {
+  const handleTimeSlotToggle = (slot: string) => {
+    // Normalize the time slot
     const normalizedSlot = normalizeTimeFormat(slot);
-    return activatedSlots.some(activeSlot => normalizeTimeFormat(activeSlot) === normalizedSlot);
+    
+    // Update local state first for immediate UI feedback
+    setSelectedSlots(prev => 
+      prev.includes(normalizedSlot)
+        ? prev.filter(s => s !== normalizedSlot)
+        : [...prev, normalizedSlot].sort()
+    );
+    
+    // Then call the parent handler with the original format
+    onTimeSlotToggle(slot);
   };
 
   return (
-    <div className="space-y-3">
-      <Label className="text-base font-medium">Available Time Slots</Label>
-      <p className="text-sm text-muted-foreground">
-        Each time slot can only be booked by one customer per day.
-      </p>
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold">Available Time Slots</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Select the time slots available for delivery on selected days.
+        </p>
+      </div>
+      
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
         {timeSlots.map((slot) => (
           <Button
             key={slot}
-            variant={isSlotActivated(slot) ? "default" : "outline"}
+            variant={isTimeSlotActivated(slot) ? "default" : "outline"}
             size="sm"
             className="w-full"
-            onClick={() => onTimeSlotToggle(slot)}
+            onClick={() => handleTimeSlotToggle(slot)}
             disabled={isSaving}
           >
-            {formatDisplayTime(slot)}
+            {format(new Date(`2000-01-01T${slot}`), 'h:mm a')}
           </Button>
         ))}
       </div>
+      
+      <p className="text-xs text-muted-foreground mt-2">
+        {selectedSlots.length} time slots selected
+      </p>
     </div>
   );
 }

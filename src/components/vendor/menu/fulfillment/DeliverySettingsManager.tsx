@@ -4,7 +4,18 @@ import { Button } from "@/components/ui/button";
 import { DeliveryDaysSelector } from "./delivery/DeliveryDaysSelector";
 import { TimeSlotSelector } from "./delivery/TimeSlotSelector";
 import { useDeliverySettings } from "./delivery/hooks/useDeliverySettings";
-import { DeliveryRulesManager } from "@/components/vendor/delivery/DeliveryRulesManager";
+
+// Helper function to normalize time format (HH:MM)
+const normalizeTimeFormat = (timeStr: string): string => {
+  // Extract hours and minutes, ignoring seconds if present
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return timeStr; // Return original if not matching expected format
+  
+  const hours = match[1].padStart(2, '0');
+  const minutes = match[2];
+  
+  return `${hours}:${minutes}`;
+};
 
 export function DeliverySettingsManager() {
   const {
@@ -46,18 +57,6 @@ export function DeliverySettingsManager() {
     });
   };
 
-  // Helper function to normalize time format (HH:MM)
-  const normalizeTimeFormat = (timeStr: string): string => {
-    // Extract hours and minutes, ignoring seconds if present
-    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-    if (!match) return timeStr; // Return original if not matching expected format
-    
-    const hours = match[1].padStart(2, '0');
-    const minutes = match[2];
-    
-    return `${hours}:${minutes}`;
-  };
-
   if (isLoading) {
     return <div>Loading delivery settings...</div>;
   }
@@ -65,39 +64,26 @@ export function DeliverySettingsManager() {
   const allTimeSlots = generateFixedTimeSlots();
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Delivery Schedule</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Select which days and times are available for delivery orders.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <DeliveryDaysSelector
+        selectedDays={selectedDays}
+        onDayToggle={toggleDay}
+      />
 
-        <DeliveryDaysSelector
-          selectedDays={selectedDays}
-          onDayToggle={toggleDay}
-        />
-
-        <TimeSlotSelector
-          timeSlots={allTimeSlots}
-          activatedSlots={activatedSlots}
-          onTimeSlotToggle={toggleTimeSlot}
-          isSaving={isSaving}
-        />
-        
-        <Button 
-          onClick={saveDeliverySettings} 
-          className="w-full" 
-          disabled={isSaving}
-        >
-          {isSaving ? "Saving..." : "Save Delivery Settings"}
-        </Button>
-      </div>
-
-      <div className="border-t pt-6">
-        <DeliveryRulesManager />
-      </div>
+      <TimeSlotSelector
+        timeSlots={allTimeSlots}
+        activatedSlots={activatedSlots}
+        onTimeSlotToggle={toggleTimeSlot}
+        isSaving={isSaving}
+      />
+      
+      <Button 
+        onClick={saveDeliverySettings} 
+        className="w-full" 
+        disabled={isSaving}
+      >
+        {isSaving ? "Saving..." : "Save Delivery Settings"}
+      </Button>
     </div>
   );
 }
