@@ -40,7 +40,7 @@ export const useEnhancedDeliveryRules = () => {
       
       if (error) throw error;
 
-      // Group rules by rule_group_id
+      // Group rules by rule_group_id to maintain rule groups as single entities
       const groupedRules = (data as DeliveryRule[]).reduce((acc, rule) => {
         const groupId = rule.rule_group_id;
         if (!acc[groupId]) {
@@ -64,7 +64,10 @@ export const useEnhancedDeliveryRules = () => {
     mutationFn: async (ruleGroup: RuleGroup) => {
       if (!vendorId) throw new Error('Vendor ID required');
       
-      // Delete existing rules for this group
+      // Generate a single rule_group_id for the entire group
+      const actualGroupId = ruleGroup.id.startsWith('temp-') ? crypto.randomUUID() : ruleGroup.id;
+      
+      // Delete existing rules for this group if it's an existing group
       if (!ruleGroup.id.startsWith('temp-')) {
         await supabase
           .from('delivery_rules')
@@ -79,7 +82,7 @@ export const useEnhancedDeliveryRules = () => {
         category_id: rule.category_id,
         minimum_items: rule.minimum_items,
         logical_operator: rule.logical_operator,
-        rule_group_id: ruleGroup.id.startsWith('temp-') ? crypto.randomUUID() : ruleGroup.id,
+        rule_group_id: actualGroupId, // Use the same ID for all rules in this group
         rule_group_name: ruleGroup.name,
         is_active: ruleGroup.is_active,
       }));
@@ -89,7 +92,7 @@ export const useEnhancedDeliveryRules = () => {
         .insert(rulesToInsert);
       
       if (error) throw error;
-      return ruleGroup;
+      return { ...ruleGroup, id: actualGroupId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules'] });
