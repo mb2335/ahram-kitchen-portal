@@ -128,6 +128,45 @@ export type Database = {
           },
         ]
       }
+      faqs: {
+        Row: {
+          answer_en: string
+          answer_ko: string
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          question_en: string
+          question_ko: string
+          updated_at: string
+        }
+        Insert: {
+          answer_en: string
+          answer_ko: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          question_en: string
+          question_ko: string
+          updated_at?: string
+        }
+        Update: {
+          answer_en?: string
+          answer_ko?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          question_en?: string
+          question_ko?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           blocked_dates: string[] | null

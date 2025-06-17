@@ -1,25 +1,100 @@
-import { Apple, Smartphone, ArrowDown, CheckCircle, Info } from "lucide-react";
+
+import { Apple, Smartphone, ArrowDown, CheckCircle, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card } from "@/components/ui/card";
 import { InstallPWA } from "@/components/shared/InstallPWA";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
+interface FAQ {
+  id: string;
+  question_en: string;
+  answer_en: string;
+  question_ko: string;
+  answer_ko: string;
+  display_order: number;
+}
 
 export function Help() {
   const { language } = useLanguage();
+  const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
+
+  // Fetch active FAQs
+  const { data: faqs } = useQuery({
+    queryKey: ['public-faqs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faqs')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      return data as FAQ[];
+    },
+  });
+
+  const toggleFAQ = (faqId: string) => {
+    setExpandedFAQ(expandedFAQ === faqId ? null : faqId);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">
-        {language === 'en' ? 'Installation Guide' : '설치 가이드'}
+        {language === 'en' ? 'Help & FAQ' : '도움말 및 자주 묻는 질문'}
       </h1>
+      
+      {/* FAQ Section */}
+      {faqs && faqs.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">
+            {language === 'en' ? 'Frequently Asked Questions' : '자주 묻는 질문'}
+          </h2>
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <Card key={faq.id} className="p-4">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between text-left p-0 h-auto"
+                  onClick={() => toggleFAQ(faq.id)}
+                >
+                  <h3 className="font-medium">
+                    {language === 'en' ? faq.question_en : faq.question_ko}
+                  </h3>
+                  {expandedFAQ === faq.id ? (
+                    <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  )}
+                </Button>
+                {expandedFAQ === faq.id && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'en' ? faq.answer_en : faq.answer_ko}
+                    </p>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Installation Guide Section */}
+      <h2 className="text-xl font-semibold mb-4">
+        {language === 'en' ? 'Installation Guide' : '설치 가이드'}
+      </h2>
       
       <div className="grid gap-8 md:grid-cols-2">
         {/* iOS Installation */}
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Apple className="h-6 w-6" />
-            <h2 className="text-xl font-semibold">
+            <h3 className="text-lg font-semibold">
               {language === 'en' ? 'iOS Installation' : 'iOS 설치'}
-            </h2>
+            </h3>
           </div>
           
           <div className="space-y-3">
@@ -62,9 +137,9 @@ export function Help() {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Smartphone className="h-6 w-6" />
-            <h2 className="text-xl font-semibold">
+            <h3 className="text-lg font-semibold">
               {language === 'en' ? 'Android Installation' : '안드로이드 설치'}
-            </h2>
+            </h3>
           </div>
           
           <div className="space-y-3">

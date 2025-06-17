@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { MenuManagement } from './MenuManagement';
@@ -6,21 +7,26 @@ import { VendorProfile } from './VendorProfile';
 import { DashboardSummary } from './DashboardSummary';
 import { PopularItemsChart } from './analytics/PopularItemsChart';
 import { SmsNotifications } from './SmsNotifications';
+import { FAQManagement } from './FAQManagement';
 import { cn } from "@/lib/utils";
 import { X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from '@/components/ui/button';
+
 export function VendorDashboard() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const isActiveRoute = (path: string) => {
     return location.pathname.startsWith(`/vendor${path}`);
   };
+  
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
+  
   const renderLinks = () => {
     const links = [{
       path: '/summary',
@@ -38,17 +44,34 @@ export function VendorDashboard() {
       path: '/notifications',
       label: 'SMS Notifications'
     }, {
+      path: '/faq',
+      label: 'FAQ Management'
+    }, {
       path: '/profile',
       label: 'Profile'
     }];
-    return links.map(link => <Link key={link.path} to={`/vendor${link.path}`} onClick={isMobile ? closeSidebar : undefined} className={cn("flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors", isActiveRoute(link.path) ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+
+    return links.map(link => (
+      <Link 
+        key={link.path} 
+        to={`/vendor${link.path}`} 
+        onClick={isMobile ? closeSidebar : undefined} 
+        className={cn(
+          "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors", 
+          isActiveRoute(link.path) 
+            ? "bg-primary text-primary-foreground" 
+            : "hover:bg-muted"
+        )}
+      >
         {link.label}
-      </Link>);
+      </Link>
+    ));
   };
 
   // Mobile sidebar
   if (isMobile) {
-    return <div className="container mx-auto px-4 py-8">
+    return (
+      <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-6">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
@@ -76,20 +99,22 @@ export function VendorDashboard() {
               <Route path="menu" element={<MenuManagement />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="notifications" element={<SmsNotifications />} />
+              <Route path="faq" element={<FAQManagement />} />
               <Route path="profile" element={<VendorProfile />} />
             </Routes>
           </main>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   // Desktop layout
-  return <div className="container mx-auto px-4 py-8">
+  return (
+    <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-6">
         <aside className="w-full md:w-64 space-y-2 bg-white p-4 rounded-lg shadow-sm">
           <h2 className="font-semibold text-lg mb-4 px-3">Admin Dashboard</h2>
-          <p className="text-xs text-muted-foreground px-3 mb-4">
-        </p>
+          <p className="text-xs text-muted-foreground px-3 mb-4"></p>
           <nav className="space-y-1">
             {renderLinks()}
           </nav>
@@ -101,9 +126,11 @@ export function VendorDashboard() {
             <Route path="menu" element={<MenuManagement />} />
             <Route path="orders" element={<OrderManagement />} />
             <Route path="notifications" element={<SmsNotifications />} />
+            <Route path="faq" element={<FAQManagement />} />
             <Route path="profile" element={<VendorProfile />} />
           </Routes>
         </main>
       </div>
-    </div>;
+    </div>
+  );
 }
