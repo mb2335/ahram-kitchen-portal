@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState } from 'react';
 
 type Language = 'en' | 'ko';
@@ -111,6 +112,18 @@ const translations = {
     'auth.hasAccount': 'Already have an account?',
     'auth.processing': 'Creating Account...',
     'auth.signingIn': 'Signing in...',
+    // Additional fulfillment keys
+    'fulfillment.title': 'Fulfillment Method',
+    'fulfillment.pickup.title': 'Pickup',
+    'fulfillment.pickup.description': 'Pick up your order at our location',
+    'fulfillment.delivery.title': 'Delivery',
+    'fulfillment.delivery.description': 'We\'ll deliver your order to you',
+    'fulfillment.delivery.notEligible': 'Not Available',
+    // Additional delivery keys
+    'delivery.date': 'Delivery Date',
+    'delivery.address': 'Delivery Address',
+    'pickup.date': 'Pickup Date',
+    'order.notes': 'Special Instructions',
   },
   ko: {
     'nav.menu': '메뉴',
@@ -214,6 +227,18 @@ const translations = {
     'auth.hasAccount': '이미 계정이 있으신가요?',
     'auth.processing': '계정 생성 중...',
     'auth.signingIn': '로그인 중...',
+    // Additional fulfillment keys
+    'fulfillment.title': '주문 수령 방법',
+    'fulfillment.pickup.title': '픽업',
+    'fulfillment.pickup.description': '매장에서 직접 수령',
+    'fulfillment.delivery.title': '배달',
+    'fulfillment.delivery.description': '주문하신 곳으로 배달',
+    'fulfillment.delivery.notEligible': '이용 불가',
+    // Additional delivery keys
+    'delivery.date': '배달 날짜',
+    'delivery.address': '배달 주소',
+    'pickup.date': '픽업 날짜',
+    'order.notes': '특별 요청',
   },
 };
 
