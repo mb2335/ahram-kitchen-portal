@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/utils/formatters';
 import { Order } from '@/components/vendor/types';
 import { PaymentProof } from '@/components/vendor/order/PaymentProof';
-import { User, Mail, Phone, MapPin, Clock, Calendar, Package } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Clock, Calendar, Package, Truck, Store } from 'lucide-react';
 
 interface SimpleOrderCardProps {
   order: Order;
@@ -30,6 +30,22 @@ export function SimpleOrderCard({ order, showCustomerInfo = false, actions }: Si
       ? (basePrice * (item.discount_percentage / 100))
       : 0;
     return basePrice - discountAmount;
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return '';
+    // Handle both HH:MM and HH:MM:SS formats
+    const match = time.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return time;
+
+    const hours = parseInt(match[1]);
+    const minutes = match[2];
+    
+    // Convert to 12-hour format
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    
+    return `${hours12}:${minutes} ${period}`;
   };
 
   return (
@@ -149,6 +165,19 @@ export function SimpleOrderCard({ order, showCustomerInfo = false, actions }: Si
         <div className="border border-gray-200 rounded-lg p-4">
           <h4 className="font-semibold mb-3 text-gray-900">Fulfillment Details</h4>
           <div className="space-y-3 text-sm text-gray-600">
+            {/* Fulfillment Type */}
+            <div className="flex items-center gap-2">
+              {order.fulfillment_type === 'pickup' ? (
+                <Store className="h-4 w-4" />
+              ) : (
+                <Truck className="h-4 w-4" />
+              )}
+              <span className="font-medium">
+                {order.fulfillment_type === 'pickup' ? 'Pickup' : 'Delivery'}
+              </span>
+            </div>
+
+            {/* Date */}
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span>{new Date(order.delivery_date).toLocaleDateString(undefined, { 
@@ -164,7 +193,7 @@ export function SimpleOrderCard({ order, showCustomerInfo = false, actions }: Si
                 {order.pickup_time && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    <span>Pickup Time: {order.pickup_time}</span>
+                    <span>Pickup Time: {formatTime(order.pickup_time)}</span>
                   </div>
                 )}
                 {order.pickup_location && (
@@ -190,7 +219,7 @@ export function SimpleOrderCard({ order, showCustomerInfo = false, actions }: Si
                 {order.delivery_time_slot && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    <span>Delivery Time: {order.delivery_time_slot}</span>
+                    <span>Delivery Time: {formatTime(order.delivery_time_slot.toString())}</span>
                   </div>
                 )}
               </>
