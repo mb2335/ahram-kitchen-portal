@@ -146,8 +146,12 @@ export function useVendorOrders() {
     error,
     refetch,
     updateOrderStatus: async (orderId: string, status: string, reason?: string, skipNotification = false) => {
-      const result = await updateOrderStatus.mutateAsync({ orderId, status, reason, skipNotification });
-      return { success: true, data: result };
+      try {
+        const result = await updateOrderStatus.mutateAsync({ orderId, status, reason, skipNotification });
+        return { success: true, data: result };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
     },
     deleteOrder: async (orderId: string) => {
       try {
