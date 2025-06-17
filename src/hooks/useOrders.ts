@@ -212,7 +212,7 @@ export const useVendorOrders = () => {
 
       if (error) throw error;
 
-      // Only send SMS notification if not skipped (to prevent duplicate notifications for unified orders)
+      // Only send SMS notification if not skipped
       if (!skipNotification) {
         // Get the updated order with customer information for notifications
         const { data: updatedOrder } = await supabase

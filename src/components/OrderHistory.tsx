@@ -1,14 +1,12 @@
 
 import { Card } from '@/components/ui/card';
-import { UnifiedOrderDetails } from './order/UnifiedOrderDetails';
+import { SimpleOrderCard } from './order/SimpleOrderCard';
 import { useOrderHistory } from '@/hooks/order/useOrderHistory';
-import { useCustomerUnifiedOrders } from '@/hooks/useCustomerUnifiedOrders';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export function OrderHistory() {
   const { orders, isLoading, isAuthenticated } = useOrderHistory();
   const { t } = useLanguage();
-  const unifiedOrderGroups = useCustomerUnifiedOrders(orders || []);
 
   if (!isAuthenticated) {
     return null;
@@ -37,11 +35,11 @@ export function OrderHistory() {
       </div>
       
       <div className="space-y-6">
-        {unifiedOrderGroups?.map((orderGroup) => (
-          <UnifiedOrderDetails key={orderGroup.unifiedOrder.id} unifiedOrder={orderGroup.unifiedOrder} />
+        {orders?.map((order) => (
+          <SimpleOrderCard key={order.id} order={order} />
         ))}
 
-        {unifiedOrderGroups?.length === 0 && (
+        {orders?.length === 0 && (
           <Card className="p-12 text-center border-dashed border-2 border-gray-200">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
