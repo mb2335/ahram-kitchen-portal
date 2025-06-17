@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/components/vendor/types';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useSharedAdminAccess } from './useSharedAdminAccess';
 
 export const orderKeys = {
   all: ['orders'] as const,
   customer: (customerId: string) => [...orderKeys.all, 'customer', customerId] as const,
   vendor: ['vendor-orders'] as const,
+  admin: ['admin-orders'] as const,
 };
 
 export const useOrders = () => {
@@ -87,11 +89,13 @@ export const useOrders = () => {
 export const useVendorOrders = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAdmin } = useSharedAdminAccess();
 
   const { data: orders, refetch } = useQuery({
-    queryKey: orderKeys.vendor,
+    queryKey: orderKeys.admin,
     queryFn: async () => {
       try {
+        // Admin access - fetch ALL orders across the platform
         const { data, error } = await supabase
           .from('orders')
           .select(`
@@ -125,13 +129,14 @@ export const useVendorOrders = () => {
         return data as unknown as Order[];
       } catch (error: any) {
         toast({
-          title: 'Error fetching vendor orders',
+          title: 'Error fetching admin orders',
           description: error.message,
           variant: 'destructive',
         });
         return [];
       }
     },
+    enabled: isAdmin,
     refetchInterval: 5000,
     staleTime: 0,
   });
@@ -220,7 +225,7 @@ export const useVendorOrders = () => {
       }
 
       await queryClient.invalidateQueries({ queryKey: orderKeys.all });
-      await queryClient.invalidateQueries({ queryKey: orderKeys.vendor });
+      await queryClient.invalidateQueries({ queryKey: orderKeys.admin });
       await refetch();
       
       return { success: true };
@@ -261,7 +266,7 @@ export const useVendorOrders = () => {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.all }),
-        queryClient.invalidateQueries({ queryKey: orderKeys.vendor }),
+        queryClient.invalidateQueries({ queryKey: orderKeys.admin }),
         refetch()
       ]);
 

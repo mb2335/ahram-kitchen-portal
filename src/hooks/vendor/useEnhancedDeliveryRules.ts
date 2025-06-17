@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useVendorId } from '@/hooks/useVendorId';
+import { useSharedAdminAccess } from '@/hooks/useSharedAdminAccess';
 
 export interface DeliveryRule {
   id?: string;
@@ -23,19 +23,17 @@ export interface RuleGroup {
 }
 
 export const useEnhancedDeliveryRules = () => {
-  const { vendorId } = useVendorId();
+  const { adminData, currentUserId } = useSharedAdminAccess();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: ruleGroups = [], isLoading } = useQuery({
-    queryKey: ['enhanced-delivery-rules', vendorId],
+    queryKey: ['enhanced-delivery-rules-admin'],
     queryFn: async () => {
-      if (!vendorId) return [];
-      
+      // Admin access - fetch ALL delivery rules across all vendors
       const { data, error } = await supabase
         .from('delivery_rules')
         .select('*')
-        .eq('vendor_id', vendorId)
         .order('rule_group_name', { ascending: true });
       
       if (error) throw error;
@@ -57,12 +55,12 @@ export const useEnhancedDeliveryRules = () => {
 
       return Object.values(groupedRules);
     },
-    enabled: !!vendorId,
+    enabled: !!adminData,
   });
 
   const saveRuleGroup = useMutation({
     mutationFn: async (ruleGroup: RuleGroup) => {
-      if (!vendorId) throw new Error('Vendor ID required');
+      if (!adminData) throw new Error('Admin access required');
       
       // Generate a single rule_group_id for the entire group
       const actualGroupId = ruleGroup.id.startsWith('temp-') ? crypto.randomUUID() : ruleGroup.id;
@@ -72,13 +70,12 @@ export const useEnhancedDeliveryRules = () => {
         await supabase
           .from('delivery_rules')
           .delete()
-          .eq('vendor_id', vendorId)
           .eq('rule_group_id', ruleGroup.id);
       }
 
-      // Insert new rules
+      // Insert new rules - use the current admin's vendor_id as the creator
       const rulesToInsert = ruleGroup.rules.map(rule => ({
-        vendor_id: vendorId,
+        vendor_id: adminData.id, // Track which admin created this rule
         category_id: rule.category_id,
         minimum_items: rule.minimum_items,
         logical_operator: rule.logical_operator,
@@ -95,10 +92,10 @@ export const useEnhancedDeliveryRules = () => {
       return { ...ruleGroup, id: actualGroupId };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
       toast({
         title: "Success",
-        description: "Rule group saved successfully",
+        description: "Rule group saved successfully (shared across all admins)",
       });
     },
     onError: (error) => {
@@ -112,18 +109,17 @@ export const useEnhancedDeliveryRules = () => {
 
   const deleteRuleGroup = useMutation({
     mutationFn: async (groupId: string) => {
-      if (!vendorId) throw new Error('Vendor ID required');
+      if (!adminData) throw new Error('Admin access required');
       
       const { error } = await supabase
         .from('delivery_rules')
         .delete()
-        .eq('vendor_id', vendorId)
         .eq('rule_group_id', groupId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
       toast({
         title: "Success",
         description: "Rule group deleted successfully",
@@ -140,18 +136,17 @@ export const useEnhancedDeliveryRules = () => {
 
   const toggleRuleGroup = useMutation({
     mutationFn: async ({ groupId, active }: { groupId: string; active: boolean }) => {
-      if (!vendorId) throw new Error('Vendor ID required');
+      if (!adminData) throw new Error('Admin access required');
       
       const { error } = await supabase
         .from('delivery_rules')
         .update({ is_active: active })
-        .eq('vendor_id', vendorId)
         .eq('rule_group_id', groupId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
       toast({
         title: "Success",
         description: "Rule group status updated successfully",

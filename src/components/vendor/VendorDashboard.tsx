@@ -61,12 +61,12 @@ export function VendorDashboard() {
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="mb-4 w-full">
-                Vendor Dashboard Menu
+                Admin Dashboard Menu
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[80%] max-w-xs">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="font-semibold text-lg">Vendor Dashboard</h2>
+                <h2 className="font-semibold text-lg">Admin Dashboard</h2>
                 <Button variant="ghost" size="icon" onClick={closeSidebar} className="h-8 w-8">
                   <X className="h-4 w-4" />
                 </Button>
@@ -97,7 +97,10 @@ export function VendorDashboard() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-6">
         <aside className="w-full md:w-64 space-y-2 bg-white p-4 rounded-lg shadow-sm">
-          <h2 className="font-semibold text-lg mb-4 px-3">Vendor Dashboard</h2>
+          <h2 className="font-semibold text-lg mb-4 px-3">Admin Dashboard</h2>
+          <p className="text-xs text-muted-foreground px-3 mb-4">
+            Shared platform management - all changes affect all vendors
+          </p>
           <nav className="space-y-1">
             {renderLinks()}
           </nav>

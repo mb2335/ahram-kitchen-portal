@@ -23,6 +23,7 @@ export function DashboardSummary() {
     to: endOfDay(new Date())
   });
 
+  // Use admin orders hook for platform-wide access
   const { orders } = useVendorOrders();
   const unifiedOrderGroups = useUnifiedOrders(orders || []);
 
@@ -77,7 +78,12 @@ export function DashboardSummary() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Dashboard Overview</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Platform Dashboard Overview</h2>
+          <p className="text-muted-foreground">
+            Shared admin view - all orders and statistics across the platform
+          </p>
+        </div>
         <div className="flex items-center gap-4">
           <Select
             value={timeFilter}
@@ -119,7 +125,7 @@ export function DashboardSummary() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
-          <h3 className="text-sm font-medium text-muted-foreground">Total Orders</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Total Platform Orders</h3>
           <p className="text-2xl font-bold">{orderStats.total}</p>
         </Card>
         <Card className="p-4">
@@ -131,10 +137,17 @@ export function DashboardSummary() {
           <p className="text-2xl font-bold">{orderStats.completed}</p>
         </Card>
         <Card className="p-4">
-          <h3 className="text-sm font-medium text-muted-foreground">Total Revenue</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Total Platform Revenue</h3>
           <p className="text-2xl font-bold">${orderStats.revenue.toFixed(2)}</p>
         </Card>
       </div>
+
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-2">Admin Access Notice</h3>
+        <p className="text-sm text-muted-foreground">
+          You are viewing platform-wide data. All vendor accounts have shared access to these settings and can make changes that affect the entire platform.
+        </p>
+      </Card>
     </div>
   );
 }

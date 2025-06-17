@@ -3,37 +3,35 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useVendorId } from '@/hooks/useVendorId';
+import { useSharedAdminAccess } from '@/hooks/useSharedAdminAccess';
 
 export const usePickupSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { vendorId } = useVendorId();
+  const { adminData } = useSharedAdminAccess();
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [activatedSlots, setActivatedSlots] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch pickup settings
+  // Fetch pickup settings - admin view (all settings)
   const { data: pickupSettings, isLoading } = useQuery({
-    queryKey: ['pickup-settings', vendorId],
+    queryKey: ['pickup-settings-admin'],
     queryFn: async () => {
-      if (!vendorId) return [];
-      
+      // Admin access - fetch ALL pickup settings across the platform
       const { data, error } = await supabase
         .from('pickup_settings')
-        .select('*')
-        .eq('vendor_id', vendorId);
+        .select('*');
       
       if (error) throw error;
       return data || [];
     },
-    enabled: !!vendorId
+    enabled: !!adminData
   });
 
   // Initialize state from fetched settings
   useEffect(() => {
     if (pickupSettings && pickupSettings.length > 0) {
-      console.log('Loading pickup settings:', pickupSettings);
+      console.log('Loading pickup settings (admin view):', pickupSettings);
       
       // Extract unique days
       const days = Array.from(new Set(pickupSettings.map(setting => setting.day)));
@@ -46,16 +44,16 @@ export const usePickupSettings = () => {
       
       setActivatedSlots(slots);
       
-      console.log('Initialized pickup days:', days);
-      console.log('Initialized pickup slots:', slots);
+      console.log('Initialized pickup days (admin):', days);
+      console.log('Initialized pickup slots (admin):', slots);
     }
   }, [pickupSettings]);
 
   const savePickupSettings = async () => {
-    if (!vendorId) {
+    if (!adminData) {
       toast({
         title: "Error",
-        description: "Vendor information is missing",
+        description: "Admin access required",
         variant: "destructive",
       });
       return;
@@ -82,21 +80,21 @@ export const usePickupSettings = () => {
     try {
       setIsSaving(true);
       
-      console.log('Saving pickup settings for days:', selectedDays);
-      console.log('Saving pickup settings for slots:', activatedSlots);
+      console.log('Saving pickup settings (admin) for days:', selectedDays);
+      console.log('Saving pickup settings (admin) for slots:', activatedSlots);
       
-      // Delete all existing pickup settings for this vendor
+      // Delete all existing pickup settings (platform-wide cleanup)
       await supabase
         .from('pickup_settings')
         .delete()
-        .eq('vendor_id', vendorId);
-      
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
       // Create new pickup settings for each combination of day and time slot
       const settingsToInsert = [];
       for (const day of selectedDays) {
         for (const slot of activatedSlots) {
           settingsToInsert.push({
-            vendor_id: vendorId,
+            vendor_id: adminData.id, // Track which admin made this change
             day: day,
             start_time: slot,
             time: slot, // For backward compatibility
@@ -113,11 +111,11 @@ export const usePickupSettings = () => {
       }
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['pickup-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['pickup-settings-admin'] });
       
       toast({
         title: "Success",
-        description: "Pickup settings updated successfully",
+        description: "Platform pickup settings updated successfully (shared across all admins)",
       });
     } catch (error: any) {
       console.error('Error saving pickup settings:', error);
