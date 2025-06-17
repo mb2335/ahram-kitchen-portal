@@ -27,6 +27,7 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
     quantity: item.quantity,
     price: item.unit_price,
     discount_percentage: item.discount_percentage || item.menu_item?.discount_percentage,
+    // Preserve the actual category of each individual item
     category: item.menu_item?.category ? {
       name: item.menu_item.category.name,
       name_ko: item.menu_item.category.name_ko
@@ -74,7 +75,7 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
           <OrderDetails order={order} />
         </div>
 
-        {/* Modern Unified Order Items */}
+        {/* Modern Unified Order Items - each item displays its own category */}
         <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
           <UnifiedOrderItems items={formattedItems} showPricing={true} />
         </div>

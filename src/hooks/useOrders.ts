@@ -30,8 +30,7 @@ export const useOrders = () => {
             .eq('user_id', session.user.id)
             .single();
 
-          // Fetch orders based on either the customer_id (if it exists)
-          // or by matching email in the orders table
+          // Fetch orders with proper category information for each item
           const { data: orders, error } = await supabase
             .from('orders')
             .select(`
@@ -47,6 +46,7 @@ export const useOrders = () => {
                 menu_item_id,
                 quantity,
                 unit_price,
+                discount_percentage,
                 menu_item:menu_items (
                   id,
                   name,
@@ -95,7 +95,7 @@ export const useVendorOrders = () => {
     queryKey: orderKeys.admin,
     queryFn: async () => {
       try {
-        // Admin access - fetch ALL orders across the platform
+        // Admin access - fetch ALL orders across the platform with proper category data
         const { data, error } = await supabase
           .from('orders')
           .select(`
@@ -111,6 +111,7 @@ export const useVendorOrders = () => {
               menu_item_id,
               quantity,
               unit_price,
+              discount_percentage,
               menu_item:menu_items(
                 id,
                 name,
