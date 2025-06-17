@@ -8,8 +8,10 @@ import { CategoryFulfillmentSection } from './CategoryFulfillmentSection';
 import { PaymentProof } from './PaymentProof';
 import { OrderNotes } from './OrderNotes';
 import { SendSMSToCustomer } from './SendSMSToCustomer';
-import { ChevronDown, ChevronRight, User, Mail, Phone } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Mail, Phone, Package } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
+import { UnifiedOrderItems } from '@/components/shared/UnifiedOrderItems';
 
 interface UnifiedOrderCardProps {
   unifiedOrder: UnifiedOrder;
@@ -25,35 +27,52 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
       case 'completed': return 'bg-green-100 text-green-800';
       case 'confirmed': return 'bg-blue-100 text-blue-800';
       case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 
+  // Flatten all items from all categories for unified display
+  const allItems = unifiedOrder.categoryDetails.flatMap(categoryDetail => 
+    categoryDetail.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      nameKo: item.nameKo,
+      quantity: item.quantity,
+      price: item.price,
+      discount_percentage: item.discount_percentage,
+      category: {
+        name: categoryDetail.categoryName,
+        name_ko: categoryDetail.categoryName // Assuming same for now
+      }
+    }))
+  );
+
   return (
-    <Card className="overflow-hidden">
-      <div className="p-6">
+    <Card className="overflow-hidden shadow-sm border-gray-200">
+      <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start mb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-lg font-medium">
+              <h3 className="text-xl font-semibold text-gray-900">
                 Order #{unifiedOrder.id.substring(0, 8)}
               </h3>
-              <span className={`text-sm px-3 py-1 rounded-full ${getOverallStatusColor(unifiedOrder.overallStatus)}`}>
+              <Badge className={`${getOverallStatusColor(unifiedOrder.overallStatus)} font-medium`}>
                 {unifiedOrder.overallStatus.charAt(0).toUpperCase() + unifiedOrder.overallStatus.slice(1)}
-              </span>
+              </Badge>
+              {unifiedOrder.categoryDetails.length > 1 && (
+                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                  <Package className="w-3 h-3 mr-1" />
+                  Multi-category
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-gray-500">
               {format(new Date(unifiedOrder.createdAt), 'PPpp')}
             </p>
-            {unifiedOrder.categoryDetails.length > 1 && (
-              <p className="text-sm text-blue-600 mt-1">
-                Multi-category order ({unifiedOrder.categoryDetails.length} categories)
-              </p>
-            )}
           </div>
           <div className="mt-2 md:mt-0 text-right">
-            <p className="text-lg font-bold">
+            <p className="text-2xl font-bold text-gray-900">
               {formatCurrency(unifiedOrder.totalAmount)}
             </p>
             {unifiedOrder.discountAmount && unifiedOrder.discountAmount > 0 && (
@@ -65,43 +84,50 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
         </div>
 
         {/* Customer Details */}
-        <div className="bg-gray-50 p-4 rounded-md mb-4">
-          <h4 className="font-medium mb-2 flex items-center gap-2">
-            <User className="h-4 w-4" />
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <h4 className="font-semibold mb-3 flex items-center gap-2 text-gray-900">
+            <User className="h-4 w-4 text-blue-600" />
             Customer Information
           </h4>
-          <div className="space-y-1 text-sm">
-            <p className="flex items-center gap-2">
-              <span className="font-medium">{unifiedOrder.customerName}</span>
-            </p>
-            <p className="flex items-center gap-2 text-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-900">{unifiedOrder.customerName}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
               <Mail className="h-4 w-4" />
               {unifiedOrder.customerEmail}
-            </p>
+            </div>
             {unifiedOrder.customerPhone && (
-              <p className="flex items-center gap-2 text-gray-600">
+              <div className="flex items-center gap-2 text-gray-600">
                 <Phone className="h-4 w-4" />
                 {unifiedOrder.customerPhone}
-              </p>
+              </div>
             )}
           </div>
         </div>
 
+        {/* Modern Unified Items Display */}
+        <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+          <UnifiedOrderItems items={allItems} showPricing={true} />
+        </div>
+
         {/* Category Summary */}
-        <div className="mb-4">
-          <h4 className="font-medium mb-3">Order Summary</h4>
-          <div className="grid gap-2">
+        <div className="border border-gray-200 rounded-lg p-4">
+          <h4 className="font-semibold mb-3 text-gray-900">Fulfillment Summary</h4>
+          <div className="grid gap-3">
             {unifiedOrder.categoryDetails.map((categoryDetail, index) => (
-              <div key={index} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                <span className="font-medium">{categoryDetail.categoryName}</span>
+              <div key={index} className="flex items-center justify-between text-sm p-3 bg-white rounded border">
                 <div className="flex items-center gap-3">
-                  <span className="text-gray-600">
+                  <span className="font-medium text-gray-900">{categoryDetail.categoryName}</span>
+                  <Badge variant="outline" className="text-xs">
                     {categoryDetail.fulfillmentType === 'pickup' ? 'Pickup' : 'Delivery'}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded ${getOverallStatusColor(categoryDetail.status)}`}>
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge className={`text-xs ${getOverallStatusColor(categoryDetail.status)}`}>
                     {categoryDetail.status}
-                  </span>
-                  <span className="font-medium">{formatCurrency(categoryDetail.subtotal)}</span>
+                  </Badge>
+                  <span className="font-semibold text-gray-900">{formatCurrency(categoryDetail.subtotal)}</span>
                 </div>
               </div>
             ))}
@@ -110,8 +136,8 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
 
         {/* Expandable Details */}
         <Collapsible open={showDetails} onOpenChange={setShowDetails}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full py-2 font-medium text-left border-t pt-4">
-            <span>View Category Details</span>
+          <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 font-medium text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <span className="text-gray-900">View Category Details</span>
             {showDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-4 space-y-4">
@@ -123,7 +149,7 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
 
         {/* Payment Proof */}
         {unifiedOrder.paymentProofUrl && (
-          <div className="mt-4 border-t pt-4">
+          <div className="border-t pt-6">
             <PaymentProof paymentProofUrl={unifiedOrder.paymentProofUrl} />
           </div>
         )}
@@ -137,8 +163,8 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
         )}
 
         {/* Actions */}
-        <div className="mt-4 border-t pt-4">
-          <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="border-t pt-6">
+          <div className="flex flex-wrap gap-3 items-center justify-between">
             <div className="flex gap-2">
               {unifiedOrder.customerPhone && (
                 <SendSMSToCustomer 
