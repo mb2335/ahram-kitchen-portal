@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { OrderStatus } from './types';
@@ -12,6 +11,7 @@ import { FULFILLMENT_TYPE_PICKUP, FULFILLMENT_TYPE_DELIVERY } from '@/types/orde
 import { SendSMSDialog } from './order/SendSMSDialog';
 import { OrderActions } from './order/OrderActions';
 import { SendSMSToCustomer } from './order/SendSMSToCustomer';
+import { InvoiceGenerator } from './order/InvoiceGenerator';
 
 export function OrderManagement() {
   const [rejectionReason, setRejectionReason] = useState('');
@@ -136,7 +136,7 @@ export function OrderManagement() {
         showCustomerInfo={true}
         actions={
           <div className="flex justify-between items-center w-full">
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <OrderStatusActions
                 status={order.status as OrderStatus}
                 onUpdateStatus={(status, reason) => {
@@ -151,6 +151,7 @@ export function OrderManagement() {
                   customerName={order.customer?.full_name || order.customer_name || "Customer"}
                 />
               )}
+              <InvoiceGenerator order={order} />
             </div>
             <OrderActions 
               orderId={order.id}
