@@ -5,18 +5,6 @@ import { DeliveryDaysSelector } from "./delivery/DeliveryDaysSelector";
 import { TimeSlotSelector } from "./delivery/TimeSlotSelector";
 import { useDeliverySettings } from "./delivery/hooks/useDeliverySettings";
 
-// Helper function to normalize time format (HH:MM)
-const normalizeTimeFormat = (timeStr: string): string => {
-  // Extract hours and minutes, ignoring seconds if present
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (!match) return timeStr; // Return original if not matching expected format
-  
-  const hours = match[1].padStart(2, '0');
-  const minutes = match[2];
-  
-  return `${hours}:${minutes}`;
-};
-
 export function DeliverySettingsManager() {
   const {
     selectedDays,
@@ -57,6 +45,18 @@ export function DeliverySettingsManager() {
     });
   };
 
+  // Helper function to normalize time format (HH:MM)
+  const normalizeTimeFormat = (timeStr: string): string => {
+    // Extract hours and minutes, ignoring seconds if present
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!match) return timeStr; // Return original if not matching expected format
+    
+    const hours = match[1].padStart(2, '0');
+    const minutes = match[2];
+    
+    return `${hours}:${minutes}`;
+  };
+
   if (isLoading) {
     return <div>Loading delivery settings...</div>;
   }
@@ -65,6 +65,13 @@ export function DeliverySettingsManager() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Delivery Schedule</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Select which days and times are available for delivery orders.
+        </p>
+      </div>
+
       <DeliveryDaysSelector
         selectedDays={selectedDays}
         onDayToggle={toggleDay}
