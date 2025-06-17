@@ -38,8 +38,8 @@ export function UnifiedOrderCard({ unifiedOrder, children, onDelete }: UnifiedOr
       name: item.name,
       nameKo: item.nameKo,
       quantity: item.quantity,
-      price: item.price,
-      discount_percentage: item.discount_percentage,
+      price: item.unitPrice,
+      discount_percentage: item.discountPercentage,
       category: {
         name: categoryDetail.categoryName,
         name_ko: categoryDetail.categoryName // Assuming same for now
