@@ -45,7 +45,10 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          logical_operator: string | null
           minimum_items: number
+          rule_group_id: string | null
+          rule_group_name: string | null
           updated_at: string
           vendor_id: string | null
         }
@@ -54,7 +57,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          logical_operator?: string | null
           minimum_items?: number
+          rule_group_id?: string | null
+          rule_group_name?: string | null
           updated_at?: string
           vendor_id?: string | null
         }
@@ -63,7 +69,10 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          logical_operator?: string | null
           minimum_items?: number
+          rule_group_id?: string | null
+          rule_group_name?: string | null
           updated_at?: string
           vendor_id?: string | null
         }
