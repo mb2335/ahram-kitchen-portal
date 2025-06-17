@@ -2,106 +2,100 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Trash2, Plus, Clock, Calendar } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-interface TimeSlot {
-  id?: string;
-  start_time: string;
-  end_time: string;
-  max_capacity?: number;
-}
-
-interface DaySchedule {
-  day: number;
-  is_active: boolean;
-  time_slots: TimeSlot[];
-}
+import { Calendar, Clock } from 'lucide-react';
+import { generateFixedTimeSlots } from "@/types/delivery";
+import { usePickupSettings } from './hooks/usePickupSettings';
 
 interface SimplePickupManagerProps {
-  schedules: DaySchedule[];
-  onSaveSchedule: (schedule: DaySchedule) => void;
+  schedules: any[];
+  onSaveSchedule: (schedule: any) => void;
 }
 
+const DAYS = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+];
+
 export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupManagerProps) {
-  const [activeDay, setActiveDay] = useState<string>("0");
+  const {
+    selectedDays,
+    setSelectedDays,
+    activatedSlots,
+    setActivatedSlots,
+    isSaving,
+    isLoading,
+    savePickupSettings
+  } = usePickupSettings();
 
-  const getDayName = (day: number): string => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[day];
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort()
+    );
   };
 
-  const getDaySchedule = (day: number): DaySchedule => {
-    return schedules.find(s => s.day === day) || {
-      day,
-      is_active: false,
-      time_slots: []
-    };
-  };
-
-  const updateDaySchedule = (day: number, updates: Partial<DaySchedule>) => {
-    const currentSchedule = getDaySchedule(day);
-    const updatedSchedule = { ...currentSchedule, ...updates };
-    onSaveSchedule(updatedSchedule);
-  };
-
-  const toggleDayActive = (day: number, checked: boolean) => {
-    console.log(`Toggling day ${day} to ${checked}`);
-    updateDaySchedule(day, { is_active: checked });
-  };
-
-  const addTimeSlot = (day: number) => {
-    const schedule = getDaySchedule(day);
-    const newSlot: TimeSlot = {
-      id: `temp-${Date.now()}`,
-      start_time: '12:00',
-      end_time: '15:00',
-      max_capacity: 10
-    };
+  const toggleTimeSlot = (timeSlot: string) => {
+    console.log(`Toggling pickup time slot: ${timeSlot}`);
+    console.log(`Current activated pickup slots before toggle:`, activatedSlots);
     
-    updateDaySchedule(day, {
-      time_slots: [...schedule.time_slots, newSlot]
+    // Normalize the time slot being toggled
+    const normalizedTimeSlot = normalizeTimeFormat(timeSlot);
+    
+    setActivatedSlots(prev => {
+      // Check if the normalized version exists in the array
+      const exists = prev.some(slot => normalizeTimeFormat(slot) === normalizedTimeSlot);
+      
+      // Create new array based on existence check
+      const newSlots = exists
+        ? prev.filter(slot => normalizeTimeFormat(slot) !== normalizedTimeSlot)
+        : [...prev, normalizedTimeSlot].sort();
+      
+      console.log(`Updated activated pickup slots after toggle:`, newSlots);
+      return newSlots;
     });
   };
 
-  const updateTimeSlot = (day: number, slotIndex: number, field: keyof TimeSlot, value: string | number) => {
-    const schedule = getDaySchedule(day);
-    const updatedSlots = [...schedule.time_slots];
-    updatedSlots[slotIndex] = { ...updatedSlots[slotIndex], [field]: value };
+  // Helper function to normalize time format (HH:MM)
+  const normalizeTimeFormat = (timeStr: string): string => {
+    // Extract hours and minutes, ignoring seconds if present
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!match) return timeStr; // Return original if not matching expected format
     
-    updateDaySchedule(day, { time_slots: updatedSlots });
-  };
-
-  const removeTimeSlot = (day: number, slotIndex: number) => {
-    const schedule = getDaySchedule(day);
-    const updatedSlots = schedule.time_slots.filter((_, index) => index !== slotIndex);
+    const hours = match[1].padStart(2, '0');
+    const minutes = match[2];
     
-    updateDaySchedule(day, { time_slots: updatedSlots });
+    return `${hours}:${minutes}`;
   };
 
-  const validateTimeSlot = (startTime: string, endTime: string): boolean => {
-    return startTime < endTime;
+  const formatDisplayTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10));
+    date.setMinutes(parseInt(minutes, 10));
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
   };
 
-  const hasOverlappingSlots = (slots: TimeSlot[]): boolean => {
-    for (let i = 0; i < slots.length; i++) {
-      for (let j = i + 1; j < slots.length; j++) {
-        const slot1 = slots[i];
-        const slot2 = slots[j];
-        
-        if (
-          (slot1.start_time < slot2.end_time && slot1.end_time > slot2.start_time) ||
-          (slot2.start_time < slot1.end_time && slot2.end_time > slot1.start_time)
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
+  const isSlotActivated = (slot: string) => {
+    const normalizedSlot = normalizeTimeFormat(slot);
+    return activatedSlots.some(activeSlot => normalizeTimeFormat(activeSlot) === normalizedSlot);
   };
+
+  if (isLoading) {
+    return <div>Loading pickup settings...</div>;
+  }
+
+  const allTimeSlots = generateFixedTimeSlots();
 
   return (
     <Card>
@@ -115,138 +109,65 @@ export function SimplePickupManager({ schedules, onSaveSchedule }: SimplePickupM
         </p>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeDay} onValueChange={setActiveDay}>
-          <TabsList className="mb-4 grid grid-cols-7 w-full">
-            {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-              <TabsTrigger key={day} value={day.toString()} className="text-xs">
-                {getDayName(day).slice(0, 3)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="space-y-8">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Pickup Schedule</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select which days and times are available for pickup orders.
+            </p>
 
-          {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-            const schedule = getDaySchedule(day);
-            const hasOverlaps = hasOverlappingSlots(schedule.time_slots);
-
-            return (
-              <TabsContent key={day} value={day.toString()}>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-base">
-                        Enable Pickup on {getDayName(day)}
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Allow customers to reserve pickup slots on {getDayName(day)}s
-                      </p>
-                    </div>
-                    <Switch
-                      checked={schedule.is_active}
-                      onCheckedChange={(checked) => {
-                        console.log(`Switch toggled for day ${day}: ${checked}`);
-                        toggleDayActive(day, checked);
-                      }}
-                    />
-                  </div>
-
-                  {schedule.is_active && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-base flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          Available Time Slots
-                        </Label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addTimeSlot(day)}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Time Slot
-                        </Button>
-                      </div>
-
-                      {hasOverlaps && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm text-red-600">
-                            Warning: You have overlapping time slots. Please adjust the times.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="space-y-3">
-                        {schedule.time_slots.map((slot, index) => {
-                          const isValid = validateTimeSlot(slot.start_time, slot.end_time);
-                          
-                          return (
-                            <div
-                              key={index}
-                              className={`flex gap-3 items-end p-3 border rounded-lg ${
-                                !isValid ? 'border-red-300 bg-red-50' : ''
-                              }`}
-                            >
-                              <div className="flex-1 grid grid-cols-2 gap-3">
-                                <div>
-                                  <Label htmlFor={`start-${day}-${index}`}>Start Time</Label>
-                                  <Input
-                                    id={`start-${day}-${index}`}
-                                    type="time"
-                                    value={slot.start_time}
-                                    onChange={(e) => updateTimeSlot(day, index, 'start_time', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor={`end-${day}-${index}`}>End Time</Label>
-                                  <Input
-                                    id={`end-${day}-${index}`}
-                                    type="time"
-                                    value={slot.end_time}
-                                    onChange={(e) => updateTimeSlot(day, index, 'end_time', e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                              <div className="w-24">
-                                <Label htmlFor={`capacity-${day}-${index}`}>Max Slots</Label>
-                                <Input
-                                  id={`capacity-${day}-${index}`}
-                                  type="number"
-                                  min="1"
-                                  value={slot.max_capacity || 10}
-                                  onChange={(e) => updateTimeSlot(day, index, 'max_capacity', parseInt(e.target.value) || 10)}
-                                />
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeTimeSlot(day, index)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                        
-                        {schedule.time_slots.length === 0 && (
-                          <div className="text-center py-6 text-muted-foreground">
-                            No time slots configured for {getDayName(day)}. Add a time slot above.
-                          </div>
-                        )}
-                      </div>
-
-                      {schedule.time_slots.length > 0 && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-600">
-                            <strong>{schedule.time_slots.length}</strong> pickup time slot{schedule.time_slots.length !== 1 ? 's' : ''} available for customer reservations on {getDayName(day)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Available Days</Label>
+                <div className="grid grid-cols-7 gap-2">
+                  {DAYS.map((day) => (
+                    <Button
+                      key={day.value}
+                      variant={selectedDays.includes(day.value) ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => toggleDay(day.value)}
+                    >
+                      {day.label.slice(0, 3)}
+                    </Button>
+                  ))}
                 </div>
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Available Time Slots
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Each time slot can only be booked by one customer per day.
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                  {allTimeSlots.map((slot) => (
+                    <Button
+                      key={slot}
+                      variant={isSlotActivated(slot) ? "default" : "outline"}
+                      size="sm"
+                      className="w-full"
+                      onClick={() => toggleTimeSlot(slot)}
+                      disabled={isSaving}
+                    >
+                      {formatDisplayTime(slot)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <Button 
+                onClick={savePickupSettings} 
+                className="w-full" 
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Pickup Settings"}
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

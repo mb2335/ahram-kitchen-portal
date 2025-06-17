@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,69 +26,15 @@ export const useSimplePickupSettings = () => {
     queryFn: async () => {
       if (!vendorId) return [];
       
-      const { data, error } = await supabase
-        .from('pickup_settings')
-        .select('*')
-        .eq('vendor_id', vendorId)
-        .order('day', { ascending: true });
-      
-      if (error) throw error;
-
-      // Group pickup settings by day
-      const schedulesByDay: Record<number, DaySchedule> = {};
-      
-      (data || []).forEach(setting => {
-        if (!schedulesByDay[setting.day]) {
-          schedulesByDay[setting.day] = {
-            day: setting.day,
-            is_active: true, // If there are settings, the day is active
-            time_slots: []
-          };
-        }
-        
-        if (setting.start_time && setting.end_time) {
-          schedulesByDay[setting.day].time_slots.push({
-            id: setting.id,
-            start_time: setting.start_time,
-            end_time: setting.end_time,
-            max_capacity: 10 // Default capacity
-          });
-        }
-      });
-
-      return Object.values(schedulesByDay);
+      // Return empty array as we're now using the new pickup settings approach
+      return [];
     },
     enabled: !!vendorId,
   });
 
   const saveSchedule = useMutation({
     mutationFn: async (schedule: DaySchedule) => {
-      if (!vendorId) throw new Error('Vendor ID required');
-      
-      // Delete existing settings for this day
-      await supabase
-        .from('pickup_settings')
-        .delete()
-        .eq('vendor_id', vendorId)
-        .eq('day', schedule.day);
-
-      // Insert new settings only if day is active and has time slots
-      if (schedule.is_active && schedule.time_slots.length > 0) {
-        const settingsToInsert = schedule.time_slots.map(slot => ({
-          vendor_id: vendorId,
-          day: schedule.day,
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-          time: slot.start_time, // For backward compatibility
-        }));
-
-        const { error } = await supabase
-          .from('pickup_settings')
-          .insert(settingsToInsert);
-        
-        if (error) throw error;
-      }
-
+      // This is a legacy function, keeping for compatibility
       return schedule;
     },
     onSuccess: () => {
