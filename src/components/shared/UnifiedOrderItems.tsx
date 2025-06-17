@@ -25,6 +25,13 @@ interface UnifiedOrderItemsProps {
 export function UnifiedOrderItems({ items, showPricing = true, className = "" }: UnifiedOrderItemsProps) {
   const { language, t } = useLanguage();
 
+  // Debug: Log the items to see their category information
+  console.log('UnifiedOrderItems received items:', items.map(item => ({
+    name: item.name,
+    category: item.category,
+    categoryName: item.category?.name
+  })));
+
   const calculateItemTotal = (item: OrderItemData) => {
     const originalPrice = item.quantity * item.price;
     const discountAmount = item.discount_percentage
@@ -62,6 +69,12 @@ export function UnifiedOrderItems({ items, showPricing = true, className = "" }:
                     {item.category && (
                       <Badge variant="outline" className="mt-1 text-xs">
                         {language === 'en' ? item.category.name : (item.category.name_ko || item.category.name)}
+                      </Badge>
+                    )}
+                    
+                    {!item.category && (
+                      <Badge variant="outline" className="mt-1 text-xs text-gray-400">
+                        No category
                       </Badge>
                     )}
                     
