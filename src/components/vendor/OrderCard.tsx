@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -23,8 +22,7 @@ export function OrderCard({ order, children, onDelete }: OrderCardProps) {
   const formattedItems = order.order_items?.map((item) => {
     console.log("Processing order item:", {
       name: item.menu_item?.name,
-      category_id: item.menu_item?.category_id,
-      category_name: item.menu_item?.category?.name
+      category: item.menu_item?.category?.name
     });
     
     return {
