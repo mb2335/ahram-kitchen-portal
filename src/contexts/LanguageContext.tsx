@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from 'react';
 
 type Language = 'en' | 'ko';
@@ -18,6 +17,7 @@ const translations = {
     'nav.vendor': 'Vendor Dashboard',
     'nav.signin': 'Sign In',
     'nav.signout': 'Sign Out',
+    'nav.faq': 'FAQ',
     'menu.title': 'Our Menu',
     'menu.description': 'Made from scratch, made with love!',
     'cart.empty': 'Your cart is empty',
@@ -120,6 +120,7 @@ const translations = {
     'nav.vendor': '판매자 대시보드',
     'nav.signin': '로그인',
     'nav.signout': '로그아웃',
+    'nav.faq': 'FAQ',
     'menu.title': '메뉴판',
     'menu.description': 'Made from scratch, made with love!',
     'cart.empty': '장바구니가 비어 있습니다',
