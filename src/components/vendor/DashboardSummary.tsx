@@ -4,19 +4,14 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { addDays, startOfDay, endOfDay } from 'date-fns';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useVendorOrders } from '@/hooks/useOrders';
 import { useUnifiedOrders } from '@/hooks/useUnifiedOrders';
-
 export function DashboardSummary() {
   const session = useSession();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'custom'>('today');
   const [dateRange, setDateRange] = useState({
     from: startOfDay(new Date()),
@@ -24,7 +19,9 @@ export function DashboardSummary() {
   });
 
   // Use admin orders hook for platform-wide access
-  const { orders } = useVendorOrders();
+  const {
+    orders
+  } = useVendorOrders();
   const unifiedOrderGroups = useUnifiedOrders(orders || []);
 
   // Filter unified orders based on date range
@@ -39,19 +36,15 @@ export function DashboardSummary() {
     pending: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'pending').length,
     completed: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'completed').length,
     rejected: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus === 'rejected').length,
-    revenue: filteredUnifiedOrders
-      .filter(group => group.unifiedOrder.overallStatus !== 'rejected')
-      .reduce((sum, group) => sum + group.unifiedOrder.totalAmount, 0)
+    revenue: filteredUnifiedOrders.filter(group => group.unifiedOrder.overallStatus !== 'rejected').reduce((sum, group) => sum + group.unifiedOrder.totalAmount, 0)
   };
-
   const handleQuickDateSelect = (filter: 'today' | 'week' | 'month' | 'custom') => {
     setTimeFilter(filter);
-    
+
     // For custom selection, we now keep the current range instead of resetting
     if (filter === 'custom') {
       return;
     }
-    
     const today = new Date();
     switch (filter) {
       case 'today':
@@ -74,21 +67,15 @@ export function DashboardSummary() {
         break;
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Platform Dashboard Overview</h2>
+          <h2 className="text-2xl font-bold">Overview</h2>
           <p className="text-muted-foreground">
-            Shared admin view - all orders and statistics across the platform
-          </p>
+        </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select
-            value={timeFilter}
-            onValueChange={(value: 'today' | 'week' | 'month' | 'custom') => handleQuickDateSelect(value)}
-          >
+          <Select value={timeFilter} onValueChange={(value: 'today' | 'week' | 'month' | 'custom') => handleQuickDateSelect(value)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select time period" />
             </SelectTrigger>
@@ -99,27 +86,22 @@ export function DashboardSummary() {
               <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
-          <DatePickerWithRange
-            date={dateRange}
-            onSelect={(range) => {
-              if (range?.from) {
-                // Always ensure there's a "to" date if we have a "from" date
-                const to = range.to || range.from;
-                
-                if (timeFilter !== 'custom') {
-                  // Switch to custom mode when manually selecting dates
-                  setTimeFilter('custom');
-                }
-                
-                setDateRange({
-                  from: startOfDay(range.from),
-                  to: endOfDay(to)
-                });
-              }
-            }}
-            // Mode is always range now that we've improved custom date selection
-            mode="range"
-          />
+          <DatePickerWithRange date={dateRange} onSelect={range => {
+          if (range?.from) {
+            // Always ensure there's a "to" date if we have a "from" date
+            const to = range.to || range.from;
+            if (timeFilter !== 'custom') {
+              // Switch to custom mode when manually selecting dates
+              setTimeFilter('custom');
+            }
+            setDateRange({
+              from: startOfDay(range.from),
+              to: endOfDay(to)
+            });
+          }
+        }}
+        // Mode is always range now that we've improved custom date selection
+        mode="range" />
         </div>
       </div>
 
@@ -145,9 +127,7 @@ export function DashboardSummary() {
       <Card className="p-4">
         <h3 className="text-lg font-semibold mb-2">Admin Access Notice</h3>
         <p className="text-sm text-muted-foreground">
-          You are viewing platform-wide data. All vendor accounts have shared access to these settings and can make changes that affect the entire platform.
-        </p>
+      </p>
       </Card>
-    </div>
-  );
+    </div>;
 }
