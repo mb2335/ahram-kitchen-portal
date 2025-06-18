@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -61,46 +62,43 @@ export const useEnhancedDeliveryEligibility = () => {
       for (const [groupId, groupRules] of Object.entries(ruleGroups)) {
         console.log(`Evaluating rule group ${groupId}:`, groupRules);
         
-        // Sort rules to ensure proper evaluation order
-        const sortedRules = [...groupRules].sort((a, b) => {
-          // First rule doesn't have a logical operator context, so we'll treat it as the base
-          return 0;
+        if (groupRules.length === 0) continue;
+        
+        // Evaluate each rule individually first
+        const ruleResults = groupRules.map(rule => {
+          const categoryItemCount = itemsByCategory[rule.category_id] || 0;
+          const satisfied = categoryItemCount >= rule.minimum_items;
+          console.log(`Rule evaluation - Category: ${rule.category_id}, Need: ${rule.minimum_items}, Have: ${categoryItemCount}, Satisfied: ${satisfied}`);
+          return satisfied;
         });
 
-        let groupSatisfied = false;
+        console.log(`Rule results for group ${groupId}:`, ruleResults);
+
+        // Now evaluate the logical expression
+        let groupSatisfied: boolean;
         
-        // Start with the first rule as the base
-        if (sortedRules.length > 0) {
-          const firstRule = sortedRules[0];
-          const firstRuleCount = itemsByCategory[firstRule.category_id] || 0;
-          const firstRuleSatisfied = firstRuleCount >= firstRule.minimum_items;
+        if (groupRules.length === 1) {
+          // Single rule case
+          groupSatisfied = ruleResults[0];
+        } else {
+          // Multiple rules case - evaluate based on logical operators
+          groupSatisfied = ruleResults[0]; // Start with first rule result
           
-          console.log(`First rule (${firstRule.category_id}): need ${firstRule.minimum_items}, have ${firstRuleCount}, satisfied: ${firstRuleSatisfied}`);
-          
-          // Initialize with the first rule result
-          groupSatisfied = firstRuleSatisfied;
-          
-          // Process remaining rules with their logical operators
-          for (let i = 1; i < sortedRules.length; i++) {
-            const rule = sortedRules[i];
-            const categoryItemCount = itemsByCategory[rule.category_id] || 0;
-            const ruleSatisfied = categoryItemCount >= rule.minimum_items;
-            
-            console.log(`Rule ${i} (${rule.category_id}): need ${rule.minimum_items}, have ${categoryItemCount}, satisfied: ${ruleSatisfied}, operator: ${rule.logical_operator}`);
+          for (let i = 1; i < groupRules.length; i++) {
+            const rule = groupRules[i];
+            const currentRuleResult = ruleResults[i];
             
             if (rule.logical_operator === 'AND') {
-              groupSatisfied = groupSatisfied && ruleSatisfied;
-              console.log(`After AND operation: ${groupSatisfied}`);
+              groupSatisfied = groupSatisfied && currentRuleResult;
+              console.log(`After AND with rule ${i}: ${groupSatisfied} (was ${groupSatisfied} AND ${currentRuleResult})`);
             } else if (rule.logical_operator === 'OR') {
-              groupSatisfied = groupSatisfied || ruleSatisfied;
-              console.log(`After OR operation: ${groupSatisfied}`);
+              groupSatisfied = groupSatisfied || currentRuleResult;
+              console.log(`After OR with rule ${i}: ${groupSatisfied} (was ${groupSatisfied} OR ${currentRuleResult})`);
             }
-            
-            console.log(`Group satisfied after rule ${i}: ${groupSatisfied}`);
           }
         }
         
-        console.log(`Final group ${groupId} satisfied: ${groupSatisfied}`);
+        console.log(`Final evaluation for group ${groupId}: ${groupSatisfied}`);
         
         if (groupSatisfied) {
           console.log(`Rule group ${groupId} is satisfied, delivery eligible`);
