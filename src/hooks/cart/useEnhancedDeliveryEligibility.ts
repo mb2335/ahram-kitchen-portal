@@ -74,7 +74,7 @@ export const useEnhancedDeliveryEligibility = () => {
 
         console.log(`Rule results for group ${groupId}:`, ruleResults);
 
-        // Now evaluate the logical expression
+        // Now evaluate the logical expression properly
         let groupSatisfied: boolean;
         
         if (groupRules.length === 1) {
@@ -87,13 +87,14 @@ export const useEnhancedDeliveryEligibility = () => {
           for (let i = 1; i < groupRules.length; i++) {
             const rule = groupRules[i];
             const currentRuleResult = ruleResults[i];
+            const previousResult = groupSatisfied;
             
             if (rule.logical_operator === 'AND') {
-              groupSatisfied = groupSatisfied && currentRuleResult;
-              console.log(`After AND with rule ${i}: ${groupSatisfied} (was ${groupSatisfied} AND ${currentRuleResult})`);
+              groupSatisfied = previousResult && currentRuleResult;
+              console.log(`After AND with rule ${i}: ${groupSatisfied} (${previousResult} AND ${currentRuleResult})`);
             } else if (rule.logical_operator === 'OR') {
-              groupSatisfied = groupSatisfied || currentRuleResult;
-              console.log(`After OR with rule ${i}: ${groupSatisfied} (was ${groupSatisfied} OR ${currentRuleResult})`);
+              groupSatisfied = previousResult || currentRuleResult;
+              console.log(`After OR with rule ${i}: ${groupSatisfied} (${previousResult} OR ${currentRuleResult})`);
             }
           }
         }
