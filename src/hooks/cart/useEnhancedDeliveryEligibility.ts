@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -85,25 +84,29 @@ export const useEnhancedDeliveryEligibility = () => {
           groupSatisfied = ruleResults[0];
           console.log(`Single rule evaluation: ${groupSatisfied}`);
         } else {
-          // Multiple rules case - build logical expression from left to right
-          // The logical_operator on rule[i] determines how rule[i] combines with the previous result
-          groupSatisfied = ruleResults[0]; // Start with first rule result
-          console.log(`Starting with first rule result: ${groupSatisfied}`);
+          // Multiple rules case - evaluate the logical expression
+          // Important: We need to determine if this is an AND group or OR group
+          // Check if ALL rules have the same operator (they should within a group)
+          const operators = sortedRules.map(rule => rule.logical_operator);
+          const hasAnd = operators.includes('AND');
+          const hasOr = operators.includes('OR');
           
-          for (let i = 1; i < sortedRules.length; i++) {
-            const rule = sortedRules[i];
-            const currentRuleResult = ruleResults[i];
-            const operator = rule.logical_operator;
-            
-            console.log(`Combining with rule ${i}: previous=${groupSatisfied}, current=${currentRuleResult}, operator=${operator}`);
-            
-            if (operator === 'AND') {
-              groupSatisfied = groupSatisfied && currentRuleResult;
-              console.log(`After AND: ${groupSatisfied} (${groupSatisfied ? 'both' : 'at least one'} conditions ${groupSatisfied ? 'satisfied' : 'not satisfied'})`);
-            } else if (operator === 'OR') {
-              groupSatisfied = groupSatisfied || currentRuleResult;
-              console.log(`After OR: ${groupSatisfied} (${groupSatisfied ? 'at least one' : 'neither'} condition satisfied)`);
-            }
+          if (hasAnd && hasOr) {
+            console.warn(`Mixed operators in group ${groupId}, treating as AND for safety`);
+          }
+          
+          // If any rule has AND, treat the entire group as AND
+          // This ensures stricter evaluation for mixed cases
+          const isAndGroup = hasAnd;
+          
+          if (isAndGroup) {
+            // For AND groups, ALL conditions must be true
+            groupSatisfied = ruleResults.every(result => result === true);
+            console.log(`AND group evaluation: ${groupSatisfied} (all conditions must be true: [${ruleResults.join(', ')}])`);
+          } else {
+            // For OR groups, AT LEAST ONE condition must be true
+            groupSatisfied = ruleResults.some(result => result === true);
+            console.log(`OR group evaluation: ${groupSatisfied} (at least one condition must be true: [${ruleResults.join(', ')}])`);
           }
         }
         
