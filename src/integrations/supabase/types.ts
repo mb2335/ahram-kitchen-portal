@@ -128,6 +128,44 @@ export type Database = {
           },
         ]
       }
+      delivery_time_bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_phone: string | null
+          delivery_date: string
+          id: string
+          order_id: string | null
+          time_slot: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_phone?: string | null
+          delivery_date: string
+          id?: string
+          order_id?: string | null
+          time_slot: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          delivery_date?: string
+          id?: string
+          order_id?: string | null
+          time_slot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_time_bookings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faqs: {
         Row: {
           answer_en: string

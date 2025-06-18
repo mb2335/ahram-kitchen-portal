@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -41,6 +42,29 @@ export const useOrderSubmission = () => {
       if (!props.customerData.smsOptIn) {
         throw new Error("You must agree to receive SMS updates to place an order");
       }
+
+      // Additional validation for delivery orders with time slots
+      if (props.fulfillmentType === 'delivery' && deliveryTimeSlot) {
+        const deliveryDate = Object.values(props.deliveryDates)[0] || new Date();
+        const formattedDate = deliveryDate.toISOString().split('T')[0];
+        
+        // Check if the time slot is still available
+        const { data: existingBooking, error: checkError } = await supabase
+          .from('delivery_time_bookings')
+          .select('id')
+          .eq('delivery_date', formattedDate)
+          .eq('time_slot', deliveryTimeSlot)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error('Error checking time slot availability:', checkError);
+          throw new Error('Failed to verify time slot availability');
+        }
+        
+        if (existingBooking) {
+          throw new Error('This time slot has already been booked. Please select another time slot.');
+        }
+      }
       
       // Upload payment proof
       const paymentProofUrl = await uploadPaymentProof(paymentProofFile);
@@ -83,7 +107,7 @@ export const useOrderSubmission = () => {
         fulfillment_type: props.fulfillmentType,
         delivery_address: props.customerData.address || null,
         pickup_time: props.pickupTime || null,
-        delivery_time_slot: deliveryTimeSlot || null, // Save the delivery time slot
+        delivery_time_slot: deliveryTimeSlot || null,
         customer_name: props.customerData.fullName,
         customer_email: props.customerData.email,
         customer_phone: props.customerData.phone || null,
@@ -108,6 +132,36 @@ export const useOrderSubmission = () => {
       }
 
       console.log("Successfully created order:", order);
+
+      // Create delivery time slot booking if this is a delivery order with a time slot
+      if (props.fulfillmentType === 'delivery' && deliveryTimeSlot && order.id) {
+        const formattedDate = deliveryDate.toISOString().split('T')[0];
+        
+        console.log("Creating delivery time slot booking:", {
+          delivery_date: formattedDate,
+          time_slot: deliveryTimeSlot,
+          order_id: order.id,
+          customer_name: props.customerData.fullName
+        });
+        
+        const { error: bookingError } = await supabase
+          .from('delivery_time_bookings')
+          .insert({
+            delivery_date: formattedDate,
+            time_slot: deliveryTimeSlot,
+            order_id: order.id,
+            customer_name: props.customerData.fullName,
+            customer_phone: props.customerData.phone || null
+          });
+        
+        if (bookingError) {
+          console.error("Error creating time slot booking:", bookingError);
+          // Don't fail the order, but log the issue
+          console.warn("Order created successfully but time slot booking failed");
+        } else {
+          console.log("Time slot booking created successfully");
+        }
+      }
 
       // Create order items - PRESERVE CATEGORY INFORMATION
       console.log("Creating order items with category preservation...");

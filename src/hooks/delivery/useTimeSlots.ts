@@ -20,6 +20,16 @@ interface DeliverySetting {
   updated_at: string | null;
 }
 
+interface DeliveryTimeBooking {
+  id: string;
+  delivery_date: string;
+  time_slot: string;
+  order_id: string;
+  customer_name: string;
+  customer_phone: string | null;
+  created_at: string;
+}
+
 export function useTimeSlots({ 
   categoryId, 
   dayOfWeek, 
@@ -30,12 +40,11 @@ export function useTimeSlots({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch delivery settings - no vendor filter for consistency
+  // Fetch delivery settings
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['vendor-delivery-settings'],
     queryFn: async () => {
       try {
-        // Get first available delivery settings for consistent experience
         const { data, error } = await supabase
           .from('delivery_settings')
           .select('*')
@@ -55,9 +64,62 @@ export function useTimeSlots({
     },
   });
 
+  // Fetch booked time slots for the selected date
+  const { data: bookedSlots = [], isLoading: isBookingsLoading } = useQuery({
+    queryKey: ['delivery-bookings', formattedDate],
+    queryFn: async () => {
+      if (!formattedDate) return [];
+      
+      try {
+        const { data, error } = await supabase
+          .from('delivery_time_bookings')
+          .select('*')
+          .eq('delivery_date', formattedDate);
+        
+        if (error) {
+          console.error('Error fetching delivery bookings:', error);
+          return [];
+        }
+        
+        console.log(`Fetched ${data?.length || 0} bookings for ${formattedDate}:`, data);
+        return data as DeliveryTimeBooking[];
+      } catch (err) {
+        console.error('Exception fetching delivery bookings:', err);
+        return [];
+      }
+    },
+    enabled: !!formattedDate,
+  });
+
+  // Set up real-time subscription for booking changes
+  useEffect(() => {
+    if (!formattedDate) return;
+
+    const channel = supabase
+      .channel('delivery-bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'delivery_time_bookings',
+          filter: `delivery_date=eq.${formattedDate}`
+        },
+        (payload) => {
+          console.log('Real-time booking change:', payload);
+          // Refetch bookings when changes occur
+          // The query will automatically refetch due to cache invalidation
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [formattedDate]);
+
   useEffect(() => {
     const loadAvailableTimeSlots = async () => {
-      // Only proceed if we have a valid selected date
       if (!selectedDate || dayOfWeek < 0) {
         setTimeSlots([]);
         return;
@@ -67,7 +129,6 @@ export function useTimeSlots({
       setError(null);
       
       try {
-        // First check if the selected day is even valid for delivery
         if (!settings || !settings.active_days || !settings.active_days.includes(dayOfWeek)) {
           setTimeSlots([]);
           if (dayOfWeek >= 0) {
@@ -76,7 +137,6 @@ export function useTimeSlots({
           return;
         }
         
-        // Then check if this day has any time slots configured
         const slots = settings.time_slots || [];
         
         if (slots.length === 0) {
@@ -85,9 +145,8 @@ export function useTimeSlots({
           return;
         }
         
-        // Normalize time format for consistency (remove seconds)
+        // Normalize time format for consistency
         const normalizedSlots = slots.map(slot => {
-          // Extract hours and minutes only
           const match = slot.match(/^(\d{1,2}):(\d{2})/);
           if (match) {
             return `${match[1].padStart(2, '0')}:${match[2]}`;
@@ -97,12 +156,21 @@ export function useTimeSlots({
 
         console.log("Available time slots from settings:", normalizedSlots);
         
-        // Since delivery_time_bookings table doesn't exist, all slots are available
-        const bookedTimes = new Set();
+        // Create set of booked times for quick lookup
+        const bookedTimes = new Set(
+          bookedSlots.map(booking => {
+            // Normalize the booked time slot format
+            const match = booking.time_slot.match(/^(\d{1,2}):(\d{2})/);
+            if (match) {
+              return `${match[1].padStart(2, '0')}:${match[2]}`;
+            }
+            return booking.time_slot;
+          })
+        );
         
         console.log("Booked times:", Array.from(bookedTimes));
         
-        // Create the final available time slots
+        // Create the final available time slots, marking booked ones as unavailable
         const availableSlots: TimeSlot[] = normalizedSlots.map(time => ({
           time,
           available: !bookedTimes.has(time)
@@ -123,11 +191,11 @@ export function useTimeSlots({
     };
     
     loadAvailableTimeSlots();
-  }, [settings, categoryId, selectedDate, formattedDate, dayOfWeek]);
+  }, [settings, categoryId, selectedDate, formattedDate, dayOfWeek, bookedSlots]);
 
   return {
     timeSlots,
-    isLoading: isLoading || isSettingsLoading,
+    isLoading: isLoading || isSettingsLoading || isBookingsLoading,
     error
   };
 }

@@ -15,11 +15,19 @@ export function TimeSlotGrid({
   selectedTimeSlot, 
   onTimeSlotChange 
 }: TimeSlotGridProps) {
+  const handleTimeSlotChange = (value: string) => {
+    // Find the selected slot to check if it's available
+    const selectedSlot = timeSlots.find(slot => slot.time === value);
+    if (selectedSlot && selectedSlot.available) {
+      onTimeSlotChange(value);
+    }
+  };
+
   return (
     <ScrollArea className="max-h-64 border rounded-md">
       <RadioGroup
         value={selectedTimeSlot || ""}
-        onValueChange={onTimeSlotChange}
+        onValueChange={handleTimeSlotChange}
         className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2"
       >
         {timeSlots.map((slot) => (
@@ -32,13 +40,20 @@ export function TimeSlotGrid({
             />
             <Label
               htmlFor={`time-${slot.time}`}
-              className={`flex h-10 w-full items-center justify-center rounded-md border border-muted text-center text-sm transition-colors 
+              className={`flex h-10 w-full items-center justify-center rounded-md border text-center text-sm transition-colors cursor-pointer
                 ${slot.available ? 
-                  'peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 hover:bg-muted/50' : 
-                  'opacity-50 cursor-not-allowed bg-muted/20 line-through'
+                  'border-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 hover:bg-muted/50' : 
+                  'opacity-50 cursor-not-allowed bg-muted/30 border-muted text-muted-foreground line-through'
                 }`}
             >
-              {formatTime(slot.time)}
+              <div className="flex flex-col items-center">
+                <span className={slot.available ? '' : 'line-through'}>
+                  {formatTime(slot.time)}
+                </span>
+                {!slot.available && (
+                  <span className="text-xs text-red-500 mt-0.5">Booked</span>
+                )}
+              </div>
             </Label>
           </div>
         ))}
