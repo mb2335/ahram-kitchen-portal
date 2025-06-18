@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Plus, Save, Edit, Copy } from 'lucide-react';
+import { Trash2, Plus, Save, Edit, Copy, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DeliveryRule, RuleGroup } from '@/hooks/vendor/useEnhancedDeliveryRules';
 import { 
@@ -19,6 +18,7 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface RuleGroupManagerProps {
   ruleGroups: RuleGroup[];
@@ -39,6 +39,9 @@ export function RuleGroupManager({
   const [newGroupName, setNewGroupName] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+
+  const activeRuleGroups = ruleGroups.filter(group => group.is_active);
+  const hasActiveGroup = activeRuleGroups.length > 0;
 
   const startNewGroup = () => {
     setEditingGroup({
@@ -122,6 +125,20 @@ export function RuleGroupManager({
     }
   };
 
+  const handleToggleRuleGroup = (groupId: string, active: boolean) => {
+    if (active && hasActiveGroup) {
+      // Show confirmation when activating while another is active
+      const activeGroupName = activeRuleGroups[0]?.name;
+      const newGroupName = ruleGroups.find(g => g.id === groupId)?.name;
+      
+      if (window.confirm(`Activating "${newGroupName}" will deactivate "${activeGroupName}". Continue?`)) {
+        onToggleRuleGroup(groupId, active);
+      }
+    } else {
+      onToggleRuleGroup(groupId, active);
+    }
+  };
+
   const getCategoryName = (categoryId: string) => {
     return categories.find(cat => cat.id === categoryId)?.name || 'Unknown Category';
   };
@@ -155,10 +172,24 @@ export function RuleGroupManager({
       <Card>
         <CardHeader>
           <CardTitle>Delivery Rule Groups</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Create rule groups with AND/OR logic to define when delivery is available.
-            Customers need to meet the requirements of at least one active rule group.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Create rule groups with AND/OR logic to define when delivery is available.
+              Customers need to meet the requirements of the active rule group.
+            </p>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Important:</strong> Only one rule group can be active at a time. 
+                Activating a new rule group will automatically deactivate the current one.
+                {hasActiveGroup && (
+                  <span className="block mt-1 text-sm font-medium">
+                    Currently active: {activeRuleGroups[0].name}
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* New Group Creation */}
@@ -276,6 +307,11 @@ export function RuleGroupManager({
                     <Badge variant={group.is_active ? "default" : "secondary"}>
                       {group.is_active ? "Active" : "Inactive"}
                     </Badge>
+                    {group.is_active && (
+                      <Badge variant="outline" className="text-xs">
+                        Current Rule Set
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     <span className="font-medium">Rules:</span> {formatRuleGroupDisplay(group)}
@@ -289,7 +325,7 @@ export function RuleGroupManager({
                     <Label className="text-sm">Active:</Label>
                     <Switch
                       checked={group.is_active}
-                      onCheckedChange={(checked) => onToggleRuleGroup(group.id, checked)}
+                      onCheckedChange={(checked) => handleToggleRuleGroup(group.id, checked)}
                     />
                   </div>
                   <Button

@@ -138,6 +138,17 @@ export const useEnhancedDeliveryRules = () => {
     mutationFn: async ({ groupId, active }: { groupId: string; active: boolean }) => {
       if (!adminData) throw new Error('Admin access required');
       
+      if (active) {
+        // First, deactivate all other rule groups
+        await supabase
+          .from('delivery_rules')
+          .update({ is_active: false })
+          .neq('rule_group_id', groupId);
+        
+        console.log('Deactivated all other rule groups before activating new one');
+      }
+      
+      // Then activate/deactivate the selected group
       const { error } = await supabase
         .from('delivery_rules')
         .update({ is_active: active })
@@ -145,11 +156,13 @@ export const useEnhancedDeliveryRules = () => {
       
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { active }) => {
       queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
       toast({
         title: "Success",
-        description: "Rule group status updated successfully",
+        description: active 
+          ? "Rule group activated successfully (others deactivated)" 
+          : "Rule group deactivated successfully",
       });
     },
     onError: (error) => {
