@@ -64,8 +64,11 @@ export const useEnhancedDeliveryEligibility = () => {
         
         if (groupRules.length === 0) continue;
         
+        // Sort rules to ensure consistent evaluation order
+        const sortedRules = [...groupRules].sort((a, b) => a.id.localeCompare(b.id));
+        
         // Evaluate each rule individually first
-        const ruleResults = groupRules.map(rule => {
+        const ruleResults = sortedRules.map(rule => {
           const categoryItemCount = itemsByCategory[rule.category_id] || 0;
           const satisfied = categoryItemCount >= rule.minimum_items;
           console.log(`Rule evaluation - Category: ${rule.category_id}, Need: ${rule.minimum_items}, Have: ${categoryItemCount}, Satisfied: ${satisfied}`);
@@ -74,27 +77,32 @@ export const useEnhancedDeliveryEligibility = () => {
 
         console.log(`Rule results for group ${groupId}:`, ruleResults);
 
-        // Now evaluate the logical expression properly
+        // Now evaluate the logical expression correctly
         let groupSatisfied: boolean;
         
-        if (groupRules.length === 1) {
+        if (sortedRules.length === 1) {
           // Single rule case
           groupSatisfied = ruleResults[0];
+          console.log(`Single rule evaluation: ${groupSatisfied}`);
         } else {
-          // Multiple rules case - evaluate based on logical operators
+          // Multiple rules case - build logical expression from left to right
+          // The logical_operator on rule[i] determines how rule[i] combines with the previous result
           groupSatisfied = ruleResults[0]; // Start with first rule result
+          console.log(`Starting with first rule result: ${groupSatisfied}`);
           
-          for (let i = 1; i < groupRules.length; i++) {
-            const rule = groupRules[i];
+          for (let i = 1; i < sortedRules.length; i++) {
+            const rule = sortedRules[i];
             const currentRuleResult = ruleResults[i];
-            const previousResult = groupSatisfied;
+            const operator = rule.logical_operator;
             
-            if (rule.logical_operator === 'AND') {
-              groupSatisfied = previousResult && currentRuleResult;
-              console.log(`After AND with rule ${i}: ${groupSatisfied} (${previousResult} AND ${currentRuleResult})`);
-            } else if (rule.logical_operator === 'OR') {
-              groupSatisfied = previousResult || currentRuleResult;
-              console.log(`After OR with rule ${i}: ${groupSatisfied} (${previousResult} OR ${currentRuleResult})`);
+            console.log(`Combining with rule ${i}: previous=${groupSatisfied}, current=${currentRuleResult}, operator=${operator}`);
+            
+            if (operator === 'AND') {
+              groupSatisfied = groupSatisfied && currentRuleResult;
+              console.log(`After AND: ${groupSatisfied} (${groupSatisfied ? 'both' : 'at least one'} conditions ${groupSatisfied ? 'satisfied' : 'not satisfied'})`);
+            } else if (operator === 'OR') {
+              groupSatisfied = groupSatisfied || currentRuleResult;
+              console.log(`After OR: ${groupSatisfied} (${groupSatisfied ? 'at least one' : 'neither'} condition satisfied)`);
             }
           }
         }
