@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
-import { Plus, Info } from "lucide-react";
+import { Plus, Info, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { calculateDiscountedPrice, formatPrice } from "@/utils/priceUtils";
@@ -31,6 +31,8 @@ export function MenuItem({
     t
   } = useLanguage();
   
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  
   const displayName = language === 'en' ? item.name : item.name_ko;
   const displayDescription = language === 'en' ? item.description : item.description_ko;
   
@@ -44,8 +46,23 @@ export function MenuItem({
     return `${t('item.remainingStock')}: ${item.remaining_quantity}`;
   };
   
-  // Use the utility function for consistent discount calculation
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
+  
+  const maxQuantity = item.remaining_quantity || 99;
+  
+  const handleQuantityChange = (change: number) => {
+    const newQuantity = selectedQuantity + change;
+    if (newQuantity >= 1 && newQuantity <= maxQuantity) {
+      setSelectedQuantity(newQuantity);
+    }
+  };
+  
+  const handleAddToCart = () => {
+    for (let i = 0; i < selectedQuantity; i++) {
+      onAddToCart(item);
+    }
+    setSelectedQuantity(1); // Reset to 1 after adding
+  };
   
   return (
     <Card className="group relative flex flex-col h-full min-h-[350px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
@@ -120,14 +137,40 @@ export function MenuItem({
                     </Badge>
                   </div>
                   
+                  {/* Quantity selector in modal */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Quantity:</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleQuantityChange(-1)}
+                        disabled={selectedQuantity <= 1}
+                        className="h-8 w-8"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="w-8 text-center font-medium">{selectedQuantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleQuantityChange(1)}
+                        disabled={selectedQuantity >= maxQuantity}
+                        className="h-8 w-8"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
                   {/* Add to cart button in modal */}
                   <Button 
-                    onClick={() => onAddToCart(item)} 
+                    onClick={handleAddToCart} 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-medium" 
                     disabled={item.remaining_quantity === 0}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    {t('item.add')}
+                    {t('item.add')} {selectedQuantity > 1 && `(${selectedQuantity})`}
                   </Button>
                 </div>
               </DialogContent>
@@ -177,15 +220,41 @@ export function MenuItem({
             </div>
           </div>
 
+          {/* Quantity Selector */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Quantity:</span>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleQuantityChange(-1)}
+                disabled={selectedQuantity <= 1}
+                className="h-8 w-8"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="w-8 text-center font-medium">{selectedQuantity}</span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleQuantityChange(1)}
+                disabled={selectedQuantity >= maxQuantity}
+                className="h-8 w-8"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
           {/* Add to Cart Button - Fixed Height */}
           <div className="h-10">
             <Button 
-              onClick={() => onAddToCart(item)} 
+              onClick={handleAddToCart} 
               className="w-full bg-primary hover:bg-primary/90 text-white font-medium h-full" 
               disabled={item.remaining_quantity === 0}
             >
               <Plus className="w-4 h-4 mr-2" />
-              {t('item.add')}
+              {t('item.add')} {selectedQuantity > 1 && `(${selectedQuantity})`}
             </Button>
           </div>
         </div>
