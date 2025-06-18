@@ -3,11 +3,19 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { calculateDiscountedPrice, formatPrice } from "@/utils/priceUtils";
 import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -22,7 +30,6 @@ export function MenuItem({
     language,
     t
   } = useLanguage();
-  const [isExpanded, setIsExpanded] = useState(false);
   
   const displayName = language === 'en' ? item.name : item.name_ko;
   const displayDescription = language === 'en' ? item.description : item.description_ko;
@@ -40,11 +47,8 @@ export function MenuItem({
   // Use the utility function for consistent discount calculation
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
   
-  // Check if description is long enough to need expansion
-  const needsExpansion = displayDescription && displayDescription.length > 60;
-  
   return (
-    <Card className="group relative flex flex-col h-full min-h-[400px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="group relative flex flex-col h-full min-h-[350px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative overflow-hidden bg-muted">
         <AspectRatio ratio={4 / 3}>
           {item.image ? (
@@ -67,46 +71,77 @@ export function MenuItem({
               {item.discount_percentage}% OFF
             </Badge>
           )}
+
+          {/* Info button for modal trigger */}
+          {displayDescription && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="absolute top-3 left-3 z-10 h-8 w-8 bg-white/90 hover:bg-white"
+                >
+                  <Info className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-semibold">
+                    {displayName}
+                  </DialogTitle>
+                  <DialogDescription className="text-left text-base mt-3 leading-relaxed">
+                    {displayDescription}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="mt-4 space-y-3">
+                  {/* Price display in modal */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {discountedPrice ? (
+                        <div className="space-y-1">
+                          <div className="text-sm line-through text-muted-foreground">
+                            ${item.price.toFixed(2)}
+                          </div>
+                          <div className="text-xl font-bold text-red-500">
+                            ${discountedPrice.toFixed(2)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xl font-bold">
+                          ${item.price.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                    <Badge 
+                      variant={item.remaining_quantity === 0 ? "destructive" : "secondary"} 
+                      className="text-xs"
+                    >
+                      {getQuantityDisplay()}
+                    </Badge>
+                  </div>
+                  
+                  {/* Add to cart button in modal */}
+                  <Button 
+                    onClick={() => onAddToCart(item)} 
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium" 
+                    disabled={item.remaining_quantity === 0}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t('item.add')}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </AspectRatio>
       </div>
 
       <div className="flex flex-col flex-grow p-4">
         {/* Title Section - Fixed Height */}
-        <div className="h-12 flex items-center justify-center mb-2">
+        <div className="h-12 flex items-center justify-center mb-3">
           <h3 className="font-semibold text-lg leading-tight text-center line-clamp-2">
             {displayName}
           </h3>
-        </div>
-
-        {/* Description Section - Dynamic Height */}
-        <div className="mb-3">
-          {displayDescription ? (
-            <div className="space-y-2">
-              <p className={`text-sm text-muted-foreground leading-relaxed text-center transition-all duration-300 ${
-                isExpanded ? '' : 'line-clamp-1'
-              }`}>
-                {displayDescription}
-              </p>
-              {needsExpansion && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1 mx-auto"
-                >
-                  {isExpanded ? (
-                    <>
-                      Show less <ChevronUp className="w-3 h-3" />
-                    </>
-                  ) : (
-                    <>
-                      Read more <ChevronDown className="w-3 h-3" />
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="h-4"></div>
-          )}
         </div>
 
         {/* Footer Section - Push to bottom with consistent alignment */}
