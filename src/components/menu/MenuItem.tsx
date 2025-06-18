@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -67,13 +66,17 @@ export function MenuItem({
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only open dialog if description exists and click wasn't on interactive elements
-    if (displayDescription && !e.defaultPrevented) {
+    if (displayDescription && !isDialogOpen) {
       const target = e.target as HTMLElement;
       const isInteractiveElement = target.closest('button') || target.tagName === 'BUTTON';
       if (!isInteractiveElement) {
         setIsDialogOpen(true);
       }
     }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
   };
   
   return (
@@ -85,7 +88,7 @@ export function MenuItem({
       role={displayDescription ? "button" : undefined}
       tabIndex={displayDescription ? 0 : undefined}
       onKeyDown={(e) => {
-        if (displayDescription && (e.key === 'Enter' || e.key === ' ')) {
+        if (displayDescription && (e.key === 'Enter' || e.key === ' ') && !isDialogOpen) {
           e.preventDefault();
           setIsDialogOpen(true);
         }
@@ -241,7 +244,7 @@ export function MenuItem({
 
       {/* Details Dialog */}
       {displayDescription && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold">
@@ -310,7 +313,7 @@ export function MenuItem({
                 className="w-full bg-primary hover:bg-primary/90 text-white font-medium" 
                 disabled={item.remaining_quantity === 0}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" mr-2" />
                 {t('item.add')} {selectedQuantity > 1 && `(${selectedQuantity})`}
               </Button>
             </div>
