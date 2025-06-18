@@ -125,20 +125,6 @@ export function RuleGroupManager({
     }
   };
 
-  const handleToggleRuleGroup = (groupId: string, active: boolean) => {
-    if (active && hasActiveGroup) {
-      // Show confirmation when activating while another is active
-      const activeGroupName = activeRuleGroups[0]?.name;
-      const newGroupName = ruleGroups.find(g => g.id === groupId)?.name;
-      
-      if (window.confirm(`Activating "${newGroupName}" will deactivate "${activeGroupName}". Continue?`)) {
-        onToggleRuleGroup(groupId, active);
-      }
-    } else {
-      onToggleRuleGroup(groupId, active);
-    }
-  };
-
   const getCategoryName = (categoryId: string) => {
     return categories.find(cat => cat.id === categoryId)?.name || 'Unknown Category';
   };
@@ -325,7 +311,7 @@ export function RuleGroupManager({
                     <Label className="text-sm">Active:</Label>
                     <Switch
                       checked={group.is_active}
-                      onCheckedChange={(checked) => handleToggleRuleGroup(group.id, checked)}
+                      onCheckedChange={(checked) => onToggleRuleGroup(group.id, checked)}
                     />
                   </div>
                   <Button
