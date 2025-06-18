@@ -3,10 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { calculateDiscountedPrice, formatPrice } from "@/utils/priceUtils";
+import { useState } from "react";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -21,6 +22,7 @@ export function MenuItem({
     language,
     t
   } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(false);
   
   const displayName = language === 'en' ? item.name : item.name_ko;
   const displayDescription = language === 'en' ? item.description : item.description_ko;
@@ -38,8 +40,11 @@ export function MenuItem({
   // Use the utility function for consistent discount calculation
   const discountedPrice = calculateDiscountedPrice(item.price, item.discount_percentage);
   
+  // Check if description is long enough to need expansion
+  const needsExpansion = displayDescription && displayDescription.length > 60;
+  
   return (
-    <Card className="group relative flex flex-col h-full min-h-[450px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="group relative flex flex-col h-full min-h-[400px] overflow-hidden rounded-lg transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative overflow-hidden bg-muted">
         <AspectRatio ratio={4 / 3}>
           {item.image ? (
@@ -67,20 +72,40 @@ export function MenuItem({
 
       <div className="flex flex-col flex-grow p-4">
         {/* Title Section - Fixed Height */}
-        <div className="h-14 flex items-center justify-center mb-3">
+        <div className="h-12 flex items-center justify-center mb-2">
           <h3 className="font-semibold text-lg leading-tight text-center line-clamp-2">
             {displayName}
           </h3>
         </div>
 
-        {/* Description Section - Fixed Height */}
-        <div className="h-16 flex items-start justify-center mb-4">
+        {/* Description Section - Dynamic Height */}
+        <div className="mb-3">
           {displayDescription ? (
-            <p className="text-sm text-muted-foreground leading-relaxed text-center line-clamp-3">
-              {displayDescription}
-            </p>
+            <div className="space-y-2">
+              <p className={`text-sm text-muted-foreground leading-relaxed text-center transition-all duration-300 ${
+                isExpanded ? '' : 'line-clamp-1'
+              }`}>
+                {displayDescription}
+              </p>
+              {needsExpansion && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1 mx-auto"
+                >
+                  {isExpanded ? (
+                    <>
+                      Show less <ChevronUp className="w-3 h-3" />
+                    </>
+                  ) : (
+                    <>
+                      Read more <ChevronDown className="w-3 h-3" />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           ) : (
-            <div className="h-full"></div>
+            <div className="h-4"></div>
           )}
         </div>
 
