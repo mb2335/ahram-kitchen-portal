@@ -8,7 +8,7 @@ import { FulfillmentSelector } from './FulfillmentSelector';
 import { DeliveryForm } from './DeliveryForm';
 import { PaymentInstructions } from './PaymentInstructions';
 import { useOrderSubmission } from './useOrderSubmission';
-import { useDeliveryEligibility } from '@/hooks/cart/useDeliveryEligibility';
+import { useEnhancedDeliveryEligibility } from '@/hooks/cart/useEnhancedDeliveryEligibility';
 import { FulfillmentSettings } from './fulfillment/FulfillmentSettings';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
@@ -38,7 +38,8 @@ export function CheckoutForm({
   const { toast } = useToast();
   const { t } = useLanguage();
   const { submitOrder, isSubmitting, isUploading } = useOrderSubmission();
-  const { isDeliveryEligible } = useDeliveryEligibility();
+  // Use enhanced delivery eligibility for all customers (guest and authenticated)
+  const { isDeliveryEligible, deliveryRulesSummary } = useEnhancedDeliveryEligibility();
   const { 
     formData, 
     handleDateChange, 
@@ -56,17 +57,25 @@ export function CheckoutForm({
   const [selectedPickupDetail, setSelectedPickupDetail] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
 
-  // Auto-switch to pickup if delivery becomes unavailable
+  // Auto-switch to pickup if delivery becomes unavailable for ALL users
   useEffect(() => {
     if (fulfillmentType === 'delivery' && !isDeliveryEligible) {
       setFulfillmentType('pickup');
+      
+      // Show specific message about delivery requirements
+      const ruleMessage = deliveryRulesSummary.length > 0 
+        ? `Please add more items to meet delivery requirements: ${deliveryRulesSummary.map(rule => 
+            `${rule.minimum_items}+ items from ${rule.category?.name || 'Unknown Category'}`
+          ).join(' OR ')}`
+        : "Your cart doesn't meet the minimum requirements for delivery.";
+        
       toast({
         title: "Switched to Pickup",
-        description: "Your cart no longer meets delivery requirements. Switched to pickup.",
+        description: ruleMessage,
         variant: "default",
       });
     }
-  }, [isDeliveryEligible, fulfillmentType, toast]);
+  }, [isDeliveryEligible, fulfillmentType, toast, deliveryRulesSummary]);
 
   const handleDateChangeWrapper = (type: string, date: Date) => {
     handleDateChange(type, date);
@@ -93,10 +102,17 @@ export function CheckoutForm({
       return;
     }
 
+    // Enhanced delivery eligibility check applies to ALL users
     if (fulfillmentType === 'delivery' && !isDeliveryEligible) {
+      const ruleMessage = deliveryRulesSummary.length > 0 
+        ? `Please add more items to meet delivery requirements: ${deliveryRulesSummary.map(rule => 
+            `${rule.minimum_items}+ items from ${rule.category?.name || 'Unknown Category'}`
+          ).join(' OR ')}`
+        : "Your cart doesn't meet the minimum requirements for delivery.";
+        
       toast({
         title: t('checkout.error.delivery'),
-        description: "Your cart doesn't meet the minimum requirements for delivery.",
+        description: ruleMessage,
         variant: "destructive",
       });
       return;
@@ -210,6 +226,24 @@ export function CheckoutForm({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 required
               />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Show delivery requirements message for all users when delivery is not available */}
+      {fulfillmentType === 'delivery' && !isDeliveryEligible && deliveryRulesSummary.length > 0 && (
+        <Card className="shadow-sm border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="text-sm text-orange-800">
+              <strong>Delivery Requirements:</strong> To enable delivery, you need: {
+                deliveryRulesSummary.map((rule, index) => (
+                  <span key={rule.id}>
+                    {index > 0 && ' OR '}
+                    {rule.minimum_items}+ items from {rule.category?.name || 'Unknown Category'}
+                  </span>
+                ))
+              }
             </div>
           </CardContent>
         </Card>

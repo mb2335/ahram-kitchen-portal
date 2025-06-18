@@ -18,9 +18,10 @@ export const useEnhancedDeliveryEligibility = () => {
   const { data: isDeliveryEligible = false, isLoading } = useQuery({
     queryKey: ['enhanced-delivery-eligibility', items],
     queryFn: async () => {
+      // No authentication required - delivery rules apply to ALL customers
       if (items.length === 0) return false;
 
-      // Get all active delivery rules
+      // Get all active delivery rules - no user restrictions
       const { data: deliveryRules, error } = await supabase
         .from('delivery_rules')
         .select('*')
@@ -32,18 +33,19 @@ export const useEnhancedDeliveryEligibility = () => {
       }
 
       if (!deliveryRules || deliveryRules.length === 0) {
-        // If no rules are configured, delivery is available
+        // If no rules are configured, delivery is available for everyone
+        console.log('No delivery rules configured - delivery available for all customers');
         return true;
       }
 
-      // Count items by category
+      // Count items by category for ALL customers (guest and authenticated)
       const itemsByCategory = items.reduce((acc, item) => {
         const categoryId = item.category_id || 'uncategorized';
         acc[categoryId] = (acc[categoryId] || 0) + item.quantity;
         return acc;
       }, {} as Record<string, number>);
 
-      console.log('Items by category:', itemsByCategory);
+      console.log('Items by category (applies to all customers):', itemsByCategory);
 
       // Group rules by rule_group_id
       const ruleGroups = (deliveryRules as DeliveryRule[]).reduce((acc, rule) => {
@@ -55,11 +57,11 @@ export const useEnhancedDeliveryEligibility = () => {
         return acc;
       }, {} as Record<string, DeliveryRule[]>);
 
-      console.log('Rule groups:', ruleGroups);
+      console.log('Rule groups (apply to all customers):', ruleGroups);
 
-      // Check if any rule group is satisfied
+      // Check if any rule group is satisfied - same logic for all customers
       for (const [groupId, groupRules] of Object.entries(ruleGroups)) {
-        console.log(`Evaluating rule group ${groupId}:`, groupRules);
+        console.log(`Evaluating rule group ${groupId} for current customer:`, groupRules);
         
         if (groupRules.length === 0) continue;
         
@@ -83,12 +85,12 @@ export const useEnhancedDeliveryEligibility = () => {
         console.log(`Final evaluation for group ${groupId}: ${groupSatisfied}`);
         
         if (groupSatisfied) {
-          console.log(`Rule group ${groupId} is satisfied, delivery eligible`);
+          console.log(`Rule group ${groupId} is satisfied, delivery eligible for current customer`);
           return true;
         }
       }
 
-      console.log('No rule groups satisfied, delivery not eligible');
+      console.log('No rule groups satisfied, delivery not eligible for current customer');
       return false;
     },
     refetchOnWindowFocus: false,
@@ -97,6 +99,7 @@ export const useEnhancedDeliveryEligibility = () => {
   const { data: deliveryRulesSummary = [] } = useQuery({
     queryKey: ['enhanced-delivery-rules-summary'],
     queryFn: async () => {
+      // Fetch delivery rules summary for ALL customers to show requirements
       const { data: rules, error } = await supabase
         .from('delivery_rules')
         .select(`
@@ -106,6 +109,7 @@ export const useEnhancedDeliveryEligibility = () => {
         .eq('is_active', true);
 
       if (error) throw error;
+      console.log('Delivery rules summary (available to all customers):', rules);
       return rules || [];
     },
   });

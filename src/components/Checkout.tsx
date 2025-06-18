@@ -29,7 +29,7 @@ export function Checkout() {
   const [isPreviouslyOptedIn, setIsPreviouslyOptedIn] = useState(false);
   const [showSmsWarning, setShowSmsWarning] = useState(false);
 
-  // Fetch categories to include with items
+  // Fetch categories to include with items - available to all customers
   const { data: categories = [] } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: async () => {
@@ -187,7 +187,7 @@ export function Checkout() {
       <div className="space-y-6">
         <OrderSummary />
         
-        {/* Always render the CustomerForm but with different properties based on session */}
+        {/* Customer form available to all users - delivery rules apply universally */}
         <CustomerForm
           fullName={customerData.fullName}
           email={customerData.email}
@@ -207,6 +207,7 @@ export function Checkout() {
           isReadOnly={!!session} // Make fields read-only for signed-in users
         />
         
+        {/* Checkout form with enhanced delivery eligibility for ALL customers */}
         <CheckoutForm
           customerData={customerData}
           onOrderSuccess={handleOrderSuccess}
