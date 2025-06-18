@@ -65,6 +65,16 @@ export const useEnhancedDeliveryRules = () => {
       // Generate a single rule_group_id for the entire group
       const actualGroupId = ruleGroup.id.startsWith('temp-') ? crypto.randomUUID() : ruleGroup.id;
       
+      // If this rule group is being set as active, deactivate all other rule groups first
+      if (ruleGroup.is_active) {
+        await supabase
+          .from('delivery_rules')
+          .update({ is_active: false })
+          .neq('rule_group_id', actualGroupId);
+        
+        console.log('Deactivated all other rule groups before saving new active group');
+      }
+      
       // Delete existing rules for this group if it's an existing group
       if (!ruleGroup.id.startsWith('temp-')) {
         await supabase
