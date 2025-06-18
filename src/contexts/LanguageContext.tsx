@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState } from 'react';
 
 type Language = 'en' | 'ko';
@@ -71,7 +72,7 @@ const translations = {
     'checkout.payment.title': 'Payment Instructions',
     'checkout.payment.proof': 'Upload Payment Proof',
     'checkout.payment.total': 'Order Total',
-    'checkout.payment.instructions': 'Please send payment via Zelle to: {zelle} or via Venmo to: {venmo}',
+    'checkout.payment.instructions': 'Please send payment via Zelle to: <strong>kyjuri@gmail.com</strong> or via Venmo to: <strong>@juri_y</strong>',
     'checkout.payment.file.selected': 'File selected: {filename}',
     'checkout.submit': 'Place Order',
     'checkout.processing': 'Processing...',
@@ -189,7 +190,7 @@ const translations = {
     'checkout.payment.title': '결제 안내',
     'checkout.payment.proof': '결제 증명 업로드',
     'checkout.payment.total': '주문 총액',
-    'checkout.payment.instructions': 'Zelle로 {zelle}에게 또는 Venmo로 {venmo}에게 결제해 주세요',
+    'checkout.payment.instructions': 'Zelle로 <strong>kyjuri@gmail.com</strong>에게 또는 Venmo로 <strong>@juri_y</strong>에게 결제해 주세요',
     'checkout.payment.file.selected': '선택된 파일: {filename}',
     'checkout.submit': '주문하기',
     'checkout.processing': '처리 중...',

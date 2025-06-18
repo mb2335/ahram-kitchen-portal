@@ -35,11 +35,12 @@ export function PaymentInstructions({
         <div className="space-y-4">
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="font-medium mb-2">{t('checkout.payment.total')}: ${total.toFixed(2)}</div>
-            <p className="text-sm mb-3">
-              {t('checkout.payment.instructions')
-                .replace('{zelle}', 'kyjuri@gmail.com')
-                .replace('{venmo}', '@juri_y')}
-            </p>
+            <p 
+              className="text-sm mb-3"
+              dangerouslySetInnerHTML={{
+                __html: t('checkout.payment.instructions')
+              }}
+            />
           </div>
           
           <div className="space-y-2">
