@@ -10,7 +10,6 @@ import { CheckoutForm } from './checkout/CheckoutForm';
 import { CustomerForm } from './checkout/CustomerForm';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useQuery } from '@tanstack/react-query';
-import { useDeliveryRulesDebug } from '@/hooks/cart/useDeliveryRulesDebug';
 
 export function Checkout() {
   const { items, total, clearCart } = useCart();
@@ -18,9 +17,6 @@ export function Checkout() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
-
-  // Add debug hook to investigate delivery rules
-  const { debugInfo } = useDeliveryRulesDebug();
 
   const [customerData, setCustomerData] = useState({
     fullName: '',
@@ -32,13 +28,6 @@ export function Checkout() {
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
   const [isPreviouslyOptedIn, setIsPreviouslyOptedIn] = useState(false);
   const [showSmsWarning, setShowSmsWarning] = useState(false);
-
-  // Debug delivery rules on component mount
-  useEffect(() => {
-    if (debugInfo) {
-      console.log('[Checkout Debug] Delivery rules debug info:', debugInfo);
-    }
-  }, [debugInfo]);
 
   // Fetch categories to include with items - available to all customers
   const { data: categories = [] } = useQuery({
@@ -195,17 +184,6 @@ export function Checkout() {
   return (
     <div className="container mx-auto max-w-2xl p-6">
       <h1 className="text-2xl font-bold mb-6">{t('checkout.title')}</h1>
-      
-      {/* Debug info for delivery rules */}
-      {process.env.NODE_ENV === 'development' && debugInfo && (
-        <div className="mb-4 p-3 bg-yellow-100 rounded text-xs text-gray-800">
-          <strong>Delivery Rules Debug:</strong> 
-          Total: {debugInfo.totalRules}, 
-          Active: {debugInfo.activeRules}, 
-          Success: {debugInfo.success ? 'Yes' : 'No'}
-          {debugInfo.error && <div>Error: {debugInfo.error.message}</div>}
-        </div>
-      )}
       
       <div className="space-y-6">
         <OrderSummary />

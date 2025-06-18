@@ -16,12 +16,6 @@ export function FulfillmentSelector({ selectedType, onTypeChange }: FulfillmentS
   const { isDeliveryEligible, deliveryRulesSummary } = useEnhancedDeliveryEligibility();
   const { t } = useLanguage();
 
-  console.log('[FulfillmentSelector] Delivery eligibility check:', {
-    isDeliveryEligible,
-    deliveryRulesSummary: deliveryRulesSummary.length,
-    selectedType
-  });
-
   return (
     <Card className="shadow-sm border-gray-200">
       <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
@@ -145,14 +139,6 @@ export function FulfillmentSelector({ selectedType, onTypeChange }: FulfillmentS
                 </ul>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Debug info for testing */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
-            <strong>Debug:</strong> Delivery Eligible: {isDeliveryEligible ? 'Yes' : 'No'}, 
-            Rules: {deliveryRulesSummary.length}
           </div>
         )}
       </CardContent>

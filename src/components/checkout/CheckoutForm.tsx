@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,7 +90,6 @@ export function CheckoutForm({
   };
 
   const handlePickupDetailChangeWrapper = (detail: any) => {
-    console.log('[CheckoutForm] Pickup detail selected:', detail);
     setSelectedPickupDetail(detail);
     handlePickupDetailChange(fulfillmentType, detail);
   };
@@ -172,12 +172,6 @@ export function CheckoutForm({
         fulfillmentType,
         onOrderSuccess,
       };
-
-      console.log('[CheckoutForm] Submitting order with details:', {
-        pickupTime: pickupTime,
-        deliveryTimeSlot: selectedTimeSlot,
-        fulfillmentType
-      });
       
       // Pass the selected delivery time slot to the order submission
       await submitOrder(orderProps, paymentProofFile, selectedTimeSlot);
