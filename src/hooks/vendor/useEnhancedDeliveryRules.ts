@@ -30,13 +30,20 @@ export const useEnhancedDeliveryRules = () => {
   const { data: ruleGroups = [], isLoading } = useQuery({
     queryKey: ['enhanced-delivery-rules-admin'],
     queryFn: async () => {
+      console.log('[Enhanced Delivery Rules Admin] Fetching delivery rules for admin dashboard...');
+      
       // Admin access - fetch ALL delivery rules across all vendors
       const { data, error } = await supabase
         .from('delivery_rules')
         .select('*')
         .order('rule_group_name', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('[Enhanced Delivery Rules Admin] Error fetching delivery rules:', error);
+        throw error;
+      }
+
+      console.log('[Enhanced Delivery Rules Admin] Raw delivery rules fetched:', data?.length || 0, data);
 
       // Group rules by rule_group_id to maintain rule groups as single entities
       const groupedRules = (data as DeliveryRule[]).reduce((acc, rule) => {
@@ -53,7 +60,9 @@ export const useEnhancedDeliveryRules = () => {
         return acc;
       }, {} as Record<string, RuleGroup>);
 
-      return Object.values(groupedRules);
+      const result = Object.values(groupedRules);
+      console.log('[Enhanced Delivery Rules Admin] Grouped rule groups:', result.length, result);
+      return result;
     },
     enabled: !!adminData,
   });
@@ -62,21 +71,25 @@ export const useEnhancedDeliveryRules = () => {
     mutationFn: async (ruleGroup: RuleGroup) => {
       if (!adminData) throw new Error('Admin access required');
       
+      console.log('[Enhanced Delivery Rules Admin] Saving rule group:', ruleGroup);
+      
       // Generate a single rule_group_id for the entire group
       const actualGroupId = ruleGroup.id.startsWith('temp-') ? crypto.randomUUID() : ruleGroup.id;
       
       // If this rule group is being set as active, deactivate all other rule groups first
       if (ruleGroup.is_active) {
+        console.log('[Enhanced Delivery Rules Admin] Deactivating all other rule groups...');
         await supabase
           .from('delivery_rules')
           .update({ is_active: false })
           .neq('rule_group_id', actualGroupId);
         
-        console.log('Deactivated all other rule groups before saving new active group');
+        console.log('[Enhanced Delivery Rules Admin] Deactivated all other rule groups before saving new active group');
       }
       
       // Delete existing rules for this group if it's an existing group
       if (!ruleGroup.id.startsWith('temp-')) {
+        console.log('[Enhanced Delivery Rules Admin] Deleting existing rules for group:', ruleGroup.id);
         await supabase
           .from('delivery_rules')
           .delete()
@@ -95,15 +108,26 @@ export const useEnhancedDeliveryRules = () => {
         is_active: ruleGroup.is_active,
       }));
 
+      console.log('[Enhanced Delivery Rules Admin] Inserting rules:', rulesToInsert);
+
       const { error } = await supabase
         .from('delivery_rules')
         .insert(rulesToInsert);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[Enhanced Delivery Rules Admin] Error inserting rules:', error);
+        throw error;
+      }
+      
+      console.log('[Enhanced Delivery Rules Admin] Successfully saved rule group');
       return { ...ruleGroup, id: actualGroupId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
+      // Also invalidate the customer-facing delivery eligibility queries
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-eligibility'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-summary'] });
+      
       toast({
         title: "Success",
         description: "Rule group saved successfully (shared across all admins)",
@@ -122,15 +146,26 @@ export const useEnhancedDeliveryRules = () => {
     mutationFn: async (groupId: string) => {
       if (!adminData) throw new Error('Admin access required');
       
+      console.log('[Enhanced Delivery Rules Admin] Deleting rule group:', groupId);
+      
       const { error } = await supabase
         .from('delivery_rules')
         .delete()
         .eq('rule_group_id', groupId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[Enhanced Delivery Rules Admin] Error deleting rule group:', error);
+        throw error;
+      }
+      
+      console.log('[Enhanced Delivery Rules Admin] Successfully deleted rule group');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
+      // Also invalidate the customer-facing delivery eligibility queries
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-eligibility'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-summary'] });
+      
       toast({
         title: "Success",
         description: "Rule group deleted successfully",
@@ -149,14 +184,17 @@ export const useEnhancedDeliveryRules = () => {
     mutationFn: async ({ groupId, active }: { groupId: string; active: boolean }) => {
       if (!adminData) throw new Error('Admin access required');
       
+      console.log('[Enhanced Delivery Rules Admin] Toggling rule group:', groupId, 'to active:', active);
+      
       if (active) {
         // First, deactivate all other rule groups
+        console.log('[Enhanced Delivery Rules Admin] Deactivating all other rule groups...');
         await supabase
           .from('delivery_rules')
           .update({ is_active: false })
           .neq('rule_group_id', groupId);
         
-        console.log('Deactivated all other rule groups before activating new one');
+        console.log('[Enhanced Delivery Rules Admin] Deactivated all other rule groups before activating new one');
       }
       
       // Then activate/deactivate the selected group
@@ -165,10 +203,19 @@ export const useEnhancedDeliveryRules = () => {
         .update({ is_active: active })
         .eq('rule_group_id', groupId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[Enhanced Delivery Rules Admin] Error toggling rule group:', error);
+        throw error;
+      }
+      
+      console.log('[Enhanced Delivery Rules Admin] Successfully toggled rule group');
     },
     onSuccess: (_, { active }) => {
       queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-admin'] });
+      // Also invalidate the customer-facing delivery eligibility queries
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-eligibility'] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-delivery-rules-summary'] });
+      
       toast({
         title: "Success",
         description: active 
