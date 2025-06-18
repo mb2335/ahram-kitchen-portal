@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -74,9 +73,12 @@ export const useEnhancedDeliveryEligibility = () => {
         if (sortedRules.length > 0) {
           const firstRule = sortedRules[0];
           const firstRuleCount = itemsByCategory[firstRule.category_id] || 0;
-          groupSatisfied = firstRuleCount >= firstRule.minimum_items;
+          const firstRuleSatisfied = firstRuleCount >= firstRule.minimum_items;
           
-          console.log(`First rule (${firstRule.category_id}): need ${firstRule.minimum_items}, have ${firstRuleCount}, satisfied: ${groupSatisfied}`);
+          console.log(`First rule (${firstRule.category_id}): need ${firstRule.minimum_items}, have ${firstRuleCount}, satisfied: ${firstRuleSatisfied}`);
+          
+          // Initialize with the first rule result
+          groupSatisfied = firstRuleSatisfied;
           
           // Process remaining rules with their logical operators
           for (let i = 1; i < sortedRules.length; i++) {
@@ -88,8 +90,10 @@ export const useEnhancedDeliveryEligibility = () => {
             
             if (rule.logical_operator === 'AND') {
               groupSatisfied = groupSatisfied && ruleSatisfied;
+              console.log(`After AND operation: ${groupSatisfied}`);
             } else if (rule.logical_operator === 'OR') {
               groupSatisfied = groupSatisfied || ruleSatisfied;
+              console.log(`After OR operation: ${groupSatisfied}`);
             }
             
             console.log(`Group satisfied after rule ${i}: ${groupSatisfied}`);
