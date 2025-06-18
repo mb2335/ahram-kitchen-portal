@@ -44,6 +44,8 @@ export const useEnhancedDeliveryEligibility = () => {
         return acc;
       }, {} as Record<string, number>);
 
+      console.log('Items by category:', itemsByCategory);
+
       // Group rules by rule_group_id
       const ruleGroups = (deliveryRules as DeliveryRule[]).reduce((acc, rule) => {
         const groupId = rule.rule_group_id;
@@ -54,50 +56,55 @@ export const useEnhancedDeliveryEligibility = () => {
         return acc;
       }, {} as Record<string, DeliveryRule[]>);
 
+      console.log('Rule groups:', ruleGroups);
+
       // Check if any rule group is satisfied
-      for (const groupRules of Object.values(ruleGroups)) {
+      for (const [groupId, groupRules] of Object.entries(ruleGroups)) {
+        console.log(`Evaluating rule group ${groupId}:`, groupRules);
+        
+        // Sort rules to ensure proper evaluation order
+        const sortedRules = [...groupRules].sort((a, b) => {
+          // First rule doesn't have a logical operator context, so we'll treat it as the base
+          return 0;
+        });
+
         let groupSatisfied = false;
         
-        // Determine if this group uses AND or OR logic
-        const hasAndRules = groupRules.some(rule => rule.logical_operator === 'AND');
-        const hasOrRules = groupRules.some(rule => rule.logical_operator === 'OR');
-        
-        if (hasAndRules && !hasOrRules) {
-          // All rules must be satisfied (AND logic)
-          groupSatisfied = groupRules.every(rule => {
-            const categoryItemCount = itemsByCategory[rule.category_id] || 0;
-            return categoryItemCount >= rule.minimum_items;
-          });
-        } else if (hasOrRules && !hasAndRules) {
-          // Any rule can be satisfied (OR logic)
-          groupSatisfied = groupRules.some(rule => {
-            const categoryItemCount = itemsByCategory[rule.category_id] || 0;
-            return categoryItemCount >= rule.minimum_items;
-          });
-        } else {
-          // Mixed logic - evaluate in sequence
-          let result = true;
-          for (let i = 0; i < groupRules.length; i++) {
-            const rule = groupRules[i];
+        // Start with the first rule as the base
+        if (sortedRules.length > 0) {
+          const firstRule = sortedRules[0];
+          const firstRuleCount = itemsByCategory[firstRule.category_id] || 0;
+          groupSatisfied = firstRuleCount >= firstRule.minimum_items;
+          
+          console.log(`First rule (${firstRule.category_id}): need ${firstRule.minimum_items}, have ${firstRuleCount}, satisfied: ${groupSatisfied}`);
+          
+          // Process remaining rules with their logical operators
+          for (let i = 1; i < sortedRules.length; i++) {
+            const rule = sortedRules[i];
             const categoryItemCount = itemsByCategory[rule.category_id] || 0;
             const ruleSatisfied = categoryItemCount >= rule.minimum_items;
             
-            if (i === 0) {
-              result = ruleSatisfied;
-            } else if (rule.logical_operator === 'AND') {
-              result = result && ruleSatisfied;
+            console.log(`Rule ${i} (${rule.category_id}): need ${rule.minimum_items}, have ${categoryItemCount}, satisfied: ${ruleSatisfied}, operator: ${rule.logical_operator}`);
+            
+            if (rule.logical_operator === 'AND') {
+              groupSatisfied = groupSatisfied && ruleSatisfied;
             } else if (rule.logical_operator === 'OR') {
-              result = result || ruleSatisfied;
+              groupSatisfied = groupSatisfied || ruleSatisfied;
             }
+            
+            console.log(`Group satisfied after rule ${i}: ${groupSatisfied}`);
           }
-          groupSatisfied = result;
         }
         
+        console.log(`Final group ${groupId} satisfied: ${groupSatisfied}`);
+        
         if (groupSatisfied) {
+          console.log(`Rule group ${groupId} is satisfied, delivery eligible`);
           return true;
         }
       }
 
+      console.log('No rule groups satisfied, delivery not eligible');
       return false;
     },
     refetchOnWindowFocus: false,
