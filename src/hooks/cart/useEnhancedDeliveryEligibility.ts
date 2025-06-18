@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -6,7 +7,6 @@ interface DeliveryRule {
   id: string;
   category_id: string;
   minimum_items: number;
-  logical_operator: 'AND' | 'OR';
   rule_group_id: string;
   rule_group_name: string;
   is_active: boolean;
@@ -66,7 +66,7 @@ export const useEnhancedDeliveryEligibility = () => {
         // Sort rules to ensure consistent evaluation order
         const sortedRules = [...groupRules].sort((a, b) => a.id.localeCompare(b.id));
         
-        // Evaluate each rule individually first
+        // Evaluate each rule individually
         const ruleResults = sortedRules.map(rule => {
           const categoryItemCount = itemsByCategory[rule.category_id] || 0;
           const satisfied = categoryItemCount >= rule.minimum_items;
@@ -76,39 +76,9 @@ export const useEnhancedDeliveryEligibility = () => {
 
         console.log(`Rule results for group ${groupId}:`, ruleResults);
 
-        // Now evaluate the logical expression correctly
-        let groupSatisfied: boolean;
-        
-        if (sortedRules.length === 1) {
-          // Single rule case
-          groupSatisfied = ruleResults[0];
-          console.log(`Single rule evaluation: ${groupSatisfied}`);
-        } else {
-          // Multiple rules case - evaluate the logical expression
-          // Important: We need to determine if this is an AND group or OR group
-          // Check if ALL rules have the same operator (they should within a group)
-          const operators = sortedRules.map(rule => rule.logical_operator);
-          const hasAnd = operators.includes('AND');
-          const hasOr = operators.includes('OR');
-          
-          if (hasAnd && hasOr) {
-            console.warn(`Mixed operators in group ${groupId}, treating as AND for safety`);
-          }
-          
-          // If any rule has AND, treat the entire group as AND
-          // This ensures stricter evaluation for mixed cases
-          const isAndGroup = hasAnd;
-          
-          if (isAndGroup) {
-            // For AND groups, ALL conditions must be true
-            groupSatisfied = ruleResults.every(result => result === true);
-            console.log(`AND group evaluation: ${groupSatisfied} (all conditions must be true: [${ruleResults.join(', ')}])`);
-          } else {
-            // For OR groups, AT LEAST ONE condition must be true
-            groupSatisfied = ruleResults.some(result => result === true);
-            console.log(`OR group evaluation: ${groupSatisfied} (at least one condition must be true: [${ruleResults.join(', ')}])`);
-          }
-        }
+        // OR evaluation: AT LEAST ONE condition must be true
+        const groupSatisfied = ruleResults.some(result => result === true);
+        console.log(`OR group evaluation: ${groupSatisfied} (at least one condition must be true: [${ruleResults.join(', ')}])`);
         
         console.log(`Final evaluation for group ${groupId}: ${groupSatisfied}`);
         

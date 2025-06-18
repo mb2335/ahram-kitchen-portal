@@ -9,7 +9,7 @@ export interface DeliveryRule {
   vendor_id: string;
   category_id: string;
   minimum_items: number;
-  logical_operator: 'AND' | 'OR';
+  logical_operator: 'OR';
   rule_group_id: string;
   rule_group_name: string;
   is_active: boolean;
@@ -74,11 +74,12 @@ export const useEnhancedDeliveryRules = () => {
       }
 
       // Insert new rules - use the current admin's vendor_id as the creator
+      // All rules in a group are OR rules now
       const rulesToInsert = ruleGroup.rules.map(rule => ({
         vendor_id: adminData.id, // Track which admin created this rule
         category_id: rule.category_id,
         minimum_items: rule.minimum_items,
-        logical_operator: rule.logical_operator,
+        logical_operator: 'OR', // Always OR now
         rule_group_id: actualGroupId, // Use the same ID for all rules in this group
         rule_group_name: ruleGroup.name,
         is_active: ruleGroup.is_active,

@@ -50,7 +50,7 @@ export function RuleGroupManager({
       rules: [{ 
         category_id: '', 
         minimum_items: 1, 
-        logical_operator: 'AND',
+        logical_operator: 'OR',
         vendor_id: '',
         rule_group_id: '',
         rule_group_name: '',
@@ -80,7 +80,7 @@ export function RuleGroupManager({
       rules: [...editingGroup.rules, { 
         category_id: '', 
         minimum_items: 1, 
-        logical_operator: 'AND',
+        logical_operator: 'OR',
         vendor_id: '',
         rule_group_id: '',
         rule_group_name: '',
@@ -137,7 +137,7 @@ export function RuleGroupManager({
     return categories.filter(cat => !usedCategories.includes(cat.id));
   };
 
-  // Format rule group display to show the logical flow
+  // Format rule group display to show the categories with OR logic
   const formatRuleGroupDisplay = (group: RuleGroup) => {
     if (group.rules.length === 0) return 'No rules configured';
     
@@ -148,7 +148,7 @@ export function RuleGroupManager({
       if (index === 0) {
         return ruleText;
       } else {
-        return ` ${rule.logical_operator} ${ruleText}`;
+        return ` OR ${ruleText}`;
       }
     }).join('');
   };
@@ -160,14 +160,15 @@ export function RuleGroupManager({
           <CardTitle>Delivery Rule Groups</CardTitle>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Create rule groups with AND/OR logic to define when delivery is available.
-              Customers need to meet the requirements of the active rule group.
+              Create rule groups with OR logic to define when delivery is available.
+              Customers need to meet at least one category requirement in the active rule group.
             </p>
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <strong>Important:</strong> Only one rule group can be active at a time. 
-                Activating a new rule group will automatically deactivate the current one.
+                <strong>How it works:</strong> Add multiple categories to a rule group. 
+                Delivery will be enabled if the customer has enough items from ANY of the categories.
+                Only one rule group can be active at a time.
                 {hasActiveGroup && (
                   <span className="block mt-1 text-sm font-medium">
                     Currently active: {activeRuleGroups[0].name}
@@ -221,18 +222,9 @@ export function RuleGroupManager({
                   <div key={index} className="space-y-3">
                     {index > 0 && (
                       <div className="flex items-center justify-center">
-                        <Select
-                          value={rule.logical_operator}
-                          onValueChange={(value: 'AND' | 'OR') => updateRule(index, 'logical_operator', value)}
-                        >
-                          <SelectTrigger className="w-20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AND">AND</SelectItem>
-                            <SelectItem value="OR">OR</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Badge variant="secondary" className="px-3 py-1">
+                          OR
+                        </Badge>
                       </div>
                     )}
                     <div className="flex gap-3 items-end p-3 border rounded-lg">
@@ -277,7 +269,7 @@ export function RuleGroupManager({
                 ))}
                 <Button variant="outline" onClick={addRuleToGroup} className="w-full">
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Rule
+                  Add Category
                 </Button>
               </CardContent>
             </Card>
@@ -303,7 +295,7 @@ export function RuleGroupManager({
                     <span className="font-medium">Rules:</span> {formatRuleGroupDisplay(group)}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {group.rules.length} rule{group.rules.length !== 1 ? 's' : ''} in this group
+                    {group.rules.length} categor{group.rules.length !== 1 ? 'ies' : 'y'} in this group
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
