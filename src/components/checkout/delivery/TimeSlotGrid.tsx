@@ -46,14 +46,9 @@ export function TimeSlotGrid({
                   'opacity-50 cursor-not-allowed bg-muted/30 border-muted text-muted-foreground line-through'
                 }`}
             >
-              <div className="flex flex-col items-center">
-                <span className={slot.available ? '' : 'line-through'}>
-                  {formatTime(slot.time)}
-                </span>
-                {!slot.available && (
-                  <span className="text-xs text-red-500 mt-0.5">Booked</span>
-                )}
-              </div>
+              <span className={slot.available ? '' : 'line-through'}>
+                {formatTime(slot.time)}
+              </span>
             </Label>
           </div>
         ))}
