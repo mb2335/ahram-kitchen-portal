@@ -18,8 +18,13 @@ export const useEnhancedDeliveryEligibility = () => {
   const { data: isDeliveryEligible = false, isLoading } = useQuery({
     queryKey: ['enhanced-delivery-eligibility', items],
     queryFn: async () => {
+      console.log('[Enhanced Delivery Eligibility] Starting check with items:', items.length);
+      
       // No authentication required - delivery rules apply to ALL customers
-      if (items.length === 0) return false;
+      if (items.length === 0) {
+        console.log('[Enhanced Delivery Eligibility] No items in cart, delivery not eligible');
+        return false;
+      }
 
       // Get all active delivery rules - no user restrictions
       const { data: deliveryRules, error } = await supabase
@@ -28,13 +33,15 @@ export const useEnhancedDeliveryEligibility = () => {
         .eq('is_active', true);
 
       if (error) {
-        console.error('Error fetching delivery rules:', error);
+        console.error('[Enhanced Delivery Eligibility] Error fetching delivery rules:', error);
         return false;
       }
 
+      console.log('[Enhanced Delivery Eligibility] Found delivery rules:', deliveryRules?.length || 0);
+
       if (!deliveryRules || deliveryRules.length === 0) {
         // If no rules are configured, delivery is available for everyone
-        console.log('No delivery rules configured - delivery available for all customers');
+        console.log('[Enhanced Delivery Eligibility] No delivery rules configured - delivery available for all customers');
         return true;
       }
 
@@ -45,7 +52,7 @@ export const useEnhancedDeliveryEligibility = () => {
         return acc;
       }, {} as Record<string, number>);
 
-      console.log('Items by category (applies to all customers):', itemsByCategory);
+      console.log('[Enhanced Delivery Eligibility] Items by category (applies to all customers):', itemsByCategory);
 
       // Group rules by rule_group_id
       const ruleGroups = (deliveryRules as DeliveryRule[]).reduce((acc, rule) => {
@@ -57,11 +64,13 @@ export const useEnhancedDeliveryEligibility = () => {
         return acc;
       }, {} as Record<string, DeliveryRule[]>);
 
-      console.log('Rule groups (apply to all customers):', ruleGroups);
+      console.log('[Enhanced Delivery Eligibility] Rule groups (apply to all customers):', Object.keys(ruleGroups).length);
 
       // Check if any rule group is satisfied - same logic for all customers
+      let anyGroupSatisfied = false;
+      
       for (const [groupId, groupRules] of Object.entries(ruleGroups)) {
-        console.log(`Evaluating rule group ${groupId} for current customer:`, groupRules);
+        console.log(`[Enhanced Delivery Eligibility] Evaluating rule group ${groupId} for current customer:`, groupRules.length, 'rules');
         
         if (groupRules.length === 0) continue;
         
@@ -72,26 +81,25 @@ export const useEnhancedDeliveryEligibility = () => {
         const ruleResults = sortedRules.map(rule => {
           const categoryItemCount = itemsByCategory[rule.category_id] || 0;
           const satisfied = categoryItemCount >= rule.minimum_items;
-          console.log(`Rule evaluation - Category: ${rule.category_id}, Need: ${rule.minimum_items}, Have: ${categoryItemCount}, Satisfied: ${satisfied}`);
+          console.log(`[Enhanced Delivery Eligibility] Rule evaluation - Category: ${rule.category_id}, Need: ${rule.minimum_items}, Have: ${categoryItemCount}, Satisfied: ${satisfied}`);
           return satisfied;
         });
 
-        console.log(`Rule results for group ${groupId}:`, ruleResults);
+        console.log(`[Enhanced Delivery Eligibility] Rule results for group ${groupId}:`, ruleResults);
 
-        // OR evaluation: AT LEAST ONE condition must be true
+        // OR evaluation: AT LEAST ONE condition must be true within this group
         const groupSatisfied = ruleResults.some(result => result === true);
-        console.log(`OR group evaluation: ${groupSatisfied} (at least one condition must be true: [${ruleResults.join(', ')}])`);
-        
-        console.log(`Final evaluation for group ${groupId}: ${groupSatisfied}`);
+        console.log(`[Enhanced Delivery Eligibility] OR group evaluation for ${groupId}: ${groupSatisfied} (at least one condition must be true: [${ruleResults.join(', ')}])`);
         
         if (groupSatisfied) {
-          console.log(`Rule group ${groupId} is satisfied, delivery eligible for current customer`);
-          return true;
+          console.log(`[Enhanced Delivery Eligibility] Rule group ${groupId} is satisfied, delivery eligible for current customer`);
+          anyGroupSatisfied = true;
+          break; // Exit early if any group is satisfied
         }
       }
 
-      console.log('No rule groups satisfied, delivery not eligible for current customer');
-      return false;
+      console.log(`[Enhanced Delivery Eligibility] Final result: ${anyGroupSatisfied ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`);
+      return anyGroupSatisfied;
     },
     refetchOnWindowFocus: false,
   });
@@ -109,7 +117,7 @@ export const useEnhancedDeliveryEligibility = () => {
         .eq('is_active', true);
 
       if (error) throw error;
-      console.log('Delivery rules summary (available to all customers):', rules);
+      console.log('[Enhanced Delivery Eligibility] Delivery rules summary (available to all customers):', rules?.length || 0);
       return rules || [];
     },
   });

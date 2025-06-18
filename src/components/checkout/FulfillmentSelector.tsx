@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Truck, Store, AlertCircle } from 'lucide-react';
-import { useDeliveryEligibility } from '@/hooks/cart/useDeliveryEligibility';
+import { useEnhancedDeliveryEligibility } from '@/hooks/cart/useEnhancedDeliveryEligibility';
 import { useLanguage } from '@/hooks/useLanguage';
 
 interface FulfillmentSelectorProps {
@@ -13,8 +13,14 @@ interface FulfillmentSelectorProps {
 }
 
 export function FulfillmentSelector({ selectedType, onTypeChange }: FulfillmentSelectorProps) {
-  const { isDeliveryEligible, deliveryRulesSummary } = useDeliveryEligibility();
+  const { isDeliveryEligible, deliveryRulesSummary } = useEnhancedDeliveryEligibility();
   const { t } = useLanguage();
+
+  console.log('[FulfillmentSelector] Delivery eligibility check:', {
+    isDeliveryEligible,
+    deliveryRulesSummary: deliveryRulesSummary.length,
+    selectedType
+  });
 
   return (
     <Card className="shadow-sm border-gray-200">
@@ -123,21 +129,30 @@ export function FulfillmentSelector({ selectedType, onTypeChange }: FulfillmentS
               <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <div className="font-medium text-amber-800 mb-2">
-                  Delivery Requirements
+                  Delivery Requirements Not Met
                 </div>
                 <div className="text-amber-700 mb-2">
                   To enable delivery, your cart must contain:
                 </div>
                 <ul className="space-y-1 text-amber-700">
                   {deliveryRulesSummary.map((rule, index) => (
-                    <li key={index} className="flex items-center gap-2">
+                    <li key={rule.id} className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 bg-amber-600 rounded-full"></div>
                       At least {rule.minimum_items} items from {rule.category?.name || 'Unknown Category'}
+                      {index < deliveryRulesSummary.length - 1 && <span className="text-amber-600 font-medium ml-2">OR</span>}
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Debug info for testing */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
+            <strong>Debug:</strong> Delivery Eligible: {isDeliveryEligible ? 'Yes' : 'No'}, 
+            Rules: {deliveryRulesSummary.length}
           </div>
         )}
       </CardContent>
