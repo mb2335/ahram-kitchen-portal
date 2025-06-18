@@ -35,8 +35,32 @@ export const useEnhancedDeliveryEligibility = () => {
 
       if (allRulesError) {
         console.error('[Enhanced Delivery Eligibility] Error fetching all delivery rules:', allRulesError);
+        console.error('[Enhanced Delivery Eligibility] Error details:', {
+          message: allRulesError.message,
+          details: allRulesError.details,
+          hint: allRulesError.hint,
+          code: allRulesError.code
+        });
       } else {
         console.log('[Enhanced Delivery Eligibility] ALL delivery rules in database:', allRules?.length || 0, allRules);
+      }
+
+      // Check if we have table access
+      console.log('[Enhanced Delivery Eligibility] Testing table access...');
+      const { count, error: countError } = await supabase
+        .from('delivery_rules')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('[Enhanced Delivery Eligibility] Error accessing delivery_rules table:', countError);
+        console.error('[Enhanced Delivery Eligibility] Count error details:', {
+          message: countError.message,
+          details: countError.details,
+          hint: countError.hint,
+          code: countError.code
+        });
+      } else {
+        console.log('[Enhanced Delivery Eligibility] Total delivery rules count in table:', count);
       }
 
       // Get only active delivery rules
@@ -47,6 +71,12 @@ export const useEnhancedDeliveryEligibility = () => {
 
       if (error) {
         console.error('[Enhanced Delivery Eligibility] Error fetching active delivery rules:', error);
+        console.error('[Enhanced Delivery Eligibility] Active rules error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return false;
       }
 
@@ -122,6 +152,19 @@ export const useEnhancedDeliveryEligibility = () => {
     queryFn: async () => {
       console.log('[Enhanced Delivery Eligibility] Fetching delivery rules summary...');
       
+      // Test basic table access first
+      const { data: testAccess, error: testError } = await supabase
+        .from('delivery_rules')
+        .select('id')
+        .limit(1);
+
+      if (testError) {
+        console.error('[Enhanced Delivery Eligibility] Cannot access delivery_rules table:', testError);
+        throw testError;
+      }
+
+      console.log('[Enhanced Delivery Eligibility] Table access test successful, found rules:', testAccess?.length || 0);
+      
       // Fetch delivery rules summary for ALL customers to show requirements - only active rules
       const { data: rules, error } = await supabase
         .from('delivery_rules')
@@ -133,6 +176,12 @@ export const useEnhancedDeliveryEligibility = () => {
 
       if (error) {
         console.error('[Enhanced Delivery Eligibility] Error fetching delivery rules summary:', error);
+        console.error('[Enhanced Delivery Eligibility] Summary error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       
