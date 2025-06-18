@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
@@ -15,7 +14,7 @@ export const useOrderSubmission = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadPaymentProof } = usePaymentProofUpload();
 
-  const submitOrder = async (props: OrderSubmissionProps, paymentProofFile: File | null) => {
+  const submitOrder = async (props: OrderSubmissionProps, paymentProofFile: File | null, deliveryTimeSlot?: string) => {
     try {
       if (!paymentProofFile) {
         throw new Error("Payment proof is required");
@@ -29,6 +28,7 @@ export const useOrderSubmission = () => {
         itemCount: props.items.length,
         fulfillmentType: props.fulfillmentType,
         pickupTime: props.pickupTime,
+        deliveryTimeSlot: deliveryTimeSlot,
         total: props.total,
         items: props.items.map(item => ({ id: item.id, name: item.name, category_id: item.category_id }))
       });
@@ -82,7 +82,8 @@ export const useOrderSubmission = () => {
         payment_proof_url: paymentProofUrl,
         fulfillment_type: props.fulfillmentType,
         delivery_address: props.customerData.address || null,
-        pickup_time: props.pickupTime || null, // Save pickup time
+        pickup_time: props.pickupTime || null,
+        delivery_time_slot: deliveryTimeSlot || null, // Save the delivery time slot
         customer_name: props.customerData.fullName,
         customer_email: props.customerData.email,
         customer_phone: props.customerData.phone || null,
@@ -90,7 +91,10 @@ export const useOrderSubmission = () => {
         status: 'pending'
       };
 
-      console.log("Creating order with pickup time:", { pickup_time: props.pickupTime });
+      console.log("Creating order with delivery time slot:", { 
+        pickup_time: props.pickupTime,
+        delivery_time_slot: deliveryTimeSlot
+      });
 
       const { data: order, error: orderError } = await supabase
         .from('orders')

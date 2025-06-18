@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -121,6 +120,15 @@ export function CheckoutForm({
       return;
     }
 
+    if (fulfillmentType === 'delivery' && !selectedTimeSlot) {
+      toast({
+        title: "Delivery Time Required",
+        description: "Please select a delivery time slot.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!paymentProofFile) {
       toast({
         title: "Payment Proof Required",
@@ -144,13 +152,19 @@ export function CheckoutForm({
           address: fulfillmentType === 'delivery' ? formData.deliveryAddress : undefined,
         },
         pickupDetail: selectedPickupDetail,
-        pickupTime: pickupTime, // Add pickup time to order props
+        pickupTime: pickupTime,
         fulfillmentType,
         onOrderSuccess,
       };
 
-      console.log('[CheckoutForm] Submitting order with pickup time:', pickupTime);
-      await submitOrder(orderProps, paymentProofFile);
+      console.log('[CheckoutForm] Submitting order with details:', {
+        pickupTime: pickupTime,
+        deliveryTimeSlot: selectedTimeSlot,
+        fulfillmentType
+      });
+      
+      // Pass the selected delivery time slot to the order submission
+      await submitOrder(orderProps, paymentProofFile, selectedTimeSlot);
     } catch (error) {
       console.error('Order submission failed:', error);
     }
