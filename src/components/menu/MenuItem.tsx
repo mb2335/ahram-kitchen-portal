@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -66,17 +67,13 @@ export function MenuItem({
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only open dialog if description exists and click wasn't on interactive elements
-    if (displayDescription && !isDialogOpen) {
+    if (displayDescription && !e.defaultPrevented) {
       const target = e.target as HTMLElement;
       const isInteractiveElement = target.closest('button') || target.tagName === 'BUTTON';
       if (!isInteractiveElement) {
         setIsDialogOpen(true);
       }
     }
-  };
-
-  const handleDialogOpenChange = (open: boolean) => {
-    setIsDialogOpen(open);
   };
   
   return (
@@ -88,7 +85,7 @@ export function MenuItem({
       role={displayDescription ? "button" : undefined}
       tabIndex={displayDescription ? 0 : undefined}
       onKeyDown={(e) => {
-        if (displayDescription && (e.key === 'Enter' || e.key === ' ') && !isDialogOpen) {
+        if (displayDescription && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
           setIsDialogOpen(true);
         }
@@ -244,7 +241,7 @@ export function MenuItem({
 
       {/* Details Dialog */}
       {displayDescription && (
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold">
