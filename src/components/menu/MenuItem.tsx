@@ -313,7 +313,7 @@ export function MenuItem({
                 className="w-full bg-primary hover:bg-primary/90 text-white font-medium" 
                 disabled={item.remaining_quantity === 0}
               >
-                <Plus className="w-4 h-4" mr-2" />
+                <Plus className="w-4 h-4 mr-2" />
                 {t('item.add')} {selectedQuantity > 1 && `(${selectedQuantity})`}
               </Button>
             </div>
