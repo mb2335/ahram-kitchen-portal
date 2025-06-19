@@ -120,7 +120,7 @@ export function MenuItem({
             <div className="absolute bottom-3 left-3 z-10">
               <Badge variant="secondary" className="bg-white/90 text-xs flex items-center gap-1">
                 <Eye className="w-3 h-3" />
-                View Details
+                {t('item.viewDetails')}
               </Badge>
             </div>
           )}

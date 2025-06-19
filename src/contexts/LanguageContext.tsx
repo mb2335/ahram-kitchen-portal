@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from 'react';
 
 type Language = 'en' | 'ko';
@@ -30,6 +29,7 @@ const translations = {
     'item.soldOut': 'Sold Out',
     'item.inStock': 'No Limit',
     'item.remainingStock': 'Remaining',
+    'item.viewDetails': 'Click to View Details',
     'orders.title': 'Order History',
     'orders.empty': 'No orders found',
     'orders.status.pending': 'Pending',
@@ -148,6 +148,7 @@ const translations = {
     'item.soldOut': '품절',
     'item.inStock': '무제한',
     'item.remainingStock': '남은',
+    'item.viewDetails': '클릭하여 상세보기',
     'orders.title': '주문 내역',
     'orders.empty': '주문 내역이 없습니다',
     'orders.status.pending': '대기 중',
