@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MenuItem as MenuItemType } from "@/contexts/CartContext";
-import { Plus, Info, Minus, Eye } from "lucide-react";
+import { Plus, Minus, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { calculateDiscountedPrice, formatPrice } from "@/utils/priceUtils";
@@ -67,7 +67,7 @@ export function MenuItem({
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only open dialog if description exists and click wasn't on interactive elements
-    if (displayDescription && !e.defaultPrevented) {
+    if (displayDescription) {
       const target = e.target as HTMLElement;
       const isInteractiveElement = target.closest('button') || target.tagName === 'BUTTON';
       if (!isInteractiveElement) {
@@ -134,25 +134,6 @@ export function MenuItem({
             {displayName}
           </h3>
         </div>
-
-        {/* Description hint for accessibility */}
-        {displayDescription && (
-          <div className="text-center mb-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground hover:text-primary p-1 h-auto"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsDialogOpen(true);
-              }}
-            >
-              <Info className="w-3 h-3 mr-1" />
-              Tap for details
-            </Button>
-          </div>
-        )}
 
         {/* Footer Section - Push to bottom with consistent alignment */}
         <div className="mt-auto space-y-3">
